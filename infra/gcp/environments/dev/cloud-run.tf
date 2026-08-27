@@ -8,16 +8,6 @@ locals {
         MASTODON_ACCESS_TOKEN_SECRET = local.collector_secret_ids.mastodon_access_token
       }
     }
-    reddit = {
-      name                  = local.cloud_run_reddit_collector
-      source                = "reddit"
-      service_account_email = google_service_account.reddit_collector.email
-      secret_env_vars = {
-        REDDIT_CLIENT_ID_SECRET     = local.collector_secret_ids.reddit_client_id
-        REDDIT_CLIENT_SECRET_SECRET = local.collector_secret_ids.reddit_client_secret
-        REDDIT_USER_AGENT_SECRET    = local.collector_secret_ids.reddit_user_agent
-      }
-    }
     news = {
       name                  = local.cloud_run_news_collector
       source                = "news"
@@ -116,8 +106,7 @@ resource "google_cloud_run_v2_service" "collectors" {
 
 resource "google_cloud_run_v2_service_iam_member" "scheduler_invoker" {
   for_each = {
-    reddit = google_cloud_run_v2_service.collectors["reddit"].name
-    news   = google_cloud_run_v2_service.collectors["news"].name
+    news = google_cloud_run_v2_service.collectors["news"].name
   }
 
   project  = var.project_id

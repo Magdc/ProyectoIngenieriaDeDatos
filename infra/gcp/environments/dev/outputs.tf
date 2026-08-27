@@ -35,7 +35,6 @@ output "cloud_run_collector_urls" {
 output "scheduler_jobs" {
   description = "Jobs programados para ingesta near-real-time."
   value = {
-    reddit = google_cloud_scheduler_job.reddit_ingestion.name
     news   = google_cloud_scheduler_job.news_ingestion.name
   }
 }

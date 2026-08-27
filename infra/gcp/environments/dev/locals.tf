@@ -12,11 +12,9 @@ locals {
   pubsub_subscription_deadletter = "${local.resource_prefix}-dead-letter-sub"
 
   cloud_run_mastodon_collector = "${local.resource_prefix}-mastodon-collector"
-  cloud_run_reddit_collector   = "${local.resource_prefix}-reddit-collector"
   cloud_run_news_collector     = "${local.resource_prefix}-news-collector"
 
-  scheduler_reddit_job = "${local.resource_prefix}-reddit-ingestion-job"
-  scheduler_news_job   = "${local.resource_prefix}-news-ingestion-job"
+  scheduler_news_job = "${local.resource_prefix}-news-ingestion-job"
 
   bigquery_dataset_streaming = replace("${local.resource_prefix}_streaming", "-", "_")
 
@@ -24,9 +22,9 @@ locals {
 
   collector_secret_ids = {
     mastodon_access_token = "${local.resource_prefix}-mastodon-access-token"
-    reddit_client_id      = "${local.resource_prefix}-reddit-client-id"
-    reddit_client_secret  = "${local.resource_prefix}-reddit-client-secret"
-    reddit_user_agent     = "${local.resource_prefix}-reddit-user-agent"
     news_api_key          = "${local.resource_prefix}-news-api-key"
   }
+
+  dataflow_job_name          = "${local.resource_prefix}-ingestion-job"
+  dataflow_template_gcs_path = "gs://${google_storage_bucket.dataflow_temp.name}/templates/ingestion_pipeline.json"
 }

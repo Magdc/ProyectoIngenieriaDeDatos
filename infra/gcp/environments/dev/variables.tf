@@ -52,14 +52,26 @@ variable "scheduler_time_zone" {
   default     = "America/Bogota"
 }
 
-variable "reddit_ingestion_schedule" {
-  description = "Frecuencia cron para consultar Reddit."
-  type        = string
-  default     = "*/15 * * * *"
-}
-
 variable "news_ingestion_schedule" {
   description = "Frecuencia cron para consultar fuentes RSS o News API."
   type        = string
   default     = "*/30 * * * *"
+}
+
+variable "dataflow_python_bin" {
+  description = "Ejecutable de Python para el build local de Dataflow."
+  type        = string
+  default     = "python3"
+}
+
+variable "dataflow_machine_type" {
+  description = "Tipo de maquina para workers de Dataflow."
+  type        = string
+  default     = "n1-standard-1"
+}
+
+variable "dataflow_max_workers" {
+  description = "Maximo de workers en paralelo."
+  type        = number
+  default     = 2
 }

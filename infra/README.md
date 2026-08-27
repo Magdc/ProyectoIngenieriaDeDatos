@@ -19,8 +19,6 @@ infra/
   aws/environments/dev/
 ```
 
-Cada ambiente se ejecuta desde su propia carpeta.
-
 ## Validacion local
 
 ```bash
@@ -37,4 +35,4 @@ terraform validate
 
 ## Secretos
 
-Terraform crea los contenedores de secretos, pero no guarda valores reales. Los valores deben cargarse fuera de Terraform cuando existan credenciales del proyecto.
+Terraform crea los contenedores de secretos, pero no guarda valores reales. Los valores se tienen que cargar fuera de Terraform cuando existan credenciales de AWS o de GCP.

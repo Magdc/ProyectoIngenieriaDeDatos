@@ -1,0 +1,15 @@
+# Copiar este archivo como terraform.tfvars cuando exista un proyecto real de GCP.
+# No guardar terraform.tfvars en Git si contiene datos sensibles o configuracion local.
+
+project_id = "trend-analyzer-dev-000000"
+region     = "us-central1"
+
+environment = "dev"
+name_prefix = "trend"
+
+# Imagen temporal. Reemplazar cuando existan los contenedores reales.
+collector_container_image = "us-docker.pkg.dev/cloudrun/container/hello"
+
+reddit_ingestion_schedule = "*/15 * * * *"
+news_ingestion_schedule   = "*/30 * * * *"
+scheduler_time_zone       = "America/Bogota"

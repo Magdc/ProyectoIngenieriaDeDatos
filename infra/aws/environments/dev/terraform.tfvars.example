@@ -1,0 +1,8 @@
+# Copiar este archivo como terraform.tfvars cuando existan credenciales reales de AWS.
+# No guardar terraform.tfvars en Git si contiene datos sensibles o configuracion local.
+
+aws_region  = "us-east-1"
+environment = "dev"
+name_prefix = "trend"
+
+force_destroy_buckets = false

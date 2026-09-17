@@ -1,17 +1,7 @@
-
 resource "google_service_account" "mastodon_collector" {
   account_id   = "${local.resource_prefix}-mastodon-sa"
   display_name = "Trend Analyzer Mastodon Collector"
   description  = "Service account used by the Mastodon Cloud Run collector."
-  project      = var.project_id
-
-  depends_on = [google_project_service.required_apis]
-}
-
-resource "google_service_account" "reddit_collector" {
-  account_id   = "${local.resource_prefix}-reddit-sa"
-  display_name = "Trend Analyzer Reddit Collector"
-  description  = "Service account used by the Reddit Cloud Run collector."
   project      = var.project_id
 
   depends_on = [google_project_service.required_apis]

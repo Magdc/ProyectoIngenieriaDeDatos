@@ -10,6 +10,5 @@ name_prefix = "trend"
 # Imagen temporal. Reemplazar cuando existan los contenedores reales.
 collector_container_image = "us-docker.pkg.dev/cloudrun/container/hello"
 
-reddit_ingestion_schedule = "*/15 * * * *"
 news_ingestion_schedule   = "*/30 * * * *"
 scheduler_time_zone       = "America/Bogota"

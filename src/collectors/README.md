@@ -1,6 +1,6 @@
 # Collectors — Ingesta de Datos TrendAnalyzer
 
-> **Responsable:** lejandro Sepulveda Posada (US-10, US-11, US-12)  
+> **Responsable:** Alejandro Sepulveda Posada (US-10, US-11, US-12)  
 > **Sprint:** Sprint 1 — entrega 26 de agosto de 2026
 
 ---

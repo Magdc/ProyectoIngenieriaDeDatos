@@ -44,3 +44,9 @@ resource "google_storage_bucket_iam_member" "dataflow_raw_object_admin" {
   role   = "roles/storage.objectAdmin"
   member = "serviceAccount:${google_service_account.dataflow_worker.email}"
 }
+
+resource "google_storage_bucket_iam_member" "news_collector_raw_object_user" {
+  bucket = google_storage_bucket.raw_events.name
+  role   = "roles/storage.objectUser"
+  member = "serviceAccount:${google_service_account.news_collector.email}"
+}

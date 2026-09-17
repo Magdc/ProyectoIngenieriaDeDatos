@@ -7,7 +7,7 @@ fuente propuesta en Trend Analyzer y ver su estructura real de datos:
   1. Mastodon  -> timeline público de una instancia (con token de app)
   2. Reddit    -> vía OAuth (client credentials, script app)
   3. RSS       -> feed de un medio de noticias (sin API key)
-
+py --version
 Uso:
     pip install requests feedparser
 

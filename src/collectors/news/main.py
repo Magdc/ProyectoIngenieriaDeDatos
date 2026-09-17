@@ -34,7 +34,7 @@ import re
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from zoneinfo import ZoneInfo
-
+from google.api_core.exceptions import NotFound
 import feedparser
 import requests
 from flask import Flask, jsonify, request
@@ -67,14 +67,9 @@ TZ_COLOMBIA = ZoneInfo("America/Bogota")
 # Confirmado en output.txt que El Tiempo funciona con feedparser
 # ---------------------------------------------------------------------------
 DEFAULT_FEEDS: list[str] = [
-    # Economía / sectores — relevante para marcas y consumo
-    "https://www.eltiempo.com/rss/economia.xml",
-    "https://www.elcolombiano.com/rss/economia.xml",
-    "https://www.portafolio.co/rss/portafolio.xml",
-    # Negocios y empresas
-    "https://www.elespectador.com/rss/economia/",
-    # Agroindustria / bebidas (sector café, jugos, lácteos)
-    "https://www.agronegocios.co/feed/",
+    "https://www.eltiempo.com/rss/economia_empresas.xml",
+    "https://www.eltiempo.com/rss/economia_sectores.xml",
+    "https://www.portafolio.co/rss/negocios/empresas.xml",
 ]
 
 app = Flask(__name__)
@@ -138,7 +133,20 @@ def make_dedup_key(entry_id: str) -> str:
     """Retorna un hash corto del id (URL) para usar como clave de dedup."""
     return hashlib.sha256(entry_id.encode()).hexdigest()[:16]
 
+def load_processed_ids() -> set[str]:
+    blob = get_gcs().bucket(RAW_BUCKET).blob(f"{SOURCE_NAME}/state/processed_ids.json")
+    try:
+        return set(json.loads(blob.download_as_text()))
+    except NotFound:
+        return set()
 
+
+def save_processed_ids(processed_ids: set[str]) -> None:
+    blob = get_gcs().bucket(RAW_BUCKET).blob(f"{SOURCE_NAME}/state/processed_ids.json")
+    blob.upload_from_string(
+        json.dumps(sorted(processed_ids)),
+        content_type="application/json",
+    )
 # ---------------------------------------------------------------------------
 # Mapeo al esquema común
 # ---------------------------------------------------------------------------
@@ -211,6 +219,7 @@ def ingest():
 
     log.info("Iniciando ingesta RSS/News — %d feeds", len(feeds))
 
+    processed_ids = load_processed_ids()
     seen_ids: set[str] = set()   # deduplicación dentro de la ejecución
     raw_entries: list[dict] = []
     mapped_entries: list[dict] = []
@@ -221,7 +230,7 @@ def ingest():
             log.info("Feed %s → %d entradas", feed_url, len(feed.entries))
             for entry in feed.entries:
                 entry_id = entry.get("id") or entry.get("link", "")
-                if entry_id in seen_ids:
+                if entry_id in processed_ids or entry_id in seen_ids:
                     continue
                 seen_ids.add(entry_id)
                 raw_entries.append(dict(entry))
@@ -234,15 +243,21 @@ def ingest():
 
     gcs_uri = write_raw_to_gcs(raw_entries)
 
+    newly_processed_ids: set[str] = set()
     published = 0
     errors = 0
+
     for mapped in mapped_entries:
         try:
             publish_event(mapped)
+            newly_processed_ids.add(mapped["id"])
             published += 1
         except Exception as exc:  # noqa: BLE001
             log.warning("Error publicando entrada %s: %s", mapped.get("id"), exc)
             errors += 1
+
+    if newly_processed_ids:
+        save_processed_ids(processed_ids | newly_processed_ids)
 
     log.info("Ingesta completada: %d publicados, %d errores", published, errors)
     return jsonify({

@@ -2,160 +2,168 @@ import argparse
 import json
 import logging
 import re
-from datetime import datetime
-
+from datetime import datetime, timezone
 import apache_beam as beam
-from apache_beam.io import fileio
-from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions, StandardOptions
-from apache_beam.transforms.window import FixedWindows
+from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 
+TAG_PROCESSED = 'processed'
+TAG_DEADLETTER = 'dead_letter'
 
-class ValidateAndNormalizeDoFn(beam.DoFn):
-    OUTPUT_TAG_DEAD_LETTER = 'dead_letter'
-
-    def clean_html(self, raw_html):
-        if not raw_html:
-            return ""
-        return re.sub(r'<[^>]+>', '', raw_html).strip()
-
+class ProcessAndNormalizeEventFn(beam.DoFn):
+    """
+    DoFn para parsear eventos con Esquema Común y adaptarlos a BigQuery.
+    """
     def process(self, element):
+        raw_payload = element
+        data = {}
         try:
-            payload_str = element.decode('utf-8')
-            data = json.loads(payload_str)
+            if isinstance(element, bytes):
+                raw_payload = element.decode('utf-8')
 
-            source = str(data.get('source', '')).lower().strip()
-            if not source:
-                source = 'mastodon' if 'content' in data else 'news'
+            data = json.loads(raw_payload)
 
-            if source == 'mastodon':
-                if not data.get('id'):
-                    raise ValueError("Mastodon: Campo 'id' faltante")
-                tags_list = [t.get('name') for t in data.get('tags', []) if isinstance(t, dict) and t.get('name')]
-                account = data.get('account', {})
-                metrics = {
-                    'primary_count': data.get('favourites_count', 0),
-                    'secondary_count': data.get('reblogs_count', 0),
-                    'replies_count': data.get('replies_count', 0),
-                    'author_followers_count': account.get('followers_count', 0)
-                }
-                normalized_event = {
-                    'event_id': str(data['id']),
-                    'source_name': 'mastodon',
-                    'title': None,
-                    'clean_text': self.clean_html(data.get('content')),
-                    'url': data.get('url'),
-                    'language': data.get('language', 'es'),
-                    'tags': tags_list,
-                    'author_id': str(account.get('id', '')),
-                    'author_username': account.get('username'),
-                    'metrics': metrics,
-                    'published_at': data.get('created_at'),
-                    'ingested_at': datetime.utcnow().isoformat()
-                }
+            # 1. Campos obligatorios
+            event_id = str(data.get('id') or '').strip()
+            source_name = str(data.get('source') or '').strip().lower()
+            text = str(data.get('text') or '').strip()
 
-            elif source in ['news', 'rss']:
-                if not data.get('id'):
-                    raise ValueError("RSS/News: Campo 'id' faltante")
-                tags_list = [t.get('term') for t in data.get('tags', []) if isinstance(t, dict) and t.get('term')]
-                comments_count = int(data.get('slash_comments', 0)) if str(data.get('slash_comments', '0')).isdigit() else 0
-                metrics = {
-                    'primary_count': 0,
-                    'secondary_count': comments_count,
-                    'replies_count': comments_count,
-                    'author_followers_count': None
-                }
-                normalized_event = {
-                    'event_id': str(data['id']),
-                    'source_name': 'news',
-                    'title': data.get('title'),
-                    'clean_text': data.get('summary', '').strip() if data.get('summary') else None,
-                    'url': data.get('link') or data.get('id'),
-                    'language': 'es',
-                    'tags': tags_list,
-                    'author_id': None,
-                    'author_username': None,
-                    'metrics': metrics,
-                    'published_at': data.get('published'),
-                    'ingested_at': datetime.utcnow().isoformat()
-                }
-            else:
-                raise ValueError(f"Fuente no soportada: {source}")
+            if not event_id or not source_name or not text:
+                raise ValueError(f"Campos obligatorios faltantes (id, source, text): {data}")
 
-            yield normalized_event
+            # 2. Manejo estricto de Fechas UTC (ISO-8601 con 'Z')
+            now_utc = datetime.now(timezone.utc)
+            ingested_at = now_utc.strftime('%Y-%m-%d %H:%M:%S.%f') + ' UTC'
+
+            raw_date = data.get('created_at') or data.get('published_at')
+            published_at = now_utc.strftime('%Y-%m-%d %H:%M:%S UTC')
+            
+            if raw_date:
+                try:
+                    clean_date = str(raw_date).replace('Z', '+00:00')
+                    dt = datetime.fromisoformat(clean_date)
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=timezone.utc)
+                    published_at = dt.astimezone(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
+                except Exception:
+                    pass
+
+            # 3. Metadatos
+            title = str(data.get('title') or '').strip()
+            if not title:
+                title = text[:80] + ('...' if len(text) > 80 else '')
+
+            url = str(data.get('url') or '').strip()
+            language = str(data.get('language') or 'unknown').strip()
+
+            # 4. Normalización de Tags (ARRAY<STRING>)
+            raw_tags = data.get('tags', [])
+            tags = [str(t).strip() for t in raw_tags if t] if isinstance(raw_tags, list) else []
+
+            # 5. Autor
+            author_id = str(data.get('author_id') or '').strip()
+            author_username = str(data.get('author_name') or data.get('author_username') or '').strip()
+
+            # 6. Métricas (RECORD)
+            engagement = data.get('engagement', {}) if isinstance(data.get('engagement'), dict) else {}
+            metrics_data = data.get('metrics', {}) if isinstance(data.get('metrics'), dict) else {}
+
+            metrics = {
+                'likes': int(engagement.get('likes', metrics_data.get('likes', 0)) or 0),
+                'shares': int(engagement.get('reblogs', metrics_data.get('shares', 0)) or 0),
+                'comments': int(engagement.get('replies', metrics_data.get('comments', 0)) or 0)
+            }
+
+            # 7. Registro estructurado para BQ
+            processed_record = {
+                'event_id': event_id,
+                'source_name': source_name,
+                'title': title[:500],
+                'clean_text': text,
+                'url': url,
+                'language': language,
+                'tags': tags,
+                'author_id': author_id,
+                'author_username': author_username,
+                'metrics': metrics,
+                'published_at': published_at,
+                'ingested_at': ingested_at
+            }
+
+            yield beam.pvalue.TaggedOutput(TAG_PROCESSED, processed_record)
 
         except Exception as e:
-            logging.error(f"Error procesando mensaje: {str(e)}")
-            yield beam.pvalue.TaggedOutput(
-                self.OUTPUT_TAG_DEAD_LETTER,
-                {
-                    'raw_payload': element.decode('utf-8', errors='ignore'),
-                    'error_message': str(e),
-                    'failed_at': datetime.utcnow().isoformat()
-                }
-            )
-
-
-# Función con 1 solo parámetro obligatorio 'element' (Fix TypeError)
-def gcs_destination_fn(element):
-    try:
-        data = json.loads(element.decode('utf-8'))
-        source = str(data.get('source', 'unknown')).lower().strip()
-        if source not in ['mastodon', 'news', 'rss']:
-            source = 'mastodon' if 'content' in data else 'news'
-    except Exception:
-        source = 'unknown'
-
-    now = datetime.utcnow()
-    return f"source={source}/year={now.year}/month={now.month:02d}/day={now.day:02d}"
+            logging.warning(f"Error procesando evento, enviando a DLQ: {e}")
+            
+            now_utc = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
+            dead_letter_record = {
+                'event_id': str(data.get('id', 'unknown')) if isinstance(data, dict) else 'unknown',
+                'source_name': str(data.get('source', 'unknown')) if isinstance(data, dict) else 'unknown',
+                'raw_payload': raw_payload if isinstance(raw_payload, str) else str(raw_payload),
+                'error_message': str(e),
+                'failed_at': now_utc
+            }
+            yield beam.pvalue.TaggedOutput(TAG_DEADLETTER, dead_letter_record)
 
 
 def run(argv=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--subscription', required=True, help='Suscripcion PubSub de entrada')
-    parser.add_argument('--output_table', required=True, help='Tabla destino BigQuery para eventos')
-    parser.add_argument('--deadletter_table', required=True, help='Tabla destino BigQuery para errores')
-    parser.add_argument('--raw_gcs_bucket', required=True, help='Ruta gs:// del bucket raw')
+    parser.add_argument('--input_subscription', required=True, help='Suscripción de PubSub')
+    parser.add_argument('--output_table', required=True, help='Tabla BigQuery Procesados')
+    parser.add_argument('--deadletter_table', required=True, help='Tabla BigQuery DLQ')
+    parser.add_argument('--raw_bucket_path', required=True, help='Prefijo GCS para datos Raw')
 
     known_args, pipeline_args = parser.parse_known_args(argv)
 
     pipeline_options = PipelineOptions(pipeline_args)
     pipeline_options.view_as(SetupOptions).save_main_session = True
-    pipeline_options.view_as(StandardOptions).streaming = True
 
     with beam.Pipeline(options=pipeline_options) as p:
-        # 1. Leer de Pub/Sub (Mensaje binario crudo)
-        raw_messages = p | "ReadFromPubSub" >> beam.io.ReadFromPubSub(subscription=known_args.subscription)
+        # 1. Lectura de Pub/Sub
+        raw_messages = (
+            p 
+            | "ReadFromPubSub" >> beam.io.ReadFromPubSub(subscription=known_args.input_subscription)
+        )
 
-        # 2. Persistir EL DATO CRUDO en Cloud Storage Raw (Fix de arquitectura Bronze)
-        (
+        # 2. Respaldo Raw en GCS
+        now = datetime.now(timezone.utc)
+        path_prefix = f"{known_args.raw_bucket_path.rstrip('/')}/year={now.year}/month={now.strftime('%m')}/day={now.strftime('%d')}/raw_events"
+
+        _ = (
             raw_messages
-            | "WindowRaw" >> beam.WindowInto(FixedWindows(300))
-            | "WriteToGCSRaw" >> fileio.WriteToFiles(
-                path=f"{known_args.raw_gcs_bucket.rstrip('/')}/",
-                destination=gcs_destination_fn,
-                file_naming=fileio.default_file_naming(prefix="raw_events", suffix=".json")
+            | "DecodeToString" >> beam.Map(lambda x: x.decode('utf-8') if isinstance(x, bytes) else str(x))
+            | "WriteRawToGCS" >> beam.io.WriteToText(
+                path_prefix,
+                file_name_suffix='.ndjson'
             )
         )
 
-        # 3. Validar y Normalizar
-        processed_results = raw_messages | "ValidateAndNormalize" >> beam.ParDo(
-            ValidateAndNormalizeDoFn()
-        ).with_outputs(ValidateAndNormalizeDoFn.OUTPUT_TAG_DEAD_LETTER, main='valid_events')
-
-        # 4. Escritura en BigQuery (Analítica)
-        processed_results.valid_events | "WriteToBQ" >> beam.io.WriteToBigQuery(
-            table=known_args.output_table,
-            write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-            create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER
+        # 3. Transformación y Validación
+        results = (
+            raw_messages
+            | "ProcessAndNormalize" >> beam.ParDo(ProcessAndNormalizeEventFn()).with_outputs(
+                TAG_DEADLETTER, TAG_PROCESSED
+            )
         )
 
-        # 5. Errores a BigQuery (Dead Letter Queue)
-        processed_results[ValidateAndNormalizeDoFn.OUTPUT_TAG_DEAD_LETTER] | "WriteDeadLetterToBQ" >> beam.io.WriteToBigQuery(
-            table=known_args.deadletter_table,
-            write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-            create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER
+        # 4. Escritura en BigQuery (Tabla Procesados)
+        _ = (
+            results[TAG_PROCESSED]
+            | "WriteProcessedToBQ" >> beam.io.WriteToBigQuery(
+                table=known_args.output_table,
+                write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+                create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER
+            )
         )
 
+        # 5. Escritura en BigQuery (Tabla Dead Letter)
+        _ = (
+            results[TAG_DEADLETTER]
+            | "WriteDeadLetterToBQ" >> beam.io.WriteToBigQuery(
+                table=known_args.deadletter_table,
+                write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+                create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER
+            )
+        )
 
 if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)

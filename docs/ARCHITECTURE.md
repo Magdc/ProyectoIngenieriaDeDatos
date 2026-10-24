@@ -1,9 +1,14 @@
 # TrendAnalyzer · ARCHITECTURE
 
 > Documento maestro de arquitectura, contratos y plan de trabajo.
-> **Versión 2.2 · 17 oct 2026** · Las fuentes en streaming pasan a ser **Reddit, Facebook e Instagram** y el texto lo produce un **generador de comentarios en Python** (`marca,comentario`), en lugar de los datasets de emociones en inglés de la v2.1.
+> **Versión 2.7 · 17 oct 2026** · Las fuentes en streaming pasan a ser **Reddit, Facebook e Instagram** y el texto lo produce un **generador de comentarios en Python** (`marca,comentario`), en lugar de los datasets de emociones en inglés de la v2.1.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 > **v2.1:** cada fase y lote queda asociado a sus historias de usuario (`HU.md`, formato HU-000). Ver §7 y la matriz de trazabilidad §7.1. **v2.2:** resumen de cambios en §1.5; las HU afectadas por el cambio de fuentes se señalan en §7.1.
+> **v2.3:** respuestas de Fase 0 registradas en §9 (marcas, región AWS, NLP, fuentes), y análisis del script real del generador en §3.2.1.
+> **v2.4:** decisiones adoptadas (ADR-12 a ADR-14), parámetros operativos (§5.12) y tres HU nuevas: HU-046 (bootstrap), HU-047 (entorno local) y HU-048 (prueba de humo E2E). Ahora son 48 HU.
+> **v2.5:** cuentas e IDs reales registrados (§5.1), canal de alertas por correo (§5.12) y responsable `owner=alejandro`.
+> **v2.6:** estructura real del repositorio (`docs/` + `project/`, §6 y §1.9), diagrama `.drawio` actualizado y README alineado.
+> **v2.7:** `project/contracts/` entregado (Lote 0.1, HU-001) y decisiones que §5 no fijaba: Parquet plano, particiones de Raw/Trusted, `avg_sentiment` con signo (§1.10).
 
 ---
 
@@ -61,7 +66,7 @@ El README menciona **Firestore, Cloud SQL, Neptune y Dataplex**, que **no están
 
 ### 1.4 Estado de `README.md`
 
-Actualizado en v2.2: tabla de fuentes (Reddit/Facebook/Instagram), generador de comentarios, arquitectura, stack, estructura del repo y notas. **Pendiente:** actualizar `LocalContext/trend_analyzer_multicloud.drawio` según §1.2 (Lote 0.1).
+Actualizado en v2.6: tabla de fuentes, generador de comentarios y decisiones adoptadas, entornos, stack, estructura del repo (`docs/` + `project/`), estado por fases y *quick start*. El diagrama `docs/trend_analyzer_multicloud.drawio` ya refleja la v2.5 (§1.2 aplicado).
 
 ### 1.5 Resumen de cambios v2.1 → v2.2
 
@@ -78,6 +83,54 @@ Actualizado en v2.2: tabla de fuentes (Reddit/Facebook/Instagram), generador de 
 | ADR | — | ADR-01 y ADR-05 actualizados; **ADR-11** nuevo |
 
 `schema_version` se mantiene en `"1.0"` porque ningún componente consume aún el contrato (todo está ⬜ en §10). Si ya existe código que lo use, subir a `"1.1"` y migrar.
+
+### 1.6 Cambios v2.2 → v2.3
+
+| Área | Cambio |
+|---|---|
+| Marcas v1 | **Postobón (propia), Pepsi y Sprite (competidores)**. El script real también trae CocaCola y Colombiana: quedan fuera de v1 (§3.2.1). |
+| Región AWS | `us-east-1` confirmada. Proyecto y región de GCP siguen sin definir; `infra/` está vacío (partimos de cero). |
+| Fuentes y NLP | Reddit, Facebook e Instagram confirmadas; ADR-05 (RoBERTuito) y su licencia académica aceptados. |
+| Generador | Analizado el script real (§3.2.1): hay 5 puntos a resolver antes del Lote 1.1, entre ellos el mapeo `categoria → sentimiento` y los hashtags que el script ya inserta en el texto. |
+| Contratos | Sin cambios en §5; `schema_version` sigue en `"1.0"`. |
+
+### 1.7 Cambios v2.3 → v2.4
+
+| Área | Cambio |
+|---|---|
+| Decisiones | **ADR-12:** región de GCP `us-east1`. **ADR-13:** mapeo `categoria → sentimiento` (incluye la categoría nueva `informativo`). **ADR-14:** estado remoto de Terraform. ADR-02 (Cloud Run) queda adoptado por defecto. |
+| Generador | Los 7 hallazgos de §3.2.1 pasan de propuesta a decisión y se incorporan a HU-008. |
+| HU nuevas | **HU-046** Bootstrap de Terraform (Lote 1.0) · **HU-047** Entorno local con emulador de Pub/Sub (Lote 1.5) · **HU-048** Prueba de humo end-to-end (Lote 5.4). |
+| Parámetros operativos | Nueva §5.12: ventanas tardías, arranque en frío del z-score, cooldown de alertas, zona horaria, retención, idempotencia de Glue, contratos en CI. |
+| Riesgos | Dos nuevos: infraestructura desde cero y falsas alertas al arrancar. |
+
+### 1.8 Cambios v2.4 → v2.5
+
+| Área | Cambio |
+|---|---|
+| Cuentas | GCP `project-2911bf21-1f97-41aa-ac6` (región `us-east1`, facturación con crédito a cargo de Alejandro Sepulveda) y AWS `648617469176` (`us-east-1`). |
+| Alertas | Canal por **correo**: suscriptor de `ta-alerts` → log estructurado → alerta basada en logs de Cloud Monitoring con canal de correo (sin SMTP ni secretos). |
+| Etiquetas | `owner=alejandro` en todos los recursos. |
+| Riesgo nuevo | Cuotas de la cuenta de crédito de GCP pueden limitar Dataflow. |
+
+### 1.9 Cambios v2.5 → v2.6
+
+| Área | Cambio |
+|---|---|
+| Repositorio | Los documentos viven en `docs/` y el código en `project/` (§6). Las rutas de este documento (`src/`, `infra/`, `contracts/`, `scripts/`) son relativas a `project/`. |
+| CI/CD | Los workflows de GitHub Actions deben estar en `.github/workflows/` en la **raíz** del repositorio y usar `working-directory: project`. Lo mismo aplica a `.pre-commit-config.yaml` y `.gitignore`. |
+| Diagrama | `docs/trend_analyzer_multicloud.drawio` actualizado a la v2.5 (HU-002) y exportado a `docs/trend_analyzer_multicloud.jpg`. |
+| README | Reescrito con entornos, marcas, decisiones del generador, estado por fases y estructura. |
+
+### 1.10 Cambios v2.6 → v2.7
+
+| Área | Cambio |
+|---|---|
+| Contratos | `project/contracts/` con 6 JSON Schemas (envelope, envelope enriquecido, 3 payloads, atributos Pub/Sub), DDL de BigQuery (4 tablas) y Athena (Raw, Trusted, 9 tablas Curated), 41 ejemplos y 16 pruebas. Detalle en `project/contracts/README.md`. |
+| §5.4 / §5.7 | Los Parquet de `enriched/` y `raw/` usan el **esquema plano** de `posts_enriched` (§5.5), con `payload` como JSON en string. |
+| §5.7 | Raw se proyecta por `origin/source/dt/hr` (claves `part_*`; el histórico también escribe `hr`). Trusted por `source/dt` con `dt = DATE(event_time)` UTC y columna `text_clean`. |
+| §5.5 | `avg_sentiment` = media con signo en [-1, 1]. `dq_results` y Curated con columnas definidas. |
+| §5.2 | `sim.chaos` ∈ `duplicate\|late\|null_fields\|malformed`. Pendiente: forma de `hashtags[]` (con/sin `#`). |
 
 ---
 
@@ -182,14 +235,28 @@ Lo que se observa en los ejemplos: español coloquial colombiano, jerga, abrevia
 | 6 | Quitar (si los tiene): `sleep`, bucles infinitos, `print` o escritura directa a archivo, pesos de marca fijos, semilla global | El ritmo, el estado y la selección de marca los controla el simulador | Requerido |
 | 7 | Mezclar longitudes (frase corta y 2–3 frases) y conservar el ruido (typos, jerga, emojis) | Los posts de Reddit usan la primera frase como título (§3.8); el ruido ejercita la limpieza en Trusted | Opcional |
 
-**Marcas** (`src/simulator/config/brands.yaml`). La clave canónica es la que viaja en `brands[]`; hay que registrar cada marca que produzca el generador:
+#### 3.2.1 Estado del script real (`generar_comentarios.py`, v3 con plantillas ampliadas)
+
+Ya cumple buena parte del cambio #5 (4 categorías, plantillas generativas, ruido de redes) y su función `construir(rng, marca, cat, …)` ya recibe `rng`, marca y categoría, por lo que se parece mucho a la función pura de los cambios #1 y #2. Puntos que resuelve el Lote 1.1 (HU-008), con la decisión adoptada:
+
+| # | Hallazgo | Decisión (adoptada, ADR-13) |
+|---|---|---|
+| 1 | `MARCAS` trae 5 marcas (Postobon, CocaCola, Sprite, Pepsi, Colombiana); v1 usa 3. | Leer la lista de `brands.yaml` (`postobon`, `pepsi`, `sprite`). CocaCola y Colombiana quedan fuera de v1 y se pueden añadir después. Clave canónica sin tilde (`postobon`), `display` con tilde. |
+| 2 | El script no tiene *sentimiento*, solo `categoria` ∈ `gusto\|asco\|nostalgia\|adiccion`. | `gusto → positive`, `asco → negative`, `informativo → neutral` (categoría nueva, fila 3), `nostalgia` y `adiccion → null` (ambiguas, sin ground truth). El parámetro `sentimiento` de `generate()` restringe la categoría (`positive → gusto`, `negative → asco`, `neutral → informativo`). |
+| 3 | No hay comentarios neutros/informativos ni con dos marcas. Sin neutral la precisión del NLP se mide en solo 2 clases. | Añadir una categoría `informativo` (→ `neutral`) y plantillas comparativas ("Pepsi vs Postobón"). Cambio #5, incluido en HU-008 (mínimo 15 plantillas informativas y 15 comparativas). |
+| 4 | `ruido_texto` pasa a minúsculas/mayúsculas, quita tildes y mete *typos* en palabras de más de 4 letras: puede dañar el nombre de la marca ("Postobón" → "Pstoobón"). | `brands[]` = marca elegida (se conoce de antemano) + otras detectadas por alias **normalizados** (sin tildes, sin mayúsculas). Proteger los tokens de marca del *typo*. |
+| 5 | Usa un `random.Random(seed)` secuencial (el resultado depende del orden) y `--unico` usa `hash()` de Python (varía entre procesos). | Un `Random(f"{seed}\|{fuente}\|{seq}")` por evento (§3.6). Para unicidad en batch usar `hashlib`. El modo en línea no exige unicidad (§3.5). |
+| 6 | Los cierres ya incluyen hashtags (`#Colombia`, `#<marca>`, `#Nostalgia`…), contrario a lo que asume §3.8. | Extraer `hashtags[]` del texto con regex; el simulador solo añade los que falten según la probabilidad por red (§3.8). |
+| 7 | CSV en `utf-8-sig`, `-n` por defecto 20 (el docstring dice 2.000.000) y salida solo `marca,comentario[,categoria]`. | `scripts/generate_comments.py` conserva el CLI; la salida pasa a `Comentario(marca, texto, categoria, sentimiento)` y el CSV agrega `sentimiento`. |
+
+**Marcas** (`src/simulator/config/brands.yaml`). La clave canónica es la que viaja en `brands[]`; hay que registrar cada marca que produzca el generador (v1: `postobon`, `pepsi`, `sprite`):
 
 ```yaml
 brands:
   postobon:
     display: "Postobón"
     aliases: ["Postobón", "Postobon"]
-    role: propia            # por confirmar (§9)
+    role: propia            # confirmado en Fase 0
     facebook_page: "Postobón (sim)"
     instagram_account: "postobon.sim"
   pepsi:
@@ -222,7 +289,7 @@ Cada comentario se publica por **una** red simulada. Las tres comparten el texto
 
 **Etiquetas de salida del NLP** (ADR-05): `sentiment_label` ∈ `negative|neutral|positive` (el modelo devuelve `NEG/NEU/POS`; se mapea) y `emotion_label` ∈ 7 clases `joy, sadness, anger, fear, disgust, surprise, neutral` (la clase neutra del modelo de emoción se mapea a `neutral`; verificar el nombre exacto de la etiqueta al integrar). El mapeo vive en `src/common/label_map.yaml`.
 
-**Ground truth:** `sim.label_sentiment` ∈ `positive|negative|neutral|null`, tomado de la columna opcional `sentimiento` del generador (cambio #3). No hay ground truth de emoción. **No se usa** como feature ni como respuesta del pipeline: solo sirve para medir la precisión del NLP (insumo para la sustentación). El sentimiento y la emoción oficiales los produce el modelo.
+**Ground truth:** `sim.label_sentiment` ∈ `positive|negative|neutral|null`, tomado de la columna opcional `sentimiento` del generador (cambio #3). Mapeo desde la categoría del script en §3.2.1 #2 (ADR-13): `nostalgia` y `adiccion` → `null`. No hay ground truth de emoción. **No se usa** como feature ni como respuesta del pipeline: solo sirve para medir la precisión del NLP (insumo para la sustentación). El sentimiento y la emoción oficiales los produce el modelo.
 
 ### 3.4 Reproducibilidad y snapshots (opcional)
 
@@ -272,7 +339,7 @@ El **texto, la marca y (opcionalmente) el sentimiento** vienen del generador. To
 | **Seguidores** | Lognormal por usuario (estable). Facebook: amigos/seguidores; Instagram: seguidores; Reddit: aproximación (karma). |
 | **Engagement** | Reddit: `score` / `upvote_ratio` / `num_comments`. Facebook: reacciones (total y desglose `like/love/haha/wow/sad/angry`), `shares_count`, `comments_count`. Instagram: `like_count`, `comments_count` (sin shares). Escalado por seguidores, con leve impulso para sentimiento extremo y, en Facebook, un sesgo leve del desglose de reacciones según `label_sentiment` cuando existe. Se interpreta como *snapshot* al momento de la recolección. |
 | **Fechas** | `event_time` = instante de emisión − lag aleatorio (0–5 s). `ingest_time` = instante de publicación. Siempre UTC. |
-| **Hashtags** | El texto del generador no trae. El simulador añade 1–2 hashtags derivados de la marca y del sector (`#Postobon`, `#Colombia`) con probabilidad por red (por defecto Instagram ~60%, Facebook ~15%, Reddit ~0%), los agrega al final del texto y los registra en `hashtags[]`. Configurable en `sim.yaml`. |
+| **Hashtags** | El generador ya inserta algunos en los cierres (`#Colombia`, `#<marca>`…): se extraen del texto con regex a `hashtags[]` (§3.2.1 #6). El simulador añade 1–2 más derivados de la marca y del sector (`#Postobon`, `#Colombia`) con probabilidad por red (por defecto Instagram ~60%, Facebook ~15%, Reddit ~0%) solo si faltan, los agrega al final del texto y los registra en `hashtags[]`. Configurable en `sim.yaml`. |
 | **Subreddit / página / cuenta** | Reddit: lista de subreddits. Facebook: `facebook_page` de la marca. Instagram: `instagram_account` de la marca y `media_type` aleatorio. URLs ficticias (`sim.local`). |
 | **`kind` y `parent_id`** | Según §3.3. Un `comment` de Reddit o Facebook lleva el `parent_id` de un post reciente simulado. |
 
@@ -323,14 +390,15 @@ Hay que poder apagarlo para medir la línea base de los KPIs.
 | Variable | Valor por defecto / ejemplo | Usada por |
 |---|---|---|
 | `ENV` | `dev` | todos |
-| `GCP_PROJECT` | *(por confirmar, ver `terraform.tfvars`)* | simulador, Dataflow, exportador |
-| `GCP_REGION` | `us-central1` *(confirmar)* | idem |
-| `AWS_REGION` | `us-east-1` *(confirmar)* | exportador, loader, Glue |
+| `GCP_PROJECT` | `project-2911bf21-1f97-41aa-ac6` *(confirmado)* | simulador, Dataflow, exportador |
+| `GCP_REGION` | `us-east1` *(ADR-12)* | idem |
+| `AWS_REGION` | `us-east-1` *(confirmada)* | exportador, loader, Glue |
+| `AWS_ACCOUNT_ID` | `648617469176` *(confirmado; va en `terraform.tfvars`, no en el código)* | Terraform, exportador, loader |
 | `TA_HMAC_SECRET_NAME` | `ta-hmac-key` | Dataflow, loader |
 | `SIM_SEED` | `7` | simulador, loader histórico |
 | `SIM_CHAOS_ENABLED` | `false` | simulador (§3.9) |
 
-**Nombres:** prefijo `ta-` en todos los recursos. Labels/tags: `project=trend-analyzer`, `env=dev`, `owner=<persona>`.
+**Nombres:** prefijo `ta-` en todos los recursos. Labels/tags: `project=trend-analyzer`, `env=dev`, `owner=alejandro`.
 **Código:** Python 3.11, type hints, `pytest`, logs JSON a stdout, configuración por env vars + YAML, cero secretos en el repo.
 **Terraform:** ≥1.6, un módulo por recurso lógico en `infra/{gcp,aws}/modules/`, entornos en `infra/{gcp,aws}/environments/dev/`. Cada módulo expone `outputs.tf` (§5.9).
 **Tiempo:** todo en **UTC**, ISO-8601 con milisegundos y `Z`.
@@ -460,7 +528,7 @@ gs://{GCP_PROJECT}-ta-lake/
   export-state/watermark.json
 ```
 
-Particiones por **fecha/hora de proceso**. `raw/` conserva el handle simulado (dato sintético, solo para auditoría y replay; acceso restringido). **Solo `enriched/` sale hacia AWS.**
+Particiones por **fecha/hora de proceso**. El Parquet de `enriched/` usa el **esquema plano** de `posts_enriched` (§5.5): `author.user_hash` → `user_hash`, `author.followers` → `followers`, `sim.label_sentiment` → `label_sentiment`, `brands[0]` → `brand_primary`, `payload` como JSON en string. `raw/` conserva el handle simulado (dato sintético, solo para auditoría y replay; acceso restringido). **Solo `enriched/` sale hacia AWS.**
 
 ### 5.5 BigQuery
 
@@ -494,7 +562,7 @@ Dataset: `ta_stream` (ubicación = región de GCP).
 | `window_start`, `window_end` | TIMESTAMP |
 | `brand`, `source` | STRING |
 | `n_posts`, `n_negative`, `n_positive` | INT64 |
-| `avg_sentiment` | FLOAT64 |
+| `avg_sentiment` | FLOAT64 (media con signo en [-1, 1]: positivo +score, negativo −score, neutro 0) |
 | `emotion_counts` | JSON |
 | `zscore_volume`, `zscore_sentiment` | FLOAT64 (vs. baseline móvil) |
 | `is_alert` | BOOL |
@@ -525,6 +593,10 @@ s3://…-lake/
 ```
 
 Formato: **Parquet + Snappy**. Particiones registradas con **partition projection** en Athena (sin crawlers, más simple y barato).
+
+- **Raw** (`ta_raw.posts_raw`): rutas `raw/origin=…/source=…/dt=…/hr=…/`; también el histórico escribe `hr`. Claves de partición `part_origin`, `part_source`, `part_dt`, `part_hr` (las columnas `origin` y `source` ya viajan dentro del Parquet). Columnas = las de BigQuery `posts_enriched`.
+- **Trusted** (`ta_trusted.posts`): `trusted/posts/source=…/dt=…/`, con `dt = DATE(event_time)` UTC; añade `text_clean`; `source` es partición, no columna.
+- DDL en `project/contracts/athena/`; las columnas de Curated están definidas allí.
 
 | Capa | Glue DB | Contenido |
 |---|---|---|
@@ -578,7 +650,7 @@ El código **nunca** hardcodea estos valores: los recibe como variables de entor
 | 100% anonimización | No existen columnas `handle`/`user_id`; `user_hash` con regex hex de 64 | GE + test en CI |
 | Latencia < 5 min (p95) | `process_time − event_time` en eventos no tardíos | BigQuery + Cloud Monitoring |
 | Dashboard < 3 s | Tiempo de carga con SPICE | Prueba manual documentada |
-| Precisión NLP *(extra)* | `sentiment_label` vs `label_sentiment` (solo si el generador entrega la etiqueta, §3.2 cambio #3) | notebook / dbt model |
+| Precisión NLP *(extra)* | `sentiment_label` vs `label_sentiment` (solo eventos con etiqueta; se excluyen los `null`, §3.2.1 #2) | notebook / dbt model |
 
 Resultados en BigQuery `dq_results` y `s3://…/quality/`.
 
@@ -595,41 +667,81 @@ Resultados en BigQuery `dq_results` y `s3://…/quality/`.
 | Terraform | §5.1, §5.8, §5.9 | Estado actual de `infra/` y `terraform.tfvars` (sin secretos) |
 | Dashboard | §5.7 (Curated) | Región de QuickSight |
 
+### 5.12 Parámetros operativos acordados
+
+Valores por defecto que evitan decidir en cada lote. Se ajustan aquí primero.
+
+| Tema | Valor acordado | HU |
+|---|---|---|
+| Eventos tardíos en ventanas | *Allowed lateness* de 30 min (cubre el caos de §3.9). Un evento más tardío se escribe en `posts_enriched` pero no recalcula ventanas; contador `late_events`. | HU-023 |
+| Arranque en frío del z-score | Sin baseline no hay alertas: `is_alert = false` hasta tener 60 ventanas (1 h). Opcional: sembrar el baseline con `agg_trend_daily` del histórico. | HU-023 |
+| Alertas repetidas | *Cooldown* de 15 min por marca × fuente × tipo de alerta. | HU-039 |
+| Zona horaria | Almacenamiento en UTC; dashboards en `America/Bogota`. | HU-037 |
+| Retención | GCS `raw/` y `dlq/`: 30 días · BigQuery `posts_enriched`: expiración de partición a 90 días (el histórico completo vive en S3) · S3 `athena-results/`: 7 días · Pub/Sub: 7 días. | HU-043 |
+| Idempotencia en Glue | Se sobrescriben las particiones `dt` en lugar de añadir: mismo input ⇒ mismo output. | HU-026 |
+| Contratos en CI | La salida del generador y del simulador (≥ 1.000 eventos por fuente, caos apagado) se valida contra `contracts/*.schema.json`. | HU-001, HU-041 |
+| Secretos | *Pre-commit* con `gitleaks`; `terraform.tfvars` en `.gitignore` y `terraform.tfvars.example` versionado. | HU-041, HU-046 |
+| Estado de Terraform | Remoto: GCS con versionado (GCP) y S3 con bloqueo (AWS). | HU-046 |
+| Desarrollo local | `docker-compose` con emulador de Pub/Sub + simulador + `DirectRunner`, sin credenciales. | HU-047 |
+| Canal de alertas | Correo. Un suscriptor de `ta-alerts` escribe un log estructurado (`severity=WARNING`, `alert=trend`) y una alerta basada en logs de Cloud Monitoring envía el correo mediante un canal de notificación de tipo email. Las direcciones van en `terraform.tfvars` (`alert_emails`). Sin SMTP ni secretos. | HU-039 |
+| Prueba de humo E2E | `scripts/smoke_e2e.py` sigue un evento centinela (`event_id` conocido) desde el simulador hasta `ta_curated.fact_posts` y reporta latencia por etapa. | HU-048 |
+
 ---
 
 ## 6. Estructura del repositorio (v2)
 
 ```
-.
+.                                          <- raíz del repositorio
 ├── README.md
-├── ARCHITECTURE.md                  <- este archivo
-├── HU.md                            <- historias de usuario (HU-001 a HU-045)
-├── contracts/                       <- copia legible por máquina de §5 (Fase 0)
-│   ├── envelope.v1.schema.json
-│   ├── payload.{reddit,facebook,instagram}.schema.json
-│   ├── bigquery/{posts_enriched,trend_windows,dlq_events}.sql
-│   └── athena/{posts_raw,posts,curated}.sql
-├── infra/
-│   ├── gcp/{modules,environments/dev}
-│   └── aws/{modules,environments/dev}
-├── scripts/
-│   └── generate_comments.py         <- CLI del generador: snapshots CSV / histórico (§3.2)
-├── src/
-│   ├── common/                      <- librería compartida: envelope, anonimización, NLP, label_map
-│   ├── simulator/                   <- NUEVO (reemplaza a collectors)
-│   │   ├── app.py  publisher.py  state.py
-│   │   ├── generator/comment_generator.py   <- script de comentarios (marca, comentario) adaptado
-│   │   ├── enrich/{users,engagement,brands,chaos}.py
-│   │   ├── config/{sim,brands}.yaml
-│   │   ├── tests/  Dockerfile  requirements.txt
-│   ├── streaming/                   <- Dataflow (Beam)
-│   ├── historical/                  <- full load (usa el mismo generador)
-│   ├── exporter/                    <- gcs-to-s3
-│   ├── lakehouse/{glue_jobs,dbt}/
-│   ├── quality/                     <- Great Expectations
-│   └── collectors/                  <- LEGADO: conectores reales Mastodon/Reddit/RSS (no se despliega)
-└── .github/workflows/
+├── .gitignore                             <- incluye terraform.tfvars
+├── .pre-commit-config.yaml                <- gitleaks, formato (HU-041)
+├── .github/workflows/                     <- CI/CD; debe estar en la raíz y usar working-directory: project
+│
+├── docs/
+│   ├── ARCHITECTURE.md                    <- este archivo
+│   ├── HU.md                              <- historias de usuario (HU-001 a HU-048)
+│   ├── GLOSSARY.md                        <- glosario del proyecto
+│   ├── NOTAS.md                           <- notas de trabajo
+│   ├── trend_analyzer_multicloud.drawio   <- diagrama editable (v2.5)
+│   └── trend_analyzer_multicloud.jpg      <- exportación del diagrama
+│
+└── project/                               <- código, contratos e infraestructura (las rutas de este documento son relativas a aquí)
+    ├── docker-compose.yml                 <- entorno local: emulador Pub/Sub + simulador (HU-047)
+    ├── contracts/                         <- copia legible por máquina de §5 (Fase 0, entregado en v2.7)
+    │   ├── README.md  requirements.txt
+    │   ├── envelope.v1.schema.json
+    │   ├── envelope.enriched.v1.schema.json
+    │   ├── pubsub.attributes.schema.json
+    │   ├── payload.{reddit,facebook,instagram}.schema.json
+    │   ├── bigquery/{posts_enriched,trend_windows,dlq_events}.sql
+    │   ├── athena/{posts_raw,posts,curated}.sql
+    │   ├── bigquery/dq_results.sql
+    │   ├── examples/{valid,invalid}/
+    │   └── tests/test_contracts.py
+    ├── infra/
+    │   ├── README.md                      <- validación local de Terraform
+    │   ├── gcp/{modules,environments/dev}
+    │   └── aws/{modules,environments/dev}
+    ├── scripts/
+    │   ├── generate_comments.py           <- CLI del generador: snapshots CSV / histórico (§3.2)
+    │   └── smoke_e2e.py                   <- prueba de humo extremo a extremo (HU-048)
+    └── src/
+        ├── common/                        <- librería compartida: envelope, anonimización, NLP, label_map
+        ├── simulator/                     <- NUEVO (reemplaza a collectors)
+        │   ├── app.py  publisher.py  state.py
+        │   ├── generator/comment_generator.py   <- script de comentarios (marca, comentario) adaptado
+        │   ├── enrich/{users,engagement,brands,chaos}.py
+        │   ├── config/{sim,brands}.yaml
+        │   └── tests/  Dockerfile  requirements.txt
+        ├── streaming/                     <- Dataflow (Beam)
+        ├── historical/                    <- full load (usa el mismo generador)
+        ├── exporter/                      <- gcs-to-s3
+        ├── lakehouse/{glue_jobs,dbt}/
+        ├── quality/                       <- Great Expectations
+        └── collectors/                    <- LEGADO: conectores reales Mastodon/Reddit/RSS (no se despliega)
 ```
+
+**Nota de rutas:** en `docs/` se documenta; en `project/` se construye. Un lote entrega archivos bajo `project/` (p. ej. `project/src/simulator/app.py`); los workflows de CI viven en `.github/workflows/` de la raíz.
 
 `src/common/` evita duplicar lógica: el **mismo** código de anonimización y NLP lo usan Dataflow y el loader histórico (así stream e histórico son comparables).
 
@@ -647,17 +759,19 @@ Cada **lote** es una petición mía de tamaño razonable: yo entrego un conjunto
 **HU cubiertas:** HU-001, HU-002, HU-003
 
 **Objetivo:** congelar decisiones y contratos.
-- **Lote 0.1** → `contracts/*`, README actualizado (hecho en v2.2), especificación de cambios del diagrama v2.2 (o el `.drawio` editado). · **HU:** HU-001, HU-002
+- **Lote 0.1** → `contracts/*`, README actualizado (hecho en v2.6), `docs/trend_analyzer_multicloud.drawio` actualizado a la v2.5 (hecho en v2.6). · **HU:** HU-001, HU-002
 - **Ustedes me dan:** respuestas a §9 (preguntas abiertas), estado real de `infra/` (qué ya está aplicado), proyecto GCP y región.
 - **Listo cuando:** ADRs aprobados y contratos en el repo.
 
 ### Fase 1 · Simulador — 16–19 oct (A, con M para infra)
-**HU cubiertas:** HU-004, HU-008, HU-009, HU-010, HU-011, HU-012, HU-013, HU-014, HU-015, HU-016, HU-017
+**HU cubiertas:** HU-004, HU-008, HU-009, HU-010, HU-011, HU-012, HU-013, HU-014, HU-015, HU-016, HU-017, HU-046, HU-047
 
+- **Lote 1.0** → *bootstrap* de Terraform: configuración del proyecto GCP existente (región `us-east1`), APIs habilitadas, estado remoto en GCS y S3, `terraform.tfvars.example`, presupuesto mínimo. · **HU:** HU-046
 - **Lote 1.1** → `src/common/` (envelope, hashing, label_map) + adaptación del generador de comentarios (§3.2: función pura con `rng`, parámetros `marca`/`sentimiento`, marca canónica) y `scripts/generate_comments.py`. · **HU:** HU-008, HU-009
 - **Lote 1.2** → núcleo del simulador (cursor, selección de marca con pesos, usuarios, engagement por red, hashtags, caos, publisher asyncio) + tests unitarios (incluye test de determinismo: misma semilla + `seq` ⇒ mismo `event_id` y mismo texto; y test de reanudación del cursor). · **HU:** HU-010, HU-011, HU-012, HU-013, HU-014, HU-015
 - **Lote 1.3** → `Dockerfile` + Terraform GCP: Cloud Run `min=max=1` sin throttling, topics, suscripciones, DLQ, buckets, service accounts. · **HU:** HU-004, HU-016
-- **Lote 1.4** → script de verificación: se suscribe y reporta tasa de mensajes, ids únicos y `cycle`. · **HU:** HU-017
+- **Lote 1.4** → script de verificación: se suscribe y reporta tasa de mensajes, ids únicos y `seq`. · **HU:** HU-017
+- **Lote 1.5** → entorno local: `docker-compose` con emulador de Pub/Sub, simulador y consumidor de validación contra los schemas. · **HU:** HU-047
 - **Listo cuando:** los 3 topics reciben ~0.5 msg/s cada uno, el cursor sobrevive a un reinicio, y el test de determinismo pasa.
 
 ### Fase 2 · Streaming en GCP — 19–22 oct (C)
@@ -686,11 +800,12 @@ Cada **lote** es una petición mía de tamaño razonable: yo entrego un conjunto
 - **Listo cuando:** `SELECT` en Athena sobre `ta_curated.fact_posts` devuelve datos de stream e histórico.
 
 ### Fase 5 · Calidad y gobernanza — 22–27 oct (A, en paralelo)
-**HU cubiertas:** HU-031, HU-032, HU-033, HU-034, HU-035, HU-036
+**HU cubiertas:** HU-031, HU-032, HU-033, HU-034, HU-035, HU-036, HU-048
 
 - **Lote 5.1** → *profiling* (US-14) sobre Raw/Trusted. · **HU:** HU-031
 - **Lote 5.2** → suites de Great Expectations + tests dbt según §5.10; escritura en `dq_results`. · **HU:** HU-032, HU-033
 - **Lote 5.3** → catálogo (descripciones de tablas/columnas en Glue), documento de linaje (dbt docs + diagrama), mapeo DAMA-DMBOK y nota Ley 1581 (los datos son sintéticos; igualmente se documenta el tratamiento). · **HU:** HU-034, HU-035, HU-036
+- **Lote 5.4** → `scripts/smoke_e2e.py`: prueba de humo del flujo completo con evento centinela, latencia por etapa y evidencia para el informe. · **HU:** HU-048
 
 > ### ★ Entrega Sprint 2 — 28 oct
 > Debe poder demostrarse: simulador → Pub/Sub → Dataflow → BigQuery; exportación a S3; Glue Raw→Trusted→Curated; consulta en Athena; reportes de calidad; catálogo y linaje documentados.
@@ -723,10 +838,12 @@ Cada **lote** es una petición mía de tamaño razonable: yo entrego un conjunto
 |---|---|---|---|
 | 0 | 0.1 | HU-001, HU-002 | Todos |
 | 0 | — | HU-003 | Todos |
+| 1 | 1.0 | HU-046 | M |
 | 1 | 1.1 | HU-008, HU-009 | A |
 | 1 | 1.2 | HU-010, HU-011, HU-012, HU-013, HU-014, HU-015 | A |
 | 1 | 1.3 | HU-004, HU-016 | M + A |
 | 1 | 1.4 | HU-017 | A |
+| 1 | 1.5 | HU-047 | A |
 | 2 | 2.1 | HU-018, HU-019 | C |
 | 2 | 2.2 | HU-020, HU-021 | C |
 | 2 | 2.3 | HU-022 | C |
@@ -740,6 +857,7 @@ Cada **lote** es una petición mía de tamaño razonable: yo entrego un conjunto
 | 5 | 5.1 | HU-031 | A |
 | 5 | 5.2 | HU-032, HU-033 | A |
 | 5 | 5.3 | HU-034, HU-035, HU-036 | A |
+| 5 | 5.4 | HU-048 | A |
 | 6 | 6.1 | HU-037, HU-038 | C |
 | 6 | 6.2 | HU-039 | C |
 | 6 | 6.3 | HU-040 | A |
@@ -748,11 +866,11 @@ Cada **lote** es una petición mía de tamaño razonable: yo entrego un conjunto
 | 7 | 7.3 | HU-043 | M |
 | 8 | 8.1 | HU-044, HU-045 | Todos |
 
-**Cobertura:** 45 HU (HU-001 a HU-045), cada una asignada a exactamente un lote o a la Fase 0. HU de Sprint 2: HU-001 a HU-036. HU de Sprint Final: HU-037 a HU-045.
+**Cobertura:** 48 HU (HU-001 a HU-048), cada una asignada a exactamente un lote o a la Fase 0. HU de Sprint 2: HU-001 a HU-036 y HU-046 a HU-048. HU de Sprint Final: HU-037 a HU-045.
 
 **Equivalencia con las US del README:** US-10 → HU-010 · US-11 → HU-011 · US-12 → HU-012 · US-13 → HU-032 · US-14 → HU-031. *(El README v2.2 ya no presenta US-10/11/12 como conectores externos.)*
 
-> ⚠️ **Impacto v2.2 en `HU.md` (pendiente; no formó parte de esta actualización):** revisar los criterios de aceptación que mencionen datasets (TEC, GoEmotions, SemEval, DailyDialog), `prepare_datasets`, Mastodon/RSS o inglés. En particular: HU-008/HU-009 (Lote 1.1) pasan a cubrir `src/common` y la **adaptación del generador**; HU-010/011/012 eran los conectores Mastodon/Reddit/RSS (US-10/11/12) → **propuesta:** HU-010 = Facebook, HU-011 = Reddit (se conserva), HU-012 = Instagram; HU-022 (NLP) pasa a modelos en español; HU-024 (histórico) usa el generador en lugar de DailyDialog. Se actualiza `HU.md` primero y esta matriz en el mismo commit.
+> ✅ **`HU.md` alineado con la v2.2** (HU-008 a HU-014, HU-022, HU-024, HU-033 y HU-040 reescritas; HU-010 = Facebook, HU-011 = Reddit, HU-012 = Instagram).
 
 ---
 
@@ -803,6 +921,9 @@ Entrégame: archivos completos en las rutas de §6, con tests y comandos para va
 | ADR-09 | Aristas en Curated en lugar de Neptune | Neptune |
 | ADR-10 | Catálogo = Glue Data Catalog; linaje = dbt docs | Dataplex + OpenLineage |
 | ADR-11 | Generador de comentarios **integrado en el proceso del simulador** y reutilizado en batch para el histórico; la selección de marca/sentimiento la hace el simulador | Generar un CSV fijo y reproducirlo por vueltas; servicio de generación separado |
+| ADR-12 | Región de GCP **`us-east1`** (cercana a AWS `us-east-1` y a Colombia) | `us-central1` (más habitual, pero más lejos de AWS) |
+| ADR-13 | Mapeo `categoria → sentimiento`: `gusto → positive`, `asco → negative`, `informativo → neutral`, `nostalgia` y `adiccion → null` | Forzar una etiqueta a las categorías ambiguas (inflaría la precisión del NLP) |
+| ADR-14 | Estado de Terraform **remoto** (GCS y S3) desde el primer día | Estado local (se pierde y no permite CI) |
 
 ### Riesgos
 
@@ -815,30 +936,36 @@ Entrégame: archivos completos en las rutas de §6, con tests y comandos para va
 | Licencias de modelos NLP | Uso académico; verificar la licencia de cada modelo en su *model card* (los de pysentimiento se entrenaron con corpus TASS) y citarlos en el informe |
 | Modelos entrenados en tweets vs. comentarios con jerga y emojis de Reddit/Facebook/Instagram | Medir contra `label_sentiment`; declarar la limitación en el informe |
 | Generador por plantillas: baja variedad léxica y texto repetido | Ampliar plantillas (§3.2 cambio #5); medir duplicados por `event_id` y **no** por texto; reportar la diversidad léxica en el profiling |
+| Infraestructura desde cero (nada aplicado): retrasa la Fase 1 | Lote 1.0 (HU-046) primero; el simulador se desarrolla en local con el emulador (HU-047) mientras se crea el proyecto |
+| Falsas alertas al arrancar (z-score sin baseline) | `is_alert = false` hasta 60 ventanas y *cooldown* de 15 min (§5.12) |
+| Cuotas de la cuenta de crédito de GCP (p. ej. límite de vCPU) pueden limitar Dataflow con modelos pesados | Verificar cuotas en el Lote 1.0; `maxNumWorkers=1–2`; plan B: NLP en Cloud Run |
 
-### Preguntas abiertas (necesito respuesta para cerrar la Fase 0)
+### Preguntas abiertas y respuestas (Fase 0)
 
-1. ¿Cuál es el **proyecto y región de GCP** y la **región/cuenta de AWS** ya provisionados? ¿Qué parte de `infra/` ya está aplicada?
-2. ¿Aceptan **ADR-02** (Cloud Run) o prefieren VM en GCE por costo?
-3. ¿Cuál es la **empresa y las marcas simuladas**? Los ejemplos traen Postobón, Pepsi y Sprite: ¿Postobón es la marca propia y las otras son competidores? ¿Qué otras marcas o productos produce el generador? (para `brands.yaml`)
-4. ¿Confirman las **tres fuentes** (Reddit, Facebook, Instagram) y los cambios propuestos al generador (§3.2), en especial `marca`/`sentimiento` como parámetros y la columna opcional `sentimiento`? ¿Pueden compartir el script o su lista de plantillas?
-5. ¿Tienen créditos/presupuesto que permitan Dataflow encendido durante las demos?
-6. ¿Hay acceso a QuickSight en la cuenta AWS, y se verificó el conector a BigQuery?
-7. ¿Aceptan el NLP en español con RoBERTuito/pysentimiento (ADR-05) y la licencia académica de esos modelos?
+| # | Pregunta | Respuesta (17 oct) | Estado |
+|---|---|---|---|
+| 1 | Proyecto/región de GCP y cuenta/región de AWS; estado de `infra/` | AWS `us-east-1`, cuenta `648617469176`. GCP `project-2911bf21-1f97-41aa-ac6`, región `us-east1` (ADR-12), facturación con crédito a cargo de Alejandro Sepulveda. `infra/` sin nada aplicado (partimos de cero). | 🟨 Falta verificar facturación/cuotas y los accesos del equipo (HU-046) |
+| 2 | ADR-02: ¿Cloud Run o VM en GCE? | Sin respuesta explícita: se adopta Cloud Run por defecto. | ✅ Adoptado por defecto (plan B en GCE si el costo molesta) |
+| 3 | Empresa y marcas simuladas | Postobón (propia), Pepsi y Sprite (competidores). | ✅ El script trae además CocaCola y Colombiana: fuera de v1 (§3.2.1) |
+| 4 | Fuentes y cambios al generador; script | Tres fuentes confirmadas. Script compartido. | ✅ Fuentes · ✅ Cambios al generador adoptados (§3.2.1, ADR-13) |
+| 5 | Presupuesto para Dataflow en demos | No es preocupación por ahora; se asume disponible. | ✅ (supuesto). Se mantiene el Lote 7.3 como buena práctica |
+| 6 | QuickSight y conector a BigQuery | Se asume acceso a QuickSight; conector sin verificar. | 🟨 El camino principal (Athena → QuickSight) no depende del conector |
+| 7 | NLP en español (ADR-05) y licencia académica | Aceptados. | ✅ |
 
+**Pendiente para cerrar la Fase 0:** (a) direcciones de correo para las alertas y para dar acceso al equipo; (b) verificar facturación y cuotas del proyecto GCP, y cómo se autentica Terraform en AWS; (c) aprobar ADR-02 y ADR-13 (adoptados por defecto); (d) ~~entregable `contracts/` (HU-001)~~ entregado en v2.7 (falta decidir la forma de `hashtags[]`); README y `.drawio` (HU-002) ya actualizados.
 ---
 
 ## 10. Estado del proyecto
 
 | Fase | Estado | Responsable | HU | Notas |
 |---|---|---|---|---|
-| 0 · Alineación | ⬜ | Todos | HU-001 a HU-003 | |
-| 1 · Simulador | ⬜ | A (+M) | HU-004, HU-008 a HU-017 | Revisar HU-008 a HU-012 por el cambio de fuentes (§7.1) |
+| 0 · Alineación | 🟨 | Todos | HU-001 a HU-003 | Cuentas e IDs registrados (§5.1); `contracts/` entregado (HU-001, pendiente revisión del equipo y forma de `hashtags[]`); HU-002 hecha; faltan correos, accesos del equipo y aprobar ADR-02/ADR-13 |
+| 1 · Simulador | ⬜ | A (+M) | HU-004, HU-008 a HU-017, HU-046, HU-047 | `HU.md` ya alineado con v2.2; Lote 1.1 parte de los hallazgos de §3.2.1 |
 | 2 · Streaming GCP | ⬜ | C | HU-005, HU-018 a HU-023 | |
 | 3 · Histórico + puente | ⬜ | A + M | HU-006, HU-024, HU-025 | |
 | 4 · Lakehouse AWS | ⬜ | C + M | HU-007, HU-026 a HU-030 | |
-| 5 · Calidad y gobernanza | ⬜ | A | HU-031 a HU-036 | |
-| ★ Sprint 2 (28 oct) | ⬜ | | HU-001 a HU-036 | |
+| 5 · Calidad y gobernanza | ⬜ | A | HU-031 a HU-036, HU-048 | |
+| ★ Sprint 2 (28 oct) | ⬜ | | HU-001 a HU-036, HU-046 a HU-048 | |
 | 6 · Serving y alertas | ⬜ | C + A | HU-037 a HU-040 | |
 | 7 · CI/CD y costos | ⬜ | M | HU-041 a HU-043 | |
 | 8 · Informe | ⬜ | Todos | HU-044, HU-045 | |

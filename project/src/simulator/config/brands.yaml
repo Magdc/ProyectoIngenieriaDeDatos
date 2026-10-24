@@ -1,0 +1,21 @@
+# Marcas de la v1 (ARCHITECTURE.md §3.2.1). La clave es la forma canónica que viaja en brands[].
+# Para añadir CocaCola o Colombiana: agregar su bloque aquí (el generador ya trae sus plantillas).
+brands:
+  postobon:
+    display: "Postobón"
+    aliases: ["Postobón", "Postobon"]
+    role: propia            # confirmado en Fase 0
+    facebook_page: "Postobón (sim)"
+    instagram_account: "postobon.sim"
+  pepsi:
+    display: "Pepsi"
+    aliases: ["Pepsi", "Pepsi Cola"]
+    role: competidor
+    facebook_page: "Pepsi (sim)"
+    instagram_account: "pepsi.sim"
+  sprite:
+    display: "Sprite"
+    aliases: ["Sprite"]
+    role: competidor
+    facebook_page: "Sprite (sim)"
+    instagram_account: "sprite.sim"

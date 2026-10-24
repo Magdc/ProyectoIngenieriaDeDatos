@@ -1,0 +1,29 @@
+# Mapeos de etiquetas (ARCHITECTURE.md §3.3, ADR-05, ADR-13).
+
+# Salida cruda de robertuito-sentiment-analysis -> etiqueta del contrato.
+sentiment:
+  NEG: negative
+  NEU: neutral
+  POS: positive
+
+# Salida cruda de robertuito-emotion-analysis -> 7 clases del contrato.
+# pysentimiento usa "others" para la clase neutra; se acepta también "neutral".
+# Verificar el nombre exacto al integrar el modelo (Lote 2.3).
+emotion:
+  joy: joy
+  sadness: sadness
+  anger: anger
+  fear: fear
+  disgust: disgust
+  surprise: surprise
+  others: neutral
+  neutral: neutral
+
+# Categoría del generador -> ground truth sim.label_sentiment (ADR-13, aprobado).
+# null = ambigua, sin ground truth.
+categoria_sentimiento:
+  gusto: positive
+  asco: negative
+  informativo: neutral
+  nostalgia: null
+  adiccion: null

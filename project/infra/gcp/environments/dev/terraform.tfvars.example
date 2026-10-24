@@ -1,0 +1,3 @@
+# Copia a terraform.tfvars (no se versiona).
+project_id = "project-0568d9ba-848f-413c-88b"
+region     = "us-central1"

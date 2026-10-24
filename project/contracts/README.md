@@ -13,7 +13,7 @@ Lote 0.1 · HU-001. Si algo de aquí cambia, se cambia **primero** `docs/ARCHITE
 | `bigquery/{posts_enriched,trend_windows,dlq_events,dq_results}.sql` | Tablas del dataset `ta_stream` | §5.5 |
 | `athena/{posts_raw,posts,curated}.sql` | Capas Raw, Trusted y Curated (partition projection) | §5.7 |
 | `examples/valid/`, `examples/invalid/` | Ejemplos; el prefijo (`envelope__`, `enriched__`, `pubsub__`) indica contra qué schema se valida | – |
-| `tests/test_contracts.py` | 16 pruebas (schemas, ejemplos, coherencia BigQuery ↔ Athena ↔ envelope) | – |
+| `tests/test_contracts.py` | 18 pruebas (schemas, ejemplos, coherencia BigQuery ↔ Athena ↔ envelope) | – |
 
 ## Cómo validar
 
@@ -41,8 +41,8 @@ Los placeholders de despliegue son `{{GCP_PROJECT}}` (BigQuery) y `{{lake_bucket
 7. **Invariantes por tipo de payload** (se validan): en Reddit, `post` ⇒ `title` y `upvote_ratio`/`num_comments` presentes, `parent_id` nulo; `comment` ⇒ `title`, `upvote_ratio` y `num_comments` nulos. Facebook `post` ⇒ `parent_id` nulo. En el enriquecido: `shares` es `null` en Reddit/Instagram y entero en Facebook.
 8. **`dq_results`** y las **dimensiones/agregados de Curated** no tenían columnas en §5; las defino aquí.
 9. **`nlp_model_version`** debe tener la forma `robertuito-sentiment@<hash>+robertuito-emotion@<hash>`. Si se cambia de modelo (plan B de ADR-05), se cambia el patrón.
+10. **Forma de `hashtags[]`** (decidida el 17 oct): forma canónica = minúsculas, **sin `#`**, sin tildes, solo `[a-z0-9_]` (1–100 caracteres), sin repetidos y en orden de aparición en el texto. El texto conserva el hashtag tal como se escribió (`#Postobón` en el texto ⇒ `"postobon"` en `hashtags[]`). Razón: las claves de `edges_hashtag_cooccurrence` y los joins quedan estables, igual que las claves de marca. Regla de referencia: `normalize_hashtag()` en `tests/test_contracts.py`; el simulador debe implementarla en `src/common/`.
 
 ## Por confirmar
 
-- **Forma de `hashtags[]`:** hoy el schema solo exige strings sin espacios. Recomiendo minúsculas y **sin `#`** (`["postobon", "colombia"]`) para que `edges_hashtag_cooccurrence` y los joins sean estables. Hay que decidirlo antes del Lote 1.2.
 - **`HU.md`** no estaba entre los archivos que recibí, así que no puedo confirmar criterio por criterio los de HU-001; la cobertura contra §5 está en las pruebas.

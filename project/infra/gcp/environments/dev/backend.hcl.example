@@ -1,0 +1,2 @@
+# Copia a backend.hcl. El bucket es el output `tfstate_bucket` del bootstrap.
+bucket = "project-0568d9ba-848f-413c-88b-ta-tfstate"

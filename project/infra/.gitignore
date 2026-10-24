@@ -1,0 +1,14 @@
+# Terraform: nunca versionar variables reales, estado ni backend con valores reales.
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+terraform.tfvars
+*.auto.tfvars
+backend.hcl
+
+# Sí se versionan los ejemplos y el lock de proveedores.
+!*.tfvars.example
+!*.hcl.example
+!.terraform.lock.hcl

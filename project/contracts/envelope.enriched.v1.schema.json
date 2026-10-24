@@ -27,7 +27,7 @@
     "text": { "type": "string", "minLength": 1 },
     "lang": { "type": ["string", "null"], "pattern": "^[a-z]{2}$" },
     "brands": { "type": "array", "items": { "$ref": "envelope.v1.schema.json#/$defs/brand_key" }, "uniqueItems": true },
-    "hashtags": { "type": "array", "items": { "type": "string", "minLength": 1, "pattern": "^\\S+$" } },
+    "hashtags": { "type": "array", "items": { "$ref": "envelope.v1.schema.json#/$defs/hashtag" }, "uniqueItems": true },
     "payload": { "type": "object" },
     "sim": { "$ref": "envelope.v1.schema.json#/properties/sim" },
     "likes": { "type": "integer", "description": "score (Reddit, puede ser negativo) | reactions_total (Facebook) | like_count (Instagram)." },

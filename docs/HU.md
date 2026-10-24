@@ -1,6 +1,6 @@
 # TrendAnalyzer · Historias de Usuario (HU)
 
-> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.6** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
+> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.10** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
 > Cada HU tiene un ID **HU-000**, su fase/lote de `ARCHITECTURE.md` §7, responsable, sprint y criterios de aceptación verificables.
 
 ---
@@ -28,7 +28,7 @@ Criterios de aceptación: lista verificable.
 | **Responsable de gobernanza** | Calidad, catálogo, linaje, cumplimiento (Alejandro) |
 
 **Responsables:** **M** = Miguel · **C** = Camila · **A** = Alejandro. **Prioridad (MoSCoW):** Must / Should / Could.
-**Sprints:** Sprint 2 = 28 oct 2026 · Sprint Final = 11 nov 2026.
+**Sprints:** Sprint 2 y Sprint Final son entregas, sin fechas. El contenido de cada una está en `ARCHITECTURE.md` §7 y §7.1.
 
 **Estado:** ⬜ pendiente · 🟨 en curso · ✅ completada (se marca en la tabla resumen).
 
@@ -49,9 +49,9 @@ Criterios de aceptación: lista verificable.
 | HU | Título | Fase · Lote | Resp. | Prio. | Sprint | Estado |
 |---|---|---|---|---|---|---|
 | **E0 · Alineación** | | | | | | |
-| HU-001 | Contratos de datos versionados | 0 · 0.1 | Todos | Must | 2 | ⬜ |
-| HU-002 | README y diagrama alineados con la v2 | 0 · 0.1 | Todos | Must | 2 | ⬜ |
-| HU-003 | Decisiones de arquitectura cerradas | 0 | Todos | Must | 2 | ⬜ |
+| HU-001 | Contratos de datos versionados | 0 · 0.1 | Todos | Must | 2 | ✅ |
+| HU-002 | README y diagrama alineados con la v2 | 0 · 0.1 | Todos | Must | 2 | ✅ |
+| HU-003 | Decisiones de arquitectura cerradas | 0 | Todos | Must | 2 | ✅ |
 | **E1 · Infraestructura como código** | | | | | | |
 | HU-004 | Infraestructura GCP base | 1 · 1.3 | M | Must | 2 | ⬜ |
 | HU-005 | Recursos de streaming (BigQuery, secreto HMAC) | 2 · 2.4 | M + C | Must | 2 | ⬜ |
@@ -149,13 +149,13 @@ Criterios de aceptación: lista verificable.
 **Como** líder técnico **quiero** respuestas a las preguntas abiertas de `ARCHITECTURE.md` §9 y ADRs aprobados **para** desbloquear la construcción sin retrabajo.
 
 **Criterios de aceptación**
-- Confirmados proyecto y región de GCP (`project-2911bf21-1f97-41aa-ac6`, `us-east1`) y cuenta y región de AWS (`648617469176`, `us-east-1`).
+- Confirmados proyecto y región de GCP (`project-0568d9ba-848f-413c-88b`, nombre `proyectoDatos`, número `63567159332`, `us-central1`) y cuenta y región de AWS (`648617469176`, `us-east-1`).
 - Decidido ADR-02 (Cloud Run vs. VM en GCE).
 - Confirmadas las tres fuentes (Reddit, Facebook, Instagram) y los cambios propuestos al generador (§3.2), en especial `marca`/`sentimiento` como parámetros y la columna opcional `sentimiento`; compartido el script del generador o su lista de plantillas.
 - Definida la empresa simulada y sus marcas (Postobón, Pepsi, Sprite y las demás que produzca el generador), con su rol propia/competidor (insumo de `brands.yaml`).
 - Aceptado el NLP en español con RoBERTuito/pysentimiento (ADR-05) y su licencia académica.
-- Verificada la disponibilidad de QuickSight y el estado real de `infra/`.
-- Definido el canal de alertas (correo, con las direcciones) y el responsable de las etiquetas (`owner=alejandro`).
+- Verificado el estado real de `infra/` (sin nada aplicado) y las cuotas de vCPU y Dataflow en `us-central1`. El acceso a QuickSight se asume; su verificación se hace en HU-037.
+- Definido el canal de alertas (correo; por ahora el único destinatario es el de Alejandro) y el responsable de las etiquetas (`owner=alejandro`).
 ---
 
 # E1 · Infraestructura como código
@@ -227,8 +227,8 @@ Criterios de aceptación: lista verificable.
 **Como** líder técnico **quiero** crear el proyecto de GCP, el estado remoto de Terraform y habilitar las APIs **para** provisionar toda la infraestructura desde cero de forma reproducible.
 
 **Criterios de aceptación**
-- Proyecto GCP `project-2911bf21-1f97-41aa-ac6` con facturación por crédito (a cargo de Alejandro Sepulveda) verificada, región de trabajo `us-east1` (ADR-12) y cuotas de Dataflow/Compute revisadas.
-- Miguel, Camila y Alejandro tienen acceso con roles mínimos a GCP y AWS, y Terraform se autentica en AWS con un perfil o SSO documentado.
+- Proyecto GCP `project-0568d9ba-848f-413c-88b` (`proyectoDatos`) con facturación por crédito (a cargo de Alejandro Sepulveda) verificada, región de trabajo `us-central1` (ADR-12) y cuotas de Dataflow/Compute revisadas en esa región.
+- Alejandro tiene acceso con rol Owner o Editor a GCP y AWS (por ahora es el único usuario); el acceso de Miguel y Camila, con roles mínimos, se otorga cuando lo necesiten sus lotes. Terraform se autentica en AWS con un perfil o SSO documentado y en GCP con Application Default Credentials (`gcloud auth application-default login`), sin llaves en el repositorio.
 - APIs habilitadas: Pub/Sub, Dataflow, BigQuery, Cloud Run, Artifact Registry, Secret Manager, Cloud Scheduler, IAM, Monitoring y Logging.
 - Estado remoto de Terraform: bucket GCS con versionado (GCP) y bucket S3 con bloqueo (AWS), ADR-14.
 - Existe la estructura `infra/{gcp,aws}/{modules,environments/dev}` y `terraform init` y `terraform validate` pasan en ambas nubes.
@@ -828,4 +828,4 @@ Criterios de aceptación: lista verificable.
 - Guion de demo: simulador → Pub/Sub → Dataflow → BigQuery → S3 → Athena → QuickSight, incluyendo un pico y su alerta.
 - Runbook con encendido/apagado, reinicio del simulador, reproceso desde `raw/` y atención de la DLQ.
 - Plan B de la demo si falla algo en vivo: capturas del dashboard, ejecución grabada y simulador local (HU-047).
-- Ensayo completo realizado antes del 11 nov.
+- Ensayo completo realizado antes del Sprint Final.

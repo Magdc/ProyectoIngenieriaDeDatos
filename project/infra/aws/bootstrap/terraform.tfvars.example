@@ -1,0 +1,5 @@
+# Copia a terraform.tfvars (no se versiona) y ajusta.
+aws_account_id = "648617469176"
+aws_region     = "us-east-1"
+budget_usd     = 50
+alert_emails   = ["tu-correo@example.com"]

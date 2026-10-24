@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+import unicodedata
 import uuid
 from pathlib import Path
 
@@ -180,6 +181,43 @@ def test_engagement_normalization_matches_section_5_2():
                 and doc["comments"] == p["comments_count"]
         else:
             assert doc["likes"] == p["like_count"] and doc["shares"] is None and doc["comments"] == p["comments_count"]
+
+
+def normalize_hashtag(raw: str) -> str:
+    """Forma canónica de un hashtag (contrato v1.0): minúsculas, sin '#', sin tildes, solo [a-z0-9_]."""
+    s = unicodedata.normalize("NFKD", raw.lstrip("#"))
+    s = "".join(c for c in s if not unicodedata.combining(c)).lower()
+    return re.sub(r"[^a-z0-9_]", "", s)
+
+
+def hashtags_in_text(text: str) -> list[str]:
+    """Hashtags del texto en forma canónica, sin repetidos y en orden de aparición."""
+    seen: list[str] = []
+    for m in re.finditer(r"#(\w+)", text):
+        h = normalize_hashtag(m.group(1))
+        if h and h not in seen:
+            seen.append(h)
+    return seen
+
+
+def test_hashtag_normalization_rules():
+    assert normalize_hashtag("#Postobón") == "postobon"
+    assert normalize_hashtag("#COLOMBIA") == "colombia"
+    assert normalize_hashtag("#NiñoFeliz") == "ninofeliz"
+    assert normalize_hashtag("#Sin_Tilde") == "sin_tilde"
+    assert hashtags_in_text("Qué rico #Sprite y #sprite con #Colombia") == ["sprite", "colombia"]
+    assert hashtags_in_text("sin etiquetas") == []
+
+
+def test_hashtags_are_canonical_and_match_the_text_in_valid_examples():
+    """§3.8: hashtags[] = hashtags del texto en forma canónica (el texto conserva la forma original)."""
+    checked = 0
+    for path, schema_file, doc in _examples("valid"):
+        if schema_file == SCHEMA_BY_PREFIX["pubsub"]:
+            continue
+        assert doc["hashtags"] == hashtags_in_text(doc["text"]), f"{path.name}: hashtags[] no coincide con el texto"
+        checked += 1
+    assert checked >= 10
 
 
 # --------------------------------------------------------------------------- DDL

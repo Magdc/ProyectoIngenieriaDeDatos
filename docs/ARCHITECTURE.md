@@ -1,13 +1,17 @@
 # TrendAnalyzer · ARCHITECTURE
 
 > Documento maestro de arquitectura, contratos y plan de trabajo.
-> **Versión 2.7 · 17 oct 2026** · Las fuentes en streaming pasan a ser **Reddit, Facebook e Instagram** y el texto lo produce un **generador de comentarios en Python** (`marca,comentario`), en lugar de los datasets de emociones en inglés de la v2.1.
+> **Versión 2.11** · **Lote 1.0 entregado** (bootstrap de Terraform, HU-046): nueva §5.14 con el contrato de la infraestructura base. Desde la v2.2 las fuentes en streaming son **Reddit, Facebook e Instagram** y el texto lo produce un **generador de comentarios en Python** (`marca,comentario`), en lugar de los datasets de emociones en inglés de la v2.1.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 > **v2.1:** cada fase y lote queda asociado a sus historias de usuario (`HU.md`, formato HU-000). Ver §7 y la matriz de trazabilidad §7.1. **v2.2:** resumen de cambios en §1.5; las HU afectadas por el cambio de fuentes se señalan en §7.1.
 > **v2.3:** respuestas de Fase 0 registradas en §9 (marcas, región AWS, NLP, fuentes), y análisis del script real del generador en §3.2.1.
 > **v2.4:** decisiones adoptadas (ADR-12 a ADR-14), parámetros operativos (§5.12) y tres HU nuevas: HU-046 (bootstrap), HU-047 (entorno local) y HU-048 (prueba de humo E2E). Ahora son 48 HU.
 > **v2.5:** cuentas e IDs reales registrados (§5.1), canal de alertas por correo (§5.12) y responsable `owner=alejandro`.
 > **v2.6:** estructura real del repositorio (`docs/` + `project/`, §6 y §1.9), diagrama `.drawio` actualizado y README alineado.
+> **v2.11:** Lote 1.0 entregado (`project/infra/`, HU-046): estado remoto en GCS y S3, bloqueo en DynamoDB, 19 APIs de GCP, presupuestos con aviso por correo y `validate.sh`. Nueva §5.14; ADR-15 y ADR-16; §9 #10 abierto. Sin cambios en `contracts/` (§1.14).
+> **v2.10:** sin fechas ni calendario; proyecto GCP `project-0568d9ba-848f-413c-88b` (`proyectoDatos`) y región `us-central1` (ADR-12); autenticación de Terraform en GCP decidida; §9 #8 y #9 aprobados; Fase 0 cerrada (§1.13).
+> **v2.9:** auditoría de `contracts/` contra §5: las columnas de `dq_results` y de Curated, las reglas de validación del envelope y las 7 clases de emoción pasan a este documento; nueva §5.13 (relación con `contracts/` y cómo mantenerlos alineados); dos puntos abiertos en §9 y nota de calendario (§1.12).
+> **v2.8:** decisiones de Fase 0 cerradas: ADR-02 y ADR-13 aprobados, forma canónica de `hashtags[]`, autenticación de Terraform en AWS y facturación de GCP (§1.11).
 > **v2.7:** `project/contracts/` entregado (Lote 0.1, HU-001) y decisiones que §5 no fijaba: Parquet plano, particiones de Raw/Trusted, `avg_sentiment` con signo (§1.10).
 
 ---
@@ -22,6 +26,8 @@ Este archivo está pensado para que **baste con leerlo (o pegármelo) para const
 | Ver el panorama completo | §2 |
 | Entender cómo funciona el simulador | §3 |
 | Saber **cómo hablarle a cada componente** (formatos, nombres, topics, tablas, IAM) | **§5 (contratos)** |
+| Saber **cómo se valida cada contrato** y cómo mantener §5 y `contracts/` alineados | **§5.13** |
+| Saber **qué infraestructura base existe** y cómo aplicarla (estado remoto, APIs, presupuestos) | **§5.14** |
 | Saber qué construir y en qué orden | §7 (fases y lotes) |
 | Saber qué historias de usuario cubre cada fase o lote | **§7 y §7.1** (detalle en `HU.md`) |
 | Pedirme el siguiente lote | §8 (plantilla de petición) |
@@ -98,7 +104,7 @@ Actualizado en v2.6: tabla de fuentes, generador de comentarios y decisiones ado
 
 | Área | Cambio |
 |---|---|
-| Decisiones | **ADR-12:** región de GCP `us-east1`. **ADR-13:** mapeo `categoria → sentimiento` (incluye la categoría nueva `informativo`). **ADR-14:** estado remoto de Terraform. ADR-02 (Cloud Run) queda adoptado por defecto. |
+| Decisiones | **ADR-12:** región de GCP `us-east1` (reemplazada por `us-central1` en v2.10, §1.13). **ADR-13:** mapeo `categoria → sentimiento` (incluye la categoría nueva `informativo`). **ADR-14:** estado remoto de Terraform. ADR-02 (Cloud Run) queda adoptado por defecto. |
 | Generador | Los 7 hallazgos de §3.2.1 pasan de propuesta a decisión y se incorporan a HU-008. |
 | HU nuevas | **HU-046** Bootstrap de Terraform (Lote 1.0) · **HU-047** Entorno local con emulador de Pub/Sub (Lote 1.5) · **HU-048** Prueba de humo end-to-end (Lote 5.4). |
 | Parámetros operativos | Nueva §5.12: ventanas tardías, arranque en frío del z-score, cooldown de alertas, zona horaria, retención, idempotencia de Glue, contratos en CI. |
@@ -108,7 +114,7 @@ Actualizado en v2.6: tabla de fuentes, generador de comentarios y decisiones ado
 
 | Área | Cambio |
 |---|---|
-| Cuentas | GCP `project-2911bf21-1f97-41aa-ac6` (región `us-east1`, facturación con crédito a cargo de Alejandro Sepulveda) y AWS `648617469176` (`us-east-1`). |
+| Cuentas | GCP `project-2911bf21-1f97-41aa-ac6` (región `us-east1`, facturación con crédito a cargo de Alejandro Sepulveda; proyecto y región reemplazados en v2.10, §1.13) y AWS `648617469176` (`us-east-1`). |
 | Alertas | Canal por **correo**: suscriptor de `ta-alerts` → log estructurado → alerta basada en logs de Cloud Monitoring con canal de correo (sin SMTP ni secretos). |
 | Etiquetas | `owner=alejandro` en todos los recursos. |
 | Riesgo nuevo | Cuotas de la cuenta de crédito de GCP pueden limitar Dataflow. |
@@ -126,11 +132,64 @@ Actualizado en v2.6: tabla de fuentes, generador de comentarios y decisiones ado
 
 | Área | Cambio |
 |---|---|
-| Contratos | `project/contracts/` con 6 JSON Schemas (envelope, envelope enriquecido, 3 payloads, atributos Pub/Sub), DDL de BigQuery (4 tablas) y Athena (Raw, Trusted, 9 tablas Curated), 41 ejemplos y 16 pruebas. Detalle en `project/contracts/README.md`. |
+| Contratos | `project/contracts/` con 6 JSON Schemas (envelope, envelope enriquecido, 3 payloads, atributos Pub/Sub), DDL de BigQuery (4 tablas) y Athena (Raw, Trusted, 9 tablas Curated), 45 ejemplos y 18 pruebas (cifras vigentes desde v2.8). Detalle en `project/contracts/README.md`. |
 | §5.4 / §5.7 | Los Parquet de `enriched/` y `raw/` usan el **esquema plano** de `posts_enriched` (§5.5), con `payload` como JSON en string. |
 | §5.7 | Raw se proyecta por `origin/source/dt/hr` (claves `part_*`; el histórico también escribe `hr`). Trusted por `source/dt` con `dt = DATE(event_time)` UTC y columna `text_clean`. |
-| §5.5 | `avg_sentiment` = media con signo en [-1, 1]. `dq_results` y Curated con columnas definidas. |
-| §5.2 | `sim.chaos` ∈ `duplicate\|late\|null_fields\|malformed`. Pendiente: forma de `hashtags[]` (con/sin `#`). |
+| §5.5 | `avg_sentiment` = media con signo en [-1, 1]. `dq_results` y Curated con columnas definidas en `contracts/`; desde v2.9 también en §5.5 y §5.7. |
+| §5.2 | `sim.chaos` ∈ `duplicate\|late\|null_fields\|malformed`. La forma de `hashtags[]` se cerró en v2.8. |
+
+### 1.11 Cambios v2.7 → v2.8
+
+| Área | Cambio |
+|---|---|
+| Decisiones | **ADR-02** (Cloud Run) y **ADR-13** (mapeo categoría → sentimiento) **aprobados**; dejan de ser "por defecto" (§9). |
+| `hashtags[]` | Forma canónica: minúsculas, **sin `#`**, sin tildes, solo `[a-z0-9_]` (1–100), sin repetidos y en orden de aparición. El texto conserva la forma original (§3.8, §5.2). Schemas, ejemplos y pruebas actualizados (ahora 45 ejemplos y 18 pruebas). |
+| Autenticación | Terraform se autentica en AWS con el perfil local de AWS CLI (`aws configure`), sin claves en el código (§5.1). La de GCP queda pendiente. |
+| Facturación GCP | La consola muestra el proyecto vinculado a una cuenta de facturación activa, con cargos estimados de 0 COP. Faltan las cuotas (§9). |
+| Alertas | Un solo destinatario por ahora. La dirección vive en `terraform.tfvars` (`alert_emails`), que no se versiona (§5.12). |
+
+### 1.12 Cambios v2.8 → v2.9
+
+| Área | Cambio |
+|---|---|
+| Auditoría | Se revisó `contracts/` contra §5 (18 pruebas en verde). Lo que solo vivía en `contracts/` y el documento delegaba pasa a este documento, que vuelve a ser suficiente para trabajar sin abrir código. |
+| §5.2 | Reglas de validación que aplica el schema (formatos, patrones, campos extra), invariantes por fuente y `kind`, reglas del envelope enriquecido y referencia a `normalize_hashtag()`. |
+| §5.5 | `emotion_label` con sus 7 clases, scores en [0, 1] y tabla `dq_results` (11 columnas, partición y clustering). |
+| §5.7 | Columnas de las 9 tablas de Curated, llaves foráneas naturales, regla de regeneración y día UTC. |
+| §5.10 | `dq_results.kpi` toma los valores de esta tabla. |
+| §5.13 | **Nueva.** Qué contiene `contracts/`, regla de cambio, qué cubren (y qué no) sus pruebas, y la prueba de sincronización pendiente. |
+| §6 | Árbol de `contracts/` ordenado (las cuatro DDL de BigQuery juntas). |
+| Lote 1.1 | Incluye `normalize_hashtag()` en `src/common/`. |
+| §9 | Dos puntos abiertos: valores de `dq_results.layer` y significado de `fact_posts.dt` (#8 y #9). |
+| Calendario | Nota sobre fechas vencidas (retirada en v2.10: el plan ya no usa fechas). |
+
+### 1.13 Cambios v2.9 → v2.10
+
+| Área | Cambio |
+|---|---|
+| Fechas | Se eliminan todas las fechas y el calendario: encabezados de fase, hitos, aprobaciones y el riesgo de tiempo. Sprint 2 y Sprint Final quedan como entregas, sin día (§7, §10). Los timestamps de §5.2 son datos de ejemplo, no fechas del plan. |
+| Proyecto GCP | Nuevo ID `project-0568d9ba-848f-413c-88b`, número `63567159332`, nombre visible `proyectoDatos`. Reemplaza a `project-2911bf21-1f97-41aa-ac6` (§5.1, §9 #1). |
+| Región | **ADR-12:** la región de GCP pasa a `us-central1`. Las cuotas de vCPU (p. ej. 8 vCPU en la familia C2, uso 0) y de Dataflow (p. ej. 640 *shuffle slots*) se verificaron en esa región. |
+| Autenticación de Terraform en GCP | Application Default Credentials (`gcloud auth application-default login`), sin llaves JSON (§5.1). |
+| Accesos y alertas | Por ahora solo el correo de Alejandro: único destinatario de alertas y único usuario con acceso. Miguel y Camila se agregan cuando lo necesiten sus lotes (HU-046). |
+| Decisiones | §9 #8 (`dq_results.layer`) y #9 (`fact_posts.dt`) **aprobados** tal como se propusieron. |
+| `contracts/` | Revisión del equipo completada (HU-001). |
+| Prueba de sincronización §5 ↔ `contracts/` | Recomendada, no bloquea: pasa a la Fase 5 (§5.13). |
+| Fase 0 | **Cerrada** (§10). |
+
+### 1.14 Cambios v2.10 → v2.11
+
+| Área | Cambio |
+|---|---|
+| Lote 1.0 (HU-046) | `project/infra/` entregado: un *bootstrap* por nube (estado local, se aplica una vez), 5 módulos (3 de GCP, 2 de AWS), entornos `dev` vacíos ya conectados al estado remoto, `validate.sh` y `BOOTSTRAP.md`. Contrato completo en **§5.14**. |
+| Estado remoto (ADR-14) | GCP: bucket `{GCP_PROJECT}-ta-tfstate` con versionado. AWS: bucket `ta-{ENV}-{AWS_ACCOUNT_ID}-tfstate` y tabla de bloqueo `ta-{ENV}-tflock` (ADR-15). |
+| APIs de GCP | 19 APIs habilitadas desde Terraform (lista en §5.14). |
+| Presupuestos | GCP (moneda de la cuenta, `COP` por defecto) y AWS (USD) con aviso por correo en 50 %, 80/90 % y 100 % del gasto real, y en 100 % del pronóstico. Los montos del ejemplo (400000 COP y 50 USD) son provisionales (§9 #10). |
+| Decisiones | **ADR-15:** bloqueo con DynamoDB en AWS. **ADR-16:** bootstrap aislado, con estado local y protecciones contra borrado. |
+| Documento | Nueva §5.14; ampliadas §5.1 (nombres, proveedores, `allowed_account_ids`), §5.8 (identidades aún inexistentes), §5.9 (outputs reales), §5.11 y §5.12 (retención del estado y presupuestos); §6 (árbol de `infra/`), §7 (Lote 1.0), §9 y §10. |
+| Contratos | **Sin cambios** en §5.2–§5.8 ni en `contracts/`. `schema_version` sigue en `"1.0"`. |
+| Corrección | §5.1 decía que cada módulo expone `outputs.tf`. En el código, los módulos declaran sus outputs en su `main.tf`; `outputs.tf` existe en cada raíz (bootstrap y entorno). |
+| Pendiente | Ejecutar `validate.sh`, confirmar `billing_account_id` y montos, y aplicar el bootstrap (§5.14, §10). No se pudo comprobar `terraform validate` al preparar esta versión. |
 
 ---
 
@@ -339,7 +398,7 @@ El **texto, la marca y (opcionalmente) el sentimiento** vienen del generador. To
 | **Seguidores** | Lognormal por usuario (estable). Facebook: amigos/seguidores; Instagram: seguidores; Reddit: aproximación (karma). |
 | **Engagement** | Reddit: `score` / `upvote_ratio` / `num_comments`. Facebook: reacciones (total y desglose `like/love/haha/wow/sad/angry`), `shares_count`, `comments_count`. Instagram: `like_count`, `comments_count` (sin shares). Escalado por seguidores, con leve impulso para sentimiento extremo y, en Facebook, un sesgo leve del desglose de reacciones según `label_sentiment` cuando existe. Se interpreta como *snapshot* al momento de la recolección. |
 | **Fechas** | `event_time` = instante de emisión − lag aleatorio (0–5 s). `ingest_time` = instante de publicación. Siempre UTC. |
-| **Hashtags** | El generador ya inserta algunos en los cierres (`#Colombia`, `#<marca>`…): se extraen del texto con regex a `hashtags[]` (§3.2.1 #6). El simulador añade 1–2 más derivados de la marca y del sector (`#Postobon`, `#Colombia`) con probabilidad por red (por defecto Instagram ~60%, Facebook ~15%, Reddit ~0%) solo si faltan, los agrega al final del texto y los registra en `hashtags[]`. Configurable en `sim.yaml`. |
+| **Hashtags** | El generador ya inserta algunos en los cierres (`#Colombia`, `#<marca>`…): se extraen del texto con regex a `hashtags[]` (§3.2.1 #6). El simulador añade 1–2 más derivados de la marca y del sector (`#Postobon`, `#Colombia`) con probabilidad por red (por defecto Instagram ~60%, Facebook ~15%, Reddit ~0%) solo si faltan, los agrega al final del texto y los registra en `hashtags[]`, en su **forma canónica**: minúsculas, sin `#`, sin tildes, solo `[a-z0-9_]`, sin repetidos y en orden de aparición (el texto conserva el hashtag tal como se escribió: `#Postobón` ⇒ `"postobon"`). Configurable en `sim.yaml`. |
 | **Subreddit / página / cuenta** | Reddit: lista de subreddits. Facebook: `facebook_page` de la marca. Instagram: `instagram_account` de la marca y `media_type` aleatorio. URLs ficticias (`sim.local`). |
 | **`kind` y `parent_id`** | Según §3.3. Un `comment` de Reddit o Facebook lleva el `parent_id` de un post reciente simulado. |
 
@@ -390,18 +449,21 @@ Hay que poder apagarlo para medir la línea base de los KPIs.
 | Variable | Valor por defecto / ejemplo | Usada por |
 |---|---|---|
 | `ENV` | `dev` | todos |
-| `GCP_PROJECT` | `project-2911bf21-1f97-41aa-ac6` *(confirmado)* | simulador, Dataflow, exportador |
-| `GCP_REGION` | `us-east1` *(ADR-12)* | idem |
+| `GCP_PROJECT` | `project-0568d9ba-848f-413c-88b` *(confirmado; nombre `proyectoDatos`, número `63567159332`)* | simulador, Dataflow, exportador |
+| `GCP_REGION` | `us-central1` *(ADR-12)* | idem |
 | `AWS_REGION` | `us-east-1` *(confirmada)* | exportador, loader, Glue |
 | `AWS_ACCOUNT_ID` | `648617469176` *(confirmado; va en `terraform.tfvars`, no en el código)* | Terraform, exportador, loader |
 | `TA_HMAC_SECRET_NAME` | `ta-hmac-key` | Dataflow, loader |
 | `SIM_SEED` | `7` | simulador, loader histórico |
 | `SIM_CHAOS_ENABLED` | `false` | simulador (§3.9) |
 
-**Nombres:** prefijo `ta-` en todos los recursos. Labels/tags: `project=trend-analyzer`, `env=dev`, `owner=alejandro`.
+**Nombres:** prefijo `ta-` en todos los recursos. Labels/tags: `project=trend-analyzer`, `env=dev`, `owner=alejandro`. En AWS se aplican con `default_tags` del proveedor; en GCP, con `labels` en los recursos que los admiten (el bucket de estado lo hace; `google_project_service`, el presupuesto y los canales de notificación no). El bucket de estado de GCP es una excepción de nombre: `{GCP_PROJECT}-ta-tfstate` (§5.14).
 **Código:** Python 3.11, type hints, `pytest`, logs JSON a stdout, configuración por env vars + YAML, cero secretos en el repo.
-**Terraform:** ≥1.6, un módulo por recurso lógico en `infra/{gcp,aws}/modules/`, entornos en `infra/{gcp,aws}/environments/dev/`. Cada módulo expone `outputs.tf` (§5.9).
+**Terraform:** ≥1.6, proveedores `hashicorp/google ~> 6.0` y `hashicorp/aws ~> 5.0`. Un módulo por recurso lógico en `infra/{gcp,aws}/modules/`, entornos en `infra/{gcp,aws}/environments/dev/` y un directorio `bootstrap/` por nube (estado local, se aplica una vez; §5.14). Cada raíz (bootstrap y entorno) expone `outputs.tf` (§5.9); los módulos declaran sus outputs junto a su `main.tf`.
 **Tiempo:** todo en **UTC**, ISO-8601 con milisegundos y `Z`.
+**Autenticación de Terraform (dev):** en AWS, el proveedor `hashicorp/aws` usa las credenciales del perfil local de AWS CLI (`aws configure`, o `AWS_PROFILE`), sin claves en el código ni en el repositorio; además el proveedor lleva `allowed_account_ids` y se detiene si el perfil apunta a otra cuenta. En GCP usa Application Default Credentials, sin llaves JSON: `gcloud auth login`, `gcloud config set project project-0568d9ba-848f-413c-88b`, `gcloud auth application-default login` y `gcloud auth application-default set-quota-project project-0568d9ba-848f-413c-88b`. La cuenta de Alejandro debe ser Owner o Editor del proyecto. La autenticación en CI se define en el Lote 7.1.
+
+**Contratos:** §5 es la fuente de verdad; `project/contracts/` es su copia ejecutable y verificada por pruebas (§5.13).
 
 ### 5.2 Envelope canónico (v1.0)
 
@@ -451,7 +513,7 @@ Todo evento —de stream o histórico, de cualquier fuente— tiene esta forma a
 | `text` | string | ✔ | Texto plano (comentario del generador + hashtags añadidos, §3.8). |
 | `lang` | string | – | `es` en v2.2. |
 | `brands` | string[] | ✔ | Puede ser `[]`. Claves de `brands.yaml`. |
-| `hashtags` | string[] | ✔ | Puede ser `[]`. |
+| `hashtags` | string[] | ✔ | Puede ser `[]`. Forma canónica: minúsculas, sin `#`, sin tildes, solo `[a-z0-9_]` (1–100), sin repetidos y en orden de aparición en el texto (§3.8). |
 | `payload` | objeto | ✔ | Específico de red (abajo). |
 | `sim.*` | objeto | ✔ | `label_sentiment` (`positive`\|`negative`\|`neutral`\|`null`), `scenario` (string o `null`) y `chaos` (lista). Ground truth y trazas. **Nunca se usa como feature.** |
 
@@ -494,6 +556,39 @@ Los campos imitan el estilo de cada red (Reddit API, Graph API de Meta) pero son
 ```
 
 Normalización de engagement: `likes` = `score` (Reddit) | `reactions_total` (Facebook) | `like_count` (Instagram); `shares` = `shares_count` (Facebook) | `null` (Reddit, Instagram); `comments` = `num_comments` (Reddit) | `comments_count` (Facebook, Instagram).
+
+**Reglas de validación.** Las aplica `contracts/` además de los tipos de arriba (§5.13):
+
+| Campo | Regla |
+|---|---|
+| `event_time`, `ingest_time`, `process_time` | UTC, ISO-8601 con **milisegundos** y `Z` (`2026-10-17T14:03:11.482Z`). Sin milisegundos o con otra zona se rechazan. |
+| `event_id` | UUID en minúsculas, calculado con la fórmula de §3.6. |
+| `generator` | `nombre@versión`, p. ej. `comment-gen@1.0`. |
+| `brands[]` | Claves canónicas `[a-z0-9_]+`, sin repetidos. |
+| `hashtags[]` | Forma canónica descrita arriba. La función de referencia es `normalize_hashtag()` (hoy en `contracts/tests/test_contracts.py`); el simulador la implementa en `src/common/` (Lote 1.1). |
+| `text` | No vacío. |
+| `lang` | Dos letras minúsculas (`es`) o `null`. |
+| `author.followers` | Entero ≥ 0 o `null`. |
+| `sim.chaos` | Lista sin repetidos; valores `duplicate`, `late`, `null_fields`, `malformed` (§3.9). |
+| Campos no definidos | El envelope, `author` y `sim` los rechazan. |
+
+**Invariantes por fuente y `kind`:**
+
+| Fuente · `kind` | Regla |
+|---|---|
+| Reddit · `post` | `reddit_id` empieza por `t3_`; `title` no vacío; `parent_id` `null`; `upvote_ratio` (número) y `num_comments` (entero) presentes. |
+| Reddit · `comment` | `reddit_id` empieza por `t1_`; `parent_id` es texto; `title`, `upvote_ratio` y `num_comments` son `null`. |
+| Facebook · `post` | `parent_id` `null`. |
+| Facebook · `comment` | `parent_id` es texto. |
+| Instagram | `kind` es siempre `comment`; `media_type` ∈ `IMAGE`\|`VIDEO`\|`CAROUSEL_ALBUM`. |
+
+**Reglas del envelope enriquecido:**
+- `author` solo contiene `user_hash` (hex de 64 caracteres) y `followers`. Si aparece `handle` o `user_id`, se rechaza.
+- `sentiment_label` ∈ `negative`\|`neutral`\|`positive` (no se aceptan las etiquetas crudas `NEG/NEU/POS` del modelo); `emotion_label` ∈ las 7 clases de §3.3.
+- `sentiment_score` y `emotion_score` ∈ [0, 1].
+- `nlp_model_version` tiene la forma `robertuito-sentiment@<hash>+robertuito-emotion@<hash>`. Si se adopta el plan B de ADR-05, se cambia el patrón en el schema y aquí.
+- `process_time` es obligatorio.
+- `likes` es entero (en Reddit puede ser negativo). `shares` es `null` en Reddit e Instagram y entero en Facebook. `comments` es entero en Facebook e Instagram; en Reddit es entero en posts y `null` en comentarios.
 
 ### 5.3 Pub/Sub
 
@@ -549,8 +644,8 @@ Dataset: `ta_stream` (ubicación = región de GCP).
 | `hashtags` | ARRAY&lt;STRING&gt; |
 | `likes`, `shares`, `comments` | INT64 |
 | `sentiment_label` | STRING (`negative`/`neutral`/`positive`) |
-| `sentiment_score`, `emotion_score` | FLOAT64 |
-| `emotion_label` | STRING (7 clases) |
+| `sentiment_score`, `emotion_score` | FLOAT64 (en [0, 1]) |
+| `emotion_label` | STRING (`joy`, `sadness`, `anger`, `fear`, `disgust`, `surprise`, `neutral`) |
 | `label_sentiment` | STRING (ground truth, nullable, solo evaluación) |
 | `nlp_model_version` | STRING |
 | `payload` | JSON |
@@ -568,7 +663,20 @@ Dataset: `ta_stream` (ubicación = región de GCP).
 | `is_alert` | BOOL |
 
 **`dlq_events`** — `received_at`, `source`, `error_type`, `error_detail`, `raw_message` (STRING).
-**`dq_results`** — resultados de calidad (§5.10).
+**`dq_results`** — una fila por verificación de calidad ejecutada (§5.10). Partición por `DATE(run_ts)`, clustering `layer, kpi`. Mismo reporte, además, en `s3://…/quality/{run_date}/`.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `run_id` | STRING, obligatorio | Identifica la corrida. |
+| `run_ts` | TIMESTAMP, obligatorio | Partición. |
+| `layer` | STRING, obligatorio | Capa verificada. Valores propuestos: `stream`, `raw`, `trusted`, `curated` (§9, #8). |
+| `table_name` | STRING, obligatorio | |
+| `suite` | STRING | Suite de Great Expectations o test de dbt. |
+| `check_name` | STRING, obligatorio | |
+| `kpi` | STRING | `completitud`, `unicidad`, `duplicados`, `anonimizacion`, `latencia`, `precision_nlp` u `otro` (§5.10). |
+| `observed_value`, `threshold` | FLOAT64 | |
+| `passed` | BOOL, obligatorio | |
+| `details` | JSON | |
 
 ### 5.6 Puente GCP → AWS (exportador)
 
@@ -596,7 +704,7 @@ Formato: **Parquet + Snappy**. Particiones registradas con **partition projectio
 
 - **Raw** (`ta_raw.posts_raw`): rutas `raw/origin=…/source=…/dt=…/hr=…/`; también el histórico escribe `hr`. Claves de partición `part_origin`, `part_source`, `part_dt`, `part_hr` (las columnas `origin` y `source` ya viajan dentro del Parquet). Columnas = las de BigQuery `posts_enriched`.
 - **Trusted** (`ta_trusted.posts`): `trusted/posts/source=…/dt=…/`, con `dt = DATE(event_time)` UTC; añade `text_clean`; `source` es partición, no columna.
-- DDL en `project/contracts/athena/`; las columnas de Curated están definidas allí.
+- DDL en `project/contracts/athena/`, copia verificada de esta sección (§5.13). Las columnas de Curated están definidas abajo.
 
 | Capa | Glue DB | Contenido |
 |---|---|---|
@@ -606,14 +714,25 @@ Formato: **Parquet + Snappy**. Particiones registradas con **partition projectio
 
 **Curated (esquema estrella + agregados + aristas):**
 
-| Tabla | Descripción |
+Parquet + Snappy en `curated/{tabla}/`. Las llaves foráneas son **naturales** (sin surrogate keys):
+- `fact_posts.source` → `dim_source.source`
+- `fact_posts.brand_primary` → `dim_brand.brand`
+- `fact_posts.user_hash` → `dim_user.user_hash`
+- `fact_posts.date_key` → `dim_date.date_key`
+
+Solo `fact_posts` está particionada (por `dt`, con partition projection). Las demás tablas se **regeneran completas** en cada corrida.
+
+| Tabla | Columnas |
 |---|---|
-| `fact_posts` | Un registro por post; FKs a dimensiones; métricas `likes/shares/comments`, scores. |
-| `dim_date`, `dim_source`, `dim_brand`, `dim_user` | Dimensiones (`dim_user` solo con `user_hash`). |
-| `agg_emotion_by_brand_hour` | Conteos de emoción por marca/fuente/hora. |
-| `agg_trend_daily` | Volumen y sentimiento diario por marca. |
-| `edges_user_brand` | Arista usuario→marca (peso = nº de menciones). |
-| `edges_hashtag_cooccurrence` | Co-ocurrencia de hashtags. *(Cubre "análisis de relaciones" sin Neptune.)* |
+| `fact_posts` | Grano = `event_id`. `event_id`, `date_key` (entero `yyyymmdd`), `origin`, `source`, `brand_primary`, `brands[]`, `user_hash`, `event_time`, `likes`, `shares`, `comments`, `sentiment_label`, `sentiment_score`, `emotion_label`, `emotion_score`, `label_sentiment`. Partición `dt` (ver §9, #9). |
+| `dim_date` | `date_key`, `full_date`, `year`, `month`, `day`, `iso_week`, `day_of_week` (1 = lunes … 7 = domingo), `is_weekend`. |
+| `dim_source` | `source` (`reddit`\|`facebook`\|`instagram`), `display_name`, `kind_mix` (descripción de la mezcla de `kind`, §3.3). |
+| `dim_brand` | `brand` (clave de `brands.yaml`: `postobon`, `pepsi`, `sprite`), `display`, `role` (`propia`\|`competidor`). |
+| `dim_user` | `user_hash`, `first_seen`, `last_seen`, `n_posts`, `max_followers`. **Nunca** `handle` ni `user_id`. |
+| `agg_emotion_by_brand_hour` | Formato largo: `hour_start` (UTC, truncado a la hora), `brand`, `source`, `emotion_label`, `n_posts`. |
+| `agg_trend_daily` | `full_date`, `brand`, `n_posts`, `n_negative`, `n_neutral`, `n_positive`, `avg_sentiment` (misma definición que `trend_windows`: con signo, en [-1, 1]). El día es UTC; los dashboards convierten a `America/Bogota` (§5.12). |
+| `edges_user_brand` | Arista usuario → marca: `user_hash`, `brand`, `weight` (nº de menciones). |
+| `edges_hashtag_cooccurrence` | Arista no dirigida: `hashtag_a`, `hashtag_b`, `weight`; siempre `hashtag_a < hashtag_b`. *(Cubre "análisis de relaciones" sin Neptune.)* |
 
 **Orquestación:** EventBridge `rate(1 hour)` → Glue Workflow `ta-wf-raw-to-curated` (jobs `ta-job-raw-to-trusted`, `ta-job-trusted-to-curated`).
 **Athena:** workgroup `ta-analytics`, resultados en `athena-results/`, límite de bytes escaneados por consulta.
@@ -631,12 +750,23 @@ Formato: **Parquet + Snappy**. Particiones registradas con **partition projectio
 | `ta-historical-loader` | AWS | `s3:PutObject` en `raw/origin=historical/` (perfil/SSO del desarrollador) |
 | `ta-quicksight-role` | AWS | `athena:*` en workgroup `ta-analytics`; lectura `curated/` |
 
+**Estado tras el Lote 1.0:** ninguna de estas identidades existe todavía. El bootstrap no crea service accounts ni roles; las de GCP llegan con el Lote 1.3 y las de AWS con las Fases 3 y 4. Mientras tanto, Terraform opera con las credenciales de Alejandro (§5.1).
+
 ### 5.9 Salidas de Terraform (outputs que consumen los demás)
 
 | Módulo | Outputs |
 |---|---|
 | `infra/gcp` | `topic_names` (map source→topic), `subscription_names`, `datasets_bucket`, `lake_bucket`, `bq_dataset`, `simulator_url`, `service_accounts` (map) |
 | `infra/aws` | `lake_bucket`, `glue_db_names`, `athena_workgroup`, `exporter_role_arn`, `glue_role_arn`, `kms_key_arn` |
+
+**Outputs reales tras el Lote 1.0** (el resto de la tabla anterior llega con el Lote 1.3 y la Fase 4):
+
+| Raíz | Outputs |
+|---|---|
+| `infra/gcp/bootstrap` | `tfstate_bucket`, `enabled_services`, `budget_name` |
+| `infra/gcp/environments/dev` | `project_id`, `region`, `labels` |
+| `infra/aws/bootstrap` | `tfstate_bucket`, `tflock_table`, `budget_name` |
+| `infra/aws/environments/dev` | `aws_region` |
 
 El código **nunca** hardcodea estos valores: los recibe como variables de entorno o de plantilla de Dataflow. Para pedirme algo nuevo, basta darme los `outputs` reales.
 
@@ -652,7 +782,7 @@ El código **nunca** hardcodea estos valores: los recibe como variables de entor
 | Dashboard < 3 s | Tiempo de carga con SPICE | Prueba manual documentada |
 | Precisión NLP *(extra)* | `sentiment_label` vs `label_sentiment` (solo eventos con etiqueta; se excluyen los `null`, §3.2.1 #2) | notebook / dbt model |
 
-Resultados en BigQuery `dq_results` y `s3://…/quality/`.
+Resultados en BigQuery `dq_results` (columnas en §5.5) y `s3://…/quality/`. El valor de `dq_results.kpi` sigue la primera columna de esta tabla (`completitud`, `unicidad`, `duplicados`, `anonimizacion`, `latencia`, `precision_nlp`); el resto, `otro`.
 
 ### 5.11 Matriz "si construyes X, necesitas…"
 
@@ -664,8 +794,10 @@ Resultados en BigQuery `dq_results` y `s3://…/quality/`.
 | Loader histórico | §3.2, §3.8, §5.2, §5.7 | Perfil AWS, bucket S3 |
 | Jobs de Glue / dbt | §5.2, §5.7, §5.10 | Esquema real de Athena (`SHOW CREATE TABLE`) si ya existe algo |
 | Calidad | §5.5, §5.7, §5.10 | — |
-| Terraform | §5.1, §5.8, §5.9 | Estado actual de `infra/` y `terraform.tfvars` (sin secretos) |
+| Terraform | §5.1, §5.8, §5.9, §5.14 | Estado actual de `infra/` y `terraform.tfvars` (sin secretos) |
+| Aplicar o ampliar la infraestructura base | §5.14 e `infra/BOOTSTRAP.md` | `billing_account_id`, montos de presupuesto y salida de `terraform plan` |
 | Dashboard | §5.7 (Curated) | Región de QuickSight |
+| Cambiar o validar un contrato | §5.2, §5.13 | — |
 
 ### 5.12 Parámetros operativos acordados
 
@@ -683,8 +815,126 @@ Valores por defecto que evitan decidir en cada lote. Se ajustan aquí primero.
 | Secretos | *Pre-commit* con `gitleaks`; `terraform.tfvars` en `.gitignore` y `terraform.tfvars.example` versionado. | HU-041, HU-046 |
 | Estado de Terraform | Remoto: GCS con versionado (GCP) y S3 con bloqueo (AWS). | HU-046 |
 | Desarrollo local | `docker-compose` con emulador de Pub/Sub + simulador + `DirectRunner`, sin credenciales. | HU-047 |
-| Canal de alertas | Correo. Un suscriptor de `ta-alerts` escribe un log estructurado (`severity=WARNING`, `alert=trend`) y una alerta basada en logs de Cloud Monitoring envía el correo mediante un canal de notificación de tipo email. Las direcciones van en `terraform.tfvars` (`alert_emails`). Sin SMTP ni secretos. | HU-039 |
+| Canal de alertas | Correo. Un suscriptor de `ta-alerts` escribe un log estructurado (`severity=WARNING`, `alert=trend`) y una alerta basada en logs de Cloud Monitoring envía el correo mediante un canal de notificación de tipo email. Las direcciones van en `terraform.tfvars` (`alert_emails`, que no se versiona); por ahora el único destinatario es el correo de Alejandro. Sin SMTP ni secretos. | HU-039 |
 | Prueba de humo E2E | `scripts/smoke_e2e.py` sigue un evento centinela (`event_id` conocido) desde el simulador hasta `ta_curated.fact_posts` y reporta latencia por etapa. | HU-048 |
+| Retención del estado de Terraform | GCS: se conservan las 10 versiones no vigentes más recientes. S3: las versiones no vigentes expiran a los 90 días y los *uploads* multiparte incompletos a los 7. | HU-046 |
+| Presupuestos | Solo avisan por correo; no cortan el gasto. GCP: 50 %, 90 % y 100 % del gasto real y 100 % del pronóstico. AWS: 50 %, 80 % y 100 % del gasto real y 100 % del pronóstico. Montos provisionales (§9 #10). | HU-046, HU-043 |
+
+### 5.13 Relación con `contracts/` y sincronización
+
+**Regla:** §5 es la fuente de verdad. `project/contracts/` es su copia ejecutable: JSON Schemas, DDL, ejemplos y pruebas. Un cambio de interfaz se hace **primero en §5** y, en el **mismo commit**, en `contracts/` (con `pytest project/contracts/tests -q` en verde).
+
+| Archivo de `contracts/` | Qué fija | Sección |
+|---|---|---|
+| `envelope.v1.schema.json`, `envelope.enriched.v1.schema.json` | Envelope antes y después de Dataflow/loader, con las reglas de §5.2 | §5.2 |
+| `payload.{reddit,facebook,instagram}.schema.json` | `payload` por fuente e invariantes por `kind` | §5.2 |
+| `pubsub.attributes.schema.json` | Atributos de `ta-raw-{source}` | §5.3 |
+| `bigquery/{posts_enriched,trend_windows,dlq_events,dq_results}.sql` | Las 4 tablas de `ta_stream` | §5.5 |
+| `athena/{posts_raw,posts,curated}.sql` | Raw, Trusted y las 9 tablas de Curated | §5.7 |
+| `examples/valid/` (14), `examples/invalid/` (31) | Casos que deben pasar y casos que deben fallar | – |
+| `tests/test_contracts.py` | 18 pruebas | – |
+
+**Placeholders de despliegue** en las DDL: `{{GCP_PROJECT}}` (BigQuery) y `{{lake_bucket}}` (Athena). Los `${part_dt}` y similares de Athena son variables de partition projection y **no** se sustituyen.
+
+**Qué verifican las 18 pruebas:**
+- Los schemas son JSON Schema Draft 2020-12 válidos.
+- Todos los ejemplos válidos pasan y todos los inválidos fallan. Los inválidos cubren, entre otros: identidad filtrada en el enriquecido (`handle`, `user_id`), hashtags no canónicos, marca no canónica, timestamps sin milisegundos o no UTC, payload de otra fuente, violaciones de `kind`, score fuera de rango y atributos de Pub/Sub mal tipados.
+- Cada combinación fuente × `kind` tiene un ejemplo válido.
+- `event_id` sigue la fórmula uuid5 de §3.6.
+- El enriquecido es el envelope menos la identidad más el NLP; los atributos de Pub/Sub coinciden con el envelope; la normalización de engagement coincide con §5.2; los hashtags de los ejemplos son canónicos y coinciden con el texto.
+- Coherencia entre capas: las 4 tablas de BigQuery existen; `posts_raw` coincide columna a columna con `posts_enriched`; `posts` es Raw más `text_clean` con `source` como partición; la partition projection cubre cada clave de partición y los valores de Raw coinciden con los enums del envelope; las 9 tablas de Curated y sus llaves foráneas existen; las columnas de BigQuery se derivan del envelope enriquecido.
+
+**Qué no verifican:** que `contracts/` y este documento digan lo mismo. Hoy esa alineación depende de la revisión en el PR.
+
+**Pendiente (recomendado, Fase 5; no bloquea la Fase 0):** una prueba de sincronización que lea los nombres de columna de cada `.sql` y compruebe que aparecen en las tablas de §5.5 y §5.7, para que el CI falle si cambia un lado sin el otro.
+
+### 5.14 Infraestructura base: bootstrap de Terraform (Lote 1.0)
+
+El Lote 1.0 (HU-046) deja lo mínimo para que todo el Terraform posterior use **estado remoto** (ADR-14). Las rutas son relativas a `project/infra/`; la guía de ejecución paso a paso es `BOOTSTRAP.md`.
+
+**Estructura**
+
+```
+infra/
+├── BOOTSTRAP.md  validate.sh  .gitignore
+├── gcp/
+│   ├── bootstrap/                 # estado LOCAL; se aplica una vez
+│   ├── modules/{project_services,tfstate_bucket,budget}/
+│   └── environments/dev/          # estado REMOTO (GCS, prefix env/dev); vacío hasta el Lote 1.3
+└── aws/
+    ├── bootstrap/                 # estado LOCAL; se aplica una vez
+    ├── modules/{tfstate_backend,budget}/
+    └── environments/dev/          # estado REMOTO (S3, key env/dev/terraform.tfstate); vacío hasta las Fases 3 y 4
+```
+
+**Qué crea cada bootstrap**
+
+| Nube | Recurso | Nombre | Detalle |
+|---|---|---|---|
+| GCP | APIs del proyecto | (19, abajo) | `disable_on_destroy = false`: destruir Terraform no apaga APIs. |
+| GCP | Bucket de estado | `{GCP_PROJECT}-ta-tfstate` | Ubicación = `GCP_REGION`; acceso uniforme; `public_access_prevention = enforced`; versionado; borra versiones archivadas cuando hay 10 más nuevas; `force_destroy = false`; `prevent_destroy`; con labels. |
+| GCP | Canal de notificación (uno por correo) | `ta-budget-{correo}` | Tipo `email`, en Cloud Monitoring. |
+| GCP | Presupuesto | `ta-budget-{GCP_PROJECT}` | Filtrado por el **número** del proyecto (`63567159332`). |
+| AWS | Bucket de estado | `ta-{ENV}-{AWS_ACCOUNT_ID}-tfstate` | Versionado; cifrado SSE `AES256` (no KMS: la llave del lake llega en la Fase 4); bloqueo total de acceso público; política que deniega todo tráfico sin TLS; versiones no vigentes a 90 días; `prevent_destroy`. |
+| AWS | Tabla de bloqueo | `ta-{ENV}-tflock` | DynamoDB, `PAY_PER_REQUEST`, clave `LockID` (S), recuperación a un punto en el tiempo, `prevent_destroy` (ADR-15). |
+| AWS | Presupuesto | `ta-{ENV}-monthly` | `COST`, mensual, en USD, a nivel de cuenta. |
+
+**APIs de GCP habilitadas** (`gcp/bootstrap`): `serviceusage`, `cloudresourcemanager`, `cloudbilling`, `billingbudgets`, `iam`, `iamcredentials`, `sts`, `compute`, `storage`, `pubsub`, `run`, `cloudscheduler`, `dataflow`, `bigquery`, `secretmanager`, `artifactregistry`, `cloudbuild`, `monitoring` y `logging` (todas `*.googleapis.com`). Quien necesite otra API la agrega a esa lista, no a mano.
+
+**Presupuestos**
+
+| | GCP | AWS |
+|---|---|---|
+| Moneda | La de la cuenta de facturación (`COP` por defecto; debe coincidir con la de la cuenta) | USD |
+| Alcance | Proyecto | Cuenta |
+| Umbrales sobre gasto real | 50 %, 90 %, 100 % | 50 %, 80 %, 100 % |
+| Pronóstico | 100 % | 100 % |
+| Aviso | Correo mediante canales de Cloud Monitoring; además, con `disable_default_iam_recipients = false`, los administradores de la cuenta de facturación | Correo directo a `alert_emails` |
+| Monto del ejemplo | `400000` COP | `50` USD |
+
+**Interfaz bootstrap → entornos.** Cada entorno declara un backend parcial y recibe el resto con `terraform init -backend-config=backend.hcl`:
+
+| Nube | Output del bootstrap | Clave de `backend.hcl` | Fijo en el `main.tf` del entorno |
+|---|---|---|---|
+| GCP | `tfstate_bucket` | `bucket` | backend `gcs`, `prefix = "env/dev"` |
+| AWS | `tfstate_bucket` | `bucket` | backend `s3`, `key = "env/dev/terraform.tfstate"`, `encrypt = true` |
+| AWS | `tflock_table` | `dynamodb_table` | (además, `region` en `backend.hcl`) |
+
+**Variables de entrada** (los valores reales van en `terraform.tfvars`, que no se versiona; cada raíz trae un `terraform.tfvars.example`):
+
+| Raíz | Variables (valor por defecto entre paréntesis) |
+|---|---|
+| `gcp/bootstrap` | `project_id`, `project_number`, `region` (`us-central1`), `env` (`dev`), `owner` (`alejandro`), `billing_account_id`, `budget_amount`, `budget_currency` (`COP`), `alert_emails` |
+| `gcp/environments/dev` | `project_id`, `region` (`us-central1`), `env`, `owner` |
+| `aws/bootstrap` | `aws_account_id`, `aws_region` (`us-east-1`), `env`, `owner`, `budget_usd`, `alert_emails` |
+| `aws/environments/dev` | `aws_account_id`, `aws_region` (`us-east-1`), `env`, `owner` |
+
+`billing_account_id`, `budget_amount`, `budget_usd` y `alert_emails` no tienen valor por defecto. `infra/.gitignore` excluye `.terraform/`, el estado, los planes, `terraform.tfvars`, `*.auto.tfvars` y `backend.hcl`, y **sí** versiona los `*.example` y `.terraform.lock.hcl` (hay que hacer *commit* del lock tras el primer `init`).
+
+**Módulos reutilizables**
+
+| Módulo | Variables (por defecto) | Outputs |
+|---|---|---|
+| `gcp/modules/project_services` | `project_id`, `services` | `enabled_services` |
+| `gcp/modules/tfstate_bucket` | `project_id`, `name`, `location`, `noncurrent_versions_to_keep` (10), `labels` | `name`, `url` |
+| `gcp/modules/budget` | `project_id`, `project_number`, `billing_account_id`, `amount`, `currency_code`, `alert_emails`, `thresholds` (`[0.5, 0.9, 1.0]`) | `budget_name` |
+| `aws/modules/tfstate_backend` | `bucket_name`, `lock_table_name`, `noncurrent_expiration_days` (90) | `bucket_name`, `bucket_arn`, `lock_table_name` |
+| `aws/modules/budget` | `name`, `limit_usd`, `alert_emails`, `actual_thresholds` (`[50, 80, 100]`) | `budget_name` |
+
+**Protecciones.** Los buckets de estado y la tabla de bloqueo llevan `prevent_destroy`. El proveedor de AWS usa `allowed_account_ids` (cuenta `648617469176`). El proveedor de GCP usa `user_project_override` y `billing_project` para que Billing Budgets y Monitoring cuenten contra el proyecto. El estado del bootstrap es local y no se versiona: si se pierde, se recupera con `terraform import` de estos recursos.
+
+**Orden de ejecución.** (1) `bash project/infra/validate.sh` (sin credenciales; necesita Terraform ≥ 1.6; corre `terraform fmt -check -recursive` y, en las cuatro raíces, `init -backend=false` + `validate`). (2) `gcp/bootstrap`: `init`, `plan`, `apply`; si falla porque `serviceusage` o `cloudresourcemanager` no están activos, se habilitan con `gcloud services enable` y se repite. (3) `aws/bootstrap`: igual. (4) En cada `environments/dev`: copiar `backend.hcl` y `terraform.tfvars` desde los `*.example`, `init -backend-config=backend.hcl` y `plan` (debe dar **sin cambios**).
+
+**Qué no existe todavía:**
+- Service accounts y roles (§5.8): Lote 1.3 en GCP; Fases 3 y 4 en AWS.
+- Topics, suscripciones, buckets `…-ta-datasets` y `…-ta-lake`, Cloud Run y BigQuery: Lote 1.3 y Fase 2.
+- Secreto `ta-hmac-key`: Lote 2.4.
+- Bucket S3 del lake, KMS, Glue, Athena y EventBridge: Fase 4. Federación OIDC GCP → AWS: Lote 3.2.
+- Acceso de Miguel y Camila al proyecto GCP: diferido (§9, Fase 0).
+
+**Observaciones para lotes futuros:**
+- `alert_emails` ya se usa en los bootstraps para los presupuestos. Cuando el Lote 6.2 cree el canal de alertas de tendencias (§5.12), debe declarar su propia variable en `environments/dev` y reutilizar o referenciar los canales para no duplicar correos.
+- El bloqueo con DynamoDB se mantiene para respetar Terraform ≥ 1.6. Con ≥ 1.10 se podría usar `use_lockfile = true` y eliminar la tabla (ADR-15).
 
 ---
 
@@ -713,15 +963,22 @@ Valores por defecto que evitan decidir en cada lote. Se ajustan aquí primero.
     │   ├── envelope.enriched.v1.schema.json
     │   ├── pubsub.attributes.schema.json
     │   ├── payload.{reddit,facebook,instagram}.schema.json
-    │   ├── bigquery/{posts_enriched,trend_windows,dlq_events}.sql
+    │   ├── bigquery/{posts_enriched,trend_windows,dlq_events,dq_results}.sql
     │   ├── athena/{posts_raw,posts,curated}.sql
-    │   ├── bigquery/dq_results.sql
     │   ├── examples/{valid,invalid}/
     │   └── tests/test_contracts.py
-    ├── infra/
-    │   ├── README.md                      <- validación local de Terraform
-    │   ├── gcp/{modules,environments/dev}
-    │   └── aws/{modules,environments/dev}
+    ├── infra/                             <- Lote 1.0 entregado (§5.14)
+    │   ├── BOOTSTRAP.md                   <- guía de ejecución del bootstrap
+    │   ├── validate.sh                    <- fmt + validate sin credenciales
+    │   ├── .gitignore                     <- excluye estado, tfvars y backend.hcl
+    │   ├── gcp/
+    │   │   ├── bootstrap/                 <- estado local: APIs, bucket de estado, presupuesto
+    │   │   ├── modules/{project_services,tfstate_bucket,budget}/
+    │   │   └── environments/dev/          <- estado remoto (GCS)
+    │   └── aws/
+    │       ├── bootstrap/                 <- estado local: bucket de estado, tabla de bloqueo, presupuesto
+    │       ├── modules/{tfstate_backend,budget}/
+    │       └── environments/dev/          <- estado remoto (S3)
     ├── scripts/
     │   ├── generate_comments.py           <- CLI del generador: snapshots CSV / histórico (§3.2)
     │   └── smoke_e2e.py                   <- prueba de humo extremo a extremo (HU-048)
@@ -749,13 +1006,13 @@ Valores por defecto que evitan decidir en cada lote. Se ajustan aquí primero.
 
 ## 7. Plan por fases (lotes)
 
-> Hoy es **17 oct**. Hitos: **Sprint 2 → 28 oct** (11 días) · **Sprint Final → 11 nov** (25 días). El plan está comprimido en consecuencia (las fechas por fase no se recalcularon en v2.2). Responsables sugeridos según el README: **M** = Miguel (infra/IAM/CI-CD), **C** = Camila (pipelines), **A** = Alejandro (simulador/calidad). Las fases 1, 2 y 3 se pueden trabajar en paralelo una vez cerrada la Fase 0.
+> El plan se organiza en fases y lotes, sin fechas: lo que importa es el orden y las dependencias. Hay dos entregas: **Sprint 2** y **Sprint Final** (ver los marcadores ★ y §7.1). Responsables sugeridos según el README: **M** = Miguel (infra/IAM/CI-CD), **C** = Camila (pipelines), **A** = Alejandro (simulador/calidad). Las fases 1, 2 y 3 se pueden trabajar en paralelo una vez cerrada la Fase 0.
 
 **Trazabilidad:** cada fase y cada lote indica las **HU** que cubre (definidas en `HU.md`, con criterios de aceptación). Una fase se considera cerrada cuando todas sus HU cumplen sus criterios de aceptación y su estado se marca en §10. La matriz completa está en §7.1.
 
 Cada **lote** es una petición mía de tamaño razonable: yo entrego un conjunto cerrado de archivos con pruebas, ustedes los integran y validan, y pasamos al siguiente.
 
-### Fase 0 · Alineación — 15–16 oct (todos)
+### Fase 0 · Alineación (todos)
 **HU cubiertas:** HU-001, HU-002, HU-003
 
 **Objetivo:** congelar decisiones y contratos.
@@ -763,18 +1020,20 @@ Cada **lote** es una petición mía de tamaño razonable: yo entrego un conjunto
 - **Ustedes me dan:** respuestas a §9 (preguntas abiertas), estado real de `infra/` (qué ya está aplicado), proyecto GCP y región.
 - **Listo cuando:** ADRs aprobados y contratos en el repo.
 
-### Fase 1 · Simulador — 16–19 oct (A, con M para infra)
+### Fase 1 · Simulador (A, con M para infra)
 **HU cubiertas:** HU-004, HU-008, HU-009, HU-010, HU-011, HU-012, HU-013, HU-014, HU-015, HU-016, HU-017, HU-046, HU-047
 
-- **Lote 1.0** → *bootstrap* de Terraform: configuración del proyecto GCP existente (región `us-east1`), APIs habilitadas, estado remoto en GCS y S3, `terraform.tfvars.example`, presupuesto mínimo. · **HU:** HU-046
-- **Lote 1.1** → `src/common/` (envelope, hashing, label_map) + adaptación del generador de comentarios (§3.2: función pura con `rng`, parámetros `marca`/`sentimiento`, marca canónica) y `scripts/generate_comments.py`. · **HU:** HU-008, HU-009
+- **Lote 1.0** → *bootstrap* de Terraform: configuración del proyecto GCP existente (región `us-central1`), APIs habilitadas, estado remoto en GCS y S3, `terraform.tfvars.example`, presupuesto mínimo. · **HU:** HU-046
+  - **Estado: entregado en v2.11** (código y guía en `project/infra/`; contrato en §5.14). Se cierra cuando el equipo corra `validate.sh`, confirme `billing_account_id` y montos (§9 #10) y aplique ambos bootstraps según `BOOTSTRAP.md`.
+  - **Contratos tocados:** ninguno de §5.2–§5.8; se añadió §5.14 y se ampliaron §5.1, §5.8, §5.9, §5.11 y §5.12.
+- **Lote 1.1** → `src/common/` (envelope, hashing, label_map, `normalize_hashtag()`) + adaptación del generador de comentarios (§3.2: función pura con `rng`, parámetros `marca`/`sentimiento`, marca canónica) y `scripts/generate_comments.py`. · **HU:** HU-008, HU-009
 - **Lote 1.2** → núcleo del simulador (cursor, selección de marca con pesos, usuarios, engagement por red, hashtags, caos, publisher asyncio) + tests unitarios (incluye test de determinismo: misma semilla + `seq` ⇒ mismo `event_id` y mismo texto; y test de reanudación del cursor). · **HU:** HU-010, HU-011, HU-012, HU-013, HU-014, HU-015
 - **Lote 1.3** → `Dockerfile` + Terraform GCP: Cloud Run `min=max=1` sin throttling, topics, suscripciones, DLQ, buckets, service accounts. · **HU:** HU-004, HU-016
 - **Lote 1.4** → script de verificación: se suscribe y reporta tasa de mensajes, ids únicos y `seq`. · **HU:** HU-017
 - **Lote 1.5** → entorno local: `docker-compose` con emulador de Pub/Sub, simulador y consumidor de validación contra los schemas. · **HU:** HU-047
 - **Listo cuando:** los 3 topics reciben ~0.5 msg/s cada uno, el cursor sobrevive a un reinicio, y el test de determinismo pasa.
 
-### Fase 2 · Streaming en GCP — 19–22 oct (C)
+### Fase 2 · Streaming en GCP (C)
 **HU cubiertas:** HU-005, HU-018, HU-019, HU-020, HU-021, HU-022, HU-023
 
 - **Lote 2.1** → esqueleto Dataflow: lectura, validación, dedup por `event_id`, DLQ, escritura a `raw/`. · **HU:** HU-018, HU-019
@@ -783,14 +1042,14 @@ Cada **lote** es una petición mía de tamaño razonable: yo entrego un conjunto
 - **Lote 2.4** → ventanas `trend_windows` + Terraform (BigQuery, plantilla de Dataflow, secret HMAC). · **HU:** HU-005, HU-023
 - **Listo cuando:** un evento emitido aparece en BigQuery con `emotion_label` en < 1 min, y p95 de latencia < 5 min.
 
-### Fase 3 · Histórico y puente a AWS — 21–24 oct (A + M)
+### Fase 3 · Histórico y puente a AWS (A + M)
 **HU cubiertas:** HU-006, HU-024, HU-025
 
 - **Lote 3.1** → `historical/`: usa el generador en batch (el mismo código del simulador, con otra semilla) para producir N registros (por defecto ~50k, configurable) repartidos entre `reddit`, `facebook` e `instagram`, con fechas en los últimos 180 días (estacionalidad semanal/horaria y tendencias de marca, para que haya historia que comparar), mismo envelope, anonimiza, corre el NLP en lote y escribe Parquet a `raw/origin=historical/`. · **HU:** HU-024
 - **Lote 3.2** → exportador `gcs-to-s3` + federación OIDC GCP→AWS + Terraform en ambas nubes. · **HU:** HU-006, HU-025
 - **Listo cuando:** datos de ambos orígenes aparecen en `s3://…/raw/`.
 
-### Fase 4 · Lakehouse AWS — 23–27 oct (C + M)
+### Fase 4 · Lakehouse AWS (C + M)
 **HU cubiertas:** HU-007, HU-026, HU-027, HU-028, HU-029, HU-030
 
 - **Lote 4.1** → Terraform: Glue DBs, tablas con partition projection, workgroup Athena, EventBridge, KMS/IAM. · **HU:** HU-007, HU-029
@@ -799,7 +1058,7 @@ Cada **lote** es una petición mía de tamaño razonable: yo entrego un conjunto
 - **Lote 4.4** → tablas de aristas para análisis de relaciones. · **HU:** HU-028
 - **Listo cuando:** `SELECT` en Athena sobre `ta_curated.fact_posts` devuelve datos de stream e histórico.
 
-### Fase 5 · Calidad y gobernanza — 22–27 oct (A, en paralelo)
+### Fase 5 · Calidad y gobernanza (A, en paralelo)
 **HU cubiertas:** HU-031, HU-032, HU-033, HU-034, HU-035, HU-036, HU-048
 
 - **Lote 5.1** → *profiling* (US-14) sobre Raw/Trusted. · **HU:** HU-031
@@ -807,28 +1066,28 @@ Cada **lote** es una petición mía de tamaño razonable: yo entrego un conjunto
 - **Lote 5.3** → catálogo (descripciones de tablas/columnas en Glue), documento de linaje (dbt docs + diagrama), mapeo DAMA-DMBOK y nota Ley 1581 (los datos son sintéticos; igualmente se documenta el tratamiento). · **HU:** HU-034, HU-035, HU-036
 - **Lote 5.4** → `scripts/smoke_e2e.py`: prueba de humo del flujo completo con evento centinela, latencia por etapa y evidencia para el informe. · **HU:** HU-048
 
-> ### ★ Entrega Sprint 2 — 28 oct
+> ### ★ Entrega Sprint 2
 > Debe poder demostrarse: simulador → Pub/Sub → Dataflow → BigQuery; exportación a S3; Glue Raw→Trusted→Curated; consulta en Athena; reportes de calidad; catálogo y linaje documentados.
 
-### Fase 6 · Serving, alertas y escenarios — 29 oct–3 nov (C + A)
+### Fase 6 · Serving, alertas y escenarios (C + A)
 **HU cubiertas:** HU-037, HU-038, HU-039, HU-040
 
 - **Lote 6.1** → datasets y dashboard de QuickSight (guía + definiciones). · **HU:** HU-037, HU-038
 - **Lote 6.2** → alertas: `trend_windows.is_alert` → `ta-alerts` → notificación. · **HU:** HU-039
 - **Lote 6.3** → endpoint `/control/scenario` y guion de demo de picos. · **HU:** HU-040
 
-### Fase 7 · CI/CD, observabilidad y control de costos — 3–8 nov (M)
+### Fase 7 · CI/CD, observabilidad y control de costos (M)
 **HU cubiertas:** HU-041, HU-042, HU-043
 
 - **Lote 7.1** → GitHub Actions: tests, `terraform fmt/validate/plan`, build y push de imágenes. · **HU:** HU-041
 - **Lote 7.2** → dashboards/alertas de Cloud Monitoring y CloudWatch; métricas de latencia y DLQ. · **HU:** HU-042
 - **Lote 7.3** → scripts de encendido/apagado (Dataflow y simulador) y alertas de presupuesto. · **HU:** HU-043
 
-### Fase 8 · Informe y sustentación — 8–11 nov (todos)
+### Fase 8 · Informe y sustentación (todos)
 **HU cubiertas:** HU-044, HU-045
 
 - **Lote 8.1** → estructura del informe técnico, tabla de KPIs medidos, guion de sustentación, runbook. · **HU:** HU-044, HU-045
-> ### ★ Sprint Final — 11 nov
+> ### ★ Sprint Final
 
 ### 7.1 Matriz de trazabilidad Fase · Lote → HU
 
@@ -911,7 +1170,7 @@ Entrégame: archivos completos en las rutas de §6, con tests y comandos para va
 | ID | Decisión | Alternativa descartada |
 |---|---|---|
 | ADR-01 | Fuentes **Reddit, Facebook e Instagram simuladas** con un generador de comentarios en Python | APIs reales (OAuth de Reddit, revisión de app de Meta); datasets de emociones en inglés (v2.1); polling REST |
-| ADR-02 | Simulador en Cloud Run (`min=max=1`, CPU always-on) | EC2 (cross-cloud); VM en GCE (plan B por costo) |
+| ADR-02 | Simulador en Cloud Run (`min=max=1`, CPU always-on). ✅ **Aprobado** | EC2 (cross-cloud); VM en GCE (plan B por costo) |
 | ADR-03 | Un servicio con 3 workers, no 3 servicios | 3 servicios always-on (3× costo fijo) |
 | ADR-04 | Envelope único para stream e histórico; `origin` distingue | Esquemas separados |
 | ADR-05 | NLP en **español** con modelos preentrenados RoBERTuito de pysentimiento: `robertuito-sentiment-analysis` (POS/NEG/NEU) y `robertuito-emotion-analysis` (emoción) | Modelo en inglés (v2.1); traducir comentarios; modelo multilingüe (plan B por evaluar: `cardiffnlp/twitter-xlm-roberta-base-sentiment`) |
@@ -921,54 +1180,59 @@ Entrégame: archivos completos en las rutas de §6, con tests y comandos para va
 | ADR-09 | Aristas en Curated en lugar de Neptune | Neptune |
 | ADR-10 | Catálogo = Glue Data Catalog; linaje = dbt docs | Dataplex + OpenLineage |
 | ADR-11 | Generador de comentarios **integrado en el proceso del simulador** y reutilizado en batch para el histórico; la selección de marca/sentimiento la hace el simulador | Generar un CSV fijo y reproducirlo por vueltas; servicio de generación separado |
-| ADR-12 | Región de GCP **`us-east1`** (cercana a AWS `us-east-1` y a Colombia) | `us-central1` (más habitual, pero más lejos de AWS) |
-| ADR-13 | Mapeo `categoria → sentimiento`: `gusto → positive`, `asco → negative`, `informativo → neutral`, `nostalgia` y `adiccion → null` | Forzar una etiqueta a las categorías ambiguas (inflaría la precisión del NLP) |
+| ADR-12 | Región de GCP **`us-central1`** (cuotas de vCPU y Dataflow verificadas en esa región; decidido en v2.10) | `us-east1` (primera elección en v2.4: más cerca de AWS `us-east-1` y de Colombia) |
+| ADR-13 | Mapeo `categoria → sentimiento`: `gusto → positive`, `asco → negative`, `informativo → neutral`, `nostalgia` y `adiccion → null` ✅ **Aprobado** | Forzar una etiqueta a las categorías ambiguas (inflaría la precisión del NLP) |
 | ADR-14 | Estado de Terraform **remoto** (GCS y S3) desde el primer día | Estado local (se pierde y no permite CI) |
+| ADR-15 | Bloqueo del estado en AWS con tabla DynamoDB `ta-{env}-tflock`, compatible con Terraform ≥ 1.6 (adoptado en el Lote 1.0) | `use_lockfile = true` de S3 (exige Terraform ≥ 1.10; se puede migrar y eliminar la tabla) |
+| ADR-16 | *Bootstrap* en un directorio aparte por nube, con estado local, `prevent_destroy` en buckets y tabla, y `allowed_account_ids` en AWS (adoptado en el Lote 1.0) | Bootstrap con estado remoto (dependencia circular); recursos de estado sin protección contra borrado |
 
 ### Riesgos
 
 | Riesgo | Mitigación |
 |---|---|
-| **Tiempo** (13 días a Sprint 2) | Paralelizar fases 1–3; NLP en Dataflow es lo más arriesgado → fallback: modelo ligero o NLP en Cloud Run con Pub/Sub intermedio |
+| **Tiempo** (dos entregas: Sprint 2 y Sprint Final) | Paralelizar fases 1–3; NLP en Dataflow es lo más arriesgado → fallback: modelo ligero o NLP en Cloud Run con Pub/Sub intermedio |
 | **Costo** (Dataflow 24/7 + Cloud Run always-on) | `maxNumWorkers=1–2`, apagar fuera de demos, alertas de presupuesto (Lote 7.3) |
 | Dataflow + modelos HF (imagen pesada, memoria; RoBERTuito requiere `pysentimiento` y su `preprocess_tweet`) | Contenedor personalizado, probar local con `DirectRunner` primero; si la memoria no alcanza, correr solo el modelo de sentimiento y dejar la emoción como mejora |
 | Federación OIDC GCP→AWS no funciona a tiempo | Plan B con llaves en Secret Manager (documentar como deuda) |
 | Licencias de modelos NLP | Uso académico; verificar la licencia de cada modelo en su *model card* (los de pysentimiento se entrenaron con corpus TASS) y citarlos en el informe |
 | Modelos entrenados en tweets vs. comentarios con jerga y emojis de Reddit/Facebook/Instagram | Medir contra `label_sentiment`; declarar la limitación en el informe |
 | Generador por plantillas: baja variedad léxica y texto repetido | Ampliar plantillas (§3.2 cambio #5); medir duplicados por `event_id` y **no** por texto; reportar la diversidad léxica en el profiling |
-| Infraestructura desde cero (nada aplicado): retrasa la Fase 1 | Lote 1.0 (HU-046) primero; el simulador se desarrolla en local con el emulador (HU-047) mientras se crea el proyecto |
+| Infraestructura desde cero (nada aplicado): retrasa la Fase 1 | Lote 1.0 (HU-046) primero; el simulador se desarrolla en local con el emulador (HU-047) mientras se crea el proyecto. **v2.11:** Lote 1.0 entregado; falta aplicarlo (§5.14) |
 | Falsas alertas al arrancar (z-score sin baseline) | `is_alert = false` hasta 60 ventanas y *cooldown* de 15 min (§5.12) |
 | Cuotas de la cuenta de crédito de GCP (p. ej. límite de vCPU) pueden limitar Dataflow con modelos pesados | Verificar cuotas en el Lote 1.0; `maxNumWorkers=1–2`; plan B: NLP en Cloud Run |
 
 ### Preguntas abiertas y respuestas (Fase 0)
 
-| # | Pregunta | Respuesta (17 oct) | Estado |
+| # | Pregunta | Respuesta | Estado |
 |---|---|---|---|
-| 1 | Proyecto/región de GCP y cuenta/región de AWS; estado de `infra/` | AWS `us-east-1`, cuenta `648617469176`. GCP `project-2911bf21-1f97-41aa-ac6`, región `us-east1` (ADR-12), facturación con crédito a cargo de Alejandro Sepulveda. `infra/` sin nada aplicado (partimos de cero). | 🟨 Falta verificar facturación/cuotas y los accesos del equipo (HU-046) |
-| 2 | ADR-02: ¿Cloud Run o VM en GCE? | Sin respuesta explícita: se adopta Cloud Run por defecto. | ✅ Adoptado por defecto (plan B en GCE si el costo molesta) |
+| 1 | Proyecto/región de GCP y cuenta/región de AWS; estado de `infra/` | AWS `us-east-1`, cuenta `648617469176`. GCP `project-0568d9ba-848f-413c-88b` (nombre `proyectoDatos`, número `63567159332`), región `us-central1` (ADR-12), facturación con crédito a cargo de Alejandro Sepulveda. `infra/` sin nada aplicado (partimos de cero). | ✅ Proyecto, región y cuotas de vCPU y Dataflow verificados en `us-central1`. La facturación del proyecto nuevo se confirma en HU-046 con `gcloud billing projects describe` (`BOOTSTRAP.md` §0); el acceso de Miguel y Camila se otorga cuando lo necesiten sus lotes |
+| 2 | ADR-02: ¿Cloud Run o VM en GCE? | Sin respuesta explícita: se adopta Cloud Run por defecto. | ✅ Aprobado (plan B en GCE si el costo molesta) |
 | 3 | Empresa y marcas simuladas | Postobón (propia), Pepsi y Sprite (competidores). | ✅ El script trae además CocaCola y Colombiana: fuera de v1 (§3.2.1) |
 | 4 | Fuentes y cambios al generador; script | Tres fuentes confirmadas. Script compartido. | ✅ Fuentes · ✅ Cambios al generador adoptados (§3.2.1, ADR-13) |
 | 5 | Presupuesto para Dataflow en demos | No es preocupación por ahora; se asume disponible. | ✅ (supuesto). Se mantiene el Lote 7.3 como buena práctica |
 | 6 | QuickSight y conector a BigQuery | Se asume acceso a QuickSight; conector sin verificar. | 🟨 El camino principal (Athena → QuickSight) no depende del conector |
 | 7 | NLP en español (ADR-05) y licencia académica | Aceptados. | ✅ |
+| 8 | Valores permitidos de `dq_results.layer` (el DDL no los fija) | Propuesta: `stream`, `raw`, `trusted`, `curated`. | ✅ Aprobado |
+| 9 | `fact_posts.dt` (y `date_key`): ¿`DATE(event_time)` UTC o fecha de proceso? | Propuesta: `DATE(event_time)` UTC, igual que Trusted (§5.7). | ✅ Aprobado |
+| 10 | Montos de los presupuestos y `billing_account_id` (Lote 1.0) | Valores de ejemplo en `terraform.tfvars.example`: GCP 400000 COP, AWS 50 USD; `billing_account_id` se obtiene con `gcloud billing accounts list`. Destinatario: solo el correo de Alejandro. | 🟨 Confirmar antes del `apply`; no bloquea el código (§5.14) |
 
-**Pendiente para cerrar la Fase 0:** (a) direcciones de correo para las alertas y para dar acceso al equipo; (b) verificar facturación y cuotas del proyecto GCP, y cómo se autentica Terraform en AWS; (c) aprobar ADR-02 y ADR-13 (adoptados por defecto); (d) ~~entregable `contracts/` (HU-001)~~ entregado en v2.7 (falta decidir la forma de `hashtags[]`); README y `.drawio` (HU-002) ya actualizados.
+**Fase 0 cerrada.** Resuelto: proyecto GCP (`project-0568d9ba-848f-413c-88b`), región `us-central1` y cuotas; autenticación de Terraform en GCP (§5.1); revisión de `contracts/` (HU-001); ADR-02, ADR-12 y ADR-13; §9 #8 y #9; solo el correo de Alejandro por ahora. **Diferido (no bloquea):** acceso de Miguel y Camila (HU-046), verificación del conector QuickSight → BigQuery (§9 #6, Lote 6.1) y prueba de sincronización §5 ↔ `contracts/` (Fase 5, §5.13).
 ---
 
 ## 10. Estado del proyecto
 
 | Fase | Estado | Responsable | HU | Notas |
 |---|---|---|---|---|
-| 0 · Alineación | 🟨 | Todos | HU-001 a HU-003 | Cuentas e IDs registrados (§5.1); `contracts/` entregado (HU-001, pendiente revisión del equipo y forma de `hashtags[]`); HU-002 hecha; faltan correos, accesos del equipo y aprobar ADR-02/ADR-13 |
-| 1 · Simulador | ⬜ | A (+M) | HU-004, HU-008 a HU-017, HU-046, HU-047 | `HU.md` ya alineado con v2.2; Lote 1.1 parte de los hallazgos de §3.2.1 |
+| 0 · Alineación | ✅ | Todos | HU-001 a HU-003 | Proyecto GCP `project-0568d9ba-848f-413c-88b` y región `us-central1` confirmados con cuotas verificadas; Terraform se autentica en GCP con Application Default Credentials; `contracts/` revisado (HU-001); HU-002 hecha; ADR-02, ADR-12 y ADR-13 aprobados; §9 #8 y #9 aprobados. Diferido: accesos de Miguel y Camila, conector QuickSight → BigQuery y prueba de sincronización (Fase 5) |
+| 1 · Simulador | 🟨 | A (+M) | HU-004, HU-008 a HU-017, HU-046, HU-047 | **Lote 1.0 (HU-046) entregado** (§5.14): falta validar con `validate.sh` y aplicar los bootstraps. Lotes 1.1 a 1.5 ⬜. `HU.md` ya alineado con v2.2; el Lote 1.1 parte de los hallazgos de §3.2.1 |
 | 2 · Streaming GCP | ⬜ | C | HU-005, HU-018 a HU-023 | |
 | 3 · Histórico + puente | ⬜ | A + M | HU-006, HU-024, HU-025 | |
 | 4 · Lakehouse AWS | ⬜ | C + M | HU-007, HU-026 a HU-030 | |
 | 5 · Calidad y gobernanza | ⬜ | A | HU-031 a HU-036, HU-048 | |
-| ★ Sprint 2 (28 oct) | ⬜ | | HU-001 a HU-036, HU-046 a HU-048 | |
+| ★ Sprint 2 | ⬜ | | HU-001 a HU-036, HU-046 a HU-048 | |
 | 6 · Serving y alertas | ⬜ | C + A | HU-037 a HU-040 | |
 | 7 · CI/CD y costos | ⬜ | M | HU-041 a HU-043 | |
 | 8 · Informe | ⬜ | Todos | HU-044, HU-045 | |
-| ★ Sprint Final (11 nov) | ⬜ | | HU-037 a HU-045 | |
+| ★ Sprint Final | ⬜ | | HU-037 a HU-045 | |
 
 Leyenda: ⬜ pendiente · 🟨 en curso · ✅ completada

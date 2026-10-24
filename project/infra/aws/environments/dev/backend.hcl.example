@@ -1,0 +1,4 @@
+# Copia a backend.hcl. Los valores son outputs del bootstrap de AWS.
+bucket         = "ta-dev-648617469176-tfstate"
+region         = "us-east-1"
+dynamodb_table = "ta-dev-tflock"

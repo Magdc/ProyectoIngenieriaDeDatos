@@ -1,0 +1,8 @@
+# Copia a terraform.tfvars (no se versiona) y ajusta.
+project_id         = "project-0568d9ba-848f-413c-88b"
+project_number     = "63567159332"
+region             = "us-central1"
+billing_account_id = "XXXXXX-XXXXXX-XXXXXX" # gcloud billing accounts list
+budget_amount      = 400000                  # ajusta al crédito/monto que quieras vigilar
+budget_currency    = "COP"                   # debe coincidir con la cuenta de facturación
+alert_emails       = ["tu-correo@example.com"]

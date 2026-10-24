@@ -2,7 +2,7 @@
 
 > Glosario de componentes, tecnologías, conceptos y **documentos del repositorio**.
 > Cada entrada tiene dos partes: **Qué es** (la tecnología o término explicado en general) y **Rol en TrendAnalyzer** (qué hace concretamente aquí).
-> **Versión 2.7 · 17 oct 2026** · Alineado con `ARCHITECTURE.md` v2.7 (fuentes Reddit, Facebook e Instagram simuladas con un generador de comentarios) y con `docs/trend_analyzer_multicloud.drawio` v2.5.
+> **Versión 2.8 · 17 oct 2026** · Alineado con `ARCHITECTURE.md` v2.8 (fuentes Reddit, Facebook e Instagram simuladas con un generador de comentarios) y con `docs/trend_analyzer_multicloud.drawio` v2.5.
 > Si este glosario y `ARCHITECTURE.md` discrepan, manda `ARCHITECTURE.md`; este archivo se corrige en el mismo commit.
 
 ---
@@ -55,7 +55,7 @@ El repositorio se organiza en dos carpetas con una regla simple: **en `docs/` se
 
 ### `ARCHITECTURE.md` — la fuente de verdad
 
-**Qué es:** el documento maestro de arquitectura, contratos y plan de trabajo (versión actual 2.7). Un *documento vivo*: se versiona, tiene registro de cambios por versión (§1) y se actualiza con cada decisión.
+**Qué es:** el documento maestro de arquitectura, contratos y plan de trabajo (versión actual 2.8). Un *documento vivo*: se versiona, tiene registro de cambios por versión (§1) y se actualiza con cada decisión.
 
 **Rol en TrendAnalyzer:** es **lo más importante del repositorio**, porque está pensado para que baste con leerlo (o adjuntarlo a una petición) para construir cualquier pieza sin tener que enviar el código ya hecho. Contiene, entre otros:
 
@@ -142,11 +142,11 @@ El repositorio se organiza en dos carpetas con una regla simple: **en `docs/` se
 
 **Qué es:** registro corto de una decisión de arquitectura, con la alternativa descartada.
 
-**Rol en TrendAnalyzer:** `ARCHITECTURE.md` §9 recoge 14 ADR (p. ej. ADR-01 fuentes simuladas, ADR-02 simulador en Cloud Run, ADR-05 NLP en español, ADR-11 generador integrado en el simulador, ADR-12 región `us-east1`, ADR-13 mapeo categoría → sentimiento, ADR-14 estado remoto de Terraform). Las decisiones adoptadas "por defecto" quedan pendientes de aprobación explícita del equipo.
+**Rol en TrendAnalyzer:** `ARCHITECTURE.md` §9 recoge 14 ADR (p. ej. ADR-01 fuentes simuladas, ADR-02 simulador en Cloud Run, ADR-05 NLP en español, ADR-11 generador integrado en el simulador, ADR-12 región `us-east1`, ADR-13 mapeo categoría → sentimiento, ADR-14 estado remoto de Terraform). ADR-02 y ADR-13, que se habían adoptado "por defecto", fueron aprobados el 17 oct.
 
 ### Versionado de documentos (`vX.Y`) y `schema_version`
 
-**Qué es:** dos números distintos. La versión del documento (p. ej. v2.7) cuenta los cambios de `ARCHITECTURE.md`. `schema_version` es la versión del **contrato del envelope** (hoy `"1.0"`).
+**Qué es:** dos números distintos. La versión del documento (p. ej. v2.8) cuenta los cambios de `ARCHITECTURE.md`. `schema_version` es la versión del **contrato del envelope** (hoy `"1.0"`).
 
 **Rol en TrendAnalyzer:** el documento sube de versión con cualquier cambio; `schema_version` solo cambia con un cambio **incompatible** del envelope (agregar un campo opcional no la cambia, pero sí exige actualizar el schema primero).
 
@@ -183,6 +183,12 @@ El repositorio se organiza en dos carpetas con una regla simple: **en `docs/` se
 **Qué es:** el archivo de configuración (`src/simulator/config/brands.yaml`) que define cada marca: clave canónica, nombre visible, alias, rol, página de Facebook y cuenta de Instagram.
 
 **Rol en TrendAnalyzer:** v1 usa **Postobón** (`postobon`, propia), **Pepsi** (`pepsi`) y **Sprite** (`sprite`), ambas competidoras. CocaCola y Colombiana aparecen en el script original pero quedan fuera de v1. La **clave canónica** (minúsculas, sin tildes) es la que viaja en `brands[]` y la que usan los joins y `dim_brand`. El simulador elige la marca con pesos que varían con `seq`, para crear tendencias reproducibles.
+
+### Hashtags (`hashtags[]`)
+
+**Qué es:** etiquetas con `#` que las personas escriben en sus publicaciones (`#Postobón`, `#Colombia`).
+
+**Rol en TrendAnalyzer:** el texto conserva cada hashtag tal como se escribió, y el campo `hashtags[]` los guarda en una **forma canónica**: minúsculas, sin `#`, sin tildes, solo `[a-z0-9_]`, sin repetidos y en orden de aparición (`#Postobón` ⇒ `"postobon"`). Así las claves de `edges_hashtag_cooccurrence` y los joins son estables, igual que las claves de marca.
 
 ### `stream-simulator`
 
@@ -506,7 +512,7 @@ Es idempotente: **sobrescribe las particiones `dt`** en lugar de añadir.
 
 **Qué es:** herramienta de **Infraestructura como Código (IaC)**: la infraestructura se describe en archivos y se crea o modifica con comandos.
 
-**Rol en TrendAnalyzer:** aprovisiona todo en `infra/gcp/` e `infra/aws/` (un módulo por recurso lógico). Cada módulo expone `outputs` (nombres de topics, buckets, ARNs) que el código consume por variables de entorno en lugar de hardcodearlos. El estado es **remoto** desde el primer día (GCS con versionado y S3 con bloqueo, ADR-14).
+**Rol en TrendAnalyzer:** aprovisiona todo en `infra/gcp/` e `infra/aws/` (un módulo por recurso lógico). Cada módulo expone `outputs` (nombres de topics, buckets, ARNs) que el código consume por variables de entorno en lugar de hardcodearlos. El estado es **remoto** desde el primer día (GCS con versionado y S3 con bloqueo, ADR-14). En desarrollo, Terraform se autentica en AWS con el perfil local de AWS CLI (`aws configure`), sin claves en el código.
 
 ### Bootstrap de Terraform
 

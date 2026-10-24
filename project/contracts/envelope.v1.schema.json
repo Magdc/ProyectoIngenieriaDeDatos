@@ -28,7 +28,7 @@
     "text": { "type": "string", "minLength": 1, "description": "Texto plano: comentario del generador + hashtags añadidos (§3.8)." },
     "lang": { "type": ["string", "null"], "pattern": "^[a-z]{2}$", "description": "'es' en v2.2. Puede ser nulo (caos §3.9)." },
     "brands": { "type": "array", "items": { "$ref": "#/$defs/brand_key" }, "uniqueItems": true, "description": "Claves canónicas de brands.yaml. Puede ser []." },
-    "hashtags": { "type": "array", "items": { "type": "string", "minLength": 1, "pattern": "^\\S+$" }, "description": "Puede ser []. Convención de forma (con o sin '#', mayúsculas) pendiente de confirmar; ver contracts/README.md." },
+    "hashtags": { "type": "array", "items": { "$ref": "#/$defs/hashtag" }, "uniqueItems": true, "description": "Forma canónica: minúsculas, sin '#', sin tildes, solo [a-z0-9_], sin repetidos y en orden de aparición en el texto. El texto conserva el hashtag tal como se escribió. Puede ser []." },
     "payload": { "type": "object", "description": "Específico de la red; se valida según `source` (allOf abajo)." },
     "sim": {
       "type": "object",
@@ -59,6 +59,7 @@
   "$defs": {
     "uuid": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" },
     "timestamp_utc": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$", "description": "UTC, ISO-8601 con milisegundos y Z (§5.1)." },
-    "brand_key": { "type": "string", "pattern": "^[a-z0-9_]+$" }
+    "brand_key": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+    "hashtag": { "type": "string", "pattern": "^[a-z0-9_]{1,100}$", "description": "Hashtag en forma canónica (sin '#'). Ver contracts/README.md, decisión 10." }
   }
 }

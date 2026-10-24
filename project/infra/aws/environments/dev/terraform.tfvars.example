@@ -1,0 +1,3 @@
+# Copia a terraform.tfvars (no se versiona).
+aws_account_id = "648617469176"
+aws_region     = "us-east-1"

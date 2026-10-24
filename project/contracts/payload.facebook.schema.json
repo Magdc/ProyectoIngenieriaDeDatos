@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trend-analyzer.local/contracts/payload.facebook.schema.json",
+  "title": "Payload Facebook (simulado) v1.0",
+  "description": "Campo `payload` del envelope cuando source = facebook. Imita la Graph API de Meta; los valores son simulados. ARCHITECTURE.md §5.2.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["comment_id", "kind", "page_id", "page_name", "post_id", "parent_id", "reactions_total", "reactions", "shares_count", "comments_count", "permalink"],
+  "properties": {
+    "comment_id": { "type": "string", "minLength": 1, "description": "Id del comentario o, si kind = post, del post." },
+    "kind": { "enum": ["post", "comment"] },
+    "page_id": { "type": "string", "minLength": 1 },
+    "page_name": { "type": "string", "minLength": 1, "description": "`facebook_page` de brands.yaml." },
+    "post_id": { "type": "string", "minLength": 1 },
+    "parent_id": { "type": ["string", "null"], "description": "Null cuando kind = post." },
+    "reactions_total": { "type": "integer", "minimum": 0, "description": "Se normaliza a `likes`." },
+    "reactions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["like", "love", "haha", "wow", "sad", "angry"],
+      "properties": {
+        "like": { "type": "integer", "minimum": 0 },
+        "love": { "type": "integer", "minimum": 0 },
+        "haha": { "type": "integer", "minimum": 0 },
+        "wow": { "type": "integer", "minimum": 0 },
+        "sad": { "type": "integer", "minimum": 0 },
+        "angry": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "shares_count": { "type": "integer", "minimum": 0, "description": "Se normaliza a `shares`." },
+    "comments_count": { "type": "integer", "minimum": 0, "description": "Se normaliza a `comments`." },
+    "permalink": { "type": "string", "minLength": 1 }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "kind": { "const": "post" } }, "required": ["kind"] },
+      "then": { "properties": { "parent_id": { "type": "null" } } }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "comment" } }, "required": ["kind"] },
+      "then": { "properties": { "parent_id": { "type": "string" } } }
+    }
+  ]
+}

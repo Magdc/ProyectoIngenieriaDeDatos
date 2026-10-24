@@ -1,5 +1,5 @@
 <mxfile host="Electron" agent="Claude" compressed="false">
-  <diagram id="trend-analyzer-arch-v2" name="Arquitectura multicloud v2">
+  <diagram id="trend-analyzer-arch-v2" name="Arquitectura multicloud v2.5">
     <mxGraphModel dx="2575" dy="1565" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2420" pageHeight="1250" math="0" shadow="0">
       <root>
         <mxCell id="0"/>
@@ -7,13 +7,13 @@
         <mxCell id="bg" parent="1" style="shape=rect;fillColor=#FFFFFF;strokeColor=none;" value="" vertex="1">
           <mxGeometry x="0" y="0" width="2420" height="1230" as="geometry"/>
         </mxCell>
-        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=26;fontColor=#1F2937;" value="&lt;b&gt;Trend Analyzer — Arquitectura Multicloud de Alto Nivel (v2)&lt;/b&gt;" vertex="1">
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=26;fontColor=#1F2937;" value="&lt;b&gt;Trend Analyzer — Arquitectura Multicloud de Alto Nivel (v2.5)&lt;/b&gt;" vertex="1">
           <mxGeometry x="35" y="25" width="1700" height="45" as="geometry"/>
         </mxCell>
-        <mxCell id="subtitle" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=13;fontColor=#667085;" value="Fuentes simuladas desde datasets de emociones (streaming 1–3 s)  |  GCP: simulación, ingesta y procesamiento near-real-time  |  AWS: lakehouse, analítica y visualización" vertex="1">
+        <mxCell id="subtitle" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=13;fontColor=#667085;" value="Fuentes simuladas Reddit · Facebook · Instagram con generador de comentarios (streaming 1–3 s)  |  GCP: simulación, ingesta y procesamiento near-real-time  |  AWS: lakehouse, analítica y visualización" vertex="1">
           <mxGeometry x="37" y="66" width="2000" height="28" as="geometry"/>
         </mxCell>
-        <mxCell id="sources_box" parent="1" style="rounded=1;arcSize=12;html=1;whiteSpace=wrap;strokeWidth=2;verticalAlign=top;align=left;spacingTop=16;spacingLeft=18;fontStyle=1;fontSize=18;fillColor=#F8FAFC;strokeColor=#94A3B8;fontColor=#334155;" value="&lt;b&gt;Datasets de emociones&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;font-weight:normal&quot;&gt;simulan las fuentes sociales&lt;/font&gt;" vertex="1">
+        <mxCell id="sources_box" parent="1" style="rounded=1;arcSize=12;html=1;whiteSpace=wrap;strokeWidth=2;verticalAlign=top;align=left;spacingTop=16;spacingLeft=18;fontStyle=1;fontSize=18;fillColor=#F8FAFC;strokeColor=#94A3B8;fontColor=#334155;" value="&lt;b&gt;Fuentes simuladas&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;font-weight:normal&quot;&gt;redes sociales · español (Colombia)&lt;/font&gt;" vertex="1">
           <mxGeometry x="30" y="120" width="245" height="815" as="geometry"/>
         </mxCell>
         <mxCell id="gcp_box" parent="1" style="rounded=1;arcSize=12;html=1;whiteSpace=wrap;strokeWidth=2;verticalAlign=top;align=left;spacingTop=16;spacingLeft=18;fontStyle=1;fontSize=18;fillColor=#F7FAFF;strokeColor=#4285F4;fontColor=#174EA6;" value="&lt;b&gt;Google Cloud Platform&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;font-weight:normal&quot;&gt;Simulación, ingesta y procesamiento&lt;/font&gt;" vertex="1">
@@ -28,34 +28,34 @@
         <mxCell id="dataops_box" parent="1" style="rounded=1;arcSize=12;html=1;whiteSpace=wrap;strokeWidth=2;verticalAlign=top;align=left;spacingTop=16;spacingLeft=18;fontStyle=1;fontSize=18;fillColor=#F8FAFC;strokeColor=#64748B;fontColor=#334155;" value="&lt;b&gt;DataOps e infraestructura&lt;/b&gt;" vertex="1">
           <mxGeometry x="300" y="980" width="1805" height="155" as="geometry"/>
         </mxCell>
-        <mxCell id="ds_tec" parent="1" style="rounded=1;arcSize=16;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.2;shadow=1;align=center;verticalAlign=middle;fontSize=13;fontColor=#334155;" value="&lt;b&gt;TEC&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#667085&quot;&gt;simula Mastodon&lt;/font&gt;" vertex="1">
+        <mxCell id="ds_reddit" parent="1" style="rounded=1;arcSize=16;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.2;shadow=1;align=center;verticalAlign=middle;fontSize=13;fontColor=#334155;" value="&lt;b&gt;Reddit&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot; color=&quot;#667085&quot;&gt;simulado · foro (subreddits)&lt;/font&gt;" vertex="1">
           <mxGeometry x="65" y="210" width="175" height="76" as="geometry"/>
         </mxCell>
-        <mxCell id="ds_goemo" parent="1" style="rounded=1;arcSize=16;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.2;shadow=1;align=center;verticalAlign=middle;fontSize=13;fontColor=#334155;" value="&lt;b&gt;GoEmotions&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#667085&quot;&gt;simula Reddit&lt;/font&gt;" vertex="1">
+        <mxCell id="ds_facebook" parent="1" style="rounded=1;arcSize=16;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.2;shadow=1;align=center;verticalAlign=middle;fontSize=13;fontColor=#334155;" value="&lt;b&gt;Facebook&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot; color=&quot;#667085&quot;&gt;simulado · páginas de marca&lt;/font&gt;" vertex="1">
           <mxGeometry x="65" y="315" width="175" height="76" as="geometry"/>
         </mxCell>
-        <mxCell id="ds_sem" parent="1" style="rounded=1;arcSize=16;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.2;shadow=1;align=center;verticalAlign=middle;fontSize=13;fontColor=#334155;" value="&lt;b&gt;SemEval-2007 T14&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#667085&quot;&gt;simula RSS / Noticias&lt;/font&gt;" vertex="1">
+        <mxCell id="ds_instagram" parent="1" style="rounded=1;arcSize=16;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.2;shadow=1;align=center;verticalAlign=middle;fontSize=13;fontColor=#334155;" value="&lt;b&gt;Instagram&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot; color=&quot;#667085&quot;&gt;simulado · cuentas de marca&lt;/font&gt;" vertex="1">
           <mxGeometry x="65" y="420" width="175" height="76" as="geometry"/>
         </mxCell>
-        <mxCell id="ds_note" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;rounded=0;align=left;verticalAlign=middle;fontSize=11;fontColor=#475569;spacingLeft=10;spacingRight=10;" value="Todos en inglés.&lt;br&gt;Etiquetas mapeadas a 7 clases y guardadas como &lt;i&gt;ground truth&lt;/i&gt; (sim.label_*).&lt;br&gt;Reserva: ISEAR." vertex="1">
-          <mxGeometry x="50" y="530" width="215" height="110" as="geometry"/>
+        <mxCell id="ds_note" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;rounded=0;align=left;verticalAlign=middle;fontSize=11;fontColor=#475569;spacingLeft=10;spacingRight=10;" value="Texto de un &lt;b&gt;generador de comentarios&lt;/b&gt; en español (&lt;i&gt;marca,comentario&lt;/i&gt;).&lt;br&gt;El simulador agrega usuario, fechas, engagement y hashtags.&lt;br&gt;Marcas: Postobón (propia) · Pepsi · Sprite.&lt;br&gt;&lt;i&gt;Ground truth&lt;/i&gt; opcional: sim.label_sentiment." vertex="1">
+          <mxGeometry x="50" y="520" width="215" height="150" as="geometry"/>
         </mxCell>
-        <mxCell id="ds_hist" parent="1" style="rounded=1;arcSize=16;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#EA580C;strokeWidth=1.2;shadow=1;align=center;verticalAlign=middle;fontSize=13;fontColor=#334155;" value="&lt;b&gt;DailyDialog&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#667085&quot;&gt;histórico · full load&lt;/font&gt;" vertex="1">
+        <mxCell id="ds_hist" parent="1" style="rounded=1;arcSize=16;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#EA580C;strokeWidth=1.2;shadow=1;align=center;verticalAlign=middle;fontSize=13;fontColor=#334155;" value="&lt;b&gt;Loader histórico&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot; color=&quot;#667085&quot;&gt;full load · ~50k registros&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px&quot; color=&quot;#667085&quot;&gt;mismo generador, otra semilla&lt;/font&gt;" vertex="1">
           <mxGeometry x="65" y="830" width="175" height="76" as="geometry"/>
         </mxCell>
-        <mxCell id="gcs_datasets" parent="1" style="rounded=1;arcSize=14;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#D0D5DD;strokeWidth=1;shadow=1;align=left;verticalAlign=middle;spacingLeft=65;fontSize=12;fontColor=#344054;" value="&lt;b&gt;Cloud Storage&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#667085&quot;&gt;datasets/prepared · sim-state&lt;/font&gt;" vertex="1">
-          <mxGeometry x="325" y="390" width="185" height="78" as="geometry"/>
+        <mxCell id="gcs_datasets" parent="1" style="rounded=1;arcSize=14;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#D0D5DD;strokeWidth=1;shadow=1;align=left;verticalAlign=middle;spacingLeft=65;fontSize=12;fontColor=#344054;" value="&lt;b&gt;Cloud Storage&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#667085&quot;&gt;sim-state · snapshots CSV&lt;/font&gt;" vertex="1">
+          <mxGeometry x="550" y="230" width="205" height="78" as="geometry"/>
         </mxCell>
         <mxCell id="gcs_datasets_icon" parent="gcs_datasets" style="shape=mxgraph.gcp2.cloud_storage;html=1;aspect=fixed;strokeColor=none;fillColor=#4285F4;shadow=0;part=1;connectable=0;" value="" vertex="1">
           <mxGeometry x="14" y="17" width="44" height="44" as="geometry"/>
         </mxCell>
-        <mxCell id="sim" parent="1" style="rounded=1;arcSize=14;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#D0D5DD;strokeWidth=1;shadow=1;align=left;verticalAlign=middle;spacingLeft=65;fontSize=12;fontColor=#344054;" value="&lt;b&gt;stream-simulator&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#667085&quot;&gt;Cloud Run · 1 msg / 1–3 s&lt;/font&gt;" vertex="1">
+        <mxCell id="sim" parent="1" style="rounded=1;arcSize=14;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#D0D5DD;strokeWidth=1;shadow=1;align=left;verticalAlign=middle;spacingLeft=65;fontSize=12;fontColor=#344054;" value="&lt;b&gt;stream-simulator&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#667085&quot;&gt;Cloud Run · 1 msg / 1–3 s&lt;br&gt;+ generador de comentarios&lt;/font&gt;" vertex="1">
           <mxGeometry x="550" y="390" width="205" height="78" as="geometry"/>
         </mxCell>
         <mxCell id="sim_icon" parent="sim" style="shape=mxgraph.gcp2.cloud_run;html=1;aspect=fixed;strokeColor=none;fillColor=#4285F4;shadow=0;part=1;connectable=0;" value="" vertex="1">
           <mxGeometry x="14" y="17" width="44" height="44" as="geometry"/>
         </mxCell>
-        <mxCell id="pubsub" parent="1" style="rounded=1;arcSize=14;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#D0D5DD;strokeWidth=1;shadow=1;align=left;verticalAlign=middle;spacingLeft=65;fontSize=12;fontColor=#344054;" value="&lt;b&gt;Pub/Sub&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#667085&quot;&gt;ta-raw-* · ta-dlq&lt;/font&gt;" vertex="1">
+        <mxCell id="pubsub" parent="1" style="rounded=1;arcSize=14;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#D0D5DD;strokeWidth=1;shadow=1;align=left;verticalAlign=middle;spacingLeft=65;fontSize=12;fontColor=#344054;" value="&lt;b&gt;Pub/Sub&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#667085&quot;&gt;ta-raw-* · ta-dlq · ta-alerts&lt;/font&gt;" vertex="1">
           <mxGeometry x="795" y="390" width="185" height="78" as="geometry"/>
         </mxCell>
         <mxCell id="pubsub_icon" parent="pubsub" style="shape=mxgraph.gcp2.cloud_pubsub;html=1;aspect=fixed;strokeColor=none;fillColor=#4285F4;shadow=0;part=1;connectable=0;" value="" vertex="1">
@@ -85,7 +85,7 @@
         <mxCell id="lake_icon" parent="lake" style="shape=mxgraph.gcp2.cloud_storage;html=1;aspect=fixed;strokeColor=none;fillColor=#4285F4;shadow=0;part=1;connectable=0;" value="" vertex="1">
           <mxGeometry x="14" y="17" width="44" height="44" as="geometry"/>
         </mxCell>
-        <mxCell id="monitoring" parent="1" style="rounded=1;arcSize=14;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#D0D5DD;strokeWidth=1;shadow=1;align=left;verticalAlign=middle;spacingLeft=105;fontSize=12;fontColor=#344054;" value="&lt;b&gt;Monitoring + Logging&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#667085&quot;&gt;Observabilidad&lt;/font&gt;" vertex="1">
+        <mxCell id="monitoring" parent="1" style="rounded=1;arcSize=14;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#D0D5DD;strokeWidth=1;shadow=1;align=left;verticalAlign=middle;spacingLeft=105;fontSize=12;fontColor=#344054;" value="&lt;b&gt;Monitoring + Logging&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#667085&quot;&gt;Observabilidad · alertas por correo&lt;/font&gt;" vertex="1">
           <mxGeometry x="550" y="730" width="205" height="78" as="geometry"/>
         </mxCell>
         <mxCell id="monitoring_icon" parent="monitoring" style="shape=mxgraph.gcp2.cloud_monitoring;html=1;aspect=fixed;strokeColor=none;fillColor=#4285F4;shadow=0;part=1;connectable=0;" value="" vertex="1">
@@ -106,10 +106,10 @@
         <mxCell id="exporter_icon" parent="exporter" style="shape=mxgraph.gcp2.cloud_run;html=1;aspect=fixed;strokeColor=none;fillColor=#4285F4;shadow=0;part=1;connectable=0;" value="" vertex="1">
           <mxGeometry x="14" y="17" width="44" height="44" as="geometry"/>
         </mxCell>
-        <mxCell id="sim_note" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#CBD5E1;fillColor=#FFFFFF;rounded=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#475569;spacingLeft=10;spacingRight=10;" value="&lt;b&gt;Simulador&lt;/b&gt;&lt;br&gt;3 workers (mastodon · reddit · rss) · vuelve al inicio al terminar el dataset (cycle + 1) · cursor en GCS · caos opcional: duplicados, tardíos, nulos, malformados" vertex="1">
+        <mxCell id="sim_note" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#CBD5E1;fillColor=#FFFFFF;rounded=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#475569;spacingLeft=10;spacingRight=10;" value="&lt;b&gt;Simulador&lt;/b&gt;&lt;br&gt;3 workers (reddit · facebook · instagram) · generador de comentarios en el mismo proceso · event_id determinista (semilla + seq) · cursor en GCS · caos opcional: duplicados, tardíos, nulos, malformados" vertex="1">
           <mxGeometry x="690" y="515" width="305" height="125" as="geometry"/>
         </mxCell>
-        <mxCell id="eb" parent="1" style="rounded=1;arcSize=14;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#D0D5DD;strokeWidth=1;shadow=1;align=left;verticalAlign=middle;spacingLeft=65;fontSize=12;fontColor=#344054;" value="&lt;b&gt;EventBridge&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#667085&quot;&gt;rate(1 hour)&lt;/font&gt;" vertex="1">
+        <mxCell id="eb" parent="1" style="rounded=1;arcSize=14;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#D0D5DD;strokeWidth=1;shadow=1;align=left;verticalAlign=middle;spacingLeft=65;fontSize=12;fontColor=#344054;" value="&lt;b&gt;EventBridge&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#667085&quot;&gt;rate(1 hour) → workflow Glue&lt;/font&gt;" vertex="1">
           <mxGeometry x="1385" y="160" width="180" height="78" as="geometry"/>
         </mxCell>
         <mxCell id="eb_icon" parent="eb" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.eventbridge;html=1;aspect=fixed;strokeColor=#FFFFFF;fillColor=#E7157B;shadow=0;part=1;connectable=0;" value="" vertex="1">
@@ -163,7 +163,7 @@
         <mxCell id="o_git" parent="1" style="rounded=1;arcSize=16;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#94A3B8;strokeWidth=1.2;shadow=1;align=center;verticalAlign=middle;fontSize=13;fontColor=#334155;" value="&lt;b&gt;GitHub&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#667085&quot;&gt;Código y contratos&lt;/font&gt;" vertex="1">
           <mxGeometry x="330" y="1030" width="200" height="70" as="geometry"/>
         </mxCell>
-        <mxCell id="o_act" parent="1" style="rounded=1;arcSize=16;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#94A3B8;strokeWidth=1.2;shadow=1;align=center;verticalAlign=middle;fontSize=13;fontColor=#334155;" value="&lt;b&gt;GitHub Actions&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#667085&quot;&gt;CI/CD&lt;/font&gt;" vertex="1">
+        <mxCell id="o_act" parent="1" style="rounded=1;arcSize=16;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#94A3B8;strokeWidth=1.2;shadow=1;align=center;verticalAlign=middle;fontSize=13;fontColor=#334155;" value="&lt;b&gt;GitHub Actions&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#667085&quot;&gt;CI/CD · tests de contrato&lt;/font&gt;" vertex="1">
           <mxGeometry x="620" y="1030" width="200" height="70" as="geometry"/>
         </mxCell>
         <mxCell id="o_tf" parent="1" style="rounded=1;arcSize=16;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#94A3B8;strokeWidth=1.2;shadow=1;align=center;verticalAlign=middle;fontSize=13;fontColor=#334155;" value="&lt;b&gt;Terraform&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#667085&quot;&gt;Infraestructura como código&lt;/font&gt;" vertex="1">
@@ -172,22 +172,40 @@
         <mxCell id="o_qa" parent="1" style="rounded=1;arcSize=16;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#94A3B8;strokeWidth=1.2;shadow=1;align=center;verticalAlign=middle;fontSize=13;fontColor=#334155;" value="&lt;b&gt;Great Expectations / dbt&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#667085&quot;&gt;Calidad de datos&lt;/font&gt;" vertex="1">
           <mxGeometry x="1560" y="1030" width="290" height="70" as="geometry"/>
         </mxCell>
+        <mxCell id="o_local" parent="1" style="rounded=1;arcSize=16;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#94A3B8;strokeWidth=1.2;shadow=1;align=center;verticalAlign=middle;fontSize=13;fontColor=#334155;" value="&lt;b&gt;Entorno local&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#667085&quot;&gt;docker-compose + emulador Pub/Sub&lt;/font&gt;" vertex="1">
+          <mxGeometry x="1880" y="1030" width="205" height="70" as="geometry"/>
+        </mxCell>
         <mxCell id="legend" parent="1" style="rounded=1;arcSize=10;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#CBD5E1;fontSize=11;fontColor=#475569;align=left;verticalAlign=middle;spacingLeft=12;" value="&lt;b&gt;Leyenda&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#2563EB&quot;&gt;━━&lt;/font&gt; Flujo de datos &amp;nbsp;&amp;nbsp; &lt;font color=&quot;#059669&quot;&gt;━━&lt;/font&gt; Simulación &amp;nbsp;&amp;nbsp; &lt;font color=&quot;#64748B&quot;&gt;┄┄&lt;/font&gt; Control / operación &amp;nbsp;&amp;nbsp; &lt;font color=&quot;#7C3AED&quot;&gt;┄┄&lt;/font&gt; Gobernanza &amp;nbsp;&amp;nbsp; &lt;font color=&quot;#EA580C&quot;&gt;━━&lt;/font&gt; Integración multicloud" vertex="1">
           <mxGeometry x="35" y="1160" width="1500" height="48" as="geometry"/>
         </mxCell>
-        <mxCell id="note" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;rounded=0;align=right;verticalAlign=middle;fontSize=11;fontColor=#98A2B3;spacingLeft=10;spacingRight=10;" value="Versión 2 · Fuentes simuladas · Elementos editables en diagrams.net" vertex="1">
+        <mxCell id="note" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;rounded=0;align=right;verticalAlign=middle;fontSize=11;fontColor=#98A2B3;spacingLeft=10;spacingRight=10;" value="Versión 2.5 · Fuentes simuladas (Reddit · Facebook · Instagram) · Elementos editables en diagrams.net" vertex="1">
           <mxGeometry x="1700" y="1160" width="680" height="48" as="geometry"/>
         </mxCell>
-        <mxCell id="e_ds_tec" edge="1" parent="1" source="ds_tec" target="gcs_datasets" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#059669;fontColor=#065F46;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" value="">
-          <mxGeometry relative="1" as="geometry"/>
+        <mxCell id="e_src_reddit" edge="1" parent="1" source="ds_reddit" target="sim" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#059669;fontColor=#065F46;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="330" y="248"/>
+              <mxPoint x="330" y="410"/>
+            </Array>
+          </mxGeometry>
         </mxCell>
-        <mxCell id="e_ds_goemo" edge="1" parent="1" source="ds_goemo" target="gcs_datasets" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#059669;fontColor=#065F46;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" value="Prepara + sube (1 vez)">
-          <mxGeometry relative="1" as="geometry"/>
+        <mxCell id="e_src_facebook" edge="1" parent="1" source="ds_facebook" target="sim" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#059669;fontColor=#065F46;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" value="Comentarios simulados">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="390" y="353"/>
+              <mxPoint x="390" y="429"/>
+            </Array>
+          </mxGeometry>
         </mxCell>
-        <mxCell id="e_ds_sem" edge="1" parent="1" source="ds_sem" target="gcs_datasets" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#059669;fontColor=#065F46;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" value="">
-          <mxGeometry relative="1" as="geometry"/>
+        <mxCell id="e_src_instagram" edge="1" parent="1" source="ds_instagram" target="sim" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#059669;fontColor=#065F46;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="450" y="458"/>
+              <mxPoint x="450" y="449"/>
+            </Array>
+          </mxGeometry>
         </mxCell>
-        <mxCell id="e_ds_sim" edge="1" parent="1" source="gcs_datasets" target="sim" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#059669;fontColor=#065F46;" value="Lee JSONL">
+        <mxCell id="e_sim_state" edge="1" parent="1" source="sim" target="gcs_datasets" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#059669;fontColor=#065F46;startArrow=block;startFill=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" value="cursor (sim-state)">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
         <mxCell id="e_sim_ps" edge="1" parent="1" source="sim" target="pubsub" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#059669;fontColor=#065F46;" value="Eventos JSON">
@@ -214,7 +232,7 @@
         <mxCell id="e_sim_mon" edge="1" parent="1" source="sim" target="monitoring" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#64748B;fontColor=#475569;dashed=1;dashPattern=6 4;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" value="Métricas / logs">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="e_exp_s3" edge="1" parent="1" source="exporter" target="s3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#EA580C;fontColor=#9A3412;strokeWidth=3;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" value="Parquet · HTTPS/TLS">
+        <mxCell id="e_exp_s3" edge="1" parent="1" source="exporter" target="s3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#EA580C;fontColor=#9A3412;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" value="Parquet · HTTPS/TLS · OIDC">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="1280" y="769"/>
@@ -222,7 +240,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e_hist_s3" edge="1" parent="1" source="ds_hist" target="s3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#EA580C;fontColor=#9A3412;strokeWidth=3;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" value="Loader histórico · full load (HMAC + NLP en lote)">
+        <mxCell id="e_hist_s3" edge="1" parent="1" source="ds_hist" target="s3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=3;fontSize=11;labelBackgroundColor=#FFFFFF;strokeColor=#EA580C;fontColor=#9A3412;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" value="Loader histórico · full load (HMAC + NLP en lote)">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="1320" y="868"/>

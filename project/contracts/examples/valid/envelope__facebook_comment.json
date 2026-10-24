@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "event_id": "e8f45156-b19f-56ed-ab77-2cbba1272587",
+  "origin": "stream",
+  "source": "facebook",
+  "generator": "comment-gen@1.0",
+  "seq": 52,
+  "event_time": "2026-10-17T14:03:11.482Z",
+  "ingest_time": "2026-10-17T14:03:13.020Z",
+  "author": {
+    "user_id": "u_000733",
+    "handle": "María Gómez",
+    "followers": 640
+  },
+  "text": "Pepsi vs Postobón: cada una tiene lo suyo, depende del plan.",
+  "lang": "es",
+  "brands": [
+    "postobon",
+    "pepsi"
+  ],
+  "hashtags": [],
+  "payload": {
+    "comment_id": "1029384756_5647382910",
+    "kind": "comment",
+    "page_id": "sim-page-postobon",
+    "page_name": "Postobón (sim)",
+    "post_id": "sim-post-000812",
+    "parent_id": "sim-post-000812",
+    "reactions_total": 14,
+    "reactions": {
+      "like": 9,
+      "love": 3,
+      "haha": 1,
+      "wow": 0,
+      "sad": 0,
+      "angry": 1
+    },
+    "shares_count": 2,
+    "comments_count": 3,
+    "permalink": "https://sim.facebook.local/postobon/posts/000812"
+  },
+  "sim": {
+    "label_sentiment": "neutral",
+    "scenario": null,
+    "chaos": []
+  }
+}

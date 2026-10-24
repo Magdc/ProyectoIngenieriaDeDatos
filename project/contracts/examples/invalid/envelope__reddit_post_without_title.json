@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "event_id": "6a8a4ff4-c925-5e12-80b2-a9e21f4daccd",
+  "origin": "stream",
+  "source": "reddit",
+  "generator": "comment-gen@1.0",
+  "seq": 1208,
+  "event_time": "2026-10-17T14:03:11.482Z",
+  "ingest_time": "2026-10-17T14:03:13.020Z",
+  "author": {
+    "user_id": "u_000212",
+    "handle": "u/juanito_med",
+    "followers": 1530
+  },
+  "text": "Opinión personal: soy fan d Postobón y no pienso cambiar. Volvería mil veces. 🙌 #postobon",
+  "lang": "es",
+  "brands": [
+    "postobon"
+  ],
+  "hashtags": [
+    "postobon"
+  ],
+  "payload": {
+    "reddit_id": "t3_m4p7q2",
+    "kind": "post",
+    "subreddit": "r/medellin",
+    "title": null,
+    "parent_id": null,
+    "score": 112,
+    "upvote_ratio": 0.94,
+    "num_comments": 18,
+    "permalink": "/r/medellin/comments/m4p7q2/_/",
+    "flair": "Opinión"
+  },
+  "sim": {
+    "label_sentiment": "positive",
+    "scenario": null,
+    "chaos": []
+  }
+}

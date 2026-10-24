@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0",
+  "event_id": "e8f45156-b19f-56ed-ab77-2cbba1272587",
+  "origin": "stream",
+  "source": "facebook",
+  "generator": "comment-gen@1.0",
+  "seq": 52,
+  "event_time": "2026-10-17T14:03:11.482Z",
+  "ingest_time": "2026-10-17T14:03:13.020Z",
+  "author": {
+    "user_hash": "01b7ea1f438357e49ad613f921133d65a10cacd50ada061b66a9b04390a22efb",
+    "followers": 640
+  },
+  "text": "Pepsi vs Postobón: cada una tiene lo suyo, depende del plan.",
+  "lang": "es",
+  "brands": [
+    "postobon",
+    "pepsi"
+  ],
+  "hashtags": [],
+  "payload": {
+    "comment_id": "1029384756_5647382910",
+    "kind": "comment",
+    "page_id": "sim-page-postobon",
+    "page_name": "Postobón (sim)",
+    "post_id": "sim-post-000812",
+    "parent_id": "sim-post-000812",
+    "reactions_total": 14,
+    "reactions": {
+      "like": 9,
+      "love": 3,
+      "haha": 1,
+      "wow": 0,
+      "sad": 0,
+      "angry": 1
+    },
+    "shares_count": 2,
+    "comments_count": 3,
+    "permalink": "https://sim.facebook.local/postobon/posts/000812"
+  },
+  "sim": {
+    "label_sentiment": "neutral",
+    "scenario": null,
+    "chaos": []
+  },
+  "likes": 14,
+  "shares": null,
+  "comments": 3,
+  "sentiment_label": "neutral",
+  "sentiment_score": 0.62,
+  "emotion_label": "neutral",
+  "emotion_score": 0.7,
+  "nlp_model_version": "robertuito-sentiment@a1b2c3d+robertuito-emotion@e4f5a6b",
+  "process_time": "2026-10-17T14:03:13.900Z"
+}

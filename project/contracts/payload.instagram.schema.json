@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trend-analyzer.local/contracts/payload.instagram.schema.json",
+  "title": "Payload Instagram (simulado) v1.0",
+  "description": "Campo `payload` del envelope cuando source = instagram. Imita la Graph API de Meta; los valores son simulados. Instagram solo tiene comentarios (kind = comment) y no tiene shares. ARCHITECTURE.md §5.2.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["comment_id", "kind", "media_id", "media_type", "account_username", "parent_id", "like_count", "comments_count", "permalink"],
+  "properties": {
+    "comment_id": { "type": "string", "minLength": 1 },
+    "kind": { "const": "comment" },
+    "media_id": { "type": "string", "minLength": 1 },
+    "media_type": { "enum": ["IMAGE", "VIDEO", "CAROUSEL_ALBUM"] },
+    "account_username": { "type": "string", "minLength": 1, "description": "`instagram_account` de brands.yaml." },
+    "parent_id": { "type": ["string", "null"], "description": "Null para comentarios de primer nivel." },
+    "like_count": { "type": "integer", "minimum": 0, "description": "Se normaliza a `likes`." },
+    "comments_count": { "type": "integer", "minimum": 0, "description": "Se normaliza a `comments`." },
+    "permalink": { "type": "string", "minLength": 1 }
+  }
+}

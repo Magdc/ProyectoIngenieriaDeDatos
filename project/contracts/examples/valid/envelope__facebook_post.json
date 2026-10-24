@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "event_id": "cacd6a7c-6985-5a5f-8161-374e4e4b2dd5",
+  "origin": "stream",
+  "source": "facebook",
+  "generator": "comment-gen@1.0",
+  "seq": 53,
+  "event_time": "2026-10-17T14:03:11.482Z",
+  "ingest_time": "2026-10-17T14:03:13.020Z",
+  "author": {
+    "user_id": "u_000734",
+    "handle": "Carlos Ruiz",
+    "followers": 220
+  },
+  "text": "Opinión personal: soy fan d Postobón y no pienso cambiar. Volvería mil veces. 🙌 #postobon",
+  "lang": "es",
+  "brands": [
+    "postobon"
+  ],
+  "hashtags": [
+    "postobon"
+  ],
+  "payload": {
+    "comment_id": "1029384756_5647382999",
+    "kind": "post",
+    "page_id": "sim-page-postobon",
+    "page_name": "Postobón (sim)",
+    "post_id": "sim-post-000813",
+    "parent_id": null,
+    "reactions_total": 40,
+    "reactions": {
+      "like": 30,
+      "love": 7,
+      "haha": 1,
+      "wow": 1,
+      "sad": 0,
+      "angry": 1
+    },
+    "shares_count": 5,
+    "comments_count": 9,
+    "permalink": "https://sim.facebook.local/postobon/posts/000813"
+  },
+  "sim": {
+    "label_sentiment": "positive",
+    "scenario": null,
+    "chaos": []
+  }
+}

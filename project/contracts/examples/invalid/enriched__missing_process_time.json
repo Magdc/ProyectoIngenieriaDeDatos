@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "event_id": "4217f11c-ddec-5cb3-842d-14dd07bcac4a",
+  "origin": "stream",
+  "source": "reddit",
+  "generator": "comment-gen@1.0",
+  "seq": 1207,
+  "event_time": "2026-10-17T14:03:11.482Z",
+  "ingest_time": "2026-10-17T14:03:13.020Z",
+  "author": {
+    "user_hash": "bfdd2b8323855998f2f1b5e0075332a6ed65ff5215caaba1e74327511ba938de",
+    "followers": 412
+  },
+  "text": "Mi aporte del día: no tolero Pepsi Cola en el trancón. Mejor me hubiera tomado un agua. Es mi opinión.",
+  "lang": "es",
+  "brands": [
+    "pepsi"
+  ],
+  "hashtags": [],
+  "payload": {
+    "reddit_id": "t1_k3x9a1",
+    "kind": "comment",
+    "subreddit": "r/colombia",
+    "title": null,
+    "parent_id": "t3_j8f2ds",
+    "score": 27,
+    "upvote_ratio": null,
+    "num_comments": null,
+    "permalink": "/r/colombia/comments/j8f2ds/_/k3x9a1/",
+    "flair": null
+  },
+  "sim": {
+    "label_sentiment": "negative",
+    "scenario": null,
+    "chaos": []
+  },
+  "likes": 27,
+  "shares": null,
+  "comments": null,
+  "sentiment_label": "negative",
+  "sentiment_score": 0.91,
+  "emotion_label": "disgust",
+  "emotion_score": 0.77,
+  "nlp_model_version": "robertuito-sentiment@a1b2c3d+robertuito-emotion@e4f5a6b"
+}

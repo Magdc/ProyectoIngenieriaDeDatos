@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0",
+  "event_id": "89578203-747b-5896-8d3b-6aee17fe1b15",
+  "origin": "stream",
+  "source": "instagram",
+  "generator": "comment-gen@1.0",
+  "seq": 311,
+  "event_time": "2026-10-17T14:03:11.482Z",
+  "ingest_time": "2026-10-17T14:03:13.020Z",
+  "author": {
+    "user_id": "u_001011",
+    "handle": "@anon_77",
+    "followers": null
+  },
+  "text": "sprite siempre sprite",
+  "lang": null,
+  "brands": [
+    "sprite"
+  ],
+  "hashtags": [],
+  "payload": {
+    "comment_id": "17912345678901299",
+    "kind": "comment",
+    "media_id": "17855544433322211",
+    "media_type": "IMAGE",
+    "account_username": "sprite.sim",
+    "parent_id": null,
+    "like_count": 31,
+    "comments_count": 4,
+    "permalink": "https://sim.instagram.local/p/000812/"
+  },
+  "sim": {
+    "label_sentiment": "positive",
+    "scenario": null,
+    "chaos": [
+      "null_fields"
+    ]
+  }
+}

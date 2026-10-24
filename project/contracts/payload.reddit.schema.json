@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trend-analyzer.local/contracts/payload.reddit.schema.json",
+  "title": "Payload Reddit (simulado) v1.0",
+  "description": "Campo `payload` del envelope cuando source = reddit. Imita la API de Reddit; los valores son simulados. ARCHITECTURE.md §5.2.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["reddit_id", "kind", "subreddit", "title", "parent_id", "score", "upvote_ratio", "num_comments", "permalink", "flair"],
+  "properties": {
+    "reddit_id": { "type": "string", "pattern": "^t[13]_[a-z0-9]+$", "description": "t3_* para posts, t1_* para comentarios." },
+    "kind": { "enum": ["post", "comment"] },
+    "subreddit": { "type": "string", "pattern": "^r/[A-Za-z0-9_]+$" },
+    "title": { "type": ["string", "null"], "description": "Primera frase del texto en posts; null en comentarios." },
+    "parent_id": { "type": ["string", "null"], "pattern": "^t3_[a-z0-9]+$", "description": "Post simulado reciente al que responde un comentario; null en posts." },
+    "score": { "type": "integer", "description": "Puede ser negativo. Se normaliza a `likes`." },
+    "upvote_ratio": { "type": ["number", "null"], "minimum": 0, "maximum": 1, "description": "Solo posts." },
+    "num_comments": { "type": ["integer", "null"], "minimum": 0, "description": "Solo posts. Se normaliza a `comments`." },
+    "permalink": { "type": "string", "minLength": 1 },
+    "flair": { "type": ["string", "null"] }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "kind": { "const": "post" } }, "required": ["kind"] },
+      "then": {
+        "properties": {
+          "reddit_id": { "pattern": "^t3_" },
+          "title": { "type": "string", "minLength": 1 },
+          "parent_id": { "type": "null" },
+          "upvote_ratio": { "type": "number" },
+          "num_comments": { "type": "integer" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "comment" } }, "required": ["kind"] },
+      "then": {
+        "properties": {
+          "reddit_id": { "pattern": "^t1_" },
+          "title": { "type": "null" },
+          "parent_id": { "type": "string" },
+          "upvote_ratio": { "type": "null" },
+          "num_comments": { "type": "null" }
+        }
+      }
+    }
+  ]
+}

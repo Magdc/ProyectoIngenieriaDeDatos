@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "event_id": "2600d2b0-effd-555a-8c0a-a3817cfca95c",
+  "origin": "stream",
+  "source": "instagram",
+  "generator": "comment-gen@1.0",
+  "seq": 310,
+  "event_time": "2026-10-17T14:03:11.482Z",
+  "ingest_time": "2026-10-17T14:03:13.020Z",
+  "author": {
+    "user_hash": "ce888dd662f88c56ca6dc570fecbb2c33018bec76b16a9fbb0785dcd1ecdfea0",
+    "followers": 2301
+  },
+  "text": "Vamos al punto: me chifla Sprite sobre todo con el frío de Bogotá. Eso sí es sabor. 🥤 #sprite #colombia",
+  "lang": "es",
+  "brands": [
+    "sprite"
+  ],
+  "hashtags": [
+    "sprite",
+    "colombia"
+  ],
+  "payload": {
+    "comment_id": "17912345678901234",
+    "kind": "comment",
+    "media_id": "17855544433322211",
+    "media_type": "IMAGE",
+    "account_username": "sprite.sim",
+    "parent_id": null,
+    "like_count": 31,
+    "comments_count": 4,
+    "permalink": "https://sim.instagram.local/p/000812/"
+  },
+  "sim": {
+    "label_sentiment": "positive",
+    "scenario": null,
+    "chaos": []
+  },
+  "likes": 31,
+  "shares": null,
+  "comments": 4,
+  "sentiment_label": "positive",
+  "sentiment_score": 0.95,
+  "emotion_label": "joy",
+  "emotion_score": 0.9,
+  "nlp_model_version": "robertuito-sentiment@a1b2c3d+robertuito-emotion@e4f5a6b",
+  "process_time": "2026-10-17T14:03:13.900Z"
+}

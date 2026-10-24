@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "event_id": "1dccf826-30ba-5485-b536-8761c38b3f5b",
+  "origin": "historical",
+  "source": "facebook",
+  "generator": "comment-gen@1.0",
+  "seq": 9001,
+  "event_time": "2026-06-02T09:15:44.120Z",
+  "ingest_time": "2026-10-17T12:00:00.000Z",
+  "author": {
+    "user_id": "u_000900",
+    "handle": "Luisa Pérez",
+    "followers": 95
+  },
+  "text": "Mi aporte del día: no tolero Pepsi Cola en el trancón. Mejor me hubiera tomado un agua. Es mi opinión.",
+  "lang": "es",
+  "brands": [
+    "pepsi"
+  ],
+  "hashtags": [],
+  "payload": {
+    "comment_id": "1029384756_1111111111",
+    "kind": "comment",
+    "page_id": "sim-page-pepsi",
+    "page_name": "Pepsi (sim)",
+    "post_id": "sim-post-000100",
+    "parent_id": "sim-post-000100",
+    "reactions_total": 3,
+    "reactions": {
+      "like": 1,
+      "love": 0,
+      "haha": 0,
+      "wow": 0,
+      "sad": 1,
+      "angry": 1
+    },
+    "shares_count": 0,
+    "comments_count": 0,
+    "permalink": "https://sim.facebook.local/pepsi/posts/000100"
+  },
+  "sim": {
+    "label_sentiment": null,
+    "scenario": null,
+    "chaos": []
+  }
+}

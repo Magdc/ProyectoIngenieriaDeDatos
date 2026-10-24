@@ -1,6 +1,6 @@
 # TrendAnalyzer · Historias de Usuario (HU)
 
-> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.2** (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
+> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.6** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
 > Cada HU tiene un ID **HU-000**, su fase/lote de `ARCHITECTURE.md` §7, responsable, sprint y criterios de aceptación verificables.
 
 ---
@@ -57,6 +57,7 @@ Criterios de aceptación: lista verificable.
 | HU-005 | Recursos de streaming (BigQuery, secreto HMAC) | 2 · 2.4 | M + C | Must | 2 | ⬜ |
 | HU-006 | Federación OIDC GCP → AWS | 3 · 3.2 | M | Must | 2 | ⬜ |
 | HU-007 | Infraestructura AWS del lakehouse | 4 · 4.1 | M | Must | 2 | ⬜ |
+| HU-046 | Bootstrap de Terraform y entornos | 1 · 1.0 | M | Must | 2 | ⬜ |
 | **E2 · Simulación de fuentes** | | | | | | |
 | HU-008 | Adaptación del generador de comentarios | 1 · 1.1 | A | Must | 2 | ⬜ |
 | HU-009 | Librería común | 1 · 1.1 | A | Must | 2 | ⬜ |
@@ -68,6 +69,7 @@ Criterios de aceptación: lista verificable.
 | HU-015 | Caos controlado | 1 · 1.2 | A | Should | 2 | ⬜ |
 | HU-016 | Despliegue del simulador | 1 · 1.3 | A + M | Must | 2 | ⬜ |
 | HU-017 | Verificación de la ingesta | 1 · 1.4 | A | Should | 2 | ⬜ |
+| HU-047 | Entorno local de desarrollo | 1 · 1.5 | A | Should | 2 | ⬜ |
 | **E3 · Streaming en GCP** | | | | | | |
 | HU-018 | Validación, deduplicación y DLQ | 2 · 2.1 | C | Must | 2 | ⬜ |
 | HU-019 | Persistencia Raw en GCS | 2 · 2.1 | C | Must | 2 | ⬜ |
@@ -91,6 +93,7 @@ Criterios de aceptación: lista verificable.
 | HU-034 | Catálogo de datos | 5 · 5.3 | A | Must | 2 | ⬜ |
 | HU-035 | Linaje de datos | 5 · 5.3 | A | Must | 2 | ⬜ |
 | HU-036 | Cumplimiento normativo y DAMA-DMBOK | 5 · 5.3 | A | Must | 2 | ⬜ |
+| HU-048 | Prueba de humo end-to-end | 5 · 5.4 | A | Must | 2 | ⬜ |
 | **E7 · Serving y alertas** | | | | | | |
 | HU-037 | Dashboard de tendencias y sentimiento | 6 · 6.1 | C | Must | Final | ⬜ |
 | HU-038 | Vista de relaciones | 6 · 6.1 | C | Should | Final | ⬜ |
@@ -121,6 +124,8 @@ Criterios de aceptación: lista verificable.
 - Existen los DDL de `posts_enriched`, `trend_windows`, `dlq_events` (BigQuery) y `posts_raw`, `posts`, tablas Curated (Athena).
 - Los contratos coinciden exactamente con `ARCHITECTURE.md` §5.
 - Todo cambio de interfaz modifica primero §5 y luego el código.
+- Los cambios compatibles (campos opcionales nuevos) mantienen `schema_version = "1.0"`; los incompatibles la suben y se migran.
+- Un test valida la salida del generador y del simulador (≥ 1.000 eventos por fuente) contra los schemas (§5.12).
 
 ### HU-002 · README y diagrama alineados con la v2
 
@@ -134,7 +139,7 @@ Criterios de aceptación: lista verificable.
 - README actualizado (v2.2): tabla de fuentes (Reddit, Facebook, Instagram), generador de comentarios, bloque de arquitectura, estructura del repo y notas de seguridad.
 - Se eliminan del README la nota de Reddit/OAuth, el aviso del token de Mastodon y las referencias a los datasets de emociones (TEC, GoEmotions, SemEval, DailyDialog).
 - Se retiran del README las referencias a Firestore, Cloud SQL, Neptune y Dataplex (ADR-09, ADR-10).
-- El diagrama (`LocalContext/trend_analyzer_multicloud.drawio`) incluye `stream-simulator` con el generador de comentarios, las fuentes Reddit/Facebook/Instagram simuladas, el exportador `gcs-to-s3` y EventBridge como schedule del workflow de Glue.
+- El diagrama (`docs/trend_analyzer_multicloud.drawio`) incluye `stream-simulator` con el generador de comentarios, las fuentes Reddit/Facebook/Instagram simuladas, el exportador `gcs-to-s3` y EventBridge como schedule del workflow de Glue.
 ### HU-003 · Decisiones de arquitectura cerradas
 
 | Épica | Fase · Lote | Responsable | Prioridad | Sprint | Depende de |
@@ -144,12 +149,13 @@ Criterios de aceptación: lista verificable.
 **Como** líder técnico **quiero** respuestas a las preguntas abiertas de `ARCHITECTURE.md` §9 y ADRs aprobados **para** desbloquear la construcción sin retrabajo.
 
 **Criterios de aceptación**
-- Confirmados proyecto y región de GCP, y cuenta y región de AWS.
+- Confirmados proyecto y región de GCP (`project-2911bf21-1f97-41aa-ac6`, `us-east1`) y cuenta y región de AWS (`648617469176`, `us-east-1`).
 - Decidido ADR-02 (Cloud Run vs. VM en GCE).
 - Confirmadas las tres fuentes (Reddit, Facebook, Instagram) y los cambios propuestos al generador (§3.2), en especial `marca`/`sentimiento` como parámetros y la columna opcional `sentimiento`; compartido el script del generador o su lista de plantillas.
 - Definida la empresa simulada y sus marcas (Postobón, Pepsi, Sprite y las demás que produzca el generador), con su rol propia/competidor (insumo de `brands.yaml`).
 - Aceptado el NLP en español con RoBERTuito/pysentimiento (ADR-05) y su licencia académica.
 - Verificada la disponibilidad de QuickSight y el estado real de `infra/`.
+- Definido el canal de alertas (correo, con las direcciones) y el responsable de las etiquetas (`owner=alejandro`).
 ---
 
 # E1 · Infraestructura como código
@@ -158,7 +164,7 @@ Criterios de aceptación: lista verificable.
 
 | Épica | Fase · Lote | Responsable | Prioridad | Sprint | Depende de |
 |---|---|---|---|---|---|
-| E1 | 1 · 1.3 | M | Must | 2 | HU-003 |
+| E1 | 1 · 1.3 | M | Must | 2 | HU-046 |
 
 **Como** líder técnico **quiero** provisionar con Terraform la base de GCP **para** que simulador y pipeline tengan dónde correr de forma reproducible.
 
@@ -212,6 +218,24 @@ Criterios de aceptación: lista verificable.
 - Roles `ta-glue-role`, `ta-historical-loader`, `ta-quicksight-role` con mínimo privilegio.
 - Outputs definidos: `lake_bucket`, `glue_db_names`, `athena_workgroup`, `exporter_role_arn`, `glue_role_arn`, `kms_key_arn`.
 
+### HU-046 · Bootstrap de Terraform y entornos
+
+| Épica | Fase · Lote | Responsable | Prioridad | Sprint | Depende de |
+|---|---|---|---|---|---|
+| E1 | 1 · 1.0 | M | Must | 2 | HU-003 |
+
+**Como** líder técnico **quiero** crear el proyecto de GCP, el estado remoto de Terraform y habilitar las APIs **para** provisionar toda la infraestructura desde cero de forma reproducible.
+
+**Criterios de aceptación**
+- Proyecto GCP `project-2911bf21-1f97-41aa-ac6` con facturación por crédito (a cargo de Alejandro Sepulveda) verificada, región de trabajo `us-east1` (ADR-12) y cuotas de Dataflow/Compute revisadas.
+- Miguel, Camila y Alejandro tienen acceso con roles mínimos a GCP y AWS, y Terraform se autentica en AWS con un perfil o SSO documentado.
+- APIs habilitadas: Pub/Sub, Dataflow, BigQuery, Cloud Run, Artifact Registry, Secret Manager, Cloud Scheduler, IAM, Monitoring y Logging.
+- Estado remoto de Terraform: bucket GCS con versionado (GCP) y bucket S3 con bloqueo (AWS), ADR-14.
+- Existe la estructura `infra/{gcp,aws}/{modules,environments/dev}` y `terraform init` y `terraform validate` pasan en ambas nubes.
+- `terraform.tfvars` está en `.gitignore` y se versiona un `terraform.tfvars.example` sin secretos.
+- Presupuesto mínimo con alerta activo en GCP y AWS desde el primer día (se amplía en HU-043).
+- Etiquetas comunes definidas: `project=trend-analyzer`, `env=dev`, `owner`.
+
 ---
 
 # E2 · Simulación de fuentes
@@ -226,13 +250,14 @@ Criterios de aceptación: lista verificable.
 
 **Criterios de aceptación**
 - El generador vive en `src/simulator/generator/comment_generator.py` y expone `generate(rng, marca=None, sentimiento=None) -> Comentario` como función pura, con un `random.Random` inyectado (sin `random.choice` global ni semilla global).
-- Acepta `marca` y `sentimiento` opcionales, para que el simulador controle los pesos de marca (§3.8) y los escenarios de demo (§3.7).
-- Devuelve una tercera columna opcional `sentimiento` ∈ `positivo|negativo|neutro` (ground truth para HU-033).
-- Normaliza la marca a una clave canónica (`Postobón` → `postobon`) con los alias de `brands.yaml`, y cada marca que produzca el generador está registrada en ese archivo.
-- Se elimina todo `sleep`, bucle infinito, `print` o escritura directa a archivo del script original.
-- Amplía la variedad: más plantillas por marca y sentimiento, aperturas y cierres intercambiables, comentarios neutros/informativos y algunos con dos marcas; mezcla longitudes y conserva el ruido (typos, jerga, emojis).
-- `scripts/generate_comments.py --n 50000 --seed 7 --out comentarios.csv` genera un CSV `marca,comentario` escrito siempre con el módulo `csv` (con comillas); los snapshots opcionales se suben a `gs://…-ta-datasets/snapshots/` y no se versionan en git.
-- Tests con `pytest`: misma semilla ⇒ mismo comentario; la marca solicitada aparece en la columna y en el texto.
+- Las marcas se leen de `brands.yaml`: `postobon` (propia), `pepsi` y `sprite` (competidores); CocaCola y Colombiana quedan fuera de v1. Clave canónica sin tilde.
+- `Comentario` incluye `marca`, `texto`, `categoria` y `sentimiento`. Mapeo (ADR-13): `gusto → positive`, `asco → negative`, `informativo → neutral`, `nostalgia` y `adiccion → null`. El parámetro `sentimiento` restringe la categoría.
+- Se añade la categoría `informativo` (mínimo 15 plantillas) y al menos 15 plantillas comparativas con dos marcas (p. ej. "Pepsi vs Postobón").
+- Los nombres de marca se protegen del *typo* del ruido; con el ruido por defecto, ≥ 95% de los comentarios conservan la marca detectable por alias normalizados (sin tildes ni mayúsculas).
+- Se expone una función que extrae `hashtags[]` del texto con regex, porque los cierres ya incluyen hashtags (`#Colombia`, `#<marca>`).
+- Se elimina todo `sleep`, bucle infinito, `print` o escritura directa a archivo; la unicidad en batch usa `hashlib`, no `hash()` de Python.
+- `scripts/generate_comments.py --n 50000 --seed 7 --out comentarios.csv` genera un CSV con las columnas `marca,comentario,categoria,sentimiento`, escrito con el módulo `csv`; los snapshots opcionales se suben a `gs://…-ta-datasets/snapshots/` y no se versionan.
+- Tests con `pytest`: misma semilla ⇒ mismo comentario; la marca pedida aparece en la columna y en el texto; el mapeo categoría → sentimiento se cumple.
 ### HU-009 · Librería común
 
 | Épica | Fase · Lote | Responsable | Prioridad | Sprint | Depende de |
@@ -358,6 +383,21 @@ Criterios de aceptación: lista verificable.
 - Reporta tasa de mensajes por fuente (~0.5 msg/s), cantidad de `event_id` únicos y `seq` actual.
 - Verifica que el cursor sobrevive a un reinicio del servicio (el `seq` continúa, sin reiniciar en 0).
 
+### HU-047 · Entorno local de desarrollo
+
+| Épica | Fase · Lote | Responsable | Prioridad | Sprint | Depende de |
+|---|---|---|---|---|---|
+| E2 | 1 · 1.5 | A | Should | 2 | HU-010 a HU-013 |
+
+**Como** ingeniero de datos **quiero** correr el simulador y el pipeline en local contra el emulador de Pub/Sub **para** desarrollar y probar sin gastar créditos ni depender de la nube.
+
+**Criterios de aceptación**
+- `docker-compose up` levanta el emulador de Pub/Sub y el simulador con `SIM_SEED` y las variables de entorno de §5.1.
+- Un consumidor local valida cada mensaje contra el schema del envelope y reporta tasa y ids únicos.
+- El pipeline de Dataflow se ejecuta con `DirectRunner` leyendo del emulador.
+- No requiere credenciales de GCP ni de AWS.
+- El README documenta los comandos de arranque, prueba y apagado.
+
 ---
 
 # E3 · Streaming en GCP
@@ -444,6 +484,8 @@ Criterios de aceptación: lista verificable.
 - `trend_windows` contiene ventanas deslizantes de 5 min (paso 1 min) por `brand` × `source`.
 - Cada ventana incluye `n_posts`, `n_negative`, `n_positive`, `avg_sentiment`, `emotion_counts`, `zscore_volume`, `zscore_sentiment` e `is_alert`.
 - La latencia `process_time − event_time` cumple p95 < 5 min en eventos no tardíos.
+- Las ventanas toleran eventos tardíos hasta 30 min; los más tardíos se escriben en `posts_enriched` sin recalcular ventanas (contador `late_events`).
+- Arranque en frío: `is_alert = false` hasta tener 60 ventanas de baseline (§5.12).
 
 ---
 
@@ -495,6 +537,7 @@ Criterios de aceptación: lista verificable.
 - Deduplica por `event_id`, corrige tipos y limpia el texto.
 - Aplica las reglas de calidad definidas en HU-032.
 - Duplicados < 1% medidos en Trusted.
+- El job es idempotente: sobrescribe las particiones `dt`, de modo que reejecutarlo no duplica datos.
 
 ### HU-027 · Capa Curated (modelo estrella)
 
@@ -590,7 +633,7 @@ Criterios de aceptación: lista verificable.
 **Como** responsable de gobernanza **quiero** comparar `sentiment_label` con `sim.label_sentiment` **para** cuantificar qué tan bien funciona el modelo en español.
 
 **Criterios de aceptación**
-- Reporte con accuracy, precisión y recall por clase (matriz de confusión) del sentimiento, solo cuando el generador entrega la columna `sentimiento` (HU-008).
+- Reporte con accuracy, precisión y recall por clase (matriz de confusión) del sentimiento, sobre los eventos con `label_sentiment` distinto de `null` (`nostalgia` y `adiccion` se excluyen, ADR-13).
 - No hay ground truth de emoción: para `emotion_label` solo se reporta su distribución.
 - `label_sentiment` se usa solo para evaluación, nunca como feature ni como respuesta del pipeline.
 - Se declara la limitación: comentarios de plantillas y modelos entrenados en tweets hacen que las métricas sean optimistas.
@@ -632,6 +675,21 @@ Criterios de aceptación: lista verificable.
 - Nota de cumplimiento de la Ley 1581: anonimización, acceso restringido a `raw/`, minimización.
 - Se declara explícitamente que los datos son sintéticos y las limitaciones (comentarios de plantillas con vocabulario acotado, asociación marca→sentimiento artificial, métricas de NLP optimistas).
 
+### HU-048 · Prueba de humo end-to-end
+
+| Épica | Fase · Lote | Responsable | Prioridad | Sprint | Depende de |
+|---|---|---|---|---|---|
+| E6 | 5 · 5.4 | A | Must | 2 | HU-025, HU-026, HU-027 |
+
+**Como** equipo **quiero** una prueba automatizada que siga un evento desde el simulador hasta Athena **para** demostrar el flujo completo antes del Sprint 2 y medir las latencias reales.
+
+**Criterios de aceptación**
+- `scripts/smoke_e2e.py` emite (o localiza) un evento centinela con `event_id` conocido.
+- Verifica su aparición en BigQuery `posts_enriched` (< 1 min), en `enriched/` de GCS, en `raw/origin=stream/` de S3 y en `ta_curated.fact_posts` consultado desde Athena.
+- Reporta la latencia de cada etapa y falla si algún paso excede su objetivo.
+- Comprueba que el evento no contiene `handle` ni `user_id` en ningún punto posterior a Dataflow.
+- Los resultados se guardan como evidencia para el informe (HU-044) y el ensayo (HU-045).
+
 ---
 
 # E7 · Serving y alertas
@@ -650,6 +708,7 @@ Criterios de aceptación: lista verificable.
 - Tiempo de respuesta < 3 s (prueba manual documentada).
 - Acceso por roles IAM.
 - Se documenta la reducción ≥ 50% del tiempo de elaboración de informes.
+- Los datos se almacenan en UTC y el dashboard muestra la hora en `America/Bogota`.
 
 ### HU-038 · Vista de relaciones
 
@@ -673,9 +732,10 @@ Criterios de aceptación: lista verificable.
 
 **Criterios de aceptación**
 - Cuando `trend_windows.is_alert` es verdadero se publica un mensaje en `ta-alerts`.
-- El mensaje dispara una notificación (canal a definir en HU-003).
+- El mensaje dispara una notificación por correo (alerta basada en logs de Cloud Monitoring con canal email, §5.12).
 - La alerta incluye marca, fuente, ventana y magnitud del cambio.
 - La detección se hace en < 5 min.
+- Hay un *cooldown* de 15 min por marca × fuente × tipo de alerta para evitar alertas repetidas.
 
 ### HU-040 · Escenarios de demo
 
@@ -706,6 +766,7 @@ Criterios de aceptación: lista verificable.
 - En cada PR corren `pytest`, `terraform fmt/validate/plan` y el test de ausencia de `handle`/`user_id`.
 - Se construyen y publican las imágenes Docker en Artifact Registry.
 - Ningún secreto está en el repositorio y `terraform.tfvars` permanece en `.gitignore`.
+- Hay *pre-commit* con `gitleaks` y el test de contratos de HU-001 corre en cada PR.
 
 ### HU-042 · Observabilidad
 
@@ -734,6 +795,7 @@ Criterios de aceptación: lista verificable.
 - Alertas de presupuesto en GCP y AWS.
 - Dataflow configurado con `maxNumWorkers` de 1 a 2.
 - Las etiquetas permiten desglosar costos por componente.
+- Políticas de ciclo de vida aplicadas: GCS `raw/` y `dlq/` a 30 días, partición de `posts_enriched` a 90 días, `athena-results/` a 7 días (§5.12).
 
 ---
 
@@ -752,6 +814,7 @@ Criterios de aceptación: lista verificable.
 - Tabla de KPIs medidos vs. objetivo: latencia < 5 min, completitud ≥ 95%, unicidad ≥ 99%, duplicados < 1%, dashboard < 3 s, anonimización 100%.
 - Limitaciones declaradas: datos sintéticos, comentarios de plantillas con vocabulario acotado, asociación marca→sentimiento artificial, métricas de NLP optimistas.
 - Cita los modelos NLP usados (RoBERTuito/pysentimiento, entrenados con corpus TASS) y su licencia.
+- Cada KPI tiene una consulta o notebook reproducible, y la tabla del informe se alimenta de los resultados de HU-048.
 
 ### HU-045 · Sustentación y runbook
 
@@ -764,4 +827,5 @@ Criterios de aceptación: lista verificable.
 **Criterios de aceptación**
 - Guion de demo: simulador → Pub/Sub → Dataflow → BigQuery → S3 → Athena → QuickSight, incluyendo un pico y su alerta.
 - Runbook con encendido/apagado, reinicio del simulador, reproceso desde `raw/` y atención de la DLQ.
+- Plan B de la demo si falla algo en vivo: capturas del dashboard, ejecución grabada y simulador local (HU-047).
 - Ensayo completo realizado antes del 11 nov.

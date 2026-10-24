@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "event_id": "4217f11c-ddec-5cb3-842d-14dd07bcac4a",
+  "origin": "stream",
+  "source": "reddit",
+  "generator": "comment-gen@1.0",
+  "seq": 1207,
+  "event_time": "2026-10-17T14:03:11.482Z",
+  "ingest_time": "2026-10-17T14:03:13.020Z",
+  "author": {
+    "user_id": "u_000481",
+    "handle": "u/mariag_89",
+    "followers": 412
+  },
+  "text": "Mi aporte del día: no tolero Pepsi Cola en el trancón. Mejor me hubiera tomado un agua. Es mi opinión.",
+  "lang": "es",
+  "brands": [
+    "pepsi"
+  ],
+  "hashtags": [],
+  "payload": {
+    "comment_id": "17912345678901234",
+    "kind": "comment",
+    "media_id": "17855544433322211",
+    "media_type": "IMAGE",
+    "account_username": "sprite.sim",
+    "parent_id": null,
+    "like_count": 31,
+    "comments_count": 4,
+    "permalink": "https://sim.instagram.local/p/000812/"
+  },
+  "sim": {
+    "label_sentiment": "negative",
+    "scenario": null,
+    "chaos": []
+  }
+}

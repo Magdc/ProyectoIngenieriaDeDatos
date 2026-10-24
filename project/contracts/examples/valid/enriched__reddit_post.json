@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "event_id": "6a8a4ff4-c925-5e12-80b2-a9e21f4daccd",
+  "origin": "stream",
+  "source": "reddit",
+  "generator": "comment-gen@1.0",
+  "seq": 1208,
+  "event_time": "2026-10-17T14:03:11.482Z",
+  "ingest_time": "2026-10-17T14:03:13.020Z",
+  "author": {
+    "user_hash": "aeda34390f9ca094ea020f581db15a898e29048bf431939748153869692a2d9f",
+    "followers": 1530
+  },
+  "text": "Opinión personal: soy fan d Postobón y no pienso cambiar. Volvería mil veces. 🙌 #postobon",
+  "lang": "es",
+  "brands": [
+    "postobon"
+  ],
+  "hashtags": [
+    "postobon"
+  ],
+  "payload": {
+    "reddit_id": "t3_m4p7q2",
+    "kind": "post",
+    "subreddit": "r/medellin",
+    "title": "Opinión personal: soy fan d Postobón y no pienso cambiar.",
+    "parent_id": null,
+    "score": 112,
+    "upvote_ratio": 0.94,
+    "num_comments": 18,
+    "permalink": "/r/medellin/comments/m4p7q2/_/",
+    "flair": "Opinión"
+  },
+  "sim": {
+    "label_sentiment": "positive",
+    "scenario": null,
+    "chaos": []
+  },
+  "likes": 112,
+  "shares": null,
+  "comments": 18,
+  "sentiment_label": "positive",
+  "sentiment_score": 0.93,
+  "emotion_label": "joy",
+  "emotion_score": 0.88,
+  "nlp_model_version": "robertuito-sentiment@a1b2c3d+robertuito-emotion@e4f5a6b",
+  "process_time": "2026-10-17T14:03:13.900Z"
+}

@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trend-analyzer.local/contracts/envelope.enriched.v1.schema.json",
+  "title": "Envelope enriquecido v1.0",
+  "description": "Lo que sale de Dataflow / loader histórico hacia BigQuery y S3: el envelope sin author.user_id ni author.handle, más author.user_hash, engagement normalizado, NLP y process_time. additionalProperties=false en `author` garantiza el KPI de 100% anonimización. ARCHITECTURE.md §5.2.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "event_id", "origin", "source", "generator", "seq", "event_time", "ingest_time", "author", "text", "brands", "hashtags", "payload", "sim", "likes", "shares", "comments", "sentiment_label", "sentiment_score", "emotion_label", "emotion_score", "nlp_model_version", "process_time"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "event_id": { "$ref": "envelope.v1.schema.json#/$defs/uuid" },
+    "origin": { "enum": ["stream", "historical"] },
+    "source": { "enum": ["reddit", "facebook", "instagram"] },
+    "generator": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*@[0-9]+\\.[0-9]+(\\.[0-9]+)?$" },
+    "seq": { "type": "integer", "minimum": 0 },
+    "event_time": { "$ref": "envelope.v1.schema.json#/$defs/timestamp_utc" },
+    "ingest_time": { "$ref": "envelope.v1.schema.json#/$defs/timestamp_utc" },
+    "author": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["user_hash"],
+      "properties": {
+        "user_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "HMAC-SHA256 hex (ADR-06)." },
+        "followers": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "text": { "type": "string", "minLength": 1 },
+    "lang": { "type": ["string", "null"], "pattern": "^[a-z]{2}$" },
+    "brands": { "type": "array", "items": { "$ref": "envelope.v1.schema.json#/$defs/brand_key" }, "uniqueItems": true },
+    "hashtags": { "type": "array", "items": { "type": "string", "minLength": 1, "pattern": "^\\S+$" } },
+    "payload": { "type": "object" },
+    "sim": { "$ref": "envelope.v1.schema.json#/properties/sim" },
+    "likes": { "type": "integer", "description": "score (Reddit, puede ser negativo) | reactions_total (Facebook) | like_count (Instagram)." },
+    "shares": { "type": ["integer", "null"], "minimum": 0, "description": "shares_count (Facebook); null en Reddit e Instagram." },
+    "comments": { "type": ["integer", "null"], "minimum": 0, "description": "num_comments (Reddit) | comments_count (Facebook, Instagram). Null en comentarios de Reddit." },
+    "sentiment_label": { "enum": ["negative", "neutral", "positive"] },
+    "sentiment_score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "emotion_label": { "enum": ["joy", "sadness", "anger", "fear", "disgust", "surprise", "neutral"] },
+    "emotion_score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "nlp_model_version": { "type": "string", "pattern": "^robertuito-sentiment@\\S+\\+robertuito-emotion@\\S+$" },
+    "process_time": { "$ref": "envelope.v1.schema.json#/$defs/timestamp_utc" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "source": { "const": "reddit" } }, "required": ["source"] },
+      "then": {
+        "properties": {
+          "payload": { "$ref": "payload.reddit.schema.json" },
+          "shares": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "source": { "const": "facebook" } }, "required": ["source"] },
+      "then": {
+        "properties": {
+          "payload": { "$ref": "payload.facebook.schema.json" },
+          "shares": { "type": "integer" },
+          "comments": { "type": "integer" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "source": { "const": "instagram" } }, "required": ["source"] },
+      "then": {
+        "properties": {
+          "payload": { "$ref": "payload.instagram.schema.json" },
+          "shares": { "type": "null" },
+          "comments": { "type": "integer" }
+        }
+      }
+    }
+  ]
+}

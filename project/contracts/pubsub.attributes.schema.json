@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trend-analyzer.local/contracts/pubsub.attributes.schema.json",
+  "title": "Atributos de mensaje Pub/Sub v1.0",
+  "description": "Atributos que el simulador y el loader adjuntan a cada mensaje de ta-raw-{source}. Dataflow usa `event_id` como id_label para deduplicar. ARCHITECTURE.md §5.3.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_id", "source", "origin", "schema_version"],
+  "properties": {
+    "event_id": { "$ref": "envelope.v1.schema.json#/$defs/uuid" },
+    "source": { "enum": ["reddit", "facebook", "instagram"] },
+    "origin": { "enum": ["stream", "historical"] },
+    "schema_version": { "const": "1.0" }
+  }
+}

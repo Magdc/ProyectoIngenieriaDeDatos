@@ -1,0 +1,381 @@
+{
+  "tool": "verify_ingest 1.0",
+  "command": "restart-check",
+  "generated_at": "2026-10-21T00:59:11.600Z",
+  "project": "ta-local",
+  "sources": [
+    "reddit",
+    "facebook",
+    "instagram"
+  ],
+  "topic_template": "ta-raw-{source}",
+  "cursor_backend": "local: /state",
+  "schema_validation": true,
+  "expect_chaos": false,
+  "thresholds": {
+    "rate_min": 0.35,
+    "rate_max": 0.65,
+    "min_messages": 10,
+    "min_unique_ratio": 0.99,
+    "checkpoint_every": 50
+  },
+  "restart_mode": "wait",
+  "windows": {
+    "before": {
+      "start": "2026-10-21T00:59:11.634Z",
+      "end": "2026-10-21T01:00:11.634Z"
+    },
+    "transition": {
+      "start": "2026-10-21T01:00:11.634Z",
+      "end": "2026-10-21T01:00:51.631Z"
+    },
+    "after": {
+      "start": "2026-10-21T01:00:51.631Z",
+      "end": "2026-10-21T01:01:51.629Z"
+    }
+  },
+  "per_source": {
+    "reddit": {
+      "before": {
+        "source": "reddit",
+        "window_s": 60.0,
+        "deliveries": 31,
+        "messages": 31,
+        "redeliveries": 0,
+        "rate_msg_s": 0.5167,
+        "unique_event_ids": 31,
+        "unique_ratio": 1.0,
+        "duplicate_copies": 0,
+        "chaos_duplicates": 0,
+        "unexpected_duplicates": 0,
+        "malformed": 0,
+        "incomplete": 0,
+        "schema_checked": true,
+        "schema_invalid": 0,
+        "attr_mismatch": 0,
+        "source_mismatch": 0,
+        "seq_min": 100,
+        "seq_max": 130,
+        "seq_gaps": 0,
+        "kinds": {
+          "comment": 20,
+          "post": 11
+        },
+        "chaos": {},
+        "sample_errors": []
+      },
+      "transition": {
+        "source": "reddit",
+        "window_s": 39.998,
+        "deliveries": 19,
+        "messages": 19,
+        "redeliveries": 0,
+        "rate_msg_s": 0.475,
+        "unique_event_ids": 19,
+        "unique_ratio": 1.0,
+        "duplicate_copies": 0,
+        "chaos_duplicates": 0,
+        "unexpected_duplicates": 0,
+        "malformed": 0,
+        "incomplete": 0,
+        "schema_checked": true,
+        "schema_invalid": 0,
+        "attr_mismatch": 0,
+        "source_mismatch": 0,
+        "seq_min": 131,
+        "seq_max": 149,
+        "seq_gaps": 0,
+        "kinds": {
+          "comment": 12,
+          "post": 7
+        },
+        "chaos": {},
+        "sample_errors": []
+      },
+      "after": {
+        "source": "reddit",
+        "window_s": 59.998,
+        "deliveries": 29,
+        "messages": 29,
+        "redeliveries": 0,
+        "rate_msg_s": 0.4834,
+        "unique_event_ids": 29,
+        "unique_ratio": 1.0,
+        "duplicate_copies": 0,
+        "chaos_duplicates": 0,
+        "unexpected_duplicates": 0,
+        "malformed": 0,
+        "incomplete": 0,
+        "schema_checked": true,
+        "schema_invalid": 0,
+        "attr_mismatch": 0,
+        "source_mismatch": 0,
+        "seq_min": 150,
+        "seq_max": 178,
+        "seq_gaps": 0,
+        "kinds": {
+          "comment": 18,
+          "post": 11
+        },
+        "chaos": {},
+        "sample_errors": []
+      },
+      "cursor_before": {
+        "seed": 7,
+        "seq": 100,
+        "updated_at": "2026-10-21T00:59:10.116Z"
+      },
+      "cursor_after": {
+        "seed": 7,
+        "seq": 150,
+        "updated_at": "2026-10-21T01:00:50.969Z"
+      }
+    },
+    "facebook": {
+      "before": {
+        "source": "facebook",
+        "window_s": 60.0,
+        "deliveries": 31,
+        "messages": 31,
+        "redeliveries": 0,
+        "rate_msg_s": 0.5167,
+        "unique_event_ids": 31,
+        "unique_ratio": 1.0,
+        "duplicate_copies": 0,
+        "chaos_duplicates": 0,
+        "unexpected_duplicates": 0,
+        "malformed": 0,
+        "incomplete": 0,
+        "schema_checked": true,
+        "schema_invalid": 0,
+        "attr_mismatch": 0,
+        "source_mismatch": 0,
+        "seq_min": 102,
+        "seq_max": 132,
+        "seq_gaps": 0,
+        "kinds": {
+          "comment": 26,
+          "post": 5
+        },
+        "chaos": {},
+        "sample_errors": []
+      },
+      "transition": {
+        "source": "facebook",
+        "window_s": 39.998,
+        "deliveries": 19,
+        "messages": 19,
+        "redeliveries": 0,
+        "rate_msg_s": 0.475,
+        "unique_event_ids": 19,
+        "unique_ratio": 1.0,
+        "duplicate_copies": 0,
+        "chaos_duplicates": 0,
+        "unexpected_duplicates": 0,
+        "malformed": 0,
+        "incomplete": 0,
+        "schema_checked": true,
+        "schema_invalid": 0,
+        "attr_mismatch": 0,
+        "source_mismatch": 0,
+        "seq_min": 133,
+        "seq_max": 151,
+        "seq_gaps": 0,
+        "kinds": {
+          "comment": 17,
+          "post": 2
+        },
+        "chaos": {},
+        "sample_errors": []
+      },
+      "after": {
+        "source": "facebook",
+        "window_s": 59.998,
+        "deliveries": 28,
+        "messages": 28,
+        "redeliveries": 0,
+        "rate_msg_s": 0.4667,
+        "unique_event_ids": 28,
+        "unique_ratio": 1.0,
+        "duplicate_copies": 0,
+        "chaos_duplicates": 0,
+        "unexpected_duplicates": 0,
+        "malformed": 0,
+        "incomplete": 0,
+        "schema_checked": true,
+        "schema_invalid": 0,
+        "attr_mismatch": 0,
+        "source_mismatch": 0,
+        "seq_min": 152,
+        "seq_max": 179,
+        "seq_gaps": 0,
+        "kinds": {
+          "comment": 23,
+          "post": 5
+        },
+        "chaos": {},
+        "sample_errors": []
+      },
+      "cursor_before": {
+        "seed": 7,
+        "seq": 100,
+        "updated_at": "2026-10-21T00:59:07.645Z"
+      },
+      "cursor_after": {
+        "seed": 7,
+        "seq": 150,
+        "updated_at": "2026-10-21T01:00:45.022Z"
+      }
+    },
+    "instagram": {
+      "before": {
+        "source": "instagram",
+        "window_s": 60.0,
+        "deliveries": 27,
+        "messages": 27,
+        "redeliveries": 0,
+        "rate_msg_s": 0.45,
+        "unique_event_ids": 27,
+        "unique_ratio": 1.0,
+        "duplicate_copies": 0,
+        "chaos_duplicates": 0,
+        "unexpected_duplicates": 0,
+        "malformed": 0,
+        "incomplete": 0,
+        "schema_checked": true,
+        "schema_invalid": 0,
+        "attr_mismatch": 0,
+        "source_mismatch": 0,
+        "seq_min": 105,
+        "seq_max": 131,
+        "seq_gaps": 0,
+        "kinds": {
+          "comment": 27
+        },
+        "chaos": {},
+        "sample_errors": []
+      },
+      "transition": {
+        "source": "instagram",
+        "window_s": 39.998,
+        "deliveries": 19,
+        "messages": 19,
+        "redeliveries": 0,
+        "rate_msg_s": 0.475,
+        "unique_event_ids": 19,
+        "unique_ratio": 1.0,
+        "duplicate_copies": 0,
+        "chaos_duplicates": 0,
+        "unexpected_duplicates": 0,
+        "malformed": 0,
+        "incomplete": 0,
+        "schema_checked": true,
+        "schema_invalid": 0,
+        "attr_mismatch": 0,
+        "source_mismatch": 0,
+        "seq_min": 132,
+        "seq_max": 150,
+        "seq_gaps": 0,
+        "kinds": {
+          "comment": 19
+        },
+        "chaos": {},
+        "sample_errors": []
+      },
+      "after": {
+        "source": "instagram",
+        "window_s": 59.998,
+        "deliveries": 29,
+        "messages": 29,
+        "redeliveries": 0,
+        "rate_msg_s": 0.4834,
+        "unique_event_ids": 29,
+        "unique_ratio": 1.0,
+        "duplicate_copies": 0,
+        "chaos_duplicates": 0,
+        "unexpected_duplicates": 0,
+        "malformed": 0,
+        "incomplete": 0,
+        "schema_checked": true,
+        "schema_invalid": 0,
+        "attr_mismatch": 0,
+        "source_mismatch": 0,
+        "seq_min": 151,
+        "seq_max": 179,
+        "seq_gaps": 0,
+        "kinds": {
+          "comment": 29
+        },
+        "chaos": {},
+        "sample_errors": []
+      },
+      "cursor_before": {
+        "seed": 7,
+        "seq": 100,
+        "updated_at": "2026-10-21T00:59:00.798Z"
+      },
+      "cursor_after": {
+        "seed": 7,
+        "seq": 150,
+        "updated_at": "2026-10-21T01:00:47.795Z"
+      }
+    }
+  },
+  "checks": [
+    {
+      "source": "reddit",
+      "check": "reinicio",
+      "status": "ok",
+      "detail": "antes llegó a seq 130; después reanudó en 131 y siguió hasta 178"
+    },
+    {
+      "source": "reddit",
+      "check": "repetidos",
+      "status": "ok",
+      "detail": "0 event_id repetidos tras el reinicio (máximo esperado 50, mismos ids)"
+    },
+    {
+      "source": "reddit",
+      "check": "cursor",
+      "status": "ok",
+      "detail": "cursor 100 → 150 (seed 7)"
+    },
+    {
+      "source": "facebook",
+      "check": "reinicio",
+      "status": "ok",
+      "detail": "antes llegó a seq 132; después reanudó en 133 y siguió hasta 179"
+    },
+    {
+      "source": "facebook",
+      "check": "repetidos",
+      "status": "ok",
+      "detail": "0 event_id repetidos tras el reinicio (máximo esperado 50, mismos ids)"
+    },
+    {
+      "source": "facebook",
+      "check": "cursor",
+      "status": "ok",
+      "detail": "cursor 100 → 150 (seed 7)"
+    },
+    {
+      "source": "instagram",
+      "check": "reinicio",
+      "status": "ok",
+      "detail": "antes llegó a seq 131; después reanudó en 132 y siguió hasta 179"
+    },
+    {
+      "source": "instagram",
+      "check": "repetidos",
+      "status": "ok",
+      "detail": "0 event_id repetidos tras el reinicio (máximo esperado 50, mismos ids)"
+    },
+    {
+      "source": "instagram",
+      "check": "cursor",
+      "status": "ok",
+      "detail": "cursor 100 → 150 (seed 7)"
+    }
+  ],
+  "verdict": "ok"
+}

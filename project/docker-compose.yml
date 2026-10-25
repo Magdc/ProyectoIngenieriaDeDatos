@@ -1,0 +1,119 @@
+# Entorno local de TrendAnalyzer (Lote 1.5, HU-047). Guía: LOCAL_DEV.md · ARCHITECTURE.md §3.12.
+#
+# Sin credenciales de GCP ni de AWS: el simulador publica en el emulador de Pub/Sub
+# y guarda el cursor en un volumen local. Se usa desde project/:
+#
+#   bash scripts/local_dev.sh up        # emulador + topics + simulador
+#   bash scripts/local_dev.sh verify    # consumidor de validación (schema, tasa, ids únicos)
+#   bash scripts/local_dev.sh down      # apaga (conserva el cursor); reset lo borra
+#
+# Variables opcionales (en el shell o en un .env junto a este archivo):
+#   SIM_SEED (7) · SIM_CHAOS_ENABLED (false) · SIM_PORT (8080) · PUBSUB_EMULATOR_PORT (8085)
+
+name: trendanalyzer-local
+
+x-local-env: &local-env
+  ENV: local
+  GCP_PROJECT: ta-local                 # proyecto ficticio del emulador; nunca el real
+  GCP_REGION: us-central1
+  PUBSUB_EMULATOR_HOST: pubsub-emulator:8085
+  SIM_SOURCES: reddit,facebook,instagram
+  SIM_TOPIC_TEMPLATE: "ta-raw-{source}"
+  SIM_SEED: "${SIM_SEED:-7}"
+  SIM_STATE_BACKEND: local
+  SIM_STATE_DIR: /state
+
+x-tools-build: &tools-build
+  context: ./local
+  dockerfile: validator.Dockerfile
+
+services:
+  pubsub-emulator:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    command:
+      - gcloud
+      - beta
+      - emulators
+      - pubsub
+      - start
+      - --project=ta-local
+      - --host-port=0.0.0.0:8085
+    ports:
+      - "${PUBSUB_EMULATOR_PORT:-8085}:8085"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8085'"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+      start_period: 10s
+
+  # Crea ta-raw-{source}, ta-raw-{source}-df, ta-dlq y ta-alerts en el emulador (§5.3)
+  # y deja el volumen del cursor escribible para el usuario del simulador (uid 10001, §5.15).
+  pubsub-init:
+    build: *tools-build
+    image: ta-local-tools:latest
+    environment: *local-env
+    working_dir: /work
+    volumes:
+      - ./src:/work/src:ro
+      - ./scripts:/work/scripts:ro
+      - sim-state:/state
+    command: ["sh", "-c", "chown -R 10001:10001 /state && python scripts/local_pubsub_init.py"]
+    depends_on:
+      pubsub-emulator:
+        condition: service_healthy
+    restart: "no"
+
+  simulator:
+    build:
+      context: .
+      dockerfile: src/simulator/Dockerfile
+      target: runtime
+    image: ta-stream-simulator:local
+    environment:
+      <<: *local-env
+      SIM_CHAOS_ENABLED: "${SIM_CHAOS_ENABLED:-false}"
+      SIM_PUBLISHER: pubsub
+      PORT: "8080"
+    volumes:
+      - sim-state:/state
+    ports:
+      - "${SIM_PORT:-8080}:8080"
+    depends_on:
+      pubsub-init:
+        condition: service_completed_successfully
+    healthcheck:
+      # Dentro del contenedor /healthz sí responde (la restricción de §3.1 es del frontend de Cloud Run).
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    stop_grace_period: 20s   # tiempo para guardar el cursor al recibir SIGTERM
+    restart: "no"
+
+  # Consumidor de validación (Lote 1.4 reutilizado): schema, tasa e ids únicos.
+  # Solo corre bajo demanda: docker compose run --rm validator measure ...
+  validator:
+    build: *tools-build
+    image: ta-local-tools:latest
+    profiles: ["tools"]
+    environment: *local-env
+    working_dir: /work
+    volumes:
+      - ./src:/work/src:ro
+      - ./scripts:/work/scripts:ro
+      - ./contracts:/work/contracts:ro
+      - sim-state:/state:ro
+      - ./evidencia:/work/evidencia
+    entrypoint: ["python", "scripts/verify_ingest.py"]
+    command: ["measure", "--duration", "60", "--validate", "yes", "--cursor", "local"]
+    depends_on:
+      simulator:
+        condition: service_healthy
+
+  # Lote 2.1: aquí se sumará el servicio "dataflow-local" (Apache Beam con DirectRunner)
+  # leyendo de ta-raw-{source}-df en este mismo emulador (criterio pendiente de HU-047).
+
+volumes:
+  sim-state:

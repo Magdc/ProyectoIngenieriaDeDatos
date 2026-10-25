@@ -1,0 +1,172 @@
+{
+  "command": "check",
+  "verdict": "ok",
+  "checked_at": "2026-10-21T13:56:20+00:00",
+  "target": "cloud",
+  "plan": {
+    "run_id": "20261021135056-8fcf",
+    "sentinel_event_id": "0b3f8db8-dadb-5afa-84f6-ac51ba87bb2c",
+    "messages": [
+      {
+        "name": "sentinel",
+        "topic_source": "reddit",
+        "expect": "raw",
+        "event_id": "0b3f8db8-dadb-5afa-84f6-ac51ba87bb2c"
+      },
+      {
+        "name": "sentinel_duplicate",
+        "topic_source": "reddit",
+        "expect": "raw",
+        "event_id": "0b3f8db8-dadb-5afa-84f6-ac51ba87bb2c"
+      },
+      {
+        "name": "truncated_json",
+        "topic_source": "reddit",
+        "expect": "json",
+        "event_id": "f188f749-b908-5a5f-9149-5447e7ed4a94"
+      },
+      {
+        "name": "missing_field",
+        "topic_source": "reddit",
+        "expect": "schema",
+        "event_id": "542a6a5d-f7df-52f2-81a7-8a759d6a674f"
+      },
+      {
+        "name": "attribute_mismatch",
+        "topic_source": "reddit",
+        "expect": "attributes",
+        "event_id": "7e560861-73cf-5f35-a9e2-931c4404bf43"
+      },
+      {
+        "name": "wrong_topic",
+        "topic_source": "facebook",
+        "expect": "routing",
+        "event_id": "ebb9f25f-b5a6-5086-bf33-55df7fc547ba"
+      },
+      {
+        "name": "not_utf8",
+        "topic_source": "reddit",
+        "expect": "encoding",
+        "event_id": "786239e3-90ad-53c9-88f1-0452911eac3e"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "name": "sentinel_in_raw_once",
+      "status": "ok",
+      "detail": "1 copia(s) del centinela 0b3f8db8-dadb-5afa-84f6-ac51ba87bb2c en raw/ (esperada 1; se publicó 2 veces)"
+    },
+    {
+      "name": "dlq_file:truncated_json",
+      "status": "ok",
+      "detail": "esperado 1 registro 'json'; encontrados 1 ['json']"
+    },
+    {
+      "name": "dlq_file:missing_field",
+      "status": "ok",
+      "detail": "esperado 1 registro 'schema'; encontrados 1 ['schema']"
+    },
+    {
+      "name": "dlq_file:attribute_mismatch",
+      "status": "ok",
+      "detail": "esperado 1 registro 'attributes'; encontrados 1 ['attributes']"
+    },
+    {
+      "name": "dlq_file:wrong_topic",
+      "status": "ok",
+      "detail": "esperado 1 registro 'routing'; encontrados 1 ['routing']"
+    },
+    {
+      "name": "dlq_file:not_utf8",
+      "status": "ok",
+      "detail": "esperado 1 registro 'encoding'; encontrados 1 ['encoding']"
+    },
+    {
+      "name": "dlq_topic:truncated_json",
+      "status": "ok",
+      "detail": "esperado 'json' en ta-dlq; recibidos 1 ['json']"
+    },
+    {
+      "name": "dlq_topic:missing_field",
+      "status": "ok",
+      "detail": "esperado 'schema' en ta-dlq; recibidos 1 ['schema']"
+    },
+    {
+      "name": "dlq_topic:attribute_mismatch",
+      "status": "ok",
+      "detail": "esperado 'attributes' en ta-dlq; recibidos 1 ['attributes']"
+    },
+    {
+      "name": "dlq_topic:wrong_topic",
+      "status": "ok",
+      "detail": "esperado 'routing' en ta-dlq; recibidos 1 ['routing']"
+    },
+    {
+      "name": "dlq_topic:not_utf8",
+      "status": "ok",
+      "detail": "esperado 'encoding' en ta-dlq; recibidos 1 ['encoding']"
+    },
+    {
+      "name": "raw_no_duplicates",
+      "status": "ok",
+      "detail": "0 copia(s) repetida(s) por event_id en raw/ (máximo 0)"
+    },
+    {
+      "name": "raw_lines_valid",
+      "status": "ok",
+      "detail": "0 línea(s) de raw/ que no son JSON o no coinciden con su partición"
+    }
+  ],
+  "dlq_topic_messages": 5,
+  "summary": {
+    "root": "gs://project-0568d9ba-848f-413c-88b-ta-lake",
+    "hours_scanned": [
+      "2026-10-21T12",
+      "2026-10-21T13"
+    ],
+    "raw": {
+      "reddit": {
+        "files": 1,
+        "lines": 220,
+        "unique_event_ids": 220,
+        "duplicate_event_ids": 0,
+        "extra_copies": 0,
+        "bad_lines": 0
+      },
+      "facebook": {
+        "files": 1,
+        "lines": 215,
+        "unique_event_ids": 215,
+        "duplicate_event_ids": 0,
+        "extra_copies": 0,
+        "bad_lines": 0
+      },
+      "instagram": {
+        "files": 1,
+        "lines": 222,
+        "unique_event_ids": 222,
+        "duplicate_event_ids": 0,
+        "extra_copies": 0,
+        "bad_lines": 0
+      }
+    },
+    "raw_total_lines": 657,
+    "raw_total_extra_copies": 0,
+    "dlq": {
+      "files": 3,
+      "records": 10,
+      "by_error_type": {
+        "attributes": 2,
+        "encoding": 2,
+        "json": 2,
+        "routing": 2,
+        "schema": 2
+      },
+      "by_source": {
+        "facebook": 2,
+        "reddit": 8
+      }
+    }
+  }
+}

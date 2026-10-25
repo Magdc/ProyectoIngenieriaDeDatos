@@ -1,6 +1,6 @@
 # TrendAnalyzer · ARCHITECTURE
 
-> Documento maestro de arquitectura y contratos. **Versión vigente: 2.19.**
+> Documento maestro de arquitectura y contratos. **Versión vigente: 2.21.**
 > Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md) · Plan por fases, trazabilidad HU y estado: [`PLAN.md`](PLAN.md) · Historias de usuario: `HU.md` · Visión general: `README.md`.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 
@@ -21,6 +21,7 @@ Este archivo está pensado para que **baste con leerlo (o pegármelo) para const
 | Saber qué hay en GCP (topics, buckets, service accounts, Cloud Run) y cómo desplegar el simulador | **§5.15** |
 | Comprobar que el simulador emite bien (tasa, ids únicos, `seq`, reinicio) | **§3.11** |
 | Levantar el simulador en local, sin nube ni credenciales | **§3.12** y `project/LOCAL_DEV.md` |
+| Correr o verificar el pipeline de streaming (local con DirectRunner o en Dataflow) | **§3.13** y `src/streaming/README.md` |
 | Comprobar qué está encendido antes de validar un lote | **§8** (preflight) |
 | Saber qué construir y en qué orden | `PLAN.md` §1 (fases y lotes) |
 | Saber qué historias de usuario cubre cada fase o lote | **`PLAN.md` §1 y §2** (detalle en `HU.md`) |
@@ -67,7 +68,7 @@ El README menciona **Firestore, Cloud SQL, Neptune y Dataplex**, que **no están
 
 ### 1.4 Historial de cambios
 
-Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.19), la más reciente primero. Este documento describe siempre la versión vigente (2.19).
+Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.21), la más reciente primero. Este documento describe siempre la versión vigente (2.21).
 
 ---
 
@@ -509,7 +510,7 @@ La imagen `ta-local-tools` (Python 3.11 slim) solo trae dependencias con las ver
 
 **Seguridad.** `ingest_check.emulator` (y por tanto `local_pubsub_init.py`) se niega a correr sin `PUBSUB_EMULATOR_HOST`: en GCP la topología la crea Terraform y el script no debe tocarla.
 
-**`DirectRunner` (criterio de HU-047).** El pipeline de Dataflow no existe hasta el Lote 2.1. Las suscripciones `ta-raw-{source}-df` ya se crean en el emulador para que ese lote sume un servicio `dataflow-local` (Apache Beam con `DirectRunner`) a este mismo Compose; el criterio se comprueba al cerrar el 2.1. Mientras nadie las consuma, acumulan mensajes en memoria.
+**`DirectRunner` (criterio de HU-047).** Entregado en el Lote 2.1 (§3.13): `docker-compose.dataflow.yml` suma el servicio `dataflow-local` (Apache Beam con `DirectRunner`, perfil `dataflow`) y el verificador `streaming-check` (perfil `tools`) a este Compose sin modificarlo; se manejan con `scripts/local_dataflow.sh`. Comprobado en v2.21: `local_dataflow.sh check` **OK** y tráfico del simulador en las tres fuentes sin copias repetidas (§3.13). Mientras nadie consuma las suscripciones `ta-raw-{source}-df`, acumulan mensajes en memoria.
 
 **Pruebas** (en `src/ingest_check/tests/`, se suman a las del Lote 1.4): `test_ingest_emulator.py` (nombres de §5.3, idempotencia, rechazo sin emulador), `test_local_compose.py` (servicios, orden de arranque, variables de §5.1, volumen compartido, rutas montadas existentes y ausencia de credenciales) y, en `test_ingest_cli.py`, que con el emulador las instrucciones de reinicio sean locales (`docker compose restart simulator`) y no de Cloud Run. Total del paquete: **65** con `contracts/` presente.
 
@@ -520,6 +521,83 @@ La imagen `ta-local-tools` (Python 3.11 slim) solo trae dependencias con las ver
 > - `restart-check` con `docker compose restart simulator`: **OK**. Antes del reinicio el `seq` llegó a 130, 132 y 131; después reanudó en 131, 133 y 132 (el siguiente exacto) con **0 repetidos**; cursor 100 → 150. A diferencia de Cloud Run (§3.11), no hay solapamiento: el `SIGTERM` guarda el cursor y la instancia nueva arranca después.
 > - Pruebas: la primera corrida dio 62 en vez de 64 porque el repo no tenía el diagnóstico del Lote 1.4 (solo se habían copiado los documentos del cierre). Con `stats.py`, `cli.py` y `test_ingest_cli.py` al día: 65.
 
+### 3.13 Pipeline de streaming: validación, deduplicación, DLQ y `raw/` (Lote 2.1)
+
+> Entregado en v2.20 (HU-018, HU-019; cierra el criterio de `DirectRunner` de HU-047) y **cerrado en v2.21**, validado en la máquina del equipo (WSL con Docker Desktop) y en GCP con Dataflow. Rutas relativas a `project/`; guía paso a paso en `src/streaming/README.md`. No toca `contracts/` ni `schema_version`; fija formatos que §5.3–§5.5 no definían (ver "Contratos" abajo).
+
+**Flujo.**
+
+```
+ta-raw-{source}-df ─► Validate ─┬─► Dedup(event_id) ─► raw/source=…/dt=…/hr=…/part-*.jsonl.gz
+                                └─► DLQ ─┬─► ta-dlq (Pub/Sub)
+                                         ├─► dlq/dt=…/part-*.jsonl.gz
+                                         └─► ta_stream.dlq_events (opcional, --dlq_table; la tabla llega con el Lote 2.4)
+```
+
+Una lectura por fuente (`ReadFromPubSub` con atributos); la fuente sale de la suscripción, no del cuerpo. `build_from_messages()` recibe la `PCollection` ya leída y devuelve `unique` (eventos válidos y únicos): el Lote 2.2 se engancha ahí para anonimizar y escribir `posts_enriched` y `enriched/`.
+
+| Ruta | Contenido |
+|---|---|
+| `src/streaming/pipeline.py` | `TrendStreamOptions`, `make_options()`, `build_pipeline()`, `build_from_messages()`, `run()`; logs JSON a stdout. |
+| `src/streaming/config.py` | Opciones propias y `resolve()` → `StreamConfig` (nombres de §5.3 y §5.4 por defecto; lee `GCP_PROJECT`, `GCP_REGION`). |
+| `src/streaming/schemas.py` | `load_bundle()` lee `contracts/*.schema.json` al construir el pipeline; los schemas viajan dentro del DoFn (los workers no necesitan `contracts/`). Registro por `$id` y por nombre de archivo. |
+| `src/streaming/validate.py` | `check_message()` (pura) y `Validators`. |
+| `src/streaming/transforms.py` | `ValidateFn`, `DedupByEventId`, `WritePartitionedJsonl`, `to_dlq_pubsub_message()`. |
+| `src/streaming/records.py` | `ValidEvent`, `DlqRecord`, `format_ts()`, `raw_partition()`, `dlq_partition()`. |
+| `src/streaming/inject.py`, `lake_report.py`, `cli.py` | Verificador (`scripts/verify_streaming.py`). |
+| `src/streaming/requirements.txt` | Apache Beam 2.77.0 y versiones exactas (Pub/Sub 2.43.0 y Storage 3.17.1, las mismas del simulador). |
+| `src/setup.py` | Paquete `ta-streaming` (`streaming` + `common`) que instala Dataflow en los workers. |
+| `scripts/dataflow_job.sh` | `preflight` (solo lectura), `start`, `status`, `drain`, `cancel`. |
+| `docker-compose.dataflow.yml`, `local/dataflow.Dockerfile`, `scripts/local_dataflow.sh` | Servicio `dataflow-local` y verificador `streaming-check` sobre el Compose del Lote 1.5. |
+
+**Validación** (`check_message`, en este orden; el primer fallo decide el `error_type`):
+
+| `error_type` | Cuándo |
+|---|---|
+| `encoding` | El cuerpo no es UTF-8 (también un JSON cortado a mitad de una tilde). |
+| `json` | No es JSON o no es un objeto. |
+| `schema` | No cumple `envelope.v1.schema.json` (con sus payloads). Sin *format checker*, igual que `contracts/tests/`. |
+| `attributes` | Los atributos no cumplen `pubsub.attributes.schema.json` o `event_id`, `source`, `origin` o `schema_version` difieren del cuerpo (§5.3). |
+| `routing` | Evento válido de otra fuente en esta suscripción. |
+
+El detalle es `ruta: mensaje` del primer error de `jsonschema` (máximo 2.000 caracteres). Los malformados del caos (§3.9) caen en `json`, `schema` o `encoding`.
+
+**Deduplicación, en dos capas.** En Dataflow, `id_label = "event_id"` en la lectura (§5.3). Además, un DoFn con estado por `event_id` deja pasar solo la primera copia dentro de una ventana fija de tiempo de proceso de 1 h (`--dedup_window_seconds`); el runner borra el estado al cerrar la ventana. **No usa timers**: en Dataflow un timer de tiempo de proceso retiene la marca de agua en la hora del elemento hasta que dispara, y la primera versión (TTL de 15 min con timer) atrasaba el cierre de las ventanas de `raw/` unos 15 min (observado al validar en GCP, v2.20). La segunda capa cubre el DirectRunner (que no admite `id_label`) y las copias que llegan fuera de la ventana de Pub/Sub, como las de un reinicio del simulador (§3.11: hasta 50 con los mismos ids). Dos copias que caigan en horas distintas no se descartan; Trusted vuelve a deduplicar (§5.7).
+
+**Archivos de `raw/` y `dlq/`.** Cada elemento se re-marca con su hora de proceso y se agrupa en ventanas fijas (`--raw_window_seconds`: 300 s en Dataflow, 60 s en local) por partición. Un `GroupByKey` por partición y ventana escribe un archivo `part-{inicio de ventana:%Y%m%dT%H%M%S}Z-p{panel:03d}.jsonl.gz` (gzip con `mtime = 0`, líneas ordenadas): reintentar la misma ventana reescribe el mismo archivo con los mismos bytes. En GCS el objeto aparece completo al cerrarse; en local se escribe un temporal y se renombra. Con ~0,5 msg/s por fuente salen unos 12 archivos por hora y fuente. Re-marcar con la hora de proceso hace que las ventanas coincidan con las particiones `dt`/`hr` (§5.4) y evita que el DirectRunner, cuya marca de agua es la hora actual, descarte como tardío el *backlog* acumulado antes de arrancar.
+
+**DirectRunner.** Con `--runner DirectRunner` (o sin runner) el pipeline usa la implementación clásica `BundleBasedDirectRunner` en modo streaming: el DirectRunner de Python intenta primero Prism, que no admite timers de tiempo de proceso y descargaría un binario. Con `PUBSUB_EMULATOR_HOST` exige un `--output_root` local.
+
+**Dataflow** (`scripts/dataflow_job.sh start`): job `ta-stream-{ENV}`, cuenta `sa-dataflow`, 1 × `e2-standard-2` sin autoescalado, Streaming Engine, `--setup_file src/setup.py`, temporales en `gs://{GCP_PROJECT}-ta-lake/_dataflow/{temp,staging}/`, etiquetas `project`, `env`, `owner`, `component=streaming`. Se lanza desde Python 3.11 (la imagen del worker es la de esa versión). Se apaga con `drain`, que cierra las ventanas abiertas; `cancel` puede perder la última. Costo del orden de 0,25 USD por hora mientras está activo.
+
+**Verificación** (`scripts/verify_streaming.py`, sin Beam):
+
+- `report`: por fuente, archivos, líneas, `event_id` únicos y copias repetidas en `raw/` de las últimas N horas, líneas que no son JSON o no coinciden con su partición, y `dlq/` por tipo de error y fuente. Falla si hay copias repetidas (umbral `--max-extra-copies`, 0) o líneas malas.
+- `check`: publica un plan de 7 mensajes con un `run_id`: el centinela dos veces (envelope de Reddit válido, semilla reservada 990001, `generator = "ta-verify@2.1"`) y un mensaje por tipo de error (`truncated_json`, `missing_field`, `attribute_mismatch`, `wrong_topic` —envelope de Reddit en el topic de Facebook— y `not_utf8`). Antes crea `ta-verify-dlq-{run}` sobre `ta-dlq` (expira a 1 día; se borra al terminar). Pasa si el centinela aparece **una sola vez** en `raw/`, cada defecto aparece una vez en `dlq/` con su `error_type` (se busca su `event_id` en `raw_message`), ninguno aparece en `raw/`, cada defecto llega a `ta-dlq` con `dlq_error_type` correcto, y no hay copias repetidas en `raw/`. Sin `PUBSUB_EMULATOR_HOST` exige `--allow-cloud`.
+- Salida: 0 pasa, 1 falla, 2 error de uso o de infraestructura; `--json-out` guarda la evidencia.
+
+**Local** (sobre §3.12): `bash scripts/local_dataflow.sh up | check | report | logs | down | down-all | reset-lake`. Imagen `ta-dataflow-local:local` (Python 3.11 slim + `requirements.txt`, que llega como contexto adicional `streaming`); el código se monta en solo lectura; el lake es `project/.local-lake/` (no se versiona), escrito con el uid del usuario; sin credenciales. Si se para el contenedor se pierde la ventana abierta (el DirectRunner confirma los mensajes al leerlos).
+
+**Pruebas** (`src/streaming/tests/`, sin red ni credenciales): validación por tipo de error y orden, cuerpo con saltos de línea, atributos, `routing`; configuración y errores; `$ref` por `$id` y por nombre de archivo; escritor (nombre, contenido determinista, reintento idempotente, paneles tardíos, sin temporales); pipeline completo con `TestStream` en el DirectRunner (deduplicación entre ventanas, DLQ, particiones); plan del verificador de punta a punta; lake local y GCS con cliente falso; CLI (`check` con dobles, tiempo agotado, negativa a publicar en la nube sin `--allow-cloud`); Compose; y, con `contracts/` presente, el centinela y cada defecto contra los schemas reales y los ejemplos de envelope de `contracts/examples/` (válidos pasan, inválidos van a la DLQ como `schema`).
+
+> **Estado de la verificación (v2.21):** en la máquina del equipo (WSL; Python 3.11.17 instalado con `uv` en `~/.venvs/ta-streaming`, porque Ubuntu solo trae 3.14):
+>
+> - `python -m pytest src/streaming -q`: **91 passed**, sin omitidas, con `contracts/` real (el centinela y cada defecto cumplen o violan los schemas reales; los ejemplos de envelope de `contracts/examples/` se aceptan y rechazan igual que en `contracts/tests/`). `contracts/tests`: 18 passed.
+> - **Local** (DirectRunner + emulador): `check` **OK** (13/13: centinela una vez en `raw/`, 5 defectos con su tipo en `dlq/` y en `ta-dlq`); `report` con el simulador: 487 / 478 / 475 líneas en 17 archivos por fuente, 0 copias repetidas, 0 líneas malas. Evidencia en `evidencia/local_streaming_check.json` y `local_streaming_report.json`.
+> - **GCP** (job `ta-stream-dev`, 1 × e2-standard-2, Streaming Engine): de *Pending* a *Running* en unos 2 min; `verify_streaming.py check --allow-cloud` **OK** a los 298 s (13/13). El *backlog* de las suscripciones (220 / 215 / 222 mensajes de validaciones anteriores) quedó en `raw/` sin copias repetidas. Evidencia en `evidencia/streaming_check.json`. `sa-dataflow` no necesitó `roles/pubsub.viewer`.
+>
+> **Correcciones que salieron de la validación (v2.21):**
+> 1. *Empaquetado:* los entornos creados con `uv` no traen `setuptools`, y `--setup_file` falló antes de crear el job. `requirements.txt` lo fija (80.9.0) y `dataflow_job.sh preflight` lo comprueba.
+> 2. *Deduplicación:* la primera versión usaba un timer de tiempo de proceso (TTL de 15 min). En Dataflow ese timer retiene la marca de agua en la hora del elemento, así que las ventanas de `raw/` cerraban unos 15 min tarde y el primer `check` agotó su tiempo (la DLQ, que no pasa por ese paso, sí llegó). Se reemplazó por estado en ventanas fijas de 1 h sin timers (`--dedup_window_seconds`); una prueba falla si el DoFn vuelve a declarar timers. En local no se notaba porque el DirectRunner no aplica esa retención.
+>
+> Antes de entregar (v2.20) el pipeline ya había corrido con el DirectRunner contra un servidor Pub/Sub de prueba y en *dry run* de `DataflowRunner`; ninguna de las dos pruebas podía mostrar la retención de la marca de agua.
+
+**Observaciones (no bloquean):**
+- `sa-exporter` tiene `storage.objectViewer` en todo `…-ta-lake` (§5.8), así que puede leer `raw/`. HU-025 ya exige que el exportador lea solo `enriched/`: el Lote 3.2 debe limitar ese rol con una condición de IAM a ese prefijo. Hoy el exportador no existe, así que solo `sa-dataflow` y los dueños del proyecto acceden a `raw/`.
+- El bucket `…-ta-lake` tiene *soft delete* (7 días): los temporales que Dataflow borra en `_dataflow/temp` siguen cobrando esos días (pocos MB). Recomendado en Terraform: desactivarlo en ese bucket o mover los temporales a un bucket propio sin *soft delete*.
+- `dataflow_job.sh status` puede no listar contadores en los primeros minutos (las métricas de usuario tardan en publicarse); la consola de Dataflow los muestra igual.
+- La validación local se hizo con la deduplicación de v2.20 (timer). La de v2.21 está cubierta por las pruebas con `TestStream` y por la corrida en GCP; repetir `local_dataflow.sh check` es opcional.
+- El empaquetado de `--setup_file` deja `src/ta_streaming.egg-info/`; `start` lo borra. Recomendado: `*.egg-info/` y `.local-lake/` en el `.gitignore` de la raíz.
 ---
 
 ## 4. Flujo extremo a extremo
@@ -724,7 +802,8 @@ Normalización de engagement: `likes` = `score` (Reddit) | `reactions_total` (Fa
 - **Cuerpo:** JSON UTF-8 del envelope (§5.2).
 - **Atributos del mensaje:** `event_id`, `source`, `origin`, `schema_version`. Dataflow usa `event_id` como `id_label` para deduplicar.
 - **Publica:** `sa-simulator`. **Consume:** `sa-dataflow`.
-- **Verificación (§3.11):** `scripts/verify_ingest.py` crea suscripciones temporales `ta-verify-{source}-{run}` sobre estos topics y las borra al terminar (expiran solas a 1 día). Ningún componente depende de ellas y nunca se consumen las `ta-raw-{source}-df`.
+- **Mensajes de `ta-dlq` (v2.20, §3.13):** el cuerpo es el mensaje rechazado **tal como llegó** y los atributos son los originales más `dlq_error_type` (§5.5), `dlq_error_detail` (máximo 1.024 bytes), `dlq_source` (fuente de la suscripción) y `dlq_received_at` (UTC, §5.1). Así se puede re-inyectar con `seek` o re-publicación. Publica `sa-dataflow`.
+- **Verificación (§3.11):** `scripts/verify_ingest.py` crea suscripciones temporales `ta-verify-{source}-{run}` sobre estos topics y las borra al terminar (expiran solas a 1 día). Ningún componente depende de ellas y nunca se consumen las `ta-raw-{source}-df`. `scripts/verify_streaming.py check` (§3.13) crea igual `ta-verify-dlq-{run}` sobre `ta-dlq`.
 - Sin ordenamiento garantizado (no se necesita).
 
 ### 5.4 Google Cloud Storage
@@ -739,6 +818,7 @@ gs://{GCP_PROJECT}-ta-datasets/
   snapshots/comentarios-{seed}-{n}.csv      # opcional: salida de scripts/generate_comments.py (no se versiona en git)
   sim-state/{source}.json                   # cursor del simulador
 gs://{GCP_PROJECT}-ta-lake/
+  _dataflow/{temp,staging}/                                  # temporales y paquete del job de Dataflow (v2.20)
   raw/source={s}/dt={YYYY-MM-DD}/hr={HH}/part-*.jsonl.gz     # envelope tal cual llegó (auditoría/replay)
   enriched/source={s}/dt={YYYY-MM-DD}/hr={HH}/part-*.parquet # envelope enriquecido, anonimizado
   dlq/dt={YYYY-MM-DD}/part-*.jsonl.gz
@@ -746,6 +826,8 @@ gs://{GCP_PROJECT}-ta-lake/
 ```
 
 Particiones por **fecha/hora de proceso**. El Parquet de `enriched/` usa el **esquema plano** de `posts_enriched` (§5.5): `author.user_hash` → `user_hash`, `author.followers` → `followers`, `sim.label_sentiment` → `label_sentiment`, `brands[0]` → `brand_primary`, `payload` como JSON en string. `raw/` conserva el handle simulado (dato sintético, solo para auditoría y replay; acceso restringido). **Solo `enriched/` sale hacia AWS.**
+
+**Formato de `raw/` y `dlq/` (v2.20, §3.13).** Archivos `part-{AAAAMMDD}T{hhmmss}Z-p{panel:03d}.jsonl.gz` (inicio de la ventana en UTC), gzip, una línea por registro. En `raw/`, cada línea es el cuerpo del mensaje válido y único **tal como llegó** (si traía saltos de línea se re-serializa compacto, sin cambiar su contenido). En `dlq/`, cada línea es un objeto JSON con exactamente las columnas de `dlq_events` (§5.5): `received_at`, `source`, `error_type`, `error_detail`, `raw_message`. Las particiones `dt`/`hr` son de la hora de proceso en UTC.
 
 ### 5.5 BigQuery
 
@@ -784,7 +866,7 @@ Dataset: `ta_stream` (ubicación = región de GCP).
 | `zscore_volume`, `zscore_sentiment` | FLOAT64 (vs. baseline móvil) |
 | `is_alert` | BOOL |
 
-**`dlq_events`** — `received_at`, `source`, `error_type`, `error_detail`, `raw_message` (STRING).
+**`dlq_events`** — `received_at`, `source`, `error_type`, `error_detail`, `raw_message` (STRING). Valores de `error_type` (v2.20, §3.13): `encoding`, `json`, `schema`, `attributes`, `routing`. `source` es la fuente de la suscripción donde llegó el mensaje.
 **`dq_results`** — una fila por verificación de calidad ejecutada (§5.10). Partición por `DATE(run_ts)`, clustering `layer, kpi`. Mismo reporte, además, en `s3://…/quality/{run_date}/`.
 
 | Columna | Tipo | Notas |
@@ -924,7 +1006,8 @@ Resultados en BigQuery `dq_results` (columnas en §5.5) y `s3://…/quality/`. E
 | Si construyes… | Necesitas leer | Me tienes que dar |
 |---|---|---|
 | Simulador | §3 (incluye §3.2.2 y §3.10), §5.2, §5.3, §5.4 | `outputs` de `infra/gcp`. El generador y `src/common/` ya están en el repo desde el Lote 1.1 |
-| Pipeline Dataflow | §5.2, §5.3, §5.4, §5.5, §5.8 | Nombres reales de topics/buckets, región |
+| Pipeline Dataflow | §3.13, §5.2, §5.3, §5.4, §5.5, §5.8 | Nombres reales de topics/buckets, región; salida de `scripts/dataflow_job.sh preflight` |
+| Correr el pipeline en local o verificarlo | §3.12, §3.13 y `src/streaming/README.md` | Salida de `local_dataflow.sh preflight` y los JSON de `verify_streaming.py` |
 | Exportador | §5.4, §5.6, §5.8 | ARN del rol AWS, bucket S3 |
 | Loader histórico | §3.2, §3.8, §5.2, §5.7 | Perfil AWS, bucket S3 |
 | Jobs de Glue / dbt | §5.2, §5.7, §5.10 | Esquema real de Athena (`SHOW CREATE TABLE`) si ya existe algo |
@@ -955,7 +1038,9 @@ Valores por defecto que evitan decidir en cada lote. Se ajustan aquí primero.
 | Ruido y hashtags del generador | *Adoptado por defecto en v2.14.* Ruido en el 20 % de los comentarios (`DEFAULT_RUIDO`) sin perder nunca la marca; hashtags canónicos truncados a 100 caracteres. | HU-008, HU-009 |
 | Secretos | *Pre-commit* con `gitleaks`; `terraform.tfvars` en `.gitignore` y `terraform.tfvars.example` versionado. | HU-041, HU-046 |
 | Estado de Terraform | Remoto: GCS con versionado (GCP) y S3 con bloqueo (AWS). | HU-046 |
-| Desarrollo local | `docker-compose` con emulador de Pub/Sub + simulador + consumidor de validación, sin credenciales (§3.12). `DirectRunner` se suma en el Lote 2.1. | HU-047 |
+| Desarrollo local | `docker-compose` con emulador de Pub/Sub + simulador + consumidor de validación, sin credenciales (§3.12). `DirectRunner` con `docker-compose.dataflow.yml` (Lote 2.1, §3.13). | HU-047 |
+| Archivos de `raw/` y `dlq/` | Ventana de 300 s en Dataflow y 60 s en local (`--raw_window_seconds`); deduplicación en el pipeline por `event_id` dentro de ventanas fijas de 1 h de tiempo de proceso (`--dedup_window_seconds`), además de `id_label`. | HU-018, HU-019 |
+| Job de Dataflow (dev) | `ta-stream-{ENV}`: 1 × `e2-standard-2`, sin autoescalado, Streaming Engine; se apaga con `drain` fuera de las validaciones y demos. | HU-018, HU-043 |
 | Canal de alertas | Correo. Un suscriptor de `ta-alerts` escribe un log estructurado (`severity=WARNING`, `alert=trend`) y una alerta basada en logs de Cloud Monitoring envía el correo mediante un canal de notificación de tipo email. Las direcciones van en `terraform.tfvars` (`alert_emails`, que no se versiona); por ahora el único destinatario es el correo de Alejandro. Sin SMTP ni secretos. | HU-039 |
 | Prueba de humo E2E | `scripts/smoke_e2e.py` sigue un evento centinela (`event_id` conocido) desde el simulador hasta `ta_curated.fact_posts` y reporta latencia por etapa. | HU-048 |
 | Retención del estado de Terraform | GCS: se conservan las 10 versiones no vigentes más recientes. S3: las versiones no vigentes expiran a los 90 días y los *uploads* multiparte incompletos a los 7. | HU-046 |
@@ -1165,7 +1250,7 @@ infra/
 │
 ├── docs/
 │   ├── ARCHITECTURE.md                    <- este archivo: arquitectura y contratos (versión vigente)
-│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.19)
+│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.21)
 │   ├── PLAN.md                            <- fases y lotes, matriz HU y estado del proyecto
 │   ├── HU.md                              <- historias de usuario (HU-001 a HU-048)
 │   ├── GLOSSARY.md                        <- glosario del proyecto
@@ -1175,8 +1260,10 @@ infra/
 │
 └── project/                               <- código, contratos e infraestructura (las rutas de este documento son relativas a aquí)
     ├── docker-compose.yml                 <- Lote 1.5: emulador Pub/Sub + simulador + validador (§3.12)
+    ├── docker-compose.dataflow.yml        <- Lote 2.1: dataflow-local (DirectRunner) y streaming-check (§3.13)
     ├── LOCAL_DEV.md                       <- Lote 1.5: guía del entorno local
     ├── local/validator.Dockerfile         <- Lote 1.5: imagen ta-local-tools (pubsub-init y validator)
+    ├── local/dataflow.Dockerfile          <- Lote 2.1: imagen ta-dataflow-local (Apache Beam)
     ├── contracts/                         <- copia legible por máquina de §5 (Fase 0, entregado en v2.7)
     │   ├── README.md  requirements.txt
     │   ├── envelope.v1.schema.json
@@ -1210,6 +1297,9 @@ infra/
     │   ├── local_dev.sh                   <- Lote 1.5: preflight, up, verify, restart-check, down (§3.12)
     │   ├── local_pubsub_init.py           <- Lote 1.5: topología de §5.3 en el emulador
     │   ├── preflight.sh                   <- Lote 1.5: estado real de la nube, solo lectura (§8)
+    │   ├── dataflow_job.sh                <- Lote 2.1: preflight, start, status, drain, cancel del job de Dataflow
+    │   ├── local_dataflow.sh              <- Lote 2.1: pipeline en local (up, check, report, down)
+    │   ├── verify_streaming.py            <- Lote 2.1: verificador de raw/, dlq/ y ta-dlq (§3.13)
     │   └── smoke_e2e.py                   <- prueba de humo extremo a extremo (HU-048)
     └── src/
         ├── conftest.py                    <- Lote 1.1: fixture envelope_validator (valida contra contracts/)
@@ -1235,7 +1325,9 @@ infra/
         │   ├── emulator.py                <- Lote 1.5: topología del emulador
         │   ├── requirements.txt
         │   └── tests/
-        ├── streaming/                     <- Dataflow (Beam)
+        ├── setup.py                       <- Lote 2.1: paquete que Dataflow instala en los workers (streaming + common)
+        ├── streaming/                     <- Dataflow (Beam). Lote 2.1: pipeline, config, schemas, validate, transforms, records,
+        │                                     inject, lake_report, cli, requirements.txt, README.md, tests/ (§3.13)
         ├── historical/                    <- full load (usa el mismo generador)
         ├── exporter/                      <- gcs-to-s3
         ├── lakehouse/{glue_jobs,dbt}/
@@ -1310,6 +1402,7 @@ Estado actual: <salida de `bash scripts/preflight.sh` (nube) o `bash scripts/loc
 | ADR-14 | Estado de Terraform **remoto** (GCS y S3) desde el primer día | Estado local (se pierde y no permite CI) |
 | ADR-15 | Bloqueo del estado en AWS con tabla DynamoDB `ta-{env}-tflock`, compatible con Terraform ≥ 1.6 (adoptado en el Lote 1.0). **v2.12:** con Terraform ≥ 1.10 `init` avisa que `dynamodb_table` está deprecado; sigue funcionando y la migración es opcional | `use_lockfile = true` de S3 (exige Terraform ≥ 1.10; se puede migrar y eliminar la tabla) |
 | ADR-16 | *Bootstrap* en un directorio aparte por nube, con estado local, `prevent_destroy` en buckets y tabla, y `allowed_account_ids` en AWS (adoptado en el Lote 1.0) | Bootstrap con estado remoto (dependencia circular); recursos de estado sin protección contra borrado |
+| ADR-17 | Pipeline de streaming (Lote 2.1): deduplicación en dos capas (`id_label` + estado por `event_id` en ventanas fijas de 1 h, sin timers), `raw/` y `dlq/` escritos con un `GroupByKey` por partición y ventana de tiempo de proceso (nombre determinista, reintento idempotente) y `BundleBasedDirectRunner` para el modo local | Solo `id_label` (no cubre el DirectRunner ni copias tardías); estado con TTL por timer de tiempo de proceso (retiene la marca de agua en Dataflow); `fileio.WriteToFiles` (nombres menos controlables, gzip aparte); ventanas por *publish time* (el DirectRunner descarta el *backlog* como tardío) |
 
 ### Riesgos
 

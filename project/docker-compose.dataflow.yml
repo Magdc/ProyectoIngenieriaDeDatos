@@ -1,0 +1,65 @@
+# Lote 2.1 · Pipeline de Dataflow en local con DirectRunner (HU-047, HU-018, HU-019).
+#
+# Se suma al docker-compose.yml del Lote 1.5 (no lo reemplaza):
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dataflow.yml --profile dataflow up -d
+#
+# o, más corto, `bash scripts/local_dataflow.sh up`. Ningún servicio monta
+# credenciales de GCP ni de AWS: todo va contra el emulador (PUBSUB_EMULATOR_HOST)
+# y el lake es una carpeta del equipo (por defecto project/.local-lake).
+services:
+  dataflow-local:
+    profiles: ["dataflow"]
+    build:
+      context: ./local
+      dockerfile: dataflow.Dockerfile
+      additional_contexts:
+        streaming: ./src/streaming
+    image: ta-dataflow-local:local
+    depends_on:
+      pubsub-init:
+        condition: service_completed_successfully
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    environment:
+      ENV: local
+      GCP_PROJECT: ta-local
+      GCP_REGION: us-central1
+      PUBSUB_EMULATOR_HOST: pubsub-emulator:8085
+      PYTHONPATH: /work/src
+      HOME: /tmp
+    volumes:
+      - ./src:/work/src:ro
+      - ./contracts:/work/contracts:ro
+      - ${TA_LOCAL_LAKE:-./.local-lake}:/lake
+    command:
+      - python
+      - -m
+      - streaming.pipeline
+      - --runner=DirectRunner
+      - --output_root=/lake
+      - --contracts_dir=/work/contracts
+      - --raw_window_seconds=${TA_LOCAL_RAW_WINDOW:-60}
+    stop_grace_period: 10s
+    restart: "no"
+
+  streaming-check:
+    profiles: ["tools"]
+    image: ta-dataflow-local:local
+    depends_on:
+      pubsub-init:
+        condition: service_completed_successfully
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    environment:
+      ENV: local
+      GCP_PROJECT: ta-local
+      PUBSUB_EMULATOR_HOST: pubsub-emulator:8085
+      PYTHONPATH: /work/src
+      HOME: /tmp
+    volumes:
+      - ./src:/work/src:ro
+      - ./scripts:/work/scripts:ro
+      - ./contracts:/work/contracts:ro
+      - ${TA_LOCAL_LAKE:-./.local-lake}:/lake:ro
+      - ./evidencia:/evidencia
+    entrypoint: ["python", "/work/scripts/verify_streaming.py"]
+    command: ["report", "--root", "/lake"]

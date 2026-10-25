@@ -1,0 +1,12 @@
+# Pipeline de streaming (Lote 2.1). Versiones exactas: las mismas en local
+# (local/dataflow.Dockerfile), en la máquina que lanza el job y en los workers
+# de Dataflow (src/setup.py). google-cloud-pubsub y google-cloud-storage
+# coinciden con src/simulator/constraints.txt (Lote 1.3).
+apache-beam[gcp]==2.77.0
+google-cloud-pubsub==2.43.0
+google-cloud-storage==3.17.1
+jsonschema==4.26.0
+referencing==0.37.0
+PyYAML==6.0.3
+# Para empaquetar src/setup.py al lanzar en Dataflow (los entornos de uv no lo traen).
+setuptools==80.9.0

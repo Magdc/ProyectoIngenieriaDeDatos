@@ -1,6 +1,6 @@
 # TrendAnalyzer · Historias de Usuario (HU)
 
-> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.19** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
+> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.21** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
 > Cada HU tiene un ID **HU-000**, su fase/lote de `ARCHITECTURE.md` §7, responsable, sprint y criterios de aceptación verificables.
 
 ---
@@ -69,10 +69,10 @@ Criterios de aceptación: lista verificable.
 | HU-015 | Caos controlado | 1 · 1.2 | A | Should | 2 | ✅ |
 | HU-016 | Despliegue del simulador | 1 · 1.3 | A + M | Must | 2 | ✅ |
 | HU-017 | Verificación de la ingesta | 1 · 1.4 | A | Should | 2 | ✅ |
-| HU-047 | Entorno local de desarrollo | 1 · 1.5 | A | Should | 2 | 🟨 |
+| HU-047 | Entorno local de desarrollo | 1 · 1.5 | A | Should | 2 | ✅ |
 | **E3 · Streaming en GCP** | | | | | | |
-| HU-018 | Validación, deduplicación y DLQ | 2 · 2.1 | C | Must | 2 | ⬜ |
-| HU-019 | Persistencia Raw en GCS | 2 · 2.1 | C | Must | 2 | ⬜ |
+| HU-018 | Validación, deduplicación y DLQ | 2 · 2.1 | C | Must | 2 | ✅ |
+| HU-019 | Persistencia Raw en GCS | 2 · 2.1 | C | Must | 2 | ✅ |
 | HU-020 | Anonimización de usuarios | 2 · 2.2 | C | Must | 2 | ⬜ |
 | HU-021 | Normalización y carga a BigQuery | 2 · 2.2 | C | Must | 2 | ⬜ |
 | HU-022 | Análisis de emoción y sentimiento | 2 · 2.3 | C | Must | 2 | ⬜ |
@@ -394,7 +394,7 @@ Criterios de aceptación: lista verificable.
 **Criterios de aceptación**
 - `docker-compose up` levanta el emulador de Pub/Sub y el simulador con `SIM_SEED` y las variables de entorno de §5.1.
 - Un consumidor local valida cada mensaje contra el schema del envelope y reporta tasa y ids únicos.
-- El pipeline de Dataflow se ejecuta con `DirectRunner` leyendo del emulador. *(Depende del Lote 2.1, que crea el pipeline: se comprueba al cerrarlo; el Lote 1.5 deja las suscripciones `-df` en el emulador.)*
+- El pipeline de Dataflow se ejecuta con `DirectRunner` leyendo del emulador. *(Comprobado en v2.21 con el Lote 2.1: servicio `dataflow-local` en `docker-compose.dataflow.yml`, `scripts/local_dataflow.sh check` OK.)*
 - No requiere credenciales de GCP ni de AWS.
 - El README documenta los comandos de arranque, prueba y apagado (guía en `project/LOCAL_DEV.md`, enlazada desde el README).
 
@@ -412,7 +412,7 @@ Criterios de aceptación: lista verificable.
 
 **Criterios de aceptación**
 - Dataflow lee de las suscripciones `ta-raw-{source}-df` y valida contra el schema del envelope.
-- Los eventos inválidos van a `ta-dlq`, a `gs://…/dlq/` y a `dlq_events` con `error_type` y `error_detail`.
+- Los eventos inválidos van a `ta-dlq`, a `gs://…/dlq/` y a `dlq_events` con `error_type` y `error_detail` *(`dlq_events` se crea en el Lote 2.4: el pipeline del 2.1 ya la admite con `--dlq_table`.)*
 - Los duplicados se eliminan por `event_id` (usando `id_label`).
 - El pipeline se prueba primero con `DirectRunner`.
 
@@ -427,7 +427,7 @@ Criterios de aceptación: lista verificable.
 **Criterios de aceptación**
 - Se escriben `raw/source={s}/dt={YYYY-MM-DD}/hr={HH}/part-*.jsonl.gz` en `…-ta-lake`.
 - Las particiones usan fecha/hora de proceso.
-- El acceso a `raw/` está restringido (contiene el handle simulado).
+- El acceso a `raw/` está restringido (contiene el handle simulado). *(Hoy solo `sa-dataflow` y los dueños del proyecto lo usan; `sa-exporter` tiene lectura en todo el bucket y el Lote 3.2 la limita a `enriched/`, criterio de HU-025.)*
 
 ### HU-020 · Anonimización de usuarios
 

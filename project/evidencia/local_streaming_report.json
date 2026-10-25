@@ -1,0 +1,67 @@
+{
+  "command": "report",
+  "verdict": "ok",
+  "summary": {
+    "root": "/lake",
+    "hours_scanned": [
+      "2026-10-21T00",
+      "2026-10-21T01",
+      "2026-10-21T02"
+    ],
+    "raw": {
+      "reddit": {
+        "files": 17,
+        "lines": 487,
+        "unique_event_ids": 487,
+        "duplicate_event_ids": 0,
+        "extra_copies": 0,
+        "bad_lines": 0
+      },
+      "facebook": {
+        "files": 17,
+        "lines": 478,
+        "unique_event_ids": 478,
+        "duplicate_event_ids": 0,
+        "extra_copies": 0,
+        "bad_lines": 0
+      },
+      "instagram": {
+        "files": 17,
+        "lines": 475,
+        "unique_event_ids": 475,
+        "duplicate_event_ids": 0,
+        "extra_copies": 0,
+        "bad_lines": 0
+      }
+    },
+    "raw_total_lines": 1440,
+    "raw_total_extra_copies": 0,
+    "dlq": {
+      "files": 2,
+      "records": 5,
+      "by_error_type": {
+        "attributes": 1,
+        "encoding": 1,
+        "json": 1,
+        "routing": 1,
+        "schema": 1
+      },
+      "by_source": {
+        "facebook": 1,
+        "reddit": 4
+      }
+    }
+  },
+  "checks": [
+    {
+      "name": "raw_no_duplicates",
+      "status": "ok",
+      "detail": "0 copia(s) repetida(s) por event_id en raw/ (máximo 0)"
+    },
+    {
+      "name": "raw_lines_valid",
+      "status": "ok",
+      "detail": "0 línea(s) de raw/ que no son JSON o no coinciden con su partición"
+    }
+  ]
+}

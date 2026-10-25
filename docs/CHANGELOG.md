@@ -1,10 +1,43 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.19**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.21**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.21 · desde v2.20
+
+**Lote que lo motiva:** Lote 2.1 (HU-018, HU-019; criterio de `DirectRunner` de HU-047) · validación y cierre
+
+| Área | Cambio |
+|---|---|
+| Verificación | En WSL con Python 3.11.17 (`uv`, entorno `~/.venvs/ta-streaming`): `pytest src/streaming` **91 passed** sin omitidas con `contracts/` real; `contracts/tests` 18 passed. **Local:** `check` **OK** (13/13) y `report` con el simulador (487 / 478 / 475 líneas, 0 repetidas). **GCP:** job `ta-stream-dev` en *Running* a los ~2 min; `check --allow-cloud` **OK** a los 298 s; *backlog* de 220 / 215 / 222 mensajes en `raw/` sin repetidos. Evidencia en `evidencia/local_streaming_check.json`, `local_streaming_report.json` y `streaming_check.json`. Detalle en §3.13. |
+| Corrección: deduplicación | La versión de v2.20 usaba un timer de tiempo de proceso (TTL de 15 min). En Dataflow ese timer retiene la marca de agua, así que `raw/` cerraba ~15 min tarde y el primer `check` en GCP agotó su tiempo con la DLQ ya correcta. Ahora: estado en ventanas fijas de 1 h, sin timers (`--dedup_window_seconds`, antes `--dedup_ttl_seconds`). Tres pruebas nuevas (una falla si vuelve a haber timers). |
+| Corrección: empaquetado | Los entornos de `uv` no traen `setuptools` y `--setup_file` falló antes de crear el job (no se cobró nada). `requirements.txt` fija `setuptools==80.9.0` y `dataflow_job.sh preflight` lo comprueba. |
+| Entorno | Ubuntu en WSL solo trae Python 3.14; el 3.11 del proyecto se instala con `uv` (`uv python install 3.11`) en un entorno aparte del de `ta`. Anotado en `src/streaming/README.md`. |
+| HU.md | HU-018, HU-019 y HU-047 en ✅. HU-019: la restricción de `raw/` frente a `sa-exporter` la cumple el Lote 3.2 (criterio de HU-025). HU-047: se agrega el enlace a `LOCAL_DEV.md` desde el README en este cierre. |
+| Estado | Lote 2.1 ✅ y **Fase 1 ✅** en PLAN.md §3 (su último criterio era el de `DirectRunner`). Fase 2 en 🟨; el siguiente es el **2.2**. |
+| Contratos | **Sin cambios** en `contracts/` ni en §5.2–§5.8; `schema_version` sigue en `"1.0"`. §5.12 y ADR-17 describen la deduplicación por ventanas. |
+| Pendiente (no bloquea) | Limitar `sa-exporter` a `enriched/` (Lote 3.2). *Soft delete* del bucket del lake frente a `_dataflow/temp`. `*.egg-info/` y `.local-lake/` en `.gitignore`. Siguen abiertos los de v2.17 (permiso de Cloud Build en Terraform y `GET /health`). El conteo de `src/ingest_check` dio 62 en esta sesión frente a 65 en v2.19: revisar que estén `stats.py`, `cli.py` y `test_ingest_cli.py` del cierre del Lote 1.5. |
+
+## v2.20 · desde v2.19
+
+**Lote que lo motiva:** Lote 2.1 (HU-018, HU-019; criterio de `DirectRunner` de HU-047) · entrega
+
+| Área | Cambio |
+|---|---|
+| Lote 2.1 | Entregado: pipeline en `src/streaming/` (`pipeline.py`, `config.py`, `schemas.py`, `validate.py`, `transforms.py`, `records.py`), verificador (`inject.py`, `lake_report.py`, `cli.py`, `scripts/verify_streaming.py`), `src/setup.py`, `scripts/dataflow_job.sh`, `docker-compose.dataflow.yml`, `local/dataflow.Dockerfile`, `scripts/local_dataflow.sh`, `src/streaming/README.md` y 87 pruebas. Detalle en **§3.13**. |
+| Pipeline | Lee las tres `ta-raw-{source}-df`; valida en orden `encoding` → `json` → `schema` → `attributes` → `routing`; deduplica por `event_id` con `id_label` (Dataflow) y con estado por ventanas fijas de 1 h, sin timers (también en DirectRunner); escribe `raw/` y `dlq/` en ventanas de tiempo de proceso (300 s; 60 s en local) con nombres deterministas; publica los rechazados en `ta-dlq`. `dlq_events` queda opcional (`--dlq_table`) hasta el Lote 2.4. |
+| Local | `dataflow-local` (DirectRunner, implementación `BundleBasedDirectRunner`) y `streaming-check` se suman al Compose del Lote 1.5 con un segundo archivo, sin modificarlo. Lake en `.local-lake/`. Cierra, al validarse, el criterio pendiente de HU-047. |
+| GCP | `dataflow_job.sh`: `preflight` de solo lectura, `start` (job `ta-stream-{ENV}`, 1 × e2-standard-2, Streaming Engine, `sa-dataflow`), `status`, `drain` y `cancel`. Costo del orden de 0,25 USD/h mientras está activo. |
+| Verificador | `check` publica un centinela dos veces y un defecto por tipo de error, y comprueba `raw/` (centinela una sola vez), `dlq/` y `ta-dlq`; `report` resume el lake. Evidencia en JSON. Con la nube exige `--allow-cloud`. |
+| Verificación previa | 87 pruebas en verde (Python 3.11.17, Beam 2.77.0) con schemas de prueba con la estructura de §5.2, porque `contracts/` no estaba disponible al prepararlo. El pipeline real corrió con el DirectRunner contra un servidor de Pub/Sub de prueba: `check` OK y 367 eventos con 40 reenvíos dieron 367 líneas únicas. *Dry run* de `DataflowRunner` correcto (job armado y `setup.py` empaquetado). **No** se construyó la imagen local ni se lanzó el job en GCP. |
+| Corrección al validar en GCP | La primera versión deduplicaba con un timer de tiempo de proceso (TTL 15 min). En Dataflow ese timer retiene la marca de agua en la hora del elemento, así que `raw/` se escribía con ~15 min de atraso y el `check` agotó su tiempo (la DLQ, que no pasa por ese paso, sí llegó). Ahora el estado vive en ventanas fijas de 1 h y no hay timers; una prueba fija que el DoFn no declare timers. Opción renombrada a `--dedup_window_seconds`. También se suma `setuptools` a `requirements.txt` (los entornos de `uv` no lo traen) y al preflight. |
+| Corrección durante el lote | El primer injector cortaba el JSON por bytes y podía partir una tilde: el mensaje caía como `encoding` y no como `json`. Ahora se corta por caracteres; una prueba fija que un corte por bytes es `encoding` (también puede pasar con el caos `malformed`). |
+| Contratos | `contracts/` **sin cambios**; `schema_version` sigue en `"1.0"`. Se fijan formatos que §5 no definía: mensajes de `ta-dlq` (cuerpo original + atributos `dlq_*`, §5.3), formato y nombre de archivos de `raw/` y `dlq/` y prefijo `_dataflow/` (§5.4), valores de `dlq_events.error_type` (§5.5), job `ta-stream-{ENV}` y parámetros de §5.12. Nueva **ADR-17**. |
+| Documento | Nueva §3.13; ampliadas §0, §3.12, §5.3, §5.4, §5.5, §5.11, §5.12, §6, §9 (ADR-17), PLAN.md §3 y HU.md (HU-018, HU-019, HU-047). |
+| Pendiente | Validar en WSL (local) y en GCP con los pasos de `src/streaming/README.md`. Posible `roles/pubsub.viewer` para `sa-dataflow` si Dataflow lo exige. Restringir `sa-exporter` a `enriched/` (Lote 3.2) para que `raw/` quede solo para `sa-dataflow`. Agregar `*.egg-info/` y `.local-lake/` al `.gitignore`. Siguen abiertos los de v2.17 y v2.19. |
 
 ## v2.19 · desde v2.18
 

@@ -20,10 +20,15 @@ Como las APIs reales de Reddit, Facebook e Instagram imponen aprobaciones y limi
 
 | Documento | Contenido |
 |---|---|
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | **Fuente de verdad** (version vigente 2.14): arquitectura, contratos de comunicacion (sec. 5), decisiones (ADR), riesgos y preguntas abiertas |
-| [`docs/PLAN.md`](docs/PLAN.md) | Plan por fases y lotes, matriz de trazabilidad Fase · Lote -> HU y estado del proyecto |
-| [`docs/CHANGELOG.md`](docs/CHANGELOG.md) | Historial de versiones (v2.2 -> v2.14), una entrada por version |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | **Fuente de verdad** (version vigente 2.25): arquitectura, contratos de comunicacion (sec. 5), decisiones (ADR), riesgos y preguntas abiertas |
+| [`docs/PLAN.md`](docs/PLAN.md) | Plan por fases y lotes, matriz de trazabilidad Fase · Lote -> HU y estado del proyecto (sec. 3) |
+| [`docs/CHANGELOG.md`](docs/CHANGELOG.md) | Historial de versiones (v2.2 -> v2.25), una entrada por version |
 | [`docs/HU.md`](docs/HU.md) | Backlog: 48 historias de usuario (HU-001 a HU-048) con criterios de aceptacion |
+| [`docs/ACTIVE_SERVICES.md`](docs/ACTIVE_SERVICES.md) | Que cuesta dinero y como encender, comprobar y apagar cada servicio, en local y en GCP |
+| [`docs/validation/`](docs/validation/) | Guias de validacion paso a paso, una por lote (`validation-2-2.md`, `validation-2-3.md`) |
+| [`project/LOCAL_DEV.md`](project/LOCAL_DEV.md) | Entorno local sin nube: emulador de Pub/Sub, simulador y validador |
+| [`project/infra/BOOTSTRAP.md`](project/infra/BOOTSTRAP.md) · [`project/infra/DEPLOY_SIMULATOR.md`](project/infra/DEPLOY_SIMULATOR.md) | Bootstrap de Terraform (Lote 1.0) · base de GCP y despliegue del simulador (Lote 1.3) |
+| [`project/src/streaming/README.md`](project/src/streaming/README.md) · [`ENRICHED.md`](project/src/streaming/ENRICHED.md) | Pipeline de streaming (Lote 2.1) · rama enriched: anonimizacion, `enriched/` y BigQuery (Lote 2.2) |
 | [`docs/GLOSSARY.md`](docs/GLOSSARY.md) | Glosario del proyecto |
 | [`docs/NOTAS.md`](docs/NOTAS.md) | Notas de trabajo |
 | [`docs/trend_analyzer_multicloud.drawio`](docs/trend_analyzer_multicloud.drawio) | Diagrama editable en [diagrams.net](https://app.diagrams.net) (v2.5) |
@@ -63,6 +68,8 @@ Como las APIs reales de Reddit, Facebook e Instagram imponen aprobaciones y limi
 
 **GCP** es el plano de ingesta y procesamiento near-real-time. **AWS** es el Lakehouse y la capa analitica. El detalle (diagrama Mermaid, contratos y decisiones) esta en [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
+**Que funciona hoy (v2.25):** simulador -> Pub/Sub -> Dataflow (validacion, deduplicacion, DLQ, anonimizacion y NLP) -> `raw/`, `dlq/` y `enriched/` en GCS y `posts_enriched` en BigQuery, en local y en GCP. Faltan las ventanas de tendencias (`trend_windows`, Lote 2.4), el historico, el puente a AWS, el lakehouse, el dashboard y las alertas.
+
 ---
 
 ## Entornos
@@ -72,12 +79,16 @@ Como las APIs reales de Reddit, Facebook e Instagram imponen aprobaciones y limi
 | Proyecto GCP | `project-0568d9ba-848f-413c-88b` (nombre `proyectoDatos`, numero `63567159332`; facturacion con credito, a cargo de Alejandro Sepulveda) |
 | Region GCP | `us-central1` (ADR-12; cuotas de vCPU y Dataflow verificadas en esa region) |
 | Region AWS | `us-east-1` (el ID de cuenta va en `terraform.tfvars`, no en el repositorio) |
+| Simulador | Cloud Run `ta-stream-simulator` (`min = max = 1`, CPU siempre asignada). Apagado por defecto (`simulator_running = false`); el cursor se conserva en GCS |
+| Streaming | Dataflow `ta-stream-dev`: 1 × `e2-standard-2`, Streaming Engine. Workers con la imagen `dataflow-nlp` (Artifact Registry `ta-images`). Se drena fuera de validaciones y demos |
+| Datos en GCP | Buckets `…-ta-lake` (`raw/`, `dlq/`, `enriched/`) y `…-ta-datasets` (cursor del simulador) · BigQuery `ta_stream.posts_enriched` · secreto `ta-hmac-key` |
+| Costos mientras estan encendidos | Dataflow ~0,25 USD/h · simulador: una instancia siempre encendida · Cloud Build ~0,10 USD por imagen de NLP |
 | Etiquetas | `project=trend-analyzer` · `env=dev` · `owner=alejandro` |
 | Alertas | Correo, via Cloud Monitoring (las direcciones van en `terraform.tfvars`). Por ahora un solo destinatario |
 | Autenticacion de Terraform | AWS: perfil local de AWS CLI (`aws configure`). GCP: Application Default Credentials (`gcloud auth application-default login`). Sin llaves en el codigo |
 | Estado de Terraform | Remoto (ADR-14): GCS con versionado (GCP) y S3 con bloqueo en DynamoDB (AWS, ADR-15). Los *bootstraps* ya estan aplicados (Lote 1.0) |
 | Presupuestos | GCP (400000 COP) y AWS (50 USD) con aviso por correo al 50 %, 80/90 % y 100 % del gasto |
-| Codigo | Python 3.11 · Terraform >= 1.6 |
+| Codigo | Python 3.11 · Apache Beam 2.77 · Terraform >= 1.6. En WSL el 3.11 se instala con `uv`: entorno `ta` (simulador y `common/`) y `~/.venvs/ta-streaming` (Beam y validaciones) |
 
 ---
 
@@ -85,9 +96,9 @@ Como las APIs reales de Reddit, Facebook e Instagram imponen aprobaciones y limi
 
 | Fuente | Mecanismo | Frecuencia | Estado |
 |---|---|---|---|
-| **Reddit** (simulado) | Worker del `ta-stream-simulator` -> Pub/Sub `ta-raw-reddit` · payload estilo Reddit (subreddit, score, num_comments) · 30% posts / 70% comentarios | 1 mensaje cada 1-3 s | Pendiente (Lote 1.2) |
-| **Facebook** (simulado) | Worker del `ta-stream-simulator` -> Pub/Sub `ta-raw-facebook` · payload estilo Meta (pagina, reacciones, shares) · 15% posts / 85% comentarios | 1 mensaje cada 1-3 s | Pendiente (Lote 1.2) |
-| **Instagram** (simulado) | Worker del `ta-stream-simulator` -> Pub/Sub `ta-raw-instagram` · payload estilo Meta (cuenta, media, like_count) · 100% comentarios | 1 mensaje cada 1-3 s | Pendiente (Lote 1.2) |
+| **Reddit** (simulado) | Worker del `ta-stream-simulator` -> Pub/Sub `ta-raw-reddit` · payload estilo Reddit (subreddit, score, num_comments) · 30% posts / 70% comentarios | 1 mensaje cada 1-3 s | Operativa (Lotes 1.2 y 1.3) |
+| **Facebook** (simulado) | Worker del `ta-stream-simulator` -> Pub/Sub `ta-raw-facebook` · payload estilo Meta (pagina, reacciones, shares) · 15% posts / 85% comentarios | 1 mensaje cada 1-3 s | Operativa (Lotes 1.2 y 1.3) |
+| **Instagram** (simulado) | Worker del `ta-stream-simulator` -> Pub/Sub `ta-raw-instagram` · payload estilo Meta (cuenta, media, like_count) · 100% comentarios | 1 mensaje cada 1-3 s | Operativa (Lotes 1.2 y 1.3) |
 | **Historico** | Mismo generador en batch (~50k registros, ultimos 180 dias) -> S3 `raw/origin=historical/` | Manual / one-shot | Pendiente (Lote 3.1, Sprint 2) |
 
 ### Generador de comentarios
@@ -126,16 +137,16 @@ El simulador agrega lo que el texto no trae (red social, usuario, fechas, engage
 | Capa | Tecnologias |
 |---|---|
 | **Ingesta** | Cloud Run (`ta-stream-simulator`, Python 3.11 · asyncio) · generador de comentarios · Pub/Sub |
-| **Procesamiento** | Dataflow (Beam) · AWS Glue (Spark) |
-| **NLP** | RoBERTuito (pysentimiento): sentimiento y emocion en espanol |
+| **Procesamiento** | Dataflow (Apache Beam 2.77, Streaming Engine) · AWS Glue (Spark) |
+| **NLP** | RoBERTuito (pysentimiento): sentimiento y emocion en espanol, con `RunInference` en Dataflow y los modelos horneados en la imagen `dataflow-nlp` |
 | **Almacenamiento Raw** | Cloud Storage (GCS) · Amazon S3 |
 | **Analitica** | BigQuery · Amazon Athena |
 | **Orquestacion** | Cloud Scheduler · Amazon EventBridge |
 | **Gobernanza** | AWS Glue Data Catalog · dbt docs (linaje) · DAMA-DMBOK |
-| **Calidad** | Great Expectations · dbt · prueba de humo end-to-end · contratos verificados con `jsonschema` |
+| **Calidad** | Great Expectations · dbt · verificadores por lote (`verify_*.py`) · validaciones automaticas (`validate_*.py`) · prueba de humo end-to-end · contratos verificados con `jsonschema` |
 | **Seguridad** | Secret Manager (llave HMAC de anonimizacion) · IAM + KMS (AWS) · gitleaks (pre-commit) |
-| **IaC / CI-CD** | Terraform >= 1.6 (estado remoto: GCS y S3 + DynamoDB) · GitHub Actions · Docker · Artifact Registry |
-| **Desarrollo local** | docker-compose · emulador de Pub/Sub · Dataflow `DirectRunner` |
+| **IaC / CI-CD** | Terraform >= 1.6 (estado remoto: GCS y S3 + DynamoDB) · GitHub Actions · Docker · Cloud Build · Artifact Registry |
+| **Desarrollo local** | Docker Compose · emulador de Pub/Sub · Dataflow `DirectRunner` (tambien con NLP) |
 | **Visualizacion** | Amazon QuickSight |
 | **Observabilidad** | GCP Monitoring + Logging (alertas por correo) · AWS CloudWatch |
 
@@ -145,7 +156,7 @@ El simulador agrega lo que el texto no trae (red social, usuario, fechas, engage
 
 ## Estructura del repositorio
 
-> Estructura vigente (v2.14). Varias carpetas de `project/` se crean por lotes (ver `docs/PLAN.md` sec. 1). Rutas completas y archivos nuevos en `docs/ARCHITECTURE.md` sec. 6.
+> Estructura vigente (v2.25). Las carpetas de las fases 3 a 5 se crean con sus lotes (ver `docs/PLAN.md` sec. 1). Rutas completas en `docs/ARCHITECTURE.md` sec. 6.
 
 ```
 .                                          <- raiz del repositorio
@@ -159,43 +170,49 @@ El simulador agrega lo que el texto no trae (red social, usuario, fechas, engage
 │   ├── CHANGELOG.md                       <- historial de versiones
 │   ├── PLAN.md                            <- fases y lotes, matriz HU y estado del proyecto
 │   ├── HU.md                              <- historias de usuario (HU-001 a HU-048)
+│   ├── ACTIVE_SERVICES.md                 <- encender, comprobar y apagar lo que cobra
+│   ├── validation/                        <- guias de validacion por lote (validation-2-2.md, validation-2-3.md)
 │   ├── GLOSSARY.md                        <- glosario del proyecto
 │   ├── NOTAS.md                           <- notas de trabajo
 │   ├── trend_analyzer_multicloud.drawio   <- diagrama editable (v2.5)
 │   └── trend_analyzer_multicloud.jpg      <- exportacion del diagrama
 │
 └── project/                               <- codigo, contratos e infraestructura
-    ├── docker-compose.yml                 <- entorno local: emulador Pub/Sub + simulador (Lote 1.5)
+    ├── docker-compose.yml                 <- local: emulador Pub/Sub + simulador + validador (Lote 1.5)
+    ├── docker-compose.dataflow.yml        <- local: dataflow-local (DirectRunner) y streaming-check (Lote 2.1)
+    ├── docker-compose.nlp.yml             <- local: dataflow-local con la imagen de NLP (Lote 2.3)
+    ├── LOCAL_DEV.md                       <- guia del entorno local
+    ├── local/                             <- Dockerfiles de las herramientas locales
     ├── pytest.ini                         <- pythonpath = src, testpaths = src
     ├── contracts/                         <- copia legible por maquina de la sec. 5 (schemas, DDL de BigQuery y Athena, ejemplos, pruebas)
-    ├── infra/                             <- Infraestructura como codigo (Terraform), Lote 1.0 entregado
-    │   ├── BOOTSTRAP.md                   <- guia de ejecucion del bootstrap
-    │   ├── validate.sh                    <- fmt + validate sin credenciales
-    │   ├── gcp/
-    │   │   ├── bootstrap/                 <- estado local: APIs, bucket de estado, presupuesto
-    │   │   ├── modules/{project_services,tfstate_bucket,budget}/
-    │   │   └── environments/dev/          <- estado remoto (GCS)
-    │   └── aws/
-    │       ├── bootstrap/                 <- estado local: bucket de estado, tabla de bloqueo, presupuesto
-    │       ├── modules/{tfstate_backend,budget}/
-    │       └── environments/dev/          <- estado remoto (S3)
+    ├── infra/                             <- Terraform: bootstrap (1.0), base de GCP y simulador (1.3), BigQuery y secreto HMAC (2.2), permiso de la imagen de NLP (2.3)
+    │   ├── BOOTSTRAP.md  DEPLOY_SIMULATOR.md  validate.sh
+    │   ├── gcp/{bootstrap,modules,environments/dev}/
+    │   └── aws/{bootstrap,modules,environments/dev}/
     ├── scripts/
-    │   ├── generate_comments.py           <- CLI del generador (snapshots CSV / historico)
+    │   ├── generate_comments.py           <- CLI del generador (Lote 1.1)
+    │   ├── build_simulator_image.sh       <- imagen del simulador (Lote 1.3)
+    │   ├── verify_ingest.py               <- verificador de ingesta (Lote 1.4)
+    │   ├── local_dev.sh  preflight.sh     <- entorno local y estado real de la nube (Lote 1.5)
+    │   ├── dataflow_job.sh  local_dataflow.sh  verify_streaming.py   <- pipeline de streaming (Lote 2.1)
+    │   ├── verify_enriched.py  hmac_key.sh                           <- rama enriched (Lote 2.2)
+    │   ├── build_nlp_image.sh  local_nlp.sh  nlp_bench.py            <- NLP (Lote 2.3)
+    │   ├── on.py  off.py  status.py       <- encender, apagar y ver lo que cobra
+    │   ├── validate_2_3.py                <- validacion automatica del Lote 2.3
     │   └── smoke_e2e.py                   <- prueba de humo extremo a extremo (Lote 5.4)
+    ├── evidencia/                         <- JSON y logs que dejan las validaciones
     └── src/
         ├── conftest.py                    <- fixture envelope_validator (valida contra contracts/)
-        ├── common/                        <- envelope, hashing, hashtags, label_map (el NLP llega en el Lote 2.3)
-        ├── simulator/                     <- ta-stream-simulator (Cloud Run)
-        │   ├── generator/                 <- comment_generator.py, brands.py, noise.py, templates/ (Lote 1.1)
-        │   ├── config/                    <- brands.yaml (Lote 1.1), sim.yaml (Lote 1.2)
-        │   ├── app.py  publisher.py  state.py   <- Lote 1.2
-        │   ├── enrich/                    <- usuarios, engagement por red, marcas, caos (Lote 1.2)
-        │   └── tests/  Dockerfile  requirements.txt   <- Dockerfile en el Lote 1.3
-        ├── streaming/                     <- Dataflow (validacion, dedup, anonimizacion, NLP, ventanas)
-        ├── historical/                    <- full load historico (mismo generador)
-        ├── exporter/                      <- gcs-to-s3
-        ├── lakehouse/                     <- Glue jobs y dbt
-        ├── quality/                       <- Great Expectations
+        ├── setup.py                       <- paquete que Dataflow instala en los workers (streaming + common)
+        ├── common/                        <- envelope, hashing, hashtags, label_map; fila enriquecida, Parquet y llave HMAC (Lote 2.2)
+        ├── simulator/                     <- ta-stream-simulator: generador, enriquecimiento, caos, Dockerfile (Lotes 1.1 a 1.3)
+        ├── ingest_check/                  <- verificador de ingesta y topologia del emulador (Lotes 1.4 y 1.5)
+        ├── streaming/                     <- Dataflow: validacion, dedup, DLQ y raw/ (2.1) · anonimizacion, enriched/ y BigQuery (2.2) · NLP e imagen dataflow-nlp (2.3)
+        ├── ops/                           <- operacion (on/off/status) y validaciones automaticas
+        ├── historical/                    <- full load historico (mismo generador; Lote 3.1)
+        ├── exporter/                      <- gcs-to-s3 (Lote 3.2)
+        ├── lakehouse/                     <- Glue jobs y dbt (Fase 4)
+        ├── quality/                       <- Great Expectations (Fase 5)
         └── collectors/                    <- LEGADO: conectores reales Mastodon/Reddit/RSS (no se despliega)
 ```
 
@@ -235,8 +252,8 @@ Plan por fases (detalle y lotes en [`docs/PLAN.md`](docs/PLAN.md) sec. 1; estado
 | Fase | Contenido | HU | Estado |
 |---|---|---|---|
 | 0 · Alineacion | Contratos, README y diagrama, decisiones | HU-001 a HU-003 | ✅ Cerrada |
-| 1 · Simulador | Bootstrap, generador, simulador, despliegue, entorno local | HU-004, HU-008 a HU-017, HU-046, HU-047 | 🟨 En curso: Lotes 1.0 y 1.1 cerrados; siguiente, el 1.2 |
-| 2 · Streaming GCP | Dataflow, anonimizacion, NLP, ventanas | HU-005, HU-018 a HU-023 | Pendiente |
+| 1 · Simulador | Bootstrap, generador, simulador, despliegue, verificador, entorno local | HU-004, HU-008 a HU-017, HU-046, HU-047 | ✅ Cerrada (v2.21) |
+| 2 · Streaming GCP | Dataflow, anonimizacion, NLP, ventanas | HU-005, HU-018 a HU-023 | 🟨 En curso: Lotes 2.1, 2.2 y 2.3 cerrados; siguiente, el 2.4 (ventanas de tendencias) |
 | 3 · Historico y puente | Full load y exportador GCS -> S3 | HU-006, HU-024, HU-025 | Pendiente |
 | 4 · Lakehouse AWS | Trusted, Curated, aristas, orquestacion | HU-007, HU-026 a HU-030 | Pendiente |
 | 5 · Calidad y gobernanza | Profiling, reglas, catalogo, linaje, prueba E2E | HU-031 a HU-036, HU-048 | Pendiente |
@@ -245,10 +262,23 @@ Plan por fases (detalle y lotes en [`docs/PLAN.md`](docs/PLAN.md) sec. 1; estado
 | 8 · Informe | Informe tecnico, sustentacion, runbook | HU-044, HU-045 | Pendiente |
 
 **Hecho hasta ahora:**
-- **Lote 1.0 (HU-046):** *bootstraps* de Terraform aplicados en GCP y AWS (19 APIs de GCP, estado remoto, presupuestos con aviso por correo) y entornos `dev` conectados al estado remoto. Contrato en `docs/ARCHITECTURE.md` sec. 5.14.
-- **Lote 1.1 (HU-008, HU-009):** `src/common/` y generador de comentarios con 5 categorias. `python -m pytest`: 64 pruebas en verde, mas las 18 de `contracts/`.
+- **Lote 1.0 (HU-046):** *bootstraps* de Terraform aplicados en GCP y AWS (19 APIs de GCP, estado remoto, presupuestos con aviso por correo) y entornos `dev` conectados al estado remoto.
+- **Lote 1.1 (HU-008, HU-009):** `src/common/` y generador de comentarios con 5 categorias.
+- **Lote 1.2 (HU-010 a HU-015):** nucleo del simulador: tres workers asyncio, cursor en GCS que sobrevive a reinicios, eventos deterministas, usuarios, engagement por red y caos controlado.
+- **Lote 1.3 (HU-004, HU-016):** imagen del simulador y base de GCP en Terraform (topics, suscripciones, buckets, service accounts, Artifact Registry y Cloud Run).
+- **Lote 1.4 (HU-017):** verificador de ingesta: ~0,5 msg/s por fuente, 100 % de ids unicos y cursor que continua tras un reinicio.
+- **Lote 1.5 (HU-047):** entorno local con emulador de Pub/Sub, simulador y validador, sin credenciales.
+- **Lote 2.1 (HU-018, HU-019):** Dataflow valida, deduplica por `event_id`, manda los invalidos a la DLQ y escribe `raw/`, en local (`DirectRunner`) y en GCP.
+- **Lote 2.2 (HU-020, HU-021):** anonimizacion HMAC-SHA256 (`user_hash`), engagement normalizado, Parquet en `enriched/` y filas en BigQuery `posts_enriched`, con cobertura del 100 %.
+- **Lote 2.3 (HU-022):** sentimiento y emocion con RoBERTuito en el 100 % de las filas; un evento llega a BigQuery con NLP en unos 5 s. En local, el modelo ya no se comparte entre procesos, porque el `DirectRunner` se congelaba (v2.25).
 
-**Diferido (no bloquea):** acceso de Miguel y Camila, verificar el conector QuickSight -> BigQuery y la prueba de sincronizacion sec. 5 <-> `contracts/` (Fase 5). **Abierto:** confirmar los criterios de aceptacion de HU-008 y HU-009 contra `HU.md`.
+**Abierto, sin bloquear:**
+- Declarar en Terraform el permiso de Cloud Build y agregar `GET /health` al simulador (v2.17).
+- Limitar `sa-exporter` a `enriched/` (Lote 3.2), *soft delete* del bucket del lake frente a `_dataflow/temp`, y `*.egg-info/` y `.local-lake/` en `.gitignore` (v2.21).
+- `roles/pubsub.viewer` para `sa-dataflow` y medicion formal de la latencia p95 (Lote 2.4).
+- Anotar los conteos de pruebas del Lote 2.3 y el pico de memoria del worker de Dataflow.
+
+**Diferido (no bloquea):** acceso de Miguel y Camila, verificar el conector QuickSight -> BigQuery y la prueba de sincronizacion sec. 5 <-> `contracts/` (Fase 5).
 
 ---
 
@@ -260,15 +290,17 @@ Plan por fases (detalle y lotes en [`docs/PLAN.md`](docs/PLAN.md) sec. 1; estado
 - **100%** de identificadores de usuario anonimizados antes de la capa analitica
 - Reduccion **>= 50%** del tiempo de elaboracion de informes de marketing
 
+**Medido hasta ahora en streaming (Lotes 2.2 y 2.3, en GCP):** 0 identificadores en claro en `enriched/` y en BigQuery; 0 copias de `event_id`; NLP en el 100 % de las filas; p95 de emision a BigQuery de 27 s. La latencia de deteccion de tendencias se mide con el Lote 2.4.
+
 ---
 
 ## Inicio rapido
 
-> Todos los comandos se ejecutan desde la carpeta `project/`.
+> Cada bloque dice desde donde se corre. Los scripts de operacion y validacion (`on.py`, `off.py`, `status.py`, `validate_*.py`) se corren desde la **raiz del repositorio**; el resto, desde `project/`. En WSL, activar antes el entorno de Python 3.11 (`source ~/.venvs/ta-streaming/bin/activate`; pasos en `project/src/streaming/README.md`).
 
 ### Validar infraestructura (sin credenciales reales)
 
-Necesita Terraform >= 1.6. Corre `terraform fmt -check` y `init -backend=false` + `validate` en las cuatro raices (bootstrap y entorno `dev`, de GCP y AWS):
+Necesita Terraform >= 1.6. Corre `terraform fmt -check` y `init -backend=false` + `validate` en las raices de Terraform:
 
 ```bash
 cd project
@@ -277,7 +309,7 @@ bash infra/validate.sh
 
 Para aplicar el *bootstrap* de cada nube y conectar los entornos `dev` al estado remoto, ver `project/infra/BOOTSTRAP.md` y `docs/ARCHITECTURE.md` sec. 5.14. Los valores reales (`terraform.tfvars`, `backend.hcl`) no se versionan: se copian desde los `*.example`.
 
-### Generar comentarios de ejemplo (disponible desde el Lote 1.1)
+### Generar comentarios de ejemplo
 
 ```bash
 cd project
@@ -288,46 +320,63 @@ python scripts/generate_comments.py --n 10 --seed 7
 python scripts/generate_comments.py --n 50000 --seed 7 --out comentarios.csv
 ```
 
-### Correr pruebas (Lote 1.1: `common/` y generador)
+### Correr pruebas
 
 ```bash
 cd project
-pip install pyyaml pytest jsonschema referencing
-python -m pytest                      # usa pytest.ini (pythonpath = src): 64 pruebas
-python -m pytest contracts/tests -q   # contratos: 18 pruebas
+python -m pytest src/common src/simulator -q     # entorno ta
+python -m pytest src/streaming src/ops -q        # entorno ~/.venvs/ta-streaming (Beam 2.77)
+python -m pytest src/ingest_check -q
+python -m pytest contracts/tests -q              # contratos: 18 pruebas
 ```
 
-### Entorno local sin nube (disponible desde el Lote 1.5)
+Los conteos esperados de cada lote estan en `docs/PLAN.md` sec. 3 y en su guia de `docs/validation/`.
+
+### Entorno local sin nube
+
+Sin credenciales de GCP ni de AWS. Guia completa en [`project/LOCAL_DEV.md`](project/LOCAL_DEV.md).
 
 ```bash
 cd project
-# Emulador de Pub/Sub + simulador, sin credenciales de GCP ni AWS
-docker-compose up
+bash scripts/local_dev.sh up             # emulador de Pub/Sub + simulador
+bash scripts/local_dataflow.sh up        # + pipeline con DirectRunner (lake en project/.local-lake)
+bash scripts/local_dataflow.sh check     # centinela y defectos de prueba (Lote 2.1)
+bash scripts/local_nlp.sh build          # imagen con los modelos de NLP (una vez; ~2,5 GB)
+bash scripts/local_nlp.sh up             # dataflow-local con NLP (Lote 2.3)
+bash scripts/local_dataflow.sh down-all  # apagar todo lo local
 ```
 
-### Prueba de humo end-to-end (disponible desde el Lote 5.4)
+### Encender, comprobar y apagar en GCP
+
+Desde la raiz del repositorio. Detalle y comandos manuales en [`docs/ACTIVE_SERVICES.md`](docs/ACTIVE_SERVICES.md).
+
+```bash
+python project/scripts/status.py          # que esta encendido (solo lectura)
+python project/scripts/on.py cloud        # simulador + job de Dataflow (con NLP si hay imagen publicada)
+python project/scripts/off.py             # apaga lo que cobra en GCP: drena Dataflow y apaga el simulador
+```
+
+> Dataflow cobra ~0,25 USD/h y el simulador mantiene una instancia encendida: apagar al terminar cada sesion.
+
+### Validar un lote
+
+Desde la raiz del repositorio. Cada lote con validacion trae su guia en `docs/validation/` y su script en `project/scripts/`; la evidencia queda en `project/evidencia/`.
+
+```bash
+python project/scripts/validate_2_3.py tests local       # pruebas, Terraform y local (gratis)
+python project/scripts/validate_2_3.py cloud --off-after # GCP: cobra mientras corre y drena el job al final
+```
+
+### Desplegar el simulador por primera vez
+
+Pasos completos (imagen, `terraform.tfvars` y verificacion) en [`project/infra/DEPLOY_SIMULATOR.md`](project/infra/DEPLOY_SIMULATOR.md). En resumen: `validate.sh`, `apply` de la base, `bash scripts/build_simulator_image.sh` para construir, probar y publicar la imagen, y `simulator_image` en `terraform.tfvars` con otro `apply`. Despues, `on.py` y `off.py` lo encienden y apagan.
+
+### Prueba de humo end-to-end (Lote 5.4, pendiente)
 
 ```bash
 cd project
 # Sigue un evento centinela desde el simulador hasta Athena y reporta la latencia de cada etapa
 python scripts/smoke_e2e.py
-```
-
-### Construir y desplegar el simulador (disponible desde el Lote 1.3)
-
-```bash
-# 1. Autenticarse con Artifact Registry
-gcloud auth configure-docker us-central1-docker.pkg.dev
-
-# 2. Construir la imagen
-cd project/src/simulator
-docker build -t us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/REPO/ta-stream-simulator:v1 .
-docker push  us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/REPO/ta-stream-simulator:v1
-
-# 3. Actualizar terraform.tfvars y aplicar
-cd ../../infra/gcp/environments/dev
-# Editar la variable de imagen del contenedor con la nueva imagen
-terraform apply
 ```
 
 ---
@@ -344,10 +393,13 @@ terraform apply
 > `LocalContext/` no se sube al repositorio (`.gitignore`). Hacer copia de seguridad independiente si se necesita persistencia.
 
 > [!NOTE]
-> El repositorio se trabaja en Windows y WSL: se recomienda un `.gitattributes` con `*.sh`, `*.tf` y `*.hcl` en `eol=lf` para que `validate.sh` no falle por finales de linea CRLF.
+> El repositorio se trabaja en Windows y WSL: se recomienda un `.gitattributes` con `*.sh`, `*.tf` y `*.hcl` en `eol=lf` para que `validate.sh` no falle por finales de linea CRLF. Si un script de Python falla con `FileNotFoundError` al importar, la carpeta actual de la terminal quedo rota por cambios hechos desde Windows: volver a entrar con `cd`.
 
 > [!NOTE]
-> Los datos son sinteticos, pero el pipeline los trata como datos reales: los identificadores de usuario se anonimizan con HMAC-SHA256 en el primer paso de procesamiento (Dataflow / loader historico), antes de salir de GCP.
+> Los datos son sinteticos, pero el pipeline los trata como datos reales: los identificadores de usuario se anonimizan con HMAC-SHA256 en el primer paso de procesamiento (Dataflow desde el Lote 2.2; loader historico en el 3.1), antes de salir de GCP.
+
+> [!NOTE]
+> Los modelos de NLP (RoBERTuito de pysentimiento) no declaran licencia en su *model card* y quedan sujetos a la licencia de sus datos de entrenamiento (TASS 2020, EmoEvent), muchas de uso no comercial. El proyecto es academico y sin uso comercial. Citas en `docs/ARCHITECTURE.md` sec. 3.15.
 
 ---
 

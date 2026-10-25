@@ -11,3 +11,5 @@
 **/*.pyc
 **/.pytest_cache/
 **/.sim-state/
+!.pytest_cache
+!.local-lake

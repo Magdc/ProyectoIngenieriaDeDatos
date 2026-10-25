@@ -1,6 +1,6 @@
 # TrendAnalyzer · Historias de Usuario (HU)
 
-> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.21** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
+> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.24** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
 > Cada HU tiene un ID **HU-000**, su fase/lote de `ARCHITECTURE.md` §7, responsable, sprint y criterios de aceptación verificables.
 
 ---
@@ -54,7 +54,7 @@ Criterios de aceptación: lista verificable.
 | HU-003 | Decisiones de arquitectura cerradas | 0 | Todos | Must | 2 | ✅ |
 | **E1 · Infraestructura como código** | | | | | | |
 | HU-004 | Infraestructura GCP base | 1 · 1.3 | M | Must | 2 | ✅ |
-| HU-005 | Recursos de streaming (BigQuery, secreto HMAC) | 2 · 2.4 | M + C | Must | 2 | ⬜ |
+| HU-005 | Recursos de streaming (BigQuery, secreto HMAC) | 2 · 2.4 | M + C | Must | 2 | 🟨 |
 | HU-006 | Federación OIDC GCP → AWS | 3 · 3.2 | M | Must | 2 | ⬜ |
 | HU-007 | Infraestructura AWS del lakehouse | 4 · 4.1 | M | Must | 2 | ⬜ |
 | HU-046 | Bootstrap de Terraform y entornos | 1 · 1.0 | M | Must | 2 | ✅ |
@@ -73,9 +73,9 @@ Criterios de aceptación: lista verificable.
 | **E3 · Streaming en GCP** | | | | | | |
 | HU-018 | Validación, deduplicación y DLQ | 2 · 2.1 | C | Must | 2 | ✅ |
 | HU-019 | Persistencia Raw en GCS | 2 · 2.1 | C | Must | 2 | ✅ |
-| HU-020 | Anonimización de usuarios | 2 · 2.2 | C | Must | 2 | ⬜ |
-| HU-021 | Normalización y carga a BigQuery | 2 · 2.2 | C | Must | 2 | ⬜ |
-| HU-022 | Análisis de emoción y sentimiento | 2 · 2.3 | C | Must | 2 | ⬜ |
+| HU-020 | Anonimización de usuarios | 2 · 2.2 | C | Must | 2 | ✅ |
+| HU-021 | Normalización y carga a BigQuery | 2 · 2.2 | C | Must | 2 | ✅ |
+| HU-022 | Análisis de emoción y sentimiento | 2 · 2.3 | C | Must | 2 | 🟨 |
 | HU-023 | Detección de tendencias en ventanas | 2 · 2.4 | C | Must | 2 | ⬜ |
 | **E4 · Histórico y puente a AWS** | | | | | | |
 | HU-024 | Carga histórica (full load) | 3 · 3.1 | A | Must | 2 | ⬜ |
@@ -184,9 +184,9 @@ Criterios de aceptación: lista verificable.
 **Como** ingeniero de datos **quiero** BigQuery, la llave HMAC y la plantilla de Dataflow provisionadas **para** desplegar el pipeline de streaming.
 
 **Criterios de aceptación**
-- Dataset `ta_stream` con `posts_enriched`, `trend_windows`, `dlq_events` y `dq_results`.
+- Dataset `ta_stream` con `posts_enriched`, `trend_windows`, `dlq_events` y `dq_results`. *(El dataset y `posts_enriched` llegan antes, con el Lote 2.2; el 2.4 suma las otras tres.)*
 - `posts_enriched` particionada por `DATE(event_time)` y con clustering por `source, brand_primary`.
-- Secreto `ta-hmac-key` creado y accesible solo para `sa-dataflow` (y el loader).
+- Secreto `ta-hmac-key` creado y accesible solo para `sa-dataflow` (y el loader). *(Adelantado al Lote 2.2: `infra/gcp/modules/hmac_secret` y `scripts/hmac_key.sh`.)*
 - Plantilla de Dataflow parametrizada con los `outputs` de Terraform, sin valores hardcodeados.
 
 ### HU-006 · Federación OIDC GCP → AWS
@@ -441,7 +441,7 @@ Criterios de aceptación: lista verificable.
 - `author.user_id` y `author.handle` se reemplazan por `author.user_hash` (HMAC-SHA256 hex de 64 caracteres) con la llave de `ta-hmac-key`.
 - Ningún evento enriquecido contiene `user_id` ni `handle`.
 - El mismo usuario produce siempre el mismo hash.
-- Un test automático verifica la ausencia de los campos en claro.
+- Un test automático verifica la ausencia de los campos en claro. *(Lote 2.2: `test_enriched_row.py`, `test_enriched_pipeline.py` y `scripts/verify_enriched.py`.)*
 
 ### HU-021 · Normalización y carga a BigQuery
 
@@ -454,7 +454,7 @@ Criterios de aceptación: lista verificable.
 **Criterios de aceptación**
 - Se calculan `likes`, `shares`, `comments` según la regla de §5.2 (`shares = null` en Reddit e Instagram).
 - Los eventos se escriben en `posts_enriched` y como Parquet en `enriched/source={s}/dt=…/hr=…`.
-- El registro conserva `label_sentiment` (ground truth, nullable) solo como columna de evaluación y calcula `brand_primary`.
+- El registro conserva `label_sentiment` (ground truth, nullable) solo como columna de evaluación y calcula `brand_primary`. *(Lote 2.2: las columnas de NLP van en nulo hasta el Lote 2.3.)*
 
 ### HU-022 · Análisis de emoción y sentimiento
 
@@ -471,7 +471,7 @@ Criterios de aceptación: lista verificable.
 - Se registra `nlp_model_version` (`robertuito-sentiment@<hash>+robertuito-emotion@<hash>`).
 - Un evento emitido aparece en BigQuery con `emotion_label` en menos de 1 minuto.
 - Si la memoria no alcanza, se corre solo el modelo de sentimiento y la emoción queda como mejora; si es inviable en Dataflow, se activa el fallback documentado (modelo ligero, modelo multilingüe o NLP en Cloud Run).
-- Se verifica la licencia de cada modelo en su *model card*.
+- Se verifica la licencia de cada modelo en su *model card*. *(Lote 2.3: `src/streaming/nlp.py`, imagen `dataflow-nlp` con los modelos y su commit; ver `docs/validation-2-3.md`.)*
 ### HU-023 · Detección de tendencias en ventanas
 
 | Épica | Fase · Lote | Responsable | Prioridad | Sprint | Depende de |

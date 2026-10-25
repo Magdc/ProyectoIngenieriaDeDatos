@@ -1,0 +1,146 @@
+[
+  {
+    "name": "event_id",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "UUID del evento (uuid5, §3.6). Clave de deduplicación."
+  },
+  {
+    "name": "origin",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "stream | historical"
+  },
+  {
+    "name": "source",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Red social simulada: reddit | facebook | instagram"
+  },
+  {
+    "name": "generator",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Generador de comentarios y versión (comment-gen@1.0)"
+  },
+  {
+    "name": "event_time",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED",
+    "description": "Cuándo se publicó el comentario (UTC). Partición."
+  },
+  {
+    "name": "ingest_time",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE",
+    "description": "Cuándo lo emitió el simulador o el loader (UTC)"
+  },
+  {
+    "name": "process_time",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE",
+    "description": "Cuándo lo enriqueció Dataflow o el loader (UTC)"
+  },
+  {
+    "name": "user_hash",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "HMAC-SHA256 hex del user_id (dato anonimizado)"
+  },
+  {
+    "name": "followers",
+    "type": "INT64",
+    "mode": "NULLABLE",
+    "description": "Seguidores del autor; puede ser nulo"
+  },
+  {
+    "name": "text",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Texto del comentario"
+  },
+  {
+    "name": "lang",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Idioma (es) o nulo"
+  },
+  {
+    "name": "brands",
+    "type": "STRING",
+    "mode": "REPEATED",
+    "description": "Marcas canónicas mencionadas"
+  },
+  {
+    "name": "brand_primary",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "brands[0] o nulo"
+  },
+  {
+    "name": "hashtags",
+    "type": "STRING",
+    "mode": "REPEATED",
+    "description": "Hashtags en forma canónica"
+  },
+  {
+    "name": "likes",
+    "type": "INT64",
+    "mode": "NULLABLE",
+    "description": "score | reactions_total | like_count"
+  },
+  {
+    "name": "shares",
+    "type": "INT64",
+    "mode": "NULLABLE",
+    "description": "shares_count (Facebook); nulo en Reddit e Instagram"
+  },
+  {
+    "name": "comments",
+    "type": "INT64",
+    "mode": "NULLABLE",
+    "description": "num_comments | comments_count"
+  },
+  {
+    "name": "sentiment_label",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "negative | neutral | positive (Lote 2.3)"
+  },
+  {
+    "name": "sentiment_score",
+    "type": "FLOAT64",
+    "mode": "NULLABLE",
+    "description": "[0, 1] (Lote 2.3)"
+  },
+  {
+    "name": "emotion_label",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "joy, sadness, anger, fear, disgust, surprise, neutral (Lote 2.3)"
+  },
+  {
+    "name": "emotion_score",
+    "type": "FLOAT64",
+    "mode": "NULLABLE",
+    "description": "[0, 1] (Lote 2.3)"
+  },
+  {
+    "name": "label_sentiment",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Ground truth del simulador; solo evaluación, nunca feature"
+  },
+  {
+    "name": "nlp_model_version",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "robertuito-sentiment@<hash>+robertuito-emotion@<hash> (Lote 2.3)"
+  },
+  {
+    "name": "payload",
+    "type": "JSON",
+    "mode": "NULLABLE",
+    "description": "payload específico de la red, como JSON"
+  }
+]

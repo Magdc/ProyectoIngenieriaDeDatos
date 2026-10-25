@@ -1,6 +1,6 @@
 # TrendAnalyzer · ARCHITECTURE
 
-> Documento maestro de arquitectura y contratos. **Versión vigente: 2.21.**
+> Documento maestro de arquitectura y contratos. **Versión vigente: 2.24.**
 > Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md) · Plan por fases, trazabilidad HU y estado: [`PLAN.md`](PLAN.md) · Historias de usuario: `HU.md` · Visión general: `README.md`.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 
@@ -18,10 +18,12 @@ Este archivo está pensado para que **baste con leerlo (o pegármelo) para const
 | Saber **cómo hablarle a cada componente** (formatos, nombres, topics, tablas, IAM) | **§5 (contratos)** |
 | Saber **cómo se valida cada contrato** y cómo mantener §5 y `contracts/` alineados | **§5.13** |
 | Saber **qué infraestructura base existe** y cómo aplicarla (estado remoto, APIs, presupuestos) | **§5.14** |
-| Saber qué hay en GCP (topics, buckets, service accounts, Cloud Run) y cómo desplegar el simulador | **§5.15** |
+| Saber qué hay en GCP (topics, buckets, service accounts, Cloud Run, BigQuery, secreto HMAC) y cómo desplegar el simulador | **§5.15** y §3.14 |
 | Comprobar que el simulador emite bien (tasa, ids únicos, `seq`, reinicio) | **§3.11** |
 | Levantar el simulador en local, sin nube ni credenciales | **§3.12** y `project/LOCAL_DEV.md` |
 | Correr o verificar el pipeline de streaming (local con DirectRunner o en Dataflow) | **§3.13** y `src/streaming/README.md` |
+| Anonimizar, normalizar y escribir `enriched/` y `posts_enriched`; cargar la llave HMAC | **§3.14** y `src/streaming/ENRICHED.md` |
+| Sentimiento y emoción (RoBERTuito), imagen `dataflow-nlp` y NLP en local | **§3.15** y `docs/validation-2-3.md` |
 | Comprobar qué está encendido antes de validar un lote | **§8** (preflight) |
 | Saber qué construir y en qué orden | `PLAN.md` §1 (fases y lotes) |
 | Saber qué historias de usuario cubre cada fase o lote | **`PLAN.md` §1 y §2** (detalle en `HU.md`) |
@@ -68,7 +70,7 @@ El README menciona **Firestore, Cloud SQL, Neptune y Dataplex**, que **no están
 
 ### 1.4 Historial de cambios
 
-Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.21), la más reciente primero. Este documento describe siempre la versión vigente (2.21).
+Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.24), la más reciente primero. Este documento describe siempre la versión vigente (2.24).
 
 ---
 
@@ -598,6 +600,143 @@ El detalle es `ruta: mensaje` del primer error de `jsonschema` (máximo 2.000 ca
 - `dataflow_job.sh status` puede no listar contadores en los primeros minutos (las métricas de usuario tardan en publicarse); la consola de Dataflow los muestra igual.
 - La validación local se hizo con la deduplicación de v2.20 (timer). La de v2.21 está cubierta por las pruebas con `TestStream` y por la corrida en GCP; repetir `local_dataflow.sh check` es opcional.
 - El empaquetado de `--setup_file` deja `src/ta_streaming.egg-info/`; `start` lo borra. Recomendado: `*.egg-info/` y `.local-lake/` en el `.gitignore` de la raíz.
+
+### 3.14 Rama enriched: anonimización, engagement, `enriched/` y `posts_enriched` (Lote 2.2)
+
+> Entregado en **v2.22** (HU-020, HU-021) y **cerrado en v2.24**, validado en la máquina del equipo y en GCP. Rutas relativas a `project/`; guía paso a paso en `src/streaming/ENRICHED.md`. No toca `contracts/` ni `schema_version`. Adelanta del Lote 2.4 (HU-005) el dataset `ta_stream`, la tabla `posts_enriched`, el secreto `ta-hmac-key` y los dos permisos de `sa-dataflow` que la rama necesita (ADR-18).
+
+**Flujo.**
+
+```
+unique (§3.13) ─► EnrichAnonymize ─► [NLP, Lote 2.3] ─┬─► enriched/source=…/dt=…/hr=…/part-*.parquet
+                                                       └─► ta_stream.posts_enriched (streaming inserts)
+```
+
+Se engancha con dos líneas en `pipeline.py` (`from streaming.enriched import attach_enriched` y `attach_enriched(unique)` tras `build_from_messages()`); `test_enriched_hook.py` falla mientras falten. `attach_enriched()` lee las opciones del propio pipeline, así que `dataflow_job.sh` no cambia.
+
+| Ruta | Contenido |
+|---|---|
+| `src/common/enriched_row.py` | `POSTS_ENRICHED_COLUMNS` (columnas, tipo y modo de §5.5, en orden), `hash_user()` (envuelve `common.hashing.user_hash`), `engagement()` (envuelve `common.envelope.normalize_engagement`), `enrich_envelope()` (envelope de §5.2 → enriquecido sin NLP), `to_posts_enriched_row()` (aplanado de §5.4), `row_problems()` y `bigquery_schema_fields()`. Sin Beam ni pyarrow: lo reutiliza el loader histórico (Lote 3.1). |
+| `src/common/parquet_rows.py` | Esquema de pyarrow, `rows_to_parquet_bytes()` y `parquet_bytes_to_rows()`. pyarrow se importa al usarse. |
+| `src/common/hmac_key.py` | `KeySource` (`secret`, `env`, `local_dev`), `access_secret()` (Secret Manager por REST con `google-auth`, reintentos y CRC32C) y `load_hmac_key()`. |
+| `src/streaming/enriched.py` | `EnrichedOptions`, `resolve_enriched_config()`, `envelope_of()`, `EnrichFn`, `WriteEnrichedParquet`, `WritePostsEnrichedToBigQuery`, `EnrichedBranch` y `attach_enriched()`. |
+| `src/streaming/enriched_check.py`, `enriched_cli.py`, `scripts/verify_enriched.py` | Verificador (abajo). |
+| `src/streaming/enriched_testing.py` | Envelopes de §5.2 hechos a mano, `FakeValidEvent` y un lake local de ejemplo. |
+| `scripts/hmac_key.sh` | `status` (solo lectura) e `init` (primera versión del secreto; se niega si ya hay una). |
+| `infra/gcp/modules/{bigquery_stream,hmac_secret}/`, `infra/gcp/environments/dev/{streaming,variables_streaming,outputs_streaming}.tf` | Terraform (§5.5, §5.8, §5.9). Se suman sin modificar los archivos del Lote 1.3. |
+
+**Anonimización (HU-020).** `author` pasa a `{user_hash, followers}` con `user_hash = HMAC-SHA256(llave, user_id)` en hex. El hash depende solo de `user_id`: el mismo usuario da el mismo hash en stream e histórico. `enrich_envelope()` rechaza la salida si aparece `user_id` o `handle` en cualquier nivel.
+
+**Llave.** La lee cada worker en `EnrichFn.setup()`; nunca es una opción del pipeline ni queda en el grafo del job. Con `DataflowRunner`, o si alguna salida es `gs://…` o BigQuery, sale de `ta-hmac-key` en Secret Manager (`TA_HMAC_SECRET_NAME`, §5.1) por REST, sin añadir `google-cloud-secret-manager` a las dependencias. En local (DirectRunner con lake local) se usa una llave **pública** de desarrollo, válida solo con datos sintéticos; `--hmac_key_env` permite otra en local y se rechaza con `DataflowRunner`. El valor lo sube `scripts/hmac_key.sh init` por stdin (32 bytes aleatorios en hex): no pasa por Terraform ni por el repositorio. **No se rota**: cambiarla cambia todos los `user_hash`.
+
+**Normalización (HU-021).** `likes`, `shares` y `comments` según §5.2, con la función del Lote 1.1. `brand_primary = brands[0]` (o nulo), `label_sentiment = sim.label_sentiment`, `payload` como JSON compacto. Desde el Lote 2.3 las columnas de NLP las rellena `streaming.nlp` (§3.15), que `attach_enriched()` arma desde las opciones; con `--nlp_enabled=false` vuelven a ir en nulo.
+
+**`enriched/`.** Igual que `raw/` (§3.13): cada fila se re-marca con su hora de proceso, ventanas fijas de `--enriched_window_seconds` (por defecto la de `raw/`: 300 s en Dataflow, 60 s en local; debe dividir 3600), un `GroupByKey` por fuente y ventana y un archivo `part-{inicio}Z-p{panel:03d}.parquet` con las filas ordenadas por `event_id` (mismo contenido ⇒ mismos bytes). Los paneles tardíos se admiten durante una ventana más y salen como `p001`, `p002`… Formato en §5.4.
+
+**`posts_enriched`.** *Streaming inserts* (`STREAMING_INSERTS`, `CREATE_NEVER`, `RETRY_ON_TRANSIENT_ERROR`): Python puro, sin el servicio de expansión de Java que pide la Storage Write API. Las filas rechazadas suben `enriched/bq_failed_rows` y dejan un log `bq_insert_failed` con el `event_id`; el Parquet se escribe igual. La deduplicación de BigQuery es de mejor esfuerzo; Trusted vuelve a deduplicar (§5.7).
+
+**Opciones** (`--enriched_enabled`, `--enriched_root`, `--enriched_window_seconds`, `--posts_enriched_table` = `auto`|`none`|tabla, `--hmac_secret_name`, `--hmac_secret_project`, `--hmac_key_env`): todas con valor por defecto, descritas en `ENRICHED.md` §1. Los nombres no repiten ninguno del Lote 2.1, porque Beam falla si dos clases de opciones definen el mismo.
+
+**Métricas** (espacio `enriched`): `enriched_rows`, `enrich_errors`, `event_to_process_ms` (distribución), `parquet_files`, `parquet_rows` y `bq_failed_rows`.
+
+**Verificación** (`scripts/verify_enriched.py report`, sin Beam): lee `enriched/` y `raw/` de las últimas horas (local o GCS) y, si el lake es `gs://`, consulta BigQuery. Comprueba columnas = `posts_enriched`, ninguna columna ni clave `user_id`/`handle`, `user_hash` hex de 64, reglas de engagement por fuente, `brand_primary`, 0 copias de `event_id`, cobertura `raw → enriched` ≥ 95 % (solo ventanas de `raw/` ya cerradas), `user_hash` 1 a 1 con `user_id` (cruce con `raw/` por `event_id`, sin conocer la llave) y, en BigQuery, columnas, ids únicos, reglas y cobertura `enriched → BigQuery`. Reporta la latencia `process_time − event_time` (p50, p95) como dato; el KPI de latencia es del Lote 2.4. Salida 0 / 1 / 2 como los demás verificadores; `--json-out` guarda la evidencia.
+
+**Pruebas** (`src/streaming/tests/test_enriched_*.py`, sin red): fila y envelope enriquecido por fuente y `kind`, ausencia de identidad, hash determinista y distinto por usuario y por llave, referencia HMAC-SHA256, engagement por fuente, schema de Terraform = código, Parquet ida y vuelta con bytes deterministas, llave (REST con sesión falsa, 403/404/5xx, CRC32C, entorno, local), configuración por runner, rama completa con `TestStream` en el `BundleBasedDirectRunner` (Parquet escrito, elementos inválidos contados sin detener el pipeline), sink de BigQuery con un `WriteToBigQuery` falso, verificador (casos que pasan y que fallan, GCS y BigQuery falsos), enganche en `pipeline.py` y, con `contracts/`, la DDL de `posts_enriched` y de `posts_raw` contra las columnas del código y los ejemplos válidos contra `envelope.enriched.v1`.
+
+> **Estado de la verificación (v2.22, antes de entregar):** en un entorno aislado con Python 3.11 y Apache Beam 2.77.0: **65 passed, 1 omitida** (`test_enriched_hook.py`, porque no estaba `pipeline.py`). `common.envelope` y `common.hashing` se reemplazaron por dobles con la firma de §3.2.2, y `contracts/` por una aproximación con la estructura de §5.2 y §5.5; con el repo real esas pruebas usan el código y los contratos verdaderos. Terraform se revisó con un analizador de HCL y la alineación de `terraform fmt`; **no** se pudo correr `terraform validate` (sin acceso al registro de proveedores). **No** se corrió con el pipeline real del Lote 2.1, ni en local con el emulador, ni en GCP.
+
+> **Estado de la verificación (v2.24, cierre):** validado en la máquina del equipo (WSL con Python 3.11.17 en `~/.venvs/ta-streaming`) y en GCP. Evidencia en `evidencia/local_enriched_report.json`, `evidencia/enriched_report.json` y `evidencia/streaming_check_2_2.json`.
+>
+> - **Pruebas:** del lote, **67 passed** y 0 omitidas, con `pipeline.py`, `common/` y `contracts/` reales; todo `streaming/`, **158 passed** (91 + 67); `contracts/tests`, 18 passed; `common/` + simulador (entorno `ta`), 116 passed. Los 13 avisos son de columnas `NOT NULL` en la DDL que Terraform deja nulas (compatible) y de pytest al recoger `TestStream`.
+> - **Terraform:** `validate.sh` en verde tras reformatear el `terraform.tfvars` local.
+> - **Local:** `verify_enriched.py --local` **OK**: 262 / 259 / 267 filas, 0 copias, cobertura `raw → enriched` del 100 %, 46 usuarios con hash 1 a 1, p95 de 5,7 a 7,1 s. `local_dataflow.sh check` OK (11/11).
+> - **GCP:** job `ta-stream-dev`. `verify_enriched.py` **OK**, también en BigQuery, con cobertura `enriched → BigQuery` del 100 % (551 / 543 / 552). En BigQuery, en 1 h: 719 / 736 / 736 filas con ids únicos, `hash_malo = 0`, `shares` solo en Facebook (719/719), NLP en nulo, ground truth en el 71 %, ninguna columna `user_id`/`handle`, `payload_con_identidad = 0` y p95 `process_time − event_time` de 5 s. `verify_streaming.py check --allow-cloud` OK (13/13), con `raw/` sin copias repetidas.
+>
+> **Observaciones del cierre (no bloquean):**
+> - El primer job no recibió datos porque el simulador estaba apagado (`simulator_running = false`), y por eso no había `hmac_key_loaded`: los workers leen la llave con el primer lote de datos. Lo explica `docs/ACTIVE_SERVICES.md`.
+> - `enriched_config` se registra en la terminal del launcher al construir el job, no en Cloud Logging. `validation-2-2.md` E8 decía lo contrario; queda corregido.
+> - Los workers registran `PERMISSION_DENIED` (`GETTING_PUBSUB_SUBSCRIPTION_FAILED`) al leer la configuración de `ta-raw-*-df`: a `sa-dataflow` le falta `roles/pubsub.viewer`. Es un aviso de Dataflow y el consumo funciona; se declara en Terraform en el Lote 2.4.
+> - `test_routes_and_three_workers` (simulador, Lote 1.2) se cuelga en el entorno `ta-streaming` y pasa en `ta`. Es una diferencia de entorno; no afecta al 2.2.
+> - El equipo cambió `local/dataflow.Dockerfile` (Lote 2.1) para instalar las dependencias con `uv` y caché de BuildKit, porque la construcción con `pip` tardaba demasiado.
+> - Al pasar el código a `build_from_messages()`, la rama se apaga sola fuera de Dataflow si no hay salida (`enriched_disabled`), para no romper las pruebas del 2.1 que usan `TestStream` sin `--output_root` (corrección entregada durante la validación).
+
+**Puntos a confirmar al validar (pueden pedir un ajuste pequeño):**
+- `envelope_of()` reconoce dicts, cuerpos JSON, pares `(clave, valor)` y objetos con el envelope en `envelope`/`event`/`parsed`/`record`/`value` o el cuerpo en `body`/`data`/`raw`/`raw_body`/`message`. Si `ValidEvent` (§3.13) guarda el envelope con otro nombre, `enrich_errors` sube con `elemento no reconocido: …` y basta añadir ese nombre.
+- `hash_user()` llama a `common.hashing.user_hash(user_id, llave_en_texto)` y, si la firma pide bytes, reintenta con la llave en UTF-8. `test_hash_es_hmac_sha256_del_user_id` fija la referencia de §5.2; si falla, la diferencia está en `common/hashing.py`.
+- `test_enriched_contract.py` exige que ninguna columna sea `REQUIRED` en Terraform si la DDL la permite nula (rechazaría filas válidas). Terraform deja `REQUIRED` solo `event_id` y `event_time`; las columnas `NOT NULL` de la DDL que Terraform deja nulas solo generan un aviso (es compatible y el NLP aún no llega).
+
+### 3.15 NLP: sentimiento y emoción con RoBERTuito (Lote 2.3)
+
+> Entregado en **v2.23** (HU-022), **pendiente de validar** en la máquina del equipo y en GCP. Rutas relativas a `project/`; validación paso a paso en `docs/validation-2-3.md`. No toca `contracts/` ni `schema_version`. **No** modifica ningún archivo del Lote 2.1: la etapa se engancha sola desde `attach_enriched()` (§3.14) y fija la imagen de los workers sobre las opciones del propio pipeline, así que `pipeline.py` y `dataflow_job.sh` no cambian (ADR-19).
+
+**Flujo.**
+
+```
+filas de posts_enriched (§3.14) ─► RunInference(sentimiento) ─► RunInference(emoción) ─┬─► enriched/
+                                                                                         └─► posts_enriched
+```
+
+| Ruta | Contenido |
+|---|---|
+| `src/streaming/nlp.py` | `RobertuitoModelHandler` (ModelHandler de RunInference), `RobertuitoNlp` (las dos inferencias y la fusión en la fila), `NlpOptions`, `resolve_nlp_config()`, `apply_container_image()`, `nlp_from_options()`, `preprocess()`, `load_classifier()`, `read_manifest()` y `nlp_model_version()`. |
+| `src/streaming/nlp_testing.py` | Clasificadores falsos (sin torch) para las pruebas. |
+| `src/streaming/nlp_image/` | Imagen `dataflow-nlp`: `Dockerfile` (etapas `models`, `runtime` y `local`), `fetch_models.py`, `image_smoke.py`, `requirements-nlp.txt`, `cloudbuild.yaml`. Contexto autocontenido: no usa el `.dockerignore` ni el `.gcloudignore` de `project/`. |
+| `scripts/build_nlp_image.sh` | Construye y publica `{región}-docker.pkg.dev/{proyecto}/ta-images/dataflow-nlp:{commit}` y `:latest` (Cloud Build por defecto, o Docker local). |
+| `docker-compose.nlp.yml`, `scripts/local_nlp.sh` | `dataflow-local` con la imagen de NLP (target `local`); se suma a los dos Compose existentes sin modificarlos. |
+| `infra/gcp/environments/dev/nlp.tf` | `roles/artifactregistry.reader` en `ta-images` para `sa-dataflow` (para descargar la imagen). |
+| `src/streaming/enriched.py`, `enriched_check.py`, `enriched_cli.py` | Del Lote 2.2: `attach_enriched()` arma la etapa NLP desde las opciones; el verificador suma `--expect-nlp`; las filas se re-marcan siempre con la hora actual antes de escribir `enriched/` (ver abajo). |
+
+**Modelos.** `pysentimiento/robertuito-sentiment-analysis` (`NEG`/`NEU`/`POS`) y `pysentimiento/robertuito-emotion-analysis` (`others`, `joy`, `sadness`, `anger`, `surprise`, `disgust`, `fear`), descargados **al construir la imagen** y guardados en `/opt/ta-nlp/models/{sentiment,emotion}` junto con `models.json` (repo y commit de cada uno). En ejecución no hay acceso a Hugging Face (`HF_HUB_OFFLINE=1`). `load_classifier()` verifica que `config.id2label` traiga exactamente esas etiquetas; la prueba de humo de la imagen (`image_smoke.py`) también, y además clasifica una frase claramente positiva y otra claramente negativa. Si algo no cuadra, la imagen no se publica.
+
+**Preprocesado.** `preprocess_tweet(text, lang="es")` de pysentimiento 0.7.3, que es lo que usa su `create_analyzer` para español: reemplaza usuarios y URLs, separa hashtags, convierte emojis a texto en español y normaliza risas. Se carga desde `pysentimiento/preprocessing.py` sin ejecutar el `__init__` del paquete, que importaría `datasets` y `spacy`; por eso la imagen instala pysentimiento con `--no-deps` y solo `emoji`. Truncado a 128 tokens, como pysentimiento.
+
+**Etiquetas y versión.** `common.label_map.map_sentiment()` y `map_emotion()` (Lote 1.1, §3.3): `NEG/NEU/POS` → `negative/neutral/positive` y `others` → `neutral`. Score = probabilidad de la etiqueta elegida, en [0, 1]. `nlp_model_version = robertuito-sentiment@<commit[:12]>+robertuito-emotion@<commit[:12]>`, tomado de `models.json` (§5.2).
+
+**RunInference.** Un `ModelHandler` propio por tarea, en lugar del de Hugging Face de Beam, para controlar el preprocesado, la verificación de etiquetas y el `model_id`. Lotes de 1 a `--nlp_batch_size` (16). `share_model_across_processes() = True`: un solo modelo de cada tarea por VM, aunque haya un proceso del SDK por vCPU. Por eso el modelo llega como *proxy* y el handler solo le llama métodos (`classify()`, `get_revision()`). Con `with_exception_handling()`, si un lote falla, sus filas siguen con el NLP en nulo (`nlp/nlp_failed_rows`, log `nlp_inference_failed`): no se pierden ni se detiene el pipeline.
+
+**Marca de tiempo tras RunInference.** `BatchElements` emite cada lote con el fin de su ventana: el de la ventana de 1 h de la deduplicación (§3.13), o el de la ventana global. Por eso `WriteEnrichedParquet` re-marca **siempre** con la hora actual. La versión del Lote 2.2 usaba `max(hora actual, marca de entrada)` y habría puesto los archivos en la hora del fin de ventana. El SDK de Python no impone un límite a re-marcar hacia atrás.
+
+**Activación** (`--nlp_enabled`, por defecto `auto`):
+- Con `DataflowRunner`, siempre: fija `sdk_container_image` a `--nlp_container_image`, o a `TA_NLP_IMAGE`, o a `…/ta-images/dataflow-nlp:latest`, y pone `sdk_location=container`, sobre las opciones del pipeline antes de `run()`. Si `--sdk_container_image` ya trae otra imagen, falla en vez de elegir una.
+- En local, solo si existe `$TA_NLP_MODELS_DIR/models.json` (es decir, dentro de la imagen de NLP).
+- `false` la apaga y las columnas vuelven a ir en nulo, como en el Lote 2.2. Con `auto`, la variable `TA_NLP_ENABLED=false` hace lo mismo sin pasar opciones (útil con `dataflow_job.sh`).
+
+**Imagen.**
+- `runtime`: `apache/beam_python3.11_sdk:2.77.0`, `torch==2.5.1` de CPU, `transformers==4.46.3`, `pysentimiento==0.7.3` sin dependencias, `emoji==2.14.0` y los modelos. Comprueba que la versión de Beam no cambie, y es la que usan los workers.
+- `local`: la misma sin el `ENTRYPOINT` del SDK y con `PYTHONPATH=/work/src`, para `dataflow-local`.
+
+El código del proyecto no va en la imagen: en Dataflow lo instala `--setup_file` y en local se monta. Tamaño del orden de 2,5 GB; el primer worker tarda unos minutos más en arrancar.
+
+**Memoria y costo.** Los dos modelos (~1 GB con torch) caben en el `e2-standard-2` del Lote 2.1 (8 GB), que no cambia. A ~1,5 eventos por segundo la inferencia en CPU sobra; `OMP_NUM_THREADS=1`.
+
+**Verificación.** `verify_enriched.py report --expect-nlp` suma:
+- NLP presente en ≥ 99 % de las filas;
+- etiquetas dentro de los enums de §5.2, scores en [0, 1] y formato de `nlp_model_version`;
+- un aviso si hay más de una versión de modelos;
+- en BigQuery, filas sin NLP y etiquetas inválidas.
+
+Como dato, reporta la distribución de sentimiento y emoción y el acuerdo con `label_sentiment`. La medición formal de precisión es HU-033 (Lote 5.2).
+
+**Pruebas** (`src/streaming/tests/test_nlp*.py`, 22, sin torch ni red):
+- `label_map` cubre las etiquetas crudas de ambos modelos;
+- formato de la versión y manifiesto;
+- handler (preprocesado, `model_id`, salida incompleta);
+- transform completo en el `BundleBasedDirectRunner`, también con el modelo compartido entre procesos;
+- una falla de inferencia no pierde filas;
+- rama enriched con NLP escribiendo Parquet;
+- activación por runner, imagen fijada en las opciones y conflicto de imágenes;
+- preprocesado real de pysentimiento (necesita `pip install --no-deps pysentimiento==0.7.3 emoji==2.14.0`);
+- verificador con `--expect-nlp`;
+- con `contracts/`, versión y etiquetas contra `envelope.enriched.v1`.
+
+> **Estado de la verificación (v2.23, antes de entregar):** en un entorno aislado con Python 3.11 y Beam 2.77.0: **87 passed, 1 omitida** entre los lotes 2.2 y 2.3. La omitida es el enganche, porque no estaba `pipeline.py`. Se usaron dobles de `common.label_map`/`envelope`/`hashing` y una aproximación de `contracts/`. El preprocesado se probó con pysentimiento 0.7.3 real. **No** se pudieron descargar los modelos (Hugging Face bloqueado desde ese entorno) ni construir la imagen, así que la primera inferencia real ocurre en `build_nlp_image.sh` o en `local_nlp.sh build`, con la prueba de humo. **No** se corrió en local ni en GCP.
+
+**Puntos a confirmar al validar:**
+- Que `image_smoke.py` pase: etiquetas de ambos modelos y las dos frases de control.
+- Que `map_emotion("others")` devuelva `neutral` en el `label_map.yaml` real. Lo prueba `test_label_map_cubre_las_etiquetas_crudas_de_los_modelos`.
+- Que el patrón de `nlp_model_version` del schema real acepte un hash hexadecimal de 12 caracteres. Lo prueba `test_version_cumple_el_patron_del_contrato`.
+- Que el servicio `dataflow-local` del Lote 2.1 monte el código en `/work` (la imagen local trae `PYTHONPATH=/work/src`). Si no, `local_nlp.sh up` lo muestra en los logs y basta ajustar esa variable en `docker-compose.nlp.yml`.
+
 ---
 
 ## 4. Flujo extremo a extremo
@@ -637,6 +776,9 @@ El detalle es `ruta: mensaje` del primer error de `jsonschema` (máximo 2.000 ca
 | `TA_HMAC_SECRET_NAME` | `ta-hmac-key` | Dataflow, loader |
 | `SIM_SEED` | `7` | simulador, loader histórico |
 | `SIM_CHAOS_ENABLED` | `false` | simulador (§3.9) |
+| `TA_NLP_IMAGE` | `{GCP_REGION}-docker.pkg.dev/{GCP_PROJECT}/ta-images/dataflow-nlp:latest` | Dataflow (launcher): imagen de los workers con NLP (§3.15) |
+| `TA_NLP_ENABLED` | *(vacío = auto)* | Dataflow: `false` apaga el NLP (§3.15) |
+| `TA_NLP_MODELS_DIR` | `/opt/ta-nlp/models` | workers y `dataflow-local`: modelos horneados en la imagen |
 
 **Variables propias del simulador** (Lote 1.2, §3.10). Solo las lee `ta-stream-simulator`; ningún otro componente depende de ellas.
 
@@ -829,11 +971,13 @@ Particiones por **fecha/hora de proceso**. El Parquet de `enriched/` usa el **es
 
 **Formato de `raw/` y `dlq/` (v2.20, §3.13).** Archivos `part-{AAAAMMDD}T{hhmmss}Z-p{panel:03d}.jsonl.gz` (inicio de la ventana en UTC), gzip, una línea por registro. En `raw/`, cada línea es el cuerpo del mensaje válido y único **tal como llegó** (si traía saltos de línea se re-serializa compacto, sin cambiar su contenido). En `dlq/`, cada línea es un objeto JSON con exactamente las columnas de `dlq_events` (§5.5): `received_at`, `source`, `error_type`, `error_detail`, `raw_message`. Las particiones `dt`/`hr` son de la hora de proceso en UTC.
 
+**Formato de `enriched/` (v2.22, §3.14).** Archivos `part-{AAAAMMDD}T{hhmmss}Z-p{panel:03d}.parquet` (inicio de la ventana en UTC), Parquet con Snappy, una fila por evento ordenada por `event_id`, con las 24 columnas de `posts_enriched` en el orden de §5.5. Tipos: timestamps `timestamp[ms, UTC]` (INT64 `TIMESTAMP_MILLIS`, ajustado a UTC; no INT96), enteros `int64`, scores `double`, `brands` y `hashtags` `list<string>`, `payload` texto JSON. Las columnas de NLP las rellena el Lote 2.3 (§3.15); van nulas si el NLP está apagado o si su lote de inferencia falló. Mismas reglas de partición que `raw/` (hora de proceso en UTC).
+
 ### 5.5 BigQuery
 
-Dataset: `ta_stream` (ubicación = región de GCP).
+Dataset: `ta_stream` (ubicación = región de GCP). Desde v2.22 lo crea Terraform (`infra/gcp/modules/bigquery_stream`) con `posts_enriched`; el Lote 2.4 suma `trend_windows`, `dlq_events` y `dq_results`.
 
-**`posts_enriched`** — partición por `DATE(event_time)`, clustering `source, brand_primary`.
+**`posts_enriched`** — partición por `DATE(event_time)`, clustering `source, brand_primary`, expiración de partición a 90 días (§5.12). Schema de Terraform en `infra/gcp/modules/bigquery_stream/schemas/posts_enriched.json`, generado desde `common.enriched_row.POSTS_ENRICHED_COLUMNS` (una prueba exige que coincidan y otra los compara con `contracts/bigquery/posts_enriched.sql`). Modo `REQUIRED` solo en `event_id` y `event_time`; `brands` y `hashtags` son `REPEATED`. Se escribe con *streaming inserts* (v2.22, §3.14).
 
 | Columna | Tipo |
 |---|---|
@@ -947,14 +1091,14 @@ Solo `fact_posts` está particionada (por `dt`, con partition projection). Las d
 | Identidad | Nube | Permisos |
 |---|---|---|
 | `sa-simulator` | GCP | `pubsub.publisher` en `ta-raw-*`; `storage.objectUser` en `…-ta-datasets` |
-| `sa-dataflow` | GCP | `pubsub.subscriber`; `pubsub.publisher` en `ta-dlq` *(v2.16: los inválidos van a `ta-dlq`, HU-018)*; `bigquery.dataEditor` en `ta_stream`; `storage.objectAdmin` en `…-ta-lake`; `secretmanager.secretAccessor` en `ta-hmac-key`; `dataflow.worker` |
+| `sa-dataflow` | GCP | `pubsub.subscriber`; `pubsub.publisher` en `ta-dlq` *(v2.16: los inválidos van a `ta-dlq`, HU-018)*; `artifactregistry.reader` en `ta-images` *(v2.23, imagen `dataflow-nlp`)*; `bigquery.dataEditor` en `ta_stream`; `storage.objectAdmin` en `…-ta-lake`; `secretmanager.secretAccessor` en `ta-hmac-key`; `dataflow.worker` |
 | `sa-exporter` | GCP | `storage.objectViewer` en `…-ta-lake`; objeto escritura en `export-state/`; puede emitir OIDC |
 | `ta-gcp-exporter-role` | AWS | `s3:PutObject`, `s3:HeadObject`, `kms:GenerateDataKey` solo sobre `raw/origin=stream/` |
 | `ta-glue-role` | AWS | R/W en `raw/ trusted/ curated/ quality/`; Glue Catalog; logs |
 | `ta-historical-loader` | AWS | `s3:PutObject` en `raw/origin=historical/` (perfil/SSO del desarrollador) |
 | `ta-quicksight-role` | AWS | `athena:*` en workgroup `ta-analytics`; lectura `curated/` |
 
-**Estado tras el Lote 1.3:** las tres identidades de GCP existen (§5.15). `sa-simulator` y `sa-exporter` tienen todos sus permisos; a `sa-dataflow` le faltan `bigquery.dataEditor` y `secretmanager.secretAccessor`, que llegan con el Lote 2.4 junto con `ta_stream` y `ta-hmac-key`. La escritura de `sa-exporter` en `export-state/` se limita con una condición de IAM sobre el prefijo; la emisión del token OIDC se configura en el Lote 3.2. Las identidades de AWS llegan con las Fases 3 y 4. Terraform sigue operando con las credenciales de Alejandro (§5.1).
+**Estado tras el Lote 1.3:** las tres identidades de GCP existen (§5.15). `sa-simulator` y `sa-exporter` tienen todos sus permisos. **Desde el Lote 2.2 (v2.22)** `sa-dataflow` también tiene `bigquery.dataEditor` en el dataset `ta_stream` y `secretmanager.secretAccessor` en `ta-hmac-key` (solo en ese secreto); nadie más tiene acceso de lectura al secreto (el loader histórico usará las credenciales del desarrollador). **Desde el Lote 2.3 (v2.23)**, además, `artifactregistry.reader` en el repositorio `ta-images`, para descargar la imagen `dataflow-nlp`. La escritura de `sa-exporter` en `export-state/` se limita con una condición de IAM sobre el prefijo; la emisión del token OIDC se configura en el Lote 3.2. Las identidades de AWS llegan con las Fases 3 y 4. Terraform sigue operando con las credenciales de Alejandro (§5.1).
 
 ### 5.9 Salidas de Terraform (outputs que consumen los demás)
 
@@ -968,7 +1112,7 @@ Solo `fact_posts` está particionada (por `dt`, con partition projection). Las d
 | Raíz | Outputs |
 |---|---|
 | `infra/gcp/bootstrap` | `tfstate_bucket`, `enabled_services`, `budget_name` |
-| `infra/gcp/environments/dev` | `project_id`, `region`, `labels`; desde el Lote 1.3, además: `topic_names`, `subscription_names`, `dlq_topic`, `alerts_topic`, `datasets_bucket`, `lake_bucket`, `artifact_registry_url`, `simulator_url` (`null` si no está desplegado; Terraform no guarda outputs nulos, así que `terraform output simulator_url` responde *not found*) y `service_accounts` (§5.15). `bq_dataset` llega con el Lote 2.4 |
+| `infra/gcp/environments/dev` | `project_id`, `region`, `labels`; desde el Lote 1.3, además: `topic_names`, `subscription_names`, `dlq_topic`, `alerts_topic`, `datasets_bucket`, `lake_bucket`, `artifact_registry_url`, `simulator_url` (`null` si no está desplegado; Terraform no guarda outputs nulos, así que `terraform output simulator_url` responde *not found*) y `service_accounts` (§5.15); desde el Lote 2.2: `bq_dataset`, `posts_enriched_table` (`proyecto:ta_stream.posts_enriched`) y `hmac_secret_id` |
 | `infra/aws/bootstrap` | `tfstate_bucket`, `tflock_table`, `budget_name` |
 | `infra/aws/environments/dev` | `aws_region` |
 
@@ -1008,6 +1152,8 @@ Resultados en BigQuery `dq_results` (columnas en §5.5) y `s3://…/quality/`. E
 | Simulador | §3 (incluye §3.2.2 y §3.10), §5.2, §5.3, §5.4 | `outputs` de `infra/gcp`. El generador y `src/common/` ya están en el repo desde el Lote 1.1 |
 | Pipeline Dataflow | §3.13, §5.2, §5.3, §5.4, §5.5, §5.8 | Nombres reales de topics/buckets, región; salida de `scripts/dataflow_job.sh preflight` |
 | Correr el pipeline en local o verificarlo | §3.12, §3.13 y `src/streaming/README.md` | Salida de `local_dataflow.sh preflight` y los JSON de `verify_streaming.py` |
+| Rama enriched (anonimización, `enriched/`, `posts_enriched`) | §3.14, §5.2, §5.4, §5.5, §5.8 y `src/streaming/ENRICHED.md` | JSON de `verify_enriched.py`, salida de `hmac_key.sh status` y los logs `enrich_error` / `bq_insert_failed` si los hay |
+| NLP (modelos, imagen `dataflow-nlp`, `RunInference`) | §3.15, §5.2, §5.8 y `docs/validation-2-3.md` | Salida de `build_nlp_image.sh` (la prueba de humo), JSON de `verify_enriched.py --expect-nlp` y los logs `nlp_config` / `nlp_inference_failed` |
 | Exportador | §5.4, §5.6, §5.8 | ARN del rol AWS, bucket S3 |
 | Loader histórico | §3.2, §3.8, §5.2, §5.7 | Perfil AWS, bucket S3 |
 | Jobs de Glue / dbt | §5.2, §5.7, §5.10 | Esquema real de Athena (`SHOW CREATE TABLE`) si ya existe algo |
@@ -1040,6 +1186,10 @@ Valores por defecto que evitan decidir en cada lote. Se ajustan aquí primero.
 | Estado de Terraform | Remoto: GCS con versionado (GCP) y S3 con bloqueo (AWS). | HU-046 |
 | Desarrollo local | `docker-compose` con emulador de Pub/Sub + simulador + consumidor de validación, sin credenciales (§3.12). `DirectRunner` con `docker-compose.dataflow.yml` (Lote 2.1, §3.13). | HU-047 |
 | Archivos de `raw/` y `dlq/` | Ventana de 300 s en Dataflow y 60 s en local (`--raw_window_seconds`); deduplicación en el pipeline por `event_id` dentro de ventanas fijas de 1 h de tiempo de proceso (`--dedup_window_seconds`), además de `id_label`. | HU-018, HU-019 |
+| Archivos de `enriched/` | Misma ventana que `raw/` (`--enriched_window_seconds`, divisor de 3600) y nombre `part-{inicio}Z-p{panel}.parquet`; paneles tardíos admitidos durante una ventana más. | HU-021 |
+| Escritura en `posts_enriched` | *Streaming inserts* con reintento de errores transitorios; filas rechazadas al log (`bq_insert_failed`) y al contador `bq_failed_rows`. | HU-021 |
+| NLP | RoBERTuito de pysentimiento (sentimiento y emoción) horneados en la imagen `dataflow-nlp` con su commit; lotes de hasta 16; un modelo por VM; un lote fallido sigue sin NLP (`nlp_failed_rows`). La imagen se publica con el commit de git y `:latest`; para un job reproducible se lanza con `TA_NLP_IMAGE=…:{commit}`. | HU-022 |
+| Llave HMAC | Secreto `ta-hmac-key` (32 bytes en hex), leída por el worker; **no se rota** (cambia todos los `user_hash`). En local, llave pública de desarrollo. | HU-020 |
 | Job de Dataflow (dev) | `ta-stream-{ENV}`: 1 × `e2-standard-2`, sin autoescalado, Streaming Engine; se apaga con `drain` fuera de las validaciones y demos. | HU-018, HU-043 |
 | Canal de alertas | Correo. Un suscriptor de `ta-alerts` escribe un log estructurado (`severity=WARNING`, `alert=trend`) y una alerta basada en logs de Cloud Monitoring envía el correo mediante un canal de notificación de tipo email. Las direcciones van en `terraform.tfvars` (`alert_emails`, que no se versiona); por ahora el único destinatario es el correo de Alejandro. Sin SMTP ni secretos. | HU-039 |
 | Prueba de humo E2E | `scripts/smoke_e2e.py` sigue un evento centinela (`event_id` conocido) desde el simulador hasta `ta_curated.fact_posts` y reporta latencia por etapa. | HU-048 |
@@ -1154,8 +1304,8 @@ infra/
 
 **Qué no existe todavía:**
 - Service accounts, topics, suscripciones, buckets `…-ta-datasets` y `…-ta-lake`, Artifact Registry y Cloud Run: **Lote 1.3** (§5.15). Roles de AWS: Fases 3 y 4.
-- BigQuery (`ta_stream`): Lote 2.4.
-- Secreto `ta-hmac-key`: Lote 2.4.
+- BigQuery (`ta_stream`): `posts_enriched` desde el Lote 2.2; `trend_windows`, `dlq_events` y `dq_results` en el Lote 2.4.
+- Secreto `ta-hmac-key`: Lote 2.2 (§3.14).
 - Bucket S3 del lake, KMS, Glue, Athena y EventBridge: Fase 4. Federación OIDC GCP → AWS: Lote 3.2.
 - Acceso de Miguel y Camila al proyecto GCP: diferido (§9, Fase 0).
 
@@ -1188,7 +1338,7 @@ infra/
 | Bucket de datasets | `{GCP_PROJECT}-ta-datasets` | Versionado; las versiones no vigentes se borran a los 7 días (el cursor se guarda cada ~100 s). |
 | Bucket del lake | `{GCP_PROJECT}-ta-lake` | `raw/` y `dlq/` expiran a los 30 días (§5.12). `enriched/` y `export-state/` no expiran. |
 | Artifact Registry | `ta-images` (`us-central1`) | Imagen `stream-simulator:<tag>`; el tag por defecto es el commit corto de git. |
-| Service accounts | `sa-simulator`, `sa-dataflow`, `sa-exporter` | Permisos de §5.8. Los de BigQuery y del secreto HMAC llegan con el Lote 2.4. |
+| Service accounts | `sa-simulator`, `sa-dataflow`, `sa-exporter` | Permisos de §5.8. Los de BigQuery y del secreto HMAC llegan con el Lote 2.2 (§3.14). |
 | Cloud Run | `ta-stream-simulator` | Solo si `simulator_image` no está vacío y `simulator_running = true`. `min = max = 1`, `cpu_idle = false` (CPU siempre asignada), 1 vCPU y 512 MiB, sondas de arranque y de vida en `/healthz`, `deletion_protection = false`. Sin `allUsers` como invocador: la URL exige ID token. |
 
 **Variables de entrada nuevas** (todas con valor por defecto; en `terraform.tfvars` solo hace falta `simulator_image`):
@@ -1250,7 +1400,7 @@ infra/
 │
 ├── docs/
 │   ├── ARCHITECTURE.md                    <- este archivo: arquitectura y contratos (versión vigente)
-│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.21)
+│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.24)
 │   ├── PLAN.md                            <- fases y lotes, matriz HU y estado del proyecto
 │   ├── HU.md                              <- historias de usuario (HU-001 a HU-048)
 │   ├── GLOSSARY.md                        <- glosario del proyecto
@@ -1261,6 +1411,7 @@ infra/
 └── project/                               <- código, contratos e infraestructura (las rutas de este documento son relativas a aquí)
     ├── docker-compose.yml                 <- Lote 1.5: emulador Pub/Sub + simulador + validador (§3.12)
     ├── docker-compose.dataflow.yml        <- Lote 2.1: dataflow-local (DirectRunner) y streaming-check (§3.13)
+    ├── docker-compose.nlp.yml             <- Lote 2.3: dataflow-local con la imagen de NLP (§3.15)
     ├── LOCAL_DEV.md                       <- Lote 1.5: guía del entorno local
     ├── local/validator.Dockerfile         <- Lote 1.5: imagen ta-local-tools (pubsub-init y validator)
     ├── local/dataflow.Dockerfile          <- Lote 2.1: imagen ta-dataflow-local (Apache Beam)
@@ -1284,7 +1435,8 @@ infra/
     │   │   ├── bootstrap/                 <- estado local: APIs, bucket de estado, presupuesto
     │   │   ├── modules/{project_services,tfstate_bucket,budget}/
     │   │   ├── modules/{pubsub,gcs_bucket,service_account,artifact_registry,cloud_run_simulator}/   <- Lote 1.3
-    │   │   └── environments/dev/          <- estado remoto (GCS); Lote 1.3: platform.tf, variables_platform.tf, outputs_platform.tf
+    │   │   ├── modules/{bigquery_stream,hmac_secret}/   <- Lote 2.2 (bigquery_stream/schemas/posts_enriched.json)
+    │   │   └── environments/dev/          <- estado remoto (GCS); Lote 1.3: platform.tf, variables_platform.tf, outputs_platform.tf; Lote 2.2: streaming.tf, variables_streaming.tf, outputs_streaming.tf; Lote 2.3: nlp.tf
     │   └── aws/
     │       ├── bootstrap/                 <- estado local: bucket de estado, tabla de bloqueo, presupuesto
     │       ├── modules/{tfstate_backend,budget}/
@@ -1300,12 +1452,17 @@ infra/
     │   ├── dataflow_job.sh                <- Lote 2.1: preflight, start, status, drain, cancel del job de Dataflow
     │   ├── local_dataflow.sh              <- Lote 2.1: pipeline en local (up, check, report, down)
     │   ├── verify_streaming.py            <- Lote 2.1: verificador de raw/, dlq/ y ta-dlq (§3.13)
+    │   ├── verify_enriched.py             <- Lote 2.2: verificador de enriched/ y posts_enriched (§3.14)
+    │   ├── hmac_key.sh                    <- Lote 2.2: status / init de la llave HMAC en Secret Manager
+    │   ├── build_nlp_image.sh             <- Lote 2.3: construye y publica la imagen dataflow-nlp
+    │   ├── local_nlp.sh                   <- Lote 2.3: dataflow-local con NLP (build, up, smoke, restore)
     │   └── smoke_e2e.py                   <- prueba de humo extremo a extremo (HU-048)
     └── src/
         ├── conftest.py                    <- Lote 1.1: fixture envelope_validator (valida contra contracts/)
-        ├── common/                        <- librería compartida (Lote 1.1 entregado; el NLP llega en el Lote 2.3)
+        ├── common/                        <- librería compartida (Lote 1.1; el NLP vive en streaming/nlp.py desde el Lote 2.3 y usa common.label_map)
         │   ├── envelope.py  hashing.py  hashtags.py
         │   ├── label_map.py  label_map.yaml
+        │   ├── enriched_row.py  parquet_rows.py  hmac_key.py   <- Lote 2.2: fila de posts_enriched, Parquet y llave HMAC (§3.14)
         │   └── tests/
         ├── simulator/                     <- NUEVO (reemplaza a collectors)
         │   ├── app.py  publisher.py  state.py                <- Lote 1.2 entregado (§3.10)
@@ -1327,7 +1484,9 @@ infra/
         │   └── tests/
         ├── setup.py                       <- Lote 2.1: paquete que Dataflow instala en los workers (streaming + common)
         ├── streaming/                     <- Dataflow (Beam). Lote 2.1: pipeline, config, schemas, validate, transforms, records,
-        │                                     inject, lake_report, cli, requirements.txt, README.md, tests/ (§3.13)
+        │                                     inject, lake_report, cli, requirements.txt, README.md, tests/ (§3.13).
+        │                                     Lote 2.2: enriched, enriched_check, enriched_cli, enriched_testing, ENRICHED.md, tests/test_enriched_* (§3.14).
+        │                                     Lote 2.3: nlp, nlp_testing, nlp_image/ (Dockerfile, fetch_models, image_smoke, cloudbuild), tests/test_nlp* (§3.15)
         ├── historical/                    <- full load (usa el mismo generador)
         ├── exporter/                      <- gcs-to-s3
         ├── lakehouse/{glue_jobs,dbt}/
@@ -1403,6 +1562,8 @@ Estado actual: <salida de `bash scripts/preflight.sh` (nube) o `bash scripts/loc
 | ADR-15 | Bloqueo del estado en AWS con tabla DynamoDB `ta-{env}-tflock`, compatible con Terraform ≥ 1.6 (adoptado en el Lote 1.0). **v2.12:** con Terraform ≥ 1.10 `init` avisa que `dynamodb_table` está deprecado; sigue funcionando y la migración es opcional | `use_lockfile = true` de S3 (exige Terraform ≥ 1.10; se puede migrar y eliminar la tabla) |
 | ADR-16 | *Bootstrap* en un directorio aparte por nube, con estado local, `prevent_destroy` en buckets y tabla, y `allowed_account_ids` en AWS (adoptado en el Lote 1.0) | Bootstrap con estado remoto (dependencia circular); recursos de estado sin protección contra borrado |
 | ADR-17 | Pipeline de streaming (Lote 2.1): deduplicación en dos capas (`id_label` + estado por `event_id` en ventanas fijas de 1 h, sin timers), `raw/` y `dlq/` escritos con un `GroupByKey` por partición y ventana de tiempo de proceso (nombre determinista, reintento idempotente) y `BundleBasedDirectRunner` para el modo local | Solo `id_label` (no cubre el DirectRunner ni copias tardías); estado con TTL por timer de tiempo de proceso (retiene la marca de agua en Dataflow); `fileio.WriteToFiles` (nombres menos controlables, gzip aparte); ventanas por *publish time* (el DirectRunner descarta el *backlog* como tardío) |
+| ADR-18 | Rama enriched (Lote 2.2): llave HMAC leída en el worker (`DoFn.setup`) desde Secret Manager por REST con `google-auth`; valor cargado fuera de Terraform (`hmac_key.sh`); fila y Parquet en `src/common/` para que el loader histórico use el mismo código; *streaming inserts* a `posts_enriched`; dataset, tabla, secreto y permisos de `sa-dataflow` adelantados del Lote 2.4 | Llave como opción del pipeline (quedaría en el grafo del job); `random_password` en Terraform (quedaría en el estado); `google-cloud-secret-manager` como dependencia nueva; Storage Write API (exige el servicio de expansión de Java en el launcher y en local); esperar al Lote 2.4 (el 2.2 no tendría dónde escribir) |
+| ADR-19 | NLP (Lote 2.3): `ModelHandler` propio por tarea con `RunInference` y modelo compartido por VM; modelos y commit horneados en una imagen `dataflow-nlp` construida con un contexto propio; solo el preprocesado de pysentimiento, cargado desde su archivo; la etapa se engancha desde `attach_enriched()` y fija `sdk_container_image` en las opciones del pipeline, sin cambiar archivos del Lote 2.1; un lote fallido sigue sin NLP | `HuggingFacePipelineModelHandler` de Beam (menos control del preprocesado y de la versión); descargar los modelos al arrancar el worker (depende de Hugging Face en ejecución); pysentimiento completo (`datasets`, `spacy`); NLP en Cloud Run con Pub/Sub intermedio (plan B de ADR-05, más piezas); descartar las filas que fallan |
 
 ### Riesgos
 

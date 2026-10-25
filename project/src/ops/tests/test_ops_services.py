@@ -48,6 +48,20 @@ def tfvars(tmp_path, monkeypatch):
     return f
 
 
+@pytest.fixture(autouse=True)
+def _scripts_sin_crlf(monkeypatch):
+    """Las pruebas no dependen de los scripts reales del repo."""
+    monkeypatch.setattr(sv, "crlf_scripts", lambda scripts_dir=None: [] if scripts_dir is None else _REAL_CRLF(scripts_dir))
+
+
+_REAL_CRLF = sv.crlf_scripts
+
+
+@pytest.fixture(autouse=True)
+def _terraform_listo(monkeypatch):
+    monkeypatch.setattr(sv, "terraform_ready", lambda: True)
+
+
 def _s(**kw):
     return sv.Settings(project="p", yes=True, wait=False, **kw)
 
@@ -202,7 +216,43 @@ def test_main_error_claro_y_codigo_2(tfvars, monkeypatch):
 
 def test_status_no_modifica_nada(tfvars, monkeypatch):
     monkeypatch.setenv("GCP_PROJECT", "p")
-    run = FakeRun({"jobs list": _jobs(("j1", "ta-stream-dev", "Running")), "services list": sv.Result(0, "ta-stream-simulator\n")})
+    run = FakeRun({"jobs list": _jobs(("j1", "ta-stream-dev", "Running")), "services describe": sv.Result(0, "https://ta-stream-simulator-x.run.app\n")})
     assert sv.main("status", run=run) == 0
     mutating = [a for a, _e in run.calls if any(w in a for w in ("apply", "drain", "delete", "cancel", "start", "up", "down-all"))]
     assert mutating == []
+
+
+def test_detecta_scripts_con_crlf(tmp_path, monkeypatch):
+    (tmp_path / "local_dataflow.sh").write_bytes(b"#!/usr/bin/env bash\r\nset -euo pipefail\r\n")
+    (tmp_path / "dataflow_job.sh").write_bytes(b"#!/usr/bin/env bash\nset -euo pipefail\n")
+    assert sv.crlf_scripts(tmp_path) == ["project/scripts/local_dataflow.sh"]
+    monkeypatch.setattr(sv, "crlf_scripts", lambda: ["project/scripts/local_dataflow.sh"])
+    with pytest.raises(sv.OpsError, match="CRLF"):
+        sv.check_line_endings()
+
+
+def test_main_avisa_crlf_antes_de_actuar(tfvars, monkeypatch):
+    monkeypatch.setenv("GCP_PROJECT", "p")
+    monkeypatch.setattr(sv, "crlf_scripts", lambda: ["project/scripts/local_dataflow.sh"])
+    run = FakeRun()
+    assert sv.main("on", ["--yes"], run=run) == 2
+    assert run.calls == [] or all("gcloud" in " ".join(a) for a, _e in run.calls)
+
+
+def test_terraform_sin_init_da_el_comando(tfvars, monkeypatch):
+    monkeypatch.setattr(sv, "terraform_ready", lambda: False)
+    with pytest.raises(sv.OpsError, match="init -backend-config=backend.hcl"):
+        sv.terraform_simulator(FakeRun(), True, _s(), print)
+
+
+def test_plan_que_pide_init_da_el_comando(tfvars):
+    run = FakeRun({" plan ": sv.Result(1, "", 'Error: Backend initialization required, please run "terraform init"')})
+    with pytest.raises(sv.OpsError, match="init -backend-config=backend.hcl"):
+        sv.terraform_simulator(run, True, _s(), print)
+
+
+def test_status_simulador_por_describe():
+    run = FakeRun({"services describe": sv.Result(0, "https://ta-stream-simulator-x.run.app\n")})
+    assert sv.simulator_service(run, _s()) == "https://ta-stream-simulator-x.run.app"
+    run = FakeRun({"services describe": sv.Result(1, "", "NOT_FOUND")})
+    assert sv.simulator_service(run, _s()) is None

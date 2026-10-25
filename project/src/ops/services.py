@@ -180,10 +180,25 @@ def unexpected_changes(changes: list[tuple[str, str, list[str]]], wanted: str) -
     return bad
 
 
+INIT_HINT = (
+    "Terraform no está inicializado en infra/gcp/environments/dev (falta .terraform/ o el backend).\n"
+    "Desde la raíz del repo:\n"
+    "  terraform -chdir=project/infra/gcp/environments/dev init -backend-config=backend.hcl\n"
+    "Si falta backend.hcl: cópielo de backend.hcl.example "
+    "(bucket = \"project-0568d9ba-848f-413c-88b-ta-tfstate\") y repita."
+)
+
+
+def terraform_ready() -> bool:
+    return (TF_DIR / ".terraform" / "terraform.tfstate").exists()
+
+
 def terraform_simulator(run: Runner, value: bool, s: Settings, say: Callable[[str], None]) -> str:
     """Pone ``simulator_running`` y aplica solo si el plan toca únicamente Cloud Run."""
     if not TFVARS.exists():
         raise OpsError(f"no existe {TFVARS.relative_to(PROJECT_DIR)}")
+    if not terraform_ready():
+        raise OpsError(INIT_HINT)
     original = TFVARS.read_text(encoding="utf-8")
     updated = set_simulator_running(original, value)
     if updated != original:
@@ -194,7 +209,10 @@ def terraform_simulator(run: Runner, value: bool, s: Settings, say: Callable[[st
         res = run(["terraform", f"-chdir={TF_DIR}", "plan", "-input=false", "-no-color",
                    "-lock-timeout=60s", f"-out={plan_file}"])
         if not res.ok:
-            raise OpsError("terraform plan falló:\n" + (res.err or res.out)[-2000:])
+            text = res.err or res.out
+            if "terraform init" in text or "Backend initialization required" in text:
+                raise OpsError(INIT_HINT)
+            raise OpsError("terraform plan falló:\n" + text[-2000:])
         shown = run(["terraform", f"-chdir={TF_DIR}", "show", "-json", plan_file], check=True)
         changes = plan_changes(json.loads(shown.out))
         if not changes:
@@ -227,10 +245,15 @@ def active_jobs(run: Runner, s: Settings) -> list[dict]:
 
 
 def simulator_service(run: Runner, s: Settings) -> str | None:
-    res = run(["gcloud", "run", "services", "list", "--region", s.region, "--project", s.project,
-               "--format=value(metadata.name)"])
-    names = res.out.split() if res.ok else []
-    return "ta-stream-simulator" if "ta-stream-simulator" in names else None
+    """URL del simulador si el servicio existe en Cloud Run.
+
+    Se usa ``describe`` y no ``list``: con Cloud Run v2, ``list --format=value(metadata.name)``
+    puede devolver vacío aunque el servicio exista.
+    """
+    res = run(["gcloud", "run", "services", "describe", "ta-stream-simulator", "--region", s.region,
+               "--project", s.project, "--format=value(status.url)"])
+    url = res.out.strip() if res.ok else ""
+    return url or None
 
 
 def verify_subscriptions(run: Runner, s: Settings) -> list[str]:
@@ -303,6 +326,31 @@ def confirm(prompt: str, s: Settings) -> bool:
     if not sys.stdin.isatty():
         raise OpsError("sin terminal para confirmar: use --yes")
     return input(f"{prompt} [s/N] ").strip().lower() in ("s", "si", "sí", "y", "yes")
+
+
+SCRIPTS_USED = ("local_dataflow.sh", "local_nlp.sh", "dataflow_job.sh", "build_nlp_image.sh", "hmac_key.sh", "preflight.sh")
+
+
+def crlf_scripts(scripts_dir: Path | None = None) -> list[str]:
+    """Scripts con finales de línea de Windows (CRLF): bash falla con ``set: pipefail``."""
+    base = scripts_dir or (PROJECT_DIR / "scripts")
+    bad = []
+    for name in SCRIPTS_USED:
+        f = base / name
+        if f.exists() and b"\r\n" in f.read_bytes():
+            bad.append(f"project/scripts/{name}")
+    return bad
+
+
+def check_line_endings() -> None:
+    bad = crlf_scripts()
+    if bad:
+        raise OpsError(
+            "estos scripts tienen finales de línea de Windows (CRLF) y bash no puede correrlos:\n  - "
+            + "\n  - ".join(bad)
+            + "\nArréglelo desde la raíz del repo con:\n  sed -i 's/\\r$//' " + " ".join(bad)
+            + "\ny agregue un .gitattributes con '*.sh text eol=lf' (ver docs/ACTIVE_SERVICES.md)."
+        )
 
 
 def docker_ok(run: Runner) -> bool:
@@ -425,7 +473,8 @@ def status(run: Runner, s: Settings | None) -> list[str]:
         lines.append("GCP: sin proyecto (export GCP_PROJECT=…)")
         return lines
     tf = read_simulator_running(TFVARS.read_text(encoding="utf-8")) if TFVARS.exists() else None
-    lines.append(f"GCP simulador: {'ENCENDIDO (cobra)' if simulator_service(run, s) else 'apagado'}"
+    url = simulator_service(run, s)
+    lines.append(f"GCP simulador: {'ENCENDIDO (cobra) · ' + url if url else 'apagado'}"
                  f" · terraform.tfvars simulator_running = {tf}")
     try:
         jobs = active_jobs(run, s)
@@ -500,6 +549,7 @@ def main(action: str, argv: list[str] | None = None, run: Runner | None = None) 
                 plan.append(f"GCP ({s.project}): drenar {s.job_prefix}"
                             + ("" if getattr(args, "keep_simulator", False) else ", apagar el simulador")
                             + " y borrar suscripciones ta-verify-*")
+        check_line_endings()
         print(("Encender:" if action == "on" else "Apagar:"))
         for line in plan:
             print(f"  - {line}")

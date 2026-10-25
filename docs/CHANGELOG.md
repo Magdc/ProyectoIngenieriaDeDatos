@@ -1,10 +1,59 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.21**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.24**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.24 · desde v2.23
+
+**Lote que lo motiva:** Lote 2.2 (HU-020, HU-021) · validación y cierre
+
+| Área | Cambio |
+|---|---|
+| Verificación | Pruebas: 67 del lote sin omitidas, 158 en `streaming/`, 18 de `contracts/` y 116 de `common/` + simulador. **Local:** `verify_enriched.py` OK (cobertura 100 %, hash 1 a 1, 0 copias) y `check` OK. **GCP:** `verify_enriched.py` OK con BigQuery (cobertura 100 %), consultas de E11 correctas (`hash_malo = 0`, `shares` solo en Facebook, 0 identidad en columnas y `payload`) y `check --allow-cloud` OK. Detalle en §3.14. |
+| Corrección durante la validación | `build_from_messages()` crea `unique` dentro de la función, así que el enganche va ahí. Para no romper las pruebas del 2.1 con `TestStream` sin `--output_root`, la rama se apaga sola fuera de Dataflow si no tiene salida (`enriched_disabled`); en Dataflow sigue fallando. Una prueba nueva (67 en total). |
+| Documentación | `validation-2-2.md`: el enganche, con el código real de `build_from_messages()`; E8 aclara que `enriched_config` sale en la terminal del launcher. Nuevo `docs/ACTIVE_SERVICES.md`: qué dejar encendido, cómo encender y apagar en local y en GCP, y una sola sesión de nube para varios lotes. |
+| Repositorio | El equipo cambió `local/dataflow.Dockerfile` (Lote 2.1) para instalar con `uv` y caché de BuildKit (`COPY --from=ghcr.io/astral-sh/uv:latest` y `RUN --mount=type=cache,target=/root/.cache/uv uv pip install --system …`). Recomendado: fijar la versión de `uv` en vez de `latest`. |
+| Estado | Lote 2.2 ✅; HU-020 y HU-021 ✅. HU-005 sigue en 🟨 (faltan `trend_windows`, `dlq_events`, `dq_results` y la plantilla, Lote 2.4). |
+| Contratos | **Sin cambios.** `schema_version` sigue en `"1.0"`. |
+| Pendiente (no bloquea) | `roles/pubsub.viewer` para `sa-dataflow` (aviso `GETTING_PUBSUB_SUBSCRIPTION_FAILED`; Lote 2.4). `test_routes_and_three_workers` se cuelga en `ta-streaming` y pasa en `ta`. Validar el Lote 2.3. Siguen abiertos los de v2.21 y v2.17. |
+
+## v2.23 · desde v2.22
+
+**Lote que lo motiva:** Lote 2.3 (HU-022) · entrega
+
+| Área | Cambio |
+|---|---|
+| Lote 2.3 | Entregado: `src/streaming/nlp.py`, `nlp_testing.py`, imagen `src/streaming/nlp_image/` (Dockerfile, `fetch_models.py`, `image_smoke.py`, `requirements-nlp.txt`, `cloudbuild.yaml`), `scripts/build_nlp_image.sh`, `scripts/local_nlp.sh`, `docker-compose.nlp.yml`, `infra/gcp/environments/dev/nlp.tf` y 22 pruebas (`tests/test_nlp*.py`). Detalle en **§3.15**; validación en `docs/validation-2-3.md`. |
+| NLP (HU-022) | Sentimiento y emoción con RoBERTuito de pysentimiento mediante `RunInference` (dos `ModelHandler` propios, modelo compartido por VM), con `preprocess_tweet(lang="es")`, `common.label_map` y `nlp_model_version` con el commit de cada modelo. Un lote que falla sigue sin NLP (`nlp_failed_rows`). |
+| Sin tocar el Lote 2.1 | La etapa se arma desde `attach_enriched()` (opciones `--nlp_*`, `TA_NLP_IMAGE`, `TA_NLP_ENABLED`) y en Dataflow fija `sdk_container_image` y `sdk_location=container` en las opciones del pipeline: `pipeline.py` y `dataflow_job.sh` no cambian. En local, un tercer Compose sobreescribe la imagen de `dataflow-local`. |
+| Imagen | `dataflow-nlp` sobre `apache/beam_python3.11_sdk:2.77.0` con torch 2.5.1 CPU, transformers 4.46.3, pysentimiento 0.7.3 (solo el preprocesado, `--no-deps`) y los dos modelos con su commit en `models.json`. La prueba de humo verifica etiquetas y dos frases de control; si falla, no se publica. |
+| Corrección del Lote 2.2 | `WriteEnrichedParquet` re-marca siempre con la hora actual. Tras `RunInference` las filas llegan con el fin de su ventana, y `max(ahora, marca)` habría desplazado los archivos de `enriched/`. Lo descubrió la prueba de la rama con NLP. |
+| Verificador | `verify_enriched.py --expect-nlp`: NLP presente (≥ 99 %), etiquetas, scores, formato de versión y versión única; en BigQuery, filas sin NLP y etiquetas inválidas; como dato, distribución y acuerdo con `label_sentiment`. |
+| Terraform | `artifactregistry.reader` en `ta-images` para `sa-dataflow` (1 recurso nuevo). |
+| Verificación previa | 87 passed y 1 omitida (lotes 2.2 + 2.3), con dobles de `common.label_map`/`envelope`/`hashing`, una aproximación de `contracts/` y el preprocesado real de pysentimiento 0.7.3. **No** se descargaron los modelos (Hugging Face bloqueado desde el entorno de preparación) ni se construyó la imagen; **no** se corrió en local ni en GCP. |
+| Contratos | `contracts/` **sin cambios**; `schema_version` sigue en `"1.0"`. §5.1 suma `TA_NLP_IMAGE`, `TA_NLP_ENABLED` y `TA_NLP_MODELS_DIR`; §5.8, el permiso de Artifact Registry; §5.12, el parámetro NLP. Nueva **ADR-19**. |
+| Documento | Nueva §3.15; ampliadas §0, §3.14, §5.1, §5.4, §5.8, §5.11, §5.12, §6, §9 (ADR-19), PLAN.md §3, HU.md (HU-022) y `src/streaming/ENRICHED.md`. |
+| Pendiente | Validar el Lote 2.2 primero; luego, los pasos de `docs/validation-2-3.md`. Si se copia el 2.3 antes de cerrar el 2.2 en GCP, lanzar con `TA_NLP_ENABLED=false` hasta publicar la imagen. |
+
+## v2.22 · desde v2.21
+
+**Lote que lo motiva:** Lote 2.2 (HU-020, HU-021) · entrega
+
+| Área | Cambio |
+|---|---|
+| Lote 2.2 | Entregado: `src/common/{enriched_row,parquet_rows,hmac_key}.py`, `src/streaming/{enriched,enriched_check,enriched_cli,enriched_testing}.py`, `src/streaming/ENRICHED.md`, `scripts/verify_enriched.py`, `scripts/hmac_key.sh`, Terraform (`modules/bigquery_stream`, `modules/hmac_secret` y `streaming.tf`, `variables_streaming.tf`, `outputs_streaming.tf` en `environments/dev`) y 67 pruebas en `src/streaming/tests/test_enriched_*.py`. Detalle en **§3.14**. |
+| Anonimización (HU-020) | `author` → `{user_hash, followers}` con HMAC-SHA256 del `user_id` (vía `common.hashing`); `user_id` y `handle` desaparecen y se rechaza cualquier salida que los contenga. La llave se lee en el worker desde `ta-hmac-key` por REST; en local, llave pública de desarrollo. |
+| Normalización y carga (HU-021) | `likes`, `shares`, `comments` con `common.envelope.normalize_engagement`; `brand_primary`, `label_sentiment` y `payload` JSON. Parquet en `enriched/` (misma ventana y nombre determinista que `raw/`) y *streaming inserts* en `ta_stream.posts_enriched`. NLP en nulo hasta el Lote 2.3. |
+| Integración | Dos líneas en `pipeline.py` del Lote 2.1 (import y `attach_enriched(unique)`); `test_enriched_hook.py` lo exige. `dataflow_job.sh` sin cambios: las opciones nuevas tienen valor por defecto. |
+| Terraform | Dataset `ta_stream`, tabla `posts_enriched` (partición por `event_time`, 90 días, clustering `source, brand_primary`), secreto `ta-hmac-key` con `prevent_destroy`, `bigquery.dataEditor` en el dataset y `secretAccessor` en el secreto para `sa-dataflow`. Se adelantan del Lote 2.4 (HU-005), que conserva `trend_windows`, `dlq_events`, `dq_results` y la plantilla de Dataflow. `plan` esperado: 5 a crear, 0 a cambiar, 0 a destruir. |
+| Verificador | `verify_enriched.py report`: columnas, ausencia de identidad, reglas por fila, copias, cobertura `raw → enriched`, `user_hash` 1 a 1 con `user_id` (sin conocer la llave) y, con el lake en `gs://`, BigQuery (columnas, ids, reglas, cobertura). Evidencia en JSON. |
+| Verificación previa | 65 passed y 1 omitida (el enganche, sin `pipeline.py`) en un entorno aislado con Python 3.11 y Beam 2.77.0, con dobles de `common.envelope`/`common.hashing` y una aproximación de `contracts/`. Terraform revisado con un analizador de HCL y la alineación de `fmt`; **no** se pudo correr `terraform validate`. **No** se corrió con el pipeline real, en local ni en GCP. |
+| Contratos | `contracts/` **sin cambios**; `schema_version` sigue en `"1.0"`. Se fijan: formato de `enriched/` (§5.4), modos y método de escritura de `posts_enriched` (§5.5), permisos ya aplicados de `sa-dataflow` (§5.8), outputs `bq_dataset`, `posts_enriched_table` y `hmac_secret_id` (§5.9) y tres parámetros de §5.12. Nueva **ADR-18**. |
+| Documento | Nueva §3.14; ampliadas §0, §5.4, §5.5, §5.8, §5.9, §5.11, §5.12, §5.14, §5.15, §6, §9 (ADR-18), PLAN.md §3 y HU.md (HU-005, HU-020, HU-021). |
+| Pendiente | Validar con los pasos de `src/streaming/ENRICHED.md` (enganche, pruebas con `contracts/` reales, local, `terraform apply`, `hmac_key.sh init`, job de Dataflow). Siguen abiertos los de v2.21 (`sa-exporter` a `enriched/`, *soft delete* de `_dataflow/temp`, `.gitignore`) y v2.17 (permiso de Cloud Build en Terraform, `GET /health`). |
 
 ## v2.21 · desde v2.20
 

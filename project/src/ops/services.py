@@ -398,9 +398,34 @@ def wait_running(run: Runner, s: Settings, say: Report, timeout_s: int = 900) ->
     say("Dataflow: aún no está en Running; revise con bash scripts/dataflow_job.sh status")
 
 
+SIM_IMAGE_RE = re.compile(r'^\s*simulator_image\s*=\s*"(?P<img>[^"]*)"', re.M)
+
+
+def read_simulator_image(text: str) -> str | None:
+    m = SIM_IMAGE_RE.search(text)
+    return m.group("img") if m else None
+
+
 def cloud_on(run: Runner, s: Settings, say: Report, restart_job: bool = False) -> None:
+    image = read_simulator_image(TFVARS.read_text(encoding="utf-8")) if TFVARS.exists() else None
+    if not image:
+        raise OpsError(
+            "simulator_image está vacío o falta en terraform.tfvars: sin imagen, Terraform no crea el "
+            "simulador (§5.15).\nVea las imágenes publicadas con:\n"
+            f"  gcloud artifacts docker images list {s.region}-docker.pkg.dev/{s.project}/ta-images/stream-simulator "
+            "--include-tags --sort-by=~UPDATE_TIME --limit=3 --format=\"value(tags)\"\n"
+            f'y agregue: simulator_image = "{s.region}-docker.pkg.dev/{s.project}/ta-images/stream-simulator:ETIQUETA"'
+        )
     sim = terraform_simulator(run, True, s, say)
     say(f"simulador: {sim}")
+    url = simulator_service(run, s)
+    if not url:
+        raise OpsError(
+            "Terraform terminó pero ta-stream-simulator no existe en Cloud Run. Revise "
+            "simulator_image y simulator_running en terraform.tfvars y el plan:\n"
+            "  terraform -chdir=project/infra/gcp/environments/dev plan"
+        )
+    say(f"simulador en Cloud Run: {url}")
     jobs = active_jobs(run, s)
     if jobs and not restart_job:
         say(f"Dataflow: ya hay un job activo ({jobs[0].get('name')}, {jobs[0].get('id')}); se deja como está. "

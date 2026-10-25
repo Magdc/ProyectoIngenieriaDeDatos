@@ -1,0 +1,7 @@
+# Dependencias de NLP que se suman a la imagen del SDK de Beam 2.77 (Python 3.11).
+# torch se instala aparte desde el índice de CPU de PyTorch (ver Dockerfile).
+transformers==4.46.3
+tokenizers==0.20.3
+safetensors==0.4.5
+huggingface_hub==0.26.5
+emoji==2.14.0

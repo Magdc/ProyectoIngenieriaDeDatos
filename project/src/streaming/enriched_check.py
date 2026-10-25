@@ -9,6 +9,8 @@ No usa Beam. Lee los Parquet de ``enriched/`` y los JSONL de ``raw/`` de las úl
 * sin copias de ``event_id`` en ``enriched/``;
 * cobertura: los eventos de ``raw/`` (ventanas ya cerradas) aparecen en ``enriched/``;
 * BigQuery: filas recientes, ids únicos, reglas básicas y cobertura frente a ``enriched/``;
+* con ``--expect-nlp`` (Lote 2.3): NLP presente, etiquetas, scores, versión y concordancia con
+  ``label_sentiment`` (informativa);
 * latencia ``process_time − event_time`` (informativa; el KPI de p95 < 5 min es del Lote 2.4;
   con el caos encendido incluye los eventos tardíos).
 
@@ -30,6 +32,26 @@ from common.enriched_row import COLUMN_NAMES, IDENTITY_KEYS, row_problems
 from common.parquet_rows import parquet_bytes_to_rows, parse_ts
 
 SOURCES = ("reddit", "facebook", "instagram")
+SENTIMENTS = ("negative", "neutral", "positive")
+EMOTIONS = ("joy", "sadness", "anger", "fear", "disgust", "surprise", "neutral")
+NLP_VERSION_RE = re.compile(r"^robertuito-sentiment@[0-9a-f]+\+robertuito-emotion@[0-9a-f]+$")
+NLP_COLUMNS = ("sentiment_label", "sentiment_score", "emotion_label", "emotion_score", "nlp_model_version")
+
+
+def nlp_row_problems(row: dict) -> list[str]:
+    """Reglas del NLP (Lote 2.3) sobre una fila con NLP."""
+    out = []
+    if row.get("sentiment_label") not in SENTIMENTS:
+        out.append("sentiment_label fuera de negative|neutral|positive")
+    if row.get("emotion_label") not in EMOTIONS:
+        out.append("emotion_label fuera de las 7 clases")
+    for k in ("sentiment_score", "emotion_score"):
+        v = row.get(k)
+        if not isinstance(v, (int, float)) or not 0.0 <= float(v) <= 1.0:
+            out.append(f"{k} fuera de [0, 1]")
+    if not NLP_VERSION_RE.match(str(row.get("nlp_model_version") or "")):
+        out.append("nlp_model_version con formato inválido")
+    return out
 _PART_RE = re.compile(r"part-(\d{8}T\d{6})Z")
 
 OK, WARN, FAIL = "ok", "warn", "fail"
@@ -185,6 +207,7 @@ class Thresholds:
     settle_seconds: int = 600
     max_p95_latency_s: int = 300
     max_bq_dup_ratio: float = 0.01
+    max_nlp_null_ratio: float = 0.01
 
 
 def read_enriched(lake: Lake, source: str, since: datetime, until: datetime) -> tuple[list[dict], list[str], list[str]]:
@@ -205,14 +228,20 @@ def read_enriched(lake: Lake, source: str, since: datetime, until: datetime) -> 
 
 
 def read_raw(lake: Lake, source: str, since: datetime, until: datetime, settle_before: datetime) -> dict[str, dict]:
-    """``event_id`` → ``{"user_id", "source"}`` de ``raw/`` en ventanas cerradas antes de ``settle_before``."""
+    """``event_id`` → ``{"user_id", "source"}`` de ``raw/`` en ventanas que empiezan desde ``since``
+    y ya cerraron antes de ``settle_before``.
+
+    Las ventanas anteriores a ``since`` se ignoran aunque sean de la misma hora: pueden venir de
+    un pipeline anterior sin la rama enriched (p. ej. antes de enganchar o de cambiar de imagen),
+    y contarían como eventos sin su fila en ``enriched/``.
+    """
     out: dict[str, dict] = {}
     for prefix in hour_prefixes("raw", source, since, until):
         for key in lake.list(prefix):
             if not key.endswith(".jsonl.gz"):
                 continue
             start = file_window_start(key)
-            if start is not None and start >= settle_before:
+            if start is not None and (start >= settle_before or start < since):
                 continue
             try:
                 text = gzip.decompress(lake.read(key)).decode("utf-8")
@@ -236,6 +265,7 @@ def check_lake(
     thresholds: Thresholds | None = None,
     sources: Iterable[str] = SOURCES,
     report: Report | None = None,
+    expect_nlp: bool = False,
 ) -> tuple[Report, dict[str, set[str]]]:
     """Revisa ``enriched/`` y su cruce con ``raw/``. Devuelve el reporte y los ids por fuente."""
     th = thresholds or Thresholds()
@@ -309,6 +339,9 @@ def check_lake(
         else:
             rep.add("cobertura raw → enriched", WARN, "sin archivos de raw/ cerrados en la ventana", source)
 
+        if expect_nlp:
+            _check_nlp(rep, source, recent, th)
+
         p95 = rep.stats[source]["latency_ms_p95"]
         if p95 is not None:
             status = OK if p95 <= th.max_p95_latency_s * 1000 else WARN
@@ -328,6 +361,30 @@ def check_lake(
     return rep, ids_by_source
 
 
+def _check_nlp(rep: Report, source: str, rows: list[dict], th: Thresholds) -> None:
+    """NLP del Lote 2.3: cobertura, etiquetas, scores, versión y concordancia (informativa)."""
+    with_nlp = [r for r in rows if all(r.get(k) is not None for k in NLP_COLUMNS)]
+    null_ratio = 1 - len(with_nlp) / len(rows) if rows else 1.0
+    status = OK if null_ratio <= th.max_nlp_null_ratio else FAIL
+    rep.add("NLP presente", status, f"{len(with_nlp)}/{len(rows)} filas con sentimiento, emoción y versión", source)
+    problems: Counter = Counter()
+    for r in with_nlp:
+        for p in nlp_row_problems(r):
+            problems[p] += 1
+    rep.add("NLP: etiquetas, scores y versión", FAIL if problems else OK,
+            json.dumps(dict(problems), ensure_ascii=False) if problems else "todas cumplen", source)
+    versions = Counter(r["nlp_model_version"] for r in with_nlp)
+    if len(versions) > 1:
+        rep.add("NLP: una sola versión de modelos", WARN, f"{len(versions)} versiones (¿cambio de imagen?)", source)
+    labelled = [r for r in with_nlp if r.get("label_sentiment") in SENTIMENTS]
+    agree = sum(1 for r in labelled if r["sentiment_label"] == r["label_sentiment"])
+    st = rep.stats[source]
+    st["sentiment_counts"] = dict(Counter(r["sentiment_label"] for r in with_nlp))
+    st["emotion_counts"] = dict(Counter(r["emotion_label"] for r in with_nlp))
+    st["nlp_model_versions"] = dict(versions)
+    st["sentiment_vs_ground_truth"] = {"labelled": len(labelled), "agree": agree, "accuracy": round(agree / len(labelled), 4) if labelled else None}
+
+
 # --------------------------------------------------------------------------- #
 # BigQuery
 # --------------------------------------------------------------------------- #
@@ -341,7 +398,10 @@ SELECT
   COUNTIF(source IN ('reddit', 'instagram') AND shares IS NOT NULL) AS bad_shares,
   COUNTIF(source = 'facebook' AND shares IS NULL) AS missing_shares,
   COUNTIF(likes IS NULL) AS null_likes,
-  COUNTIF(IFNULL(brand_primary, '') != IFNULL(brands[SAFE_OFFSET(0)], '')) AS bad_brand_primary
+  COUNTIF(IFNULL(brand_primary, '') != IFNULL(brands[SAFE_OFFSET(0)], '')) AS bad_brand_primary,
+  COUNTIF(sentiment_label IS NULL OR emotion_label IS NULL OR nlp_model_version IS NULL) AS null_nlp,
+  COUNTIF(sentiment_label IS NOT NULL AND sentiment_label NOT IN ('negative', 'neutral', 'positive')) AS bad_sentiment,
+  COUNTIF(emotion_label IS NOT NULL AND emotion_label NOT IN ('joy', 'sadness', 'anger', 'fear', 'disgust', 'surprise', 'neutral')) AS bad_emotion
 FROM `{table}`
 WHERE process_time >= @since
   AND event_time >= TIMESTAMP_SUB(@since, INTERVAL 1 DAY)
@@ -382,6 +442,7 @@ def check_bigquery(
     report: Report,
     thresholds: Thresholds | None = None,
     query: Any = None,
+    expect_nlp: bool = False,
 ) -> Report:
     """Revisa ``posts_enriched``. ``table`` = ``proyecto.dataset.tabla``.
 
@@ -432,6 +493,12 @@ def check_bigquery(
         report.add("BigQuery: filas recientes", status, f"{n} filas, {ids} ids únicos", source)
         bad = {k: int(st[k]) for k in ("bad_hash", "bad_shares", "missing_shares", "null_likes", "bad_brand_primary") if int(st.get(k) or 0)}
         report.add("BigQuery: reglas", FAIL if bad else OK, json.dumps(bad) if bad else "todas cumplen", source)
+        if expect_nlp:
+            null_nlp = int(st.get("null_nlp") or 0)
+            bad_labels = int(st.get("bad_sentiment") or 0) + int(st.get("bad_emotion") or 0)
+            ratio = null_nlp / n if n else 1.0
+            status = FAIL if bad_labels or ratio > th.max_nlp_null_ratio else OK
+            report.add("BigQuery: NLP", status, f"{n - null_nlp}/{n} con NLP; {bad_labels} etiquetas inválidas", source)
         if lids:
             covered = len(lids & bq_ids.get(source, set()))
             cov = covered / len(lids)

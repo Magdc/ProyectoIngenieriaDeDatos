@@ -186,8 +186,11 @@ cuestan 0,01 USD por 200 MB (unos 130.000 eventos al día son pocos MB).
 - **No rotar la llave.** Cambiarla cambia todos los `user_hash` y rompe el cruce con el
   histórico. `hmac_key.sh` no tiene comando de rotación a propósito; el secreto tiene
   `prevent_destroy`.
-- **NLP.** Las columnas `sentiment_*`, `emotion_*` y `nlp_model_version` van en nulo hasta el
-  Lote 2.3, que se engancha con `attach_enriched(unique, nlp=<PTransform>)`.
+- **NLP (Lote 2.3).** `attach_enriched()` arma la etapa con `streaming.nlp.nlp_from_options()`:
+  en Dataflow siempre (y fija la imagen `dataflow-nlp` de los workers), en local solo dentro de la
+  imagen de NLP (`scripts/local_nlp.sh`). Con `--nlp_enabled=false` o `TA_NLP_ENABLED=false` las
+  columnas `sentiment_*`, `emotion_*` y `nlp_model_version` vuelven a ir en nulo. Ver
+  `docs/ARCHITECTURE.md` §3.15 y `docs/validation-2-3.md`.
 - **Duplicados en BigQuery.** Los *streaming inserts* deduplican por mejor esfuerzo; `Trusted`
   vuelve a deduplicar por `event_id` (§5.7). El verificador avisa si hay copias y falla si
   superan el 1 %.

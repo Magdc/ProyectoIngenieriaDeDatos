@@ -1,24 +1,42 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.24**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.25**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
 
-## v2.24 · desde v2.23
+## v2.25 · desde v2.24
 
-**Lote que lo motiva:** Lote 2.2 (HU-020, HU-021) · validación y cierre
+**Lote que lo motiva:** Lote 2.3 (HU-022) · validación y cierre
 
 | Área | Cambio |
 |---|---|
-| Verificación | Pruebas: 67 del lote sin omitidas, 158 en `streaming/`, 18 de `contracts/` y 116 de `common/` + simulador. **Local:** `verify_enriched.py` OK (cobertura 100 %, hash 1 a 1, 0 copias) y `check` OK. **GCP:** `verify_enriched.py` OK con BigQuery (cobertura 100 %), consultas de E11 correctas (`hash_malo = 0`, `shares` solo en Facebook, 0 identidad en columnas y `payload`) y `check --allow-cloud` OK. Detalle en §3.14. |
-| Corrección durante la validación | `build_from_messages()` crea `unique` dentro de la función, así que el enganche va ahí. Para no romper las pruebas del 2.1 con `TestStream` sin `--output_root`, la rama se apaga sola fuera de Dataflow si no tiene salida (`enriched_disabled`); en Dataflow sigue fallando. Una prueba nueva (67 en total). |
-| Documentación | `validation-2-2.md`: el enganche, con el código real de `build_from_messages()`; E8 aclara que `enriched_config` sale en la terminal del launcher. Nuevo `docs/ACTIVE_SERVICES.md`: qué dejar encendido, cómo encender y apagar en local y en GCP, y una sola sesión de nube para varios lotes. |
-| Repositorio | El equipo cambió `local/dataflow.Dockerfile` (Lote 2.1) para instalar con `uv` y caché de BuildKit (`COPY --from=ghcr.io/astral-sh/uv:latest` y `RUN --mount=type=cache,target=/root/.cache/uv uv pip install --system …`). Recomendado: fijar la versión de `uv` en vez de `latest`. |
-| Estado | Lote 2.2 ✅; HU-020 y HU-021 ✅. HU-005 sigue en 🟨 (faltan `trend_windows`, `dlq_events`, `dq_results` y la plantilla, Lote 2.4). |
-| Contratos | **Sin cambios.** `schema_version` sigue en `"1.0"`. |
-| Pendiente (no bloquea) | `roles/pubsub.viewer` para `sa-dataflow` (aviso `GETTING_PUBSUB_SUBSCRIPTION_FAILED`; Lote 2.4). `test_routes_and_three_workers` se cuelga en `ta-streaming` y pasa en `ta`. Validar el Lote 2.3. Siguen abiertos los de v2.21 y v2.17. |
+| Corrección: NLP en local | El pipeline local se congelaba unos segundos después de cargar los modelos: D4 sin filas en `enriched/` y D6 (el `check` del 2.1) en falla. **Causa:** `share_model_across_processes() = True` en el `BundleBasedDirectRunner`, que tiene un solo hilo de trabajo y rehace el DoFn en cada *bundle*. El servidor de `MultiProcessShared` vive en un hilo del mismo proceso, y el `_decref` de los *proxies* viejos termina bloqueando el hilo que acepta conexiones. **Arreglo:** el modelo se comparte solo en Dataflow (`share_across_processes = cfg.is_dataflow`), y en local `load_model()` lo carga una vez por proceso; sin esa caché se recargaba 33 veces en 3 min. Se reprodujo con Beam 2.77 y el código real (modelo falso con el costo de `nlp_bench.py`). 4 pruebas nuevas en `test_nlp_local.py`; dos fallan con el código de v2.24. Detalle en §3.15, "NLP en local". |
+| Verificación local | D1–D6 OK con `validate_2_3.py local`. Imagen con prueba de humo OK (`robertuito-sentiment-analysis@a2cc0f67ebd7`, `robertuito-emotion-analysis@bcd6835f4d1a`), `nlp_model_loaded × 2`, `verify_enriched.py --local --expect-nlp` OK y `local_dataflow.sh check` OK con la imagen de NLP. |
+| Verificación GCP | E2–E9 OK con `validate_2_3.py cloud`. El job usa la imagen `dataflow-nlp` publicada; `nlp_model_loaded × 2` y 0 errores. En BigQuery: una sola versión, 0 filas sin NLP y p95 de emisión a BigQuery de 27,4 s. El centinela llegó a BigQuery con NLP a los 5 s (criterio de HU-022: < 1 min). Con `verify_enriched.py --hours 0.35`: 473 / 469 / 473 filas en `enriched/`, cobertura `raw → enriched` y `enriched → BigQuery` del 100 %, NLP en todas las filas, 0 copias, `user_hash` 1 a 1 en 413 usuarios y acuerdo con `label_sentiment` de 90–92 % (solo un dato). Evidencia en `evidencia/validacion_2_3.json`, `nlp_report.json`, `nlp_report_cobertura.json` y `streaming_check_2_3.json`. |
+| Verificador | `enriched_check.py`: la cobertura `raw → enriched` ignora las ventanas de `raw/` que empiezan antes de la ventana revisada, que pueden ser de un job anterior sin la rama o sin NLP (prueba `test_raw_anterior_a_la_ventana_no_cuenta_en_la_cobertura`). `validate23.py`: E4 busca la imagen en toda la descripción del job (antes daba `AVISO` con `sdkContainerImage None`); E7 cuenta desde el arranque del job y espera a tener una ventana completa de `raw/` (antes la ventana de 10 min era igual al asentamiento y la cobertura salía en aviso); E2 distingue el permiso nuevo de la deriva del simulador. 3 pruebas nuevas en `test_ops_validate23.py`. |
+| Licencias (E11) | Las *model cards* no declaran licencia. pysentimiento advierte que sus modelos quedan sujetos a las licencias de sus datos (TASS 2020; la emoción, también EmoEvent), muchas de uso no comercial. Es compatible con el uso académico del proyecto (ADR-05). Citas en §3.15. |
+| Operación | Se documentan en ARCHITECTURE (§0, §3.15, §5.11 y §6) los scripts de `src/ops/` (`on.py`, `off.py`, `status.py`, `validate_2_3.py`) y `docs/ACTIVE_SERVICES.md`, que no figuraban. `validate_2_3.py`: D4 reintenta y diagnostica el contenedor, y D6 muestra el error real sin el ruido de `docker compose`. |
+| Estado | Lote 2.3 ✅ en PLAN.md §3. HU-022 ✅, y HU-020 y HU-021 ✅ (Lote 2.2, cerrado en v2.24). La Fase 2 sigue en 🟨; el siguiente es el **2.4**. |
+| Contratos | `contracts/` **sin cambios**; `schema_version` sigue en `"1.0"`. §5.1 suma `TA_NLP_BATCH_SECONDS` y `TA_NLP_THREADS` (v2.24 los usaba sin listarlos). §5.12 aclara el modelo por VM solo en Dataflow y la etiqueta de la imagen. ADR-19 ampliado. |
+| Guías de validación | Pasan a `docs/validation/` (`validation-2-2.md` y `validation-2-3.md`). §8 fija la convención para cada lote que se valida: guía en `docs/validation/validation-{fase}-{lote}.md`, script en `project/scripts/validate_{fase}_{lote}.py`, lógica y pruebas en `project/src/ops/` y evidencia en `project/evidencia/`. Las entradas anteriores de este CHANGELOG conservan las rutas viejas. |
+| Documento | §0, §3.14, §3.15, §5.1, §5.11, §5.12, §6, §8 (validación) y §9 (ADR-19 y riesgos); `docs/validation/validation-2-3.md` (conteos esperados, E4, E7 y problemas); PLAN.md §3; HU.md (HU-020 a HU-022). |
+| Entorno | En WSL con el repo en `/mnt/c`, un `FileNotFoundError` en `from pathlib import Path` significa que la carpeta actual de la terminal quedó rota por cambios hechos desde Windows; se arregla volviendo a entrar con `cd`. `build_nlp_image.sh` etiquetó la imagen con la fecha UTC porque `git rev-parse` no respondió en esa terminal. |
+| Pendiente (no bloquea) | Anotar las cifras de las partes B y C y el pico de memoria del worker (E10). Medir en el 2.4 la latencia `event_time → process_time` (p95 de 134–152 s en esta corrida, probablemente por el *backlog* del cambio de job). `roles/pubsub.viewer` para `sa-dataflow` (Lote 2.4). Siguen abiertos los de v2.21 y v2.17. |
+
+## v2.24 · desde v2.23
+
+**Lote que lo motiva:** Lote 2.2 (HU-020, HU-021) · validación y cierre; ajustes del Lote 2.3 antes de validarlo
+
+| Área | Cambio |
+|---|---|
+| Verificación del 2.2 | **Pruebas:** del lote, 67 passed y 0 omitidas con `pipeline.py`, `common/` y `contracts/` reales; `streaming/` 158 passed (91 + 67); `contracts/tests` 18; `common/` + simulador (entorno `ta`) 116. **Local:** `verify_enriched.py --local` OK (262 / 259 / 267 filas, 0 copias, cobertura `raw → enriched` del 100 %, 46 usuarios con hash 1 a 1, p95 de 5,7 a 7,1 s); `local_dataflow.sh check` OK (11/11). **GCP:** `verify_enriched.py` OK, también en BigQuery, con cobertura `enriched → BigQuery` del 100 % (551 / 543 / 552). En BigQuery, en 1 h: ids únicos, `hash_malo = 0`, `shares` solo en Facebook, NLP en nulo, ground truth en el 71 %, sin columnas `user_id`/`handle`, `payload_con_identidad = 0` y p95 de 5 s. `verify_streaming.py check --allow-cloud` OK (13/13). Evidencia en `evidencia/local_enriched_report.json`, `enriched_report.json` y `streaming_check_2_2.json`. Detalle en §3.14. |
+| Correcciones del 2.2 | Fuera de Dataflow, la rama enriched se apaga sola si no tiene salida (`enriched_disabled`), para no romper las pruebas del 2.1 que usan `TestStream` sin `--output_root`. El equipo cambió `local/dataflow.Dockerfile` para instalar con `uv` y caché de BuildKit. |
+| Observaciones del 2.2 | El primer job no recibió datos porque el simulador estaba apagado, y por eso no había `hmac_key_loaded` (`docs/ACTIVE_SERVICES.md`). `enriched_config` se registra en la terminal del launcher, no en Cloud Logging (corregido en `validation-2-2.md`). Los workers avisan `PERMISSION_DENIED` al leer la configuración de `ta-raw-*-df`: a `sa-dataflow` le falta `roles/pubsub.viewer` (se declara en el 2.4). `test_routes_and_three_workers` se cuelga en el entorno `ta-streaming` y pasa en `ta`. |
+| Lote 2.3 (antes de validarlo) | Lotes de NLP de `--nlp_batch_size` (16) con espera máxima de `--nlp_batch_seconds` (5 s; `TA_NLP_BATCH_SECONDS`), usando la agrupación con estado de `BatchElements`. Torch usa todos los núcleos (`TA_NLP_THREADS`). Motivo: `scripts/nlp_bench.py` midió en la máquina del equipo ~3 comentarios/s con lote 1 frente a ~23/s con lote 16, para ~1,5/s de entrada, y con lote 1 el pipeline local acumuló un retraso creciente (p95 de 78 min). Pruebas nuevas de hilos y de lotes por tiempo. |
+| Documento | §3.14 con el cierre del 2.2; §3.15 y §5.12 con los lotes por tiempo. En esa entrega no se actualizaron este CHANGELOG, PLAN.md ni HU.md: se ponen al día en v2.25. |
+| Contratos | `contracts/` **sin cambios**; `schema_version` sigue en `"1.0"`. |
 
 ## v2.23 · desde v2.22
 
@@ -44,7 +62,7 @@
 
 | Área | Cambio |
 |---|---|
-| Lote 2.2 | Entregado: `src/common/{enriched_row,parquet_rows,hmac_key}.py`, `src/streaming/{enriched,enriched_check,enriched_cli,enriched_testing}.py`, `src/streaming/ENRICHED.md`, `scripts/verify_enriched.py`, `scripts/hmac_key.sh`, Terraform (`modules/bigquery_stream`, `modules/hmac_secret` y `streaming.tf`, `variables_streaming.tf`, `outputs_streaming.tf` en `environments/dev`) y 67 pruebas en `src/streaming/tests/test_enriched_*.py`. Detalle en **§3.14**. |
+| Lote 2.2 | Entregado: `src/common/{enriched_row,parquet_rows,hmac_key}.py`, `src/streaming/{enriched,enriched_check,enriched_cli,enriched_testing}.py`, `src/streaming/ENRICHED.md`, `scripts/verify_enriched.py`, `scripts/hmac_key.sh`, Terraform (`modules/bigquery_stream`, `modules/hmac_secret` y `streaming.tf`, `variables_streaming.tf`, `outputs_streaming.tf` en `environments/dev`) y 66 pruebas en `src/streaming/tests/test_enriched_*.py`. Detalle en **§3.14**. |
 | Anonimización (HU-020) | `author` → `{user_hash, followers}` con HMAC-SHA256 del `user_id` (vía `common.hashing`); `user_id` y `handle` desaparecen y se rechaza cualquier salida que los contenga. La llave se lee en el worker desde `ta-hmac-key` por REST; en local, llave pública de desarrollo. |
 | Normalización y carga (HU-021) | `likes`, `shares`, `comments` con `common.envelope.normalize_engagement`; `brand_primary`, `label_sentiment` y `payload` JSON. Parquet en `enriched/` (misma ventana y nombre determinista que `raw/`) y *streaming inserts* en `ta_stream.posts_enriched`. NLP en nulo hasta el Lote 2.3. |
 | Integración | Dos líneas en `pipeline.py` del Lote 2.1 (import y `attach_enriched(unique)`); `test_enriched_hook.py` lo exige. `dataflow_job.sh` sin cambios: las opciones nuevas tienen valor por defecto. |

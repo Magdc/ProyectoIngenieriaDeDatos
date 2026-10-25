@@ -1,0 +1,388 @@
+# Servicios activos: encender, comprobar y apagar
+
+Guía para dejar encendido lo necesario mientras se validan lotes y apagar lo que cobra al terminar.
+
+Todos los comandos se corren **desde la carpeta `project/`** del repo, uno por línea. Antes de empezar, en cada terminal:
+
+```
+cd /mnt/c/Users/frank/Documents/baul/uni/2026-2/ProyectoDatos/repo_personal/project
+source ~/.venvs/ta-streaming/bin/activate
+```
+
+---
+
+## Atajo: `on.py`, `off.py` y `status.py`
+
+Tres comandos que hacen lo de las secciones 1 a 3 por ti. Se corren desde la raíz del repo, con `~/.venvs/ta-streaming` activo (el lanzamiento de Dataflow necesita Beam):
+
+```
+python project/scripts/status.py
+python project/scripts/on.py
+python project/scripts/off.py
+```
+
+| Comando | Qué hace |
+|---|---|
+| `status.py` | Solo lee: qué hay encendido en local y en GCP, y qué cobra. |
+| `on.py` | Local (emulador, simulador y `dataflow-local`) **y** GCP (simulador en Cloud Run y job de Dataflow). Espera a que el job esté en *Running*. |
+| `on.py local` / `on.py cloud` | Solo una de las dos partes. |
+| `on.py --restart-job` | Si ya hay un job, lo drena y lanza uno nuevo. Úsalo tras copiar código nuevo del pipeline. |
+| `on.py --nlp off` | Lanza el job sin NLP. Con `auto` (por defecto), usa la última imagen `dataflow-nlp` publicada si existe, y si no la hay, lanza sin NLP. |
+| `off.py` | Solo **lo que cobra**: drena Dataflow, apaga el simulador de Cloud Run y borra las suscripciones temporales `ta-verify-*`. Lo local queda encendido. |
+| `off.py --keep-simulator` | Apaga solo Dataflow; deja el simulador para seguir mañana. |
+| `off.py all` | También apaga lo local. |
+| `off.py --force` | Si el job sigue drenando a los 15 min, lo cancela. |
+
+Antes de actuar, `on.py` y `off.py` muestran lo que van a hacer y piden confirmación. `--yes` la omite.
+
+Cómo se protege la nube:
+- Para el simulador, cambian `simulator_running` en `terraform.tfvars` sin tocar la alineación, y revisan el `plan` antes de aplicar.
+- **Solo aplican si el plan cambia únicamente el servicio de Cloud Run.** Si propone cualquier otra cosa (por ejemplo, recursos de un lote nuevo que aún no aplicaste), se detienen sin aplicar nada y te dicen qué cambió.
+- Los recursos de cada lote nuevo se aplican a mano, como en 2.3.
+- Nunca borran topics, buckets, BigQuery, el secreto ni imágenes.
+
+Un día típico:
+
+```
+python project/scripts/on.py
+python project/scripts/off.py --keep-simulator
+```
+
+El primero va por la mañana; el segundo, al terminar el día. Al cerrar la semana de validaciones, `python project/scripts/off.py`.
+
+---
+
+## 0. Qué cuesta y qué no
+
+| Dónde | Servicio | Costo encendido | ¿Se apaga? |
+|---|---|---|---|
+| Local | Emulador de Pub/Sub, simulador, `dataflow-local` | 0 (solo memoria del portátil) | No hace falta entre lotes |
+| GCP | Topics, suscripciones, buckets, BigQuery, secreto HMAC, Artifact Registry, service accounts | Prácticamente 0 | **Nunca**: no se encienden ni se apagan |
+| GCP | Simulador en Cloud Run (`ta-stream-simulator`) | ~2 USD/día | Al terminar la semana de validaciones |
+| GCP | Job de Dataflow (`ta-stream-dev`) | ~0,25 USD/h (~6 USD/día) | **Al terminar cada día** |
+| GCP | Cloud Build (imagen de NLP, Lote 2.3) | ~0,10 USD por construcción | Termina solo |
+
+Con el presupuesto mensual de 400.000 COP, dejar el simulador una semana y Dataflow solo en jornadas de trabajo cabe sin problema. Las alertas del presupuesto (Lote 1.0) avisan por correo si algo se queda encendido.
+
+**Cómo validar más rápido:**
+1. Haz primero la **parte local** de cada lote (partes A a D de cada `validation-*.md`), dejando el entorno local encendido todo el tiempo.
+2. Al final, haz **una sola sesión en GCP** para varios lotes juntos: un `terraform apply`, una construcción de la imagen, un arranque del job y todas las verificaciones.
+
+Relanzar Dataflow es lo que más tiempo cuesta (5 a 8 minutos), y hace falta cada vez que cambia el código. Agrupando, se hace una vez.
+
+---
+
+## 1. Local
+
+### 1.1 Encender (una vez; queda encendido)
+
+Requisito: Docker Desktop abierto, con WSL integrado.
+
+```
+bash scripts/local_dataflow.sh preflight
+bash scripts/local_dataflow.sh up
+```
+
+Esto levanta el emulador de Pub/Sub, el simulador y `dataflow-local` (el pipeline con DirectRunner). Tarda 1 a 2 minutos la primera vez. Después, cada arranque es de segundos.
+
+**Con NLP (Lote 2.3):** la primera vez hay que construir la imagen. Tarda 10 a 15 minutos y descarga unos 2,5 GB.
+
+```
+bash scripts/local_nlp.sh build
+bash scripts/local_nlp.sh up
+```
+
+`local_nlp.sh up` reemplaza el `dataflow-local` normal por el que trae los modelos. Para volver al normal:
+
+```
+bash scripts/local_nlp.sh restore
+```
+
+### 1.2 Comprobar que está encendido
+
+```
+docker compose -f docker-compose.yml -f docker-compose.dataflow.yml --profile dataflow ps
+```
+
+Esperado: `pubsub-emulator`, `simulator` y `dataflow-local` en `running`; `pubsub-init` en `exited (0)`, porque solo crea los topics y termina.
+
+Para ver que fluyen datos (salir con Ctrl+C):
+
+```
+bash scripts/local_dataflow.sh logs
+```
+
+Y que se escriben archivos:
+
+```
+find .local-lake/raw -name 'part-*' | tail -3
+find .local-lake/enriched -name 'part-*.parquet' | tail -3
+```
+
+### 1.3 Tras copiar código nuevo de un lote (sin apagar nada)
+
+El código está montado en el contenedor, así que no hay que reconstruir ni apagar. Basta con reiniciar solo el pipeline:
+
+```
+docker compose -f docker-compose.yml -f docker-compose.dataflow.yml --profile dataflow restart dataflow-local
+```
+
+Con NLP, en cambio:
+
+```
+bash scripts/local_nlp.sh up
+```
+
+Espera 2 a 3 minutos (ventanas de 60 s) antes de verificar.
+
+### 1.4 Si el lake local crece demasiado
+
+Vacía `.local-lake/` sin apagar nada:
+
+```
+bash scripts/local_dataflow.sh reset-lake
+```
+
+### 1.5 Apagar lo local (opcional; no cuesta dinero)
+
+Hay dos niveles:
+
+```
+bash scripts/local_dataflow.sh down
+```
+
+Para solo el pipeline. El emulador y el simulador siguen.
+
+```
+bash scripts/local_dataflow.sh down-all
+```
+
+Apaga todo lo local. El cursor del simulador (volumen `sim-state`) y `.local-lake/` se conservan. Al volver a encender, el emulador arranca vacío (vive en memoria) y el simulador continúa desde su cursor.
+
+---
+
+## 2. GCP
+
+### 2.1 Preparar la terminal (cada sesión)
+
+```
+export GCP_PROJECT=project-0568d9ba-848f-413c-88b
+export GCP_REGION=us-central1
+gcloud config set project project-0568d9ba-848f-413c-88b
+gcloud auth application-default print-access-token > /dev/null && echo credenciales-ok
+```
+
+Si no imprime `credenciales-ok`:
+
+```
+gcloud auth login
+gcloud auth application-default login
+```
+
+### 2.2 Ver qué está encendido (solo lectura; úsalo siempre antes y después)
+
+```
+bash scripts/preflight.sh
+gcloud dataflow jobs list --region us-central1 --status=active --format="value(name,id,currentState)"
+gcloud run services list --region us-central1 --format="value(name)"
+grep -n "simulator_running" infra/gcp/environments/dev/terraform.tfvars
+```
+
+| Si ves… | Significa |
+|---|---|
+| Un job en la lista de Dataflow | Dataflow encendido (cobra) |
+| `ta-stream-simulator` en Cloud Run | Simulador encendido (cobra) |
+| `simulator_running = true` | Terraform lo mantiene encendido en el próximo `apply` |
+
+### 2.3 Infraestructura del lote (una vez por lote nuevo; luego queda)
+
+Solo cuando copiaste archivos de Terraform nuevos (`.tf`). No cobra de forma apreciable y **no se apaga**.
+
+```
+bash infra/validate.sh
+terraform -chdir=infra/gcp/environments/dev plan -out=tfplan
+terraform -chdir=infra/gcp/environments/dev apply tfplan
+```
+
+Revisa el `plan` antes de aplicar: debe **crear** lo del lote y no **destruir** nada.
+
+**Una sola vez en la vida del proyecto** (Lote 2.2), la llave HMAC:
+
+```
+bash scripts/hmac_key.sh status
+bash scripts/hmac_key.sh init
+```
+
+`init` se niega si ya existe una versión, así que es seguro repetirlo por error.
+
+**Una vez por cambio en el NLP** (Lote 2.3), la imagen de los workers. Tarda 15 a 25 minutos en Cloud Build.
+
+```
+bash scripts/build_nlp_image.sh cloudbuild
+```
+
+Al final imprime la línea `export TA_NLP_IMAGE=…:<commit>`. Guárdala; la usas en 2.5.
+
+### 2.4 Encender el simulador (puede quedar encendido varios días)
+
+Cambia `simulator_running` a `true` en `terraform.tfvars` y aplica:
+
+```
+sed -i 's/^simulator_running\( *\)= *false/simulator_running\1= true/' infra/gcp/environments/dev/terraform.tfvars
+grep -n "simulator_running" infra/gcp/environments/dev/terraform.tfvars
+terraform -chdir=infra/gcp/environments/dev apply
+```
+
+El `apply` solo debe crear el servicio de Cloud Run (`1 to add`). Escribe `yes` si es así.
+
+Comprobar, unos 2 minutos después:
+
+```
+gcloud run services describe ta-stream-simulator --region us-central1 --format="value(status.conditions[0].status)"
+```
+
+Esperado: `True`. El simulador publica unos 0,5 mensajes por segundo por fuente.
+
+### 2.5 Encender Dataflow (una vez por sesión de trabajo)
+
+Si quedó un job de antes, primero drénalo (ver 3.1).
+
+Elige **una** de estas dos opciones según qué lotes vas a validar:
+
+- **Con NLP (Lote 2.3, la imagen ya está publicada):**
+
+  ```
+  unset TA_NLP_ENABLED
+  export TA_NLP_IMAGE=us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/dataflow-nlp:<commit>
+  ```
+
+- **Sin NLP (validando solo el Lote 2.2, o la imagen aún no existe):**
+
+  ```
+  export TA_NLP_ENABLED=false
+  ```
+
+Luego arranca el job:
+
+```
+bash scripts/dataflow_job.sh preflight
+bash scripts/dataflow_job.sh start
+bash scripts/dataflow_job.sh status
+```
+
+Pasa a *Running* en 2 minutos (5 a 8 con la imagen de NLP). Los archivos de `enriched/` aparecen unos 10 minutos después (ventanas de 300 s).
+
+**Cuándo relanzar:** cada vez que copias código nuevo del pipeline (`src/streaming/` o `src/common/`). Dataflow no toma el código nuevo en un job que ya está corriendo. Es drenar (3.1) y volver a hacer `start`.
+
+### 2.6 Atajo: todo lo de la nube en un bloque
+
+Con la infraestructura ya aplicada (2.3), encender todo para una sesión es:
+
+```
+bash scripts/preflight.sh
+sed -i 's/^simulator_running\( *\)= *false/simulator_running\1= true/' infra/gcp/environments/dev/terraform.tfvars
+terraform -chdir=infra/gcp/environments/dev apply -auto-approve
+bash scripts/dataflow_job.sh start
+bash scripts/dataflow_job.sh status
+```
+
+Antes de `start`, exporta `TA_NLP_IMAGE` o `TA_NLP_ENABLED=false` (2.5).
+
+`-auto-approve` aplica sin preguntar. Úsalo solo si ya revisaste ese `plan` antes y no copiaste archivos `.tf` nuevos desde entonces.
+
+---
+
+## 3. Apagar la nube (para no gastar)
+
+### 3.1 Al terminar cada día: Dataflow
+
+```
+bash scripts/dataflow_job.sh drain
+```
+
+`drain` cierra las ventanas abiertas y no pierde datos; tarda unos minutos. Comprueba que terminó:
+
+```
+gcloud dataflow jobs list --region us-central1 --status=active --format="value(name,currentState)"
+```
+
+Esperado: vacío. Si queda en *Draining* más de 15 minutos:
+
+```
+bash scripts/dataflow_job.sh cancel
+```
+
+`cancel` puede perder la última ventana sin cerrar, unos minutos de `raw/` y `enriched/`. Los mensajes se conservan en Pub/Sub (7 días) y el siguiente job los procesa.
+
+### 3.2 Al terminar la semana de validaciones: el simulador
+
+```
+sed -i 's/^simulator_running\( *\)= *true/simulator_running\1= false/' infra/gcp/environments/dev/terraform.tfvars
+grep -n "simulator_running" infra/gcp/environments/dev/terraform.tfvars
+terraform -chdir=infra/gcp/environments/dev apply
+```
+
+El `apply` solo debe destruir el servicio de Cloud Run (`1 to destroy`). Escribe `yes` si es así. El cursor se conserva en GCS: al encenderlo de nuevo, continúa donde iba.
+
+### 3.3 Restos temporales de los verificadores
+
+Normalmente se borran solos. Si cortaste un verificador con Ctrl+C, pueden quedar suscripciones temporales:
+
+```
+gcloud pubsub subscriptions list --format="value(name)" | grep ta-verify
+```
+
+Si sale alguna, bórrala con este comando (expiran solas a 1 día de todos modos):
+
+```
+gcloud pubsub subscriptions delete NOMBRE
+```
+
+Cambia `NOMBRE` por el que salió, sin la parte `projects/…/subscriptions/`.
+
+Y que no quede una construcción corriendo:
+
+```
+gcloud builds list --region us-central1 --ongoing
+```
+
+### 3.4 Confirmar que nada cobra
+
+```
+gcloud dataflow jobs list --region us-central1 --status=active
+gcloud run services list --region us-central1 --format="value(name)"
+gcloud builds list --region us-central1 --ongoing
+```
+
+Esperado: las tres salidas vacías, o sin `ta-stream-simulator` en la segunda. Lo que queda creado (topics, buckets, BigQuery, secreto, imagen) cuesta centavos al mes y **no** se borra: perder el secreto cambiaría todos los `user_hash`.
+
+---
+
+## 4. Flujo recomendado para validar un lote
+
+| Paso | Dónde | Qué encender | Qué hacer |
+|---|---|---|---|
+| 1 | Local | Nada nuevo: ya está encendido (1.1) | Copiar los archivos del lote |
+| 2 | Local | — | Partes A y B (pruebas, sin Docker) |
+| 3 | Local | Reiniciar solo el pipeline (1.3) | Parte D (local) del lote |
+| 4 | — | — | Repetir 1 a 3 con el siguiente lote, sin apagar nada |
+| 5 | GCP | Infraestructura de todos los lotes juntos (2.3) | Un `plan` y un `apply` |
+| 6 | GCP | Simulador (2.4) y Dataflow (2.5) **una vez** | Parte E de cada lote, uno tras otro, sobre el mismo job |
+| 7 | GCP | Apagar Dataflow (3.1) al final del día | — |
+| 8 | GCP | Apagar el simulador (3.2) al cerrar la semana | Confirmar (3.4) |
+
+Si en el paso 6 falla algo, se aísla el lote culpable sin rehacer la sesión. Por ejemplo, con el NLP: `export TA_NLP_ENABLED=false`, drenar y `start`.
+
+---
+
+## 5. Problemas frecuentes
+
+| Síntoma | Causa | Qué hacer |
+|---|---|---|
+| El verificador ve 0 mensajes en GCP | El simulador está apagado | 2.2 y 2.4 |
+| `enriched/` vacío en GCP tras 10 min | El job no está corriendo o corre código viejo | 2.2; si el código cambió, drenar y `start` (2.5) |
+| El job se queda en *Pending* con NLP | La imagen no existe o falta el permiso de Artifact Registry | 2.3 (`apply` del Lote 2.3 y `build_nlp_image.sh`) |
+| `terraform apply` propone destruir cosas que no son el simulador | Archivos `.tf` cambiados o borrados | **No aplicar**; revisar con `git status` |
+| `validate.sh` marca `terraform.tfvars` | Espacios desalineados al editar | `terraform fmt infra/gcp/environments/dev/terraform.tfvars` |
+| Local: `find` no encuentra archivos | Ruta con `project/` repetido (ya estás dentro de `project/`) | Usar `.local-lake/…` |
+| Local: no llegan datos tras reiniciar el portátil | Docker Desktop cerrado o los contenedores se detuvieron | Abrir Docker Desktop y `bash scripts/local_dataflow.sh up` |

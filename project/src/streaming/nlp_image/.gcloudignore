@@ -1,0 +1,3 @@
+# Contexto autocontenido de la imagen dataflow-nlp: se sube todo menos cachés.
+__pycache__/
+*.pyc

@@ -1,0 +1,72 @@
+{
+  "lote": "2.3",
+  "started_at": "2026-10-22T22:40:26.711091+00:00",
+  "finished_at": "2026-10-22T23:06:35.063744+00:00",
+  "verdict": "ok",
+  "steps": [
+    {
+      "id": "E2",
+      "name": "permiso de Artifact Registry para sa-dataflow",
+      "status": "OK",
+      "detail": "aplicado: module.simulator[0].google_cloud_run_v2_service.this (update)",
+      "data": {}
+    },
+    {
+      "id": "E3",
+      "name": "imagen dataflow-nlp publicada",
+      "status": "OK",
+      "detail": "us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/dataflow-nlp:20261022224102",
+      "data": {}
+    },
+    {
+      "id": "E4",
+      "name": "simulador y job de Dataflow con NLP",
+      "status": "AVISO",
+      "detail": "job 2026-10-22_15_47_45-3570595618398128500 · sdkContainerImage None",
+      "data": {
+        "job_id": "2026-10-22_15_47_45-3570595618398128500"
+      }
+    },
+    {
+      "id": "E5",
+      "name": "logs de los workers",
+      "status": "OK",
+      "detail": "nlp_model_loaded × 2; errores × 0",
+      "data": {}
+    },
+    {
+      "id": "E7",
+      "name": "verify_enriched --expect-nlp (lake en GCS + BigQuery)",
+      "status": "OK",
+      "detail": "Veredicto WARN",
+      "data": {
+        "output": "ntes: 461 filas en 23 archivos\nOK   [facebook] archivos legibles: todos\nOK   [facebook] columnas = posts_enriched: coinciden\nOK   [facebook] sin identidad en claro: ninguna columna ni clave user_id/handle\nOK   [facebook] reglas por fila (hash, engagement, brand_primary): todas cumplen\nOK   [facebook] copias de event_id: 0 copias\nAVISO [facebook] cobertura raw → enriched: sin archivos de raw/ cerrados en la ventana\nOK   [facebook] NLP presente: 461/461 filas con sentimiento, emoción y versión\nOK   [facebook] NLP: etiquetas, scores y versión: todas cumplen\nOK   [facebook] latencia event_time → process_time (p95): 158.7 s\nOK   [instagram] filas recientes: 481 filas en 23 archivos\nOK   [instagram] archivos legibles: todos\nOK   [instagram] columnas = posts_enriched: coinciden\nOK   [instagram] sin identidad en claro: ninguna columna ni clave user_id/handle\nOK   [instagram] reglas por fila (hash, engagement, brand_primary): todas cumplen\nOK   [instagram] copias de event_id: 0 copias\nAVISO [instagram] cobertura raw → enriched: sin archivos de raw/ cerrados en la ventana\nOK   [instagram] NLP presente: 481/481 filas con sentimiento, emoción y versión\nOK   [instagram] NLP: etiquetas, scores y versión: todas cumplen\nOK   [instagram] latencia event_time → process_time (p95): 178.8 s\nAVISO user_hash determinista (1 a 1): no se pudo cruzar con raw/\nOK   BigQuery: columnas: coinciden con posts_enriched\nOK   BigQuery: sin identidad: sin user_id ni handle\nOK   [reddit] BigQuery: filas recientes: 516 filas, 516 ids únicos\nOK   [reddit] BigQuery: reglas: todas cumplen\nOK   [reddit] BigQuery: NLP: 516/516 con NLP; 0 etiquetas inválidas\nOK   [reddit] cobertura enriched → BigQuery: 462/462 (100.0%)\nOK   [facebook] BigQuery: filas recientes: 518 filas, 518 ids únicos\nOK   [facebook] BigQuery: reglas: todas cumplen\nOK   [facebook] BigQuery: NLP: 518/518 con NLP; 0 etiquetas inválidas\nOK   [facebook] cobertura enriched → BigQuery: 461/461 (100.0%)\nOK   [instagram] BigQuery: filas recientes: 535 filas, 535 ids únicos\nOK   [instagram] BigQuery: reglas: todas cumplen\nOK   [instagram] BigQuery: NLP: 535/535 con NLP; 0 etiquetas inválidas\nOK   [instagram] cobertura enriched → BigQuery: 481/481 (100.0%)\nVeredicto: WARN\n  reddit: 3527 filas · 3527 ids · p95 167376 ms\n    sentimiento {'negative': 154, 'neutral': 149, 'positive': 159} · emoción {'neutral': 225, 'joy': 130, 'sadness': 43, 'anger': 52, 'disgust': 2, 'fear': 5, 'surprise': 5} · acuerdo con ground truth 0.9271\n  facebook: 3523 filas · 3523 ids · p95 158692 ms\n    sentimiento {'negative': 161, 'positive': 153, 'neutral': 147} · emoción {'anger': 49, 'joy': 128, 'neutral': 223, 'sadness': 53, 'fear': 3, 'surprise': 3, 'disgust': 2} · acuerdo con ground truth 0.9311\n  instagram: 3547 filas · 3547 ids · p95 178781 ms\n    sentimiento {'neutral': 160, 'positive': 149, 'negative': 172} · emoción {'neutral': 214, 'joy': 148, 'sadness': 44, 'anger': 61, 'fear': 6, 'surprise': 4, 'disgust': 4} · acuerdo con ground truth 0.9138\n"
+      }
+    },
+    {
+      "id": "E8",
+      "name": "BigQuery: versión única, sin NLP nulo y emisión → BigQuery < 60 s",
+      "status": "OK",
+      "detail": "versiones ['robertuito-sentiment@a2cc0f67ebd7+robertuito-emotion@bcd6835f4d1a']; sin NLP 0; p95 emisión → BigQuery 27365 ms",
+      "data": {
+        "rows": [
+          {
+            "n": "879",
+            "p95_ms": "27365",
+            "sin_nlp": "0",
+            "version": "robertuito-sentiment@a2cc0f67ebd7+robertuito-emotion@bcd6835f4d1a"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E9",
+      "name": "centinela de punta a punta (check --allow-cloud)",
+      "status": "OK",
+      "detail": "check OK · centinela en BigQuery con NLP en 5 s",
+      "data": {
+        "sentinel": "22231e26-0216-5fa9-92a0-2630ce690166"
+      }
+    }
+  ]
+}

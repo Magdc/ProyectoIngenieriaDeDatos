@@ -9,12 +9,16 @@ import pytest
 from ops import services as sv
 
 
+Result_OK_URL = sv.Result(0, "https://ta-stream-simulator-x.run.app\n")
+
+
 class FakeRun:
     """Responde según el comando; registra todo lo que se pidió."""
 
     def __init__(self, responses=None):
         self.calls = []
-        self.responses = responses or {}
+        self.responses = {"services describe": Result_OK_URL}
+        self.responses.update(responses or {})
 
     def __call__(self, args, *, capture=True, env=None, check=False):
         self.calls.append((list(args), env))
@@ -256,3 +260,19 @@ def test_status_simulador_por_describe():
     assert sv.simulator_service(run, _s()) == "https://ta-stream-simulator-x.run.app"
     run = FakeRun({"services describe": sv.Result(1, "", "NOT_FOUND")})
     assert sv.simulator_service(run, _s()) is None
+
+
+def test_cloud_on_sin_imagen_del_simulador_no_sigue(tfvars):
+    tfvars.write_text('project_id = "p"\nsimulator_running = true\n')
+    run = FakeRun()
+    with pytest.raises(sv.OpsError, match="simulator_image"):
+        sv.cloud_on(run, _s(), sv.Report())
+    assert not run.ran("terraform")
+
+
+def test_cloud_on_falla_si_el_servicio_no_aparece(tfvars, monkeypatch):
+    monkeypatch.setattr(sv, "nlp_code_present", lambda: False)
+    run = FakeRun({" show -json ": _plan(), "services describe": sv.Result(1, "", "Cannot find service")})
+    with pytest.raises(sv.OpsError, match="no existe en Cloud Run"):
+        sv.cloud_on(run, _s(), sv.Report())
+    assert not run.ran("dataflow_job.sh start")

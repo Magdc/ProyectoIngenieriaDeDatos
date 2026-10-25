@@ -10,7 +10,9 @@ Lote 2.1 (eventos válidos y únicos, §3.13):
   de ``ta-hmac-key``; ``user_id`` y ``handle`` desaparecen. La llave se lee en el worker.
 * **Normalización (HU-021):** ``likes``, ``shares`` y ``comments`` según §5.2.
 * **Salidas:** Parquet con el esquema plano de ``posts_enriched`` (§5.4) y *streaming inserts*
-  en BigQuery. Sin NLP todavía: sus columnas van en nulo hasta el Lote 2.3.
+  en BigQuery.
+* **NLP (Lote 2.3):** ``streaming.nlp`` rellena sentimiento, emoción y ``nlp_model_version``
+  entre el enriquecimiento y las salidas. Si está apagado, esas columnas van en nulo.
 
 Integración (dos líneas en ``pipeline.py``)::
 
@@ -57,6 +59,7 @@ from apache_beam.utils.timestamp import Duration, Timestamp
 from common.enriched_row import envelope_to_row, format_process_time
 from common.hmac_key import KeySource, load_hmac_key
 from common.parquet_rows import parse_ts, rows_to_parquet_bytes
+from streaming import nlp as _nlp  # noqa: F401 - registra las opciones --nlp_* (Lote 2.3)
 
 LOG = logging.getLogger("streaming.enriched")
 
@@ -312,11 +315,15 @@ class EnrichFn(beam.DoFn):
 
 
 class _StampProcessingTime(beam.DoFn):
-    """Re-marca cada fila con la hora de proceso (como ``raw/`` en el Lote 2.1)."""
+    """Re-marca cada fila con la hora de proceso (como ``raw/`` en el Lote 2.1).
 
-    def process(self, row, ts=beam.DoFn.TimestampParam):
-        now = Timestamp.of(time.time())
-        yield TimestampedValue(row, max(now, ts) if isinstance(ts, Timestamp) else now)
+    Siempre con la hora actual, aunque la marca de entrada sea otra: tras ``RunInference`` las
+    filas llegan con el fin de su ventana (``BatchElements`` las emite así), que puede estar en
+    el futuro o ser el fin de la ventana global.
+    """
+
+    def process(self, row):
+        yield TimestampedValue(row, Timestamp.of(time.time()))
 
 
 def partition_path(root: str, prefix: str, source: str, window_start: datetime, pane_index: int) -> str:
@@ -470,12 +477,21 @@ def attach_enriched(
     *,
     nlp: beam.PTransform | None = None,
     config: EnrichedConfig | None = None,
+    use_nlp_options: bool = True,
 ):
-    """Engancha la rama enriched a ``unique``. Devuelve las filas o ``None`` si está apagada."""
+    """Engancha la rama enriched a ``unique``. Devuelve las filas o ``None`` si está apagada.
+
+    Si no se pasa ``nlp``, la etapa NLP del Lote 2.3 se arma con ``streaming.nlp.nlp_from_options``
+    (``--nlp_enabled=auto``: activa en Dataflow y, en local, si la imagen trae los modelos).
+    ``use_nlp_options=False`` la omite (pruebas).
+    """
+    opts = options if options is not None else getattr(unique.pipeline, "options", None)
     if config is None:
-        opts = options if options is not None else getattr(unique.pipeline, "options", None)
         config = resolve_enriched_config(opts)
     _log("enriched_config", **config.summary())
     if not config.enabled:
         return None
+    if nlp is None and use_nlp_options:
+        # Lote 2.3: la etapa NLP sale de las opciones (--nlp_*); en Dataflow fija la imagen.
+        nlp = _nlp.nlp_from_options(opts)
     return unique | "Enriched" >> EnrichedBranch(config, nlp=nlp)

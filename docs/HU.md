@@ -1,6 +1,6 @@
 # TrendAnalyzer · Historias de Usuario (HU)
 
-> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.24** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
+> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.25** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
 > Cada HU tiene un ID **HU-000**, su fase/lote de `ARCHITECTURE.md` §7, responsable, sprint y criterios de aceptación verificables.
 
 ---
@@ -75,7 +75,7 @@ Criterios de aceptación: lista verificable.
 | HU-019 | Persistencia Raw en GCS | 2 · 2.1 | C | Must | 2 | ✅ |
 | HU-020 | Anonimización de usuarios | 2 · 2.2 | C | Must | 2 | ✅ |
 | HU-021 | Normalización y carga a BigQuery | 2 · 2.2 | C | Must | 2 | ✅ |
-| HU-022 | Análisis de emoción y sentimiento | 2 · 2.3 | C | Must | 2 | 🟨 |
+| HU-022 | Análisis de emoción y sentimiento | 2 · 2.3 | C | Must | 2 | ✅ |
 | HU-023 | Detección de tendencias en ventanas | 2 · 2.4 | C | Must | 2 | ⬜ |
 | **E4 · Histórico y puente a AWS** | | | | | | |
 | HU-024 | Carga histórica (full load) | 3 · 3.1 | A | Must | 2 | ⬜ |
@@ -443,6 +443,8 @@ Criterios de aceptación: lista verificable.
 - El mismo usuario produce siempre el mismo hash.
 - Un test automático verifica la ausencia de los campos en claro. *(Lote 2.2: `test_enriched_row.py`, `test_enriched_pipeline.py` y `scripts/verify_enriched.py`.)*
 
+*Cerrada en v2.24:* sin `user_id` ni `handle` en `enriched/` ni en BigQuery, y `user_hash` 1 a 1 con `user_id`, en local y en GCP. Se volvió a comprobar en v2.25 con el NLP: 413 usuarios, 0 con más de un hash.
+
 ### HU-021 · Normalización y carga a BigQuery
 
 | Épica | Fase · Lote | Responsable | Prioridad | Sprint | Depende de |
@@ -454,7 +456,9 @@ Criterios de aceptación: lista verificable.
 **Criterios de aceptación**
 - Se calculan `likes`, `shares`, `comments` según la regla de §5.2 (`shares = null` en Reddit e Instagram).
 - Los eventos se escriben en `posts_enriched` y como Parquet en `enriched/source={s}/dt=…/hr=…`.
-- El registro conserva `label_sentiment` (ground truth, nullable) solo como columna de evaluación y calcula `brand_primary`. *(Lote 2.2: las columnas de NLP van en nulo hasta el Lote 2.3.)*
+- El registro conserva `label_sentiment` (ground truth, nullable) solo como columna de evaluación y calcula `brand_primary`. *(Lote 2.2: las columnas de NLP iban en nulo; desde el Lote 2.3 las rellena el NLP.)*
+
+*Cerrada en v2.24:* engagement por fuente (`shares` solo en Facebook), `brand_primary`, Parquet en `enriched/` y filas en `posts_enriched` con cobertura `enriched → BigQuery` del 100 %, en local y en GCP.
 
 ### HU-022 · Análisis de emoción y sentimiento
 
@@ -471,7 +475,16 @@ Criterios de aceptación: lista verificable.
 - Se registra `nlp_model_version` (`robertuito-sentiment@<hash>+robertuito-emotion@<hash>`).
 - Un evento emitido aparece en BigQuery con `emotion_label` en menos de 1 minuto.
 - Si la memoria no alcanza, se corre solo el modelo de sentimiento y la emoción queda como mejora; si es inviable en Dataflow, se activa el fallback documentado (modelo ligero, modelo multilingüe o NLP en Cloud Run).
-- Se verifica la licencia de cada modelo en su *model card*. *(Lote 2.3: `src/streaming/nlp.py`, imagen `dataflow-nlp` con los modelos y su commit; ver `docs/validation-2-3.md`.)*
+- Se verifica la licencia de cada modelo en su *model card*. *(Lote 2.3: `src/streaming/nlp.py`, imagen `dataflow-nlp` con los modelos y su commit; ver `docs/validation/validation-2-3.md`.)*
+
+*Cerrada en v2.25* (`ARCHITECTURE.md` §3.15):
+- Las cuatro columnas de NLP están en el 100 % de las filas, con etiquetas válidas, en local y en GCP.
+- RoBERTuito corre con `RunInference` en la imagen `dataflow-nlp`, con `preprocess_tweet`.
+- Mapeo de etiquetas en `label_map.yaml`, verificado.
+- Una sola `nlp_model_version`: `robertuito-sentiment@a2cc0f67ebd7+robertuito-emotion@bcd6835f4d1a`.
+- El centinela llegó a BigQuery con `emotion_label` a los 5 s; p95 de emisión a BigQuery de 27,4 s.
+- La memoria alcanzó para los dos modelos en `e2-standard-2`, así que no hizo falta el plan B. El pico de memoria queda por anotar.
+- Licencias: las *model cards* no declaran licencia; los modelos quedan sujetos a la de sus datos (TASS 2020, EmoEvent), compatible con el uso académico.
 ### HU-023 · Detección de tendencias en ventanas
 
 | Épica | Fase · Lote | Responsable | Prioridad | Sprint | Depende de |

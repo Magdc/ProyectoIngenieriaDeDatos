@@ -1,0 +1,14 @@
+# Lote 2.3: dataflow-local con NLP. Se suma a docker-compose.yml y docker-compose.dataflow.yml
+# (los usa scripts/local_nlp.sh); solo cambia la imagen del servicio y le indica dónde están los
+# modelos. El comando, los volúmenes, el usuario y las variables del Lote 2.1 se conservan.
+services:
+  dataflow-local:
+    image: ta-dataflow-nlp-local:local
+    build:
+      context: ./src/streaming/nlp_image
+      dockerfile: Dockerfile
+      target: local
+    environment:
+      TA_NLP_MODELS_DIR: /opt/ta-nlp/models
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"

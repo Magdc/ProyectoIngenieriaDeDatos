@@ -1,0 +1,25 @@
+# Construye y publica la imagen dataflow-nlp (Lote 2.3). La lanza scripts/build_nlp_image.sh.
+# Las pruebas de humo corren dentro del docker build (etapa runtime).
+substitutions:
+  _IMAGE: ""            # {región}-docker.pkg.dev/{proyecto}/ta-images/dataflow-nlp
+  _TAG: ""              # commit corto de git
+  _SENTIMENT_REVISION: main
+  _EMOTION_REVISION: main
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --target=runtime
+      - --build-arg=SENTIMENT_REVISION=${_SENTIMENT_REVISION}
+      - --build-arg=EMOTION_REVISION=${_EMOTION_REVISION}
+      - --tag=${_IMAGE}:${_TAG}
+      - --tag=${_IMAGE}:latest
+      - .
+images:
+  - ${_IMAGE}:${_TAG}
+  - ${_IMAGE}:latest
+options:
+  machineType: E2_HIGHCPU_8
+  diskSizeGb: 100
+  logging: CLOUD_LOGGING_ONLY
+timeout: 3600s

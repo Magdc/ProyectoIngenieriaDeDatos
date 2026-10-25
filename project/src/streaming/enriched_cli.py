@@ -49,6 +49,8 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--min-coverage", type=float, default=0.95)
     r.add_argument("--max-extra-copies", type=int, default=0)
     r.add_argument("--settle-seconds", type=int, default=600, help="Ignorar archivos de raw/ más nuevos que esto")
+    r.add_argument("--expect-nlp", action="store_true", help="Exige el NLP del Lote 2.3 en enriched/ y BigQuery")
+    r.add_argument("--max-nlp-null-ratio", type=float, default=0.01)
     r.add_argument("--json-out", default=None, help="Guarda el reporte en JSON (evidencia)")
     return p
 
@@ -76,6 +78,7 @@ def run(
         max_extra_copies=args.max_extra_copies,
         min_coverage=args.min_coverage,
         settle_seconds=args.settle_seconds,
+        max_nlp_null_ratio=args.max_nlp_null_ratio,
     )
     sources = [s.strip() for s in args.sources.split(",") if s.strip()]
     unknown = [s for s in sources if s not in SOURCES]
@@ -95,9 +98,9 @@ def run(
     report.stats["generated_at"] = when.isoformat()
     try:
         lake = open_lake(root, lake_client)
-        report, lake_ids = check_lake(lake, hours=args.hours, now=when, window_seconds=window, thresholds=th, sources=sources, report=report)
+        report, lake_ids = check_lake(lake, hours=args.hours, now=when, window_seconds=window, thresholds=th, sources=sources, report=report, expect_nlp=args.expect_nlp)
         if use_bq:
-            check_bigquery(table, since=when - timedelta(hours=args.hours), lake_ids=lake_ids, report=report, thresholds=th, query=bq_query)
+            check_bigquery(table, since=when - timedelta(hours=args.hours), lake_ids=lake_ids, report=report, thresholds=th, query=bq_query, expect_nlp=args.expect_nlp)
     except InfraError as exc:
         print(f"Error de infraestructura: {exc}", file=out)
         return 2
@@ -106,6 +109,9 @@ def run(
     for source in sources:
         s = report.stats.get(source) or {}
         print(f"  {source}: {s.get('rows', 0)} filas · {s.get('unique_event_ids', 0)} ids · p95 {s.get('latency_ms_p95')} ms", file=out)
+        if args.expect_nlp and s.get("sentiment_counts") is not None:
+            gt = s.get("sentiment_vs_ground_truth") or {}
+            print(f"    sentimiento {s['sentiment_counts']} · emoción {s['emotion_counts']} · acuerdo con ground truth {gt.get('accuracy')}", file=out)
     if args.json_out:
         Path(args.json_out).parent.mkdir(parents=True, exist_ok=True)
         Path(args.json_out).write_text(json.dumps(report.to_json(), ensure_ascii=False, indent=2, default=str), encoding="utf-8")

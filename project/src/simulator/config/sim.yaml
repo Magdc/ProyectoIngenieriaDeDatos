@@ -1,0 +1,81 @@
+# Configuración del simulador de streaming (Lote 1.2).
+# ARCHITECTURE.md §3.3, §3.5, §3.8 y §3.9. Los valores de aquí son los acordados
+# por defecto; cambiar uno no requiere tocar código.
+#
+# Variables de entorno que pisan este archivo: SIM_SEED, SIM_CHAOS_ENABLED (§5.1).
+
+emission:
+  # Pausa entre mensajes de una misma fuente, en segundos (uniforme). ~0.5 msg/s.
+  interval_s: [1.0, 3.0]
+  # Cada cuántos mensajes se guarda el cursor (sim-state/{source}.json).
+  checkpoint_every: 50
+  # Lag entre event_time y la emisión, en segundos (uniforme).
+  event_lag_s: [0.0, 5.0]
+  lang: es
+
+# Mezcla de tipos por red (§3.3). Instagram es siempre comment.
+kinds:
+  reddit:    {post: 0.30}
+  facebook:  {post: 0.15}
+  instagram: {post: 0.0}
+
+# Para los comment: el padre se elige entre los N posts más recientes de la fuente
+# (en Facebook, de la misma marca) dentro de una ventana de seq hacia atrás.
+parents:
+  candidates: 3
+  lookback: 400
+
+# Pesos de marca que varían con seq (§3.8): ciclo propio + deriva lenta común.
+# peso(seq) = base * (1 + amplitude*sin(2π·seq/period + phase)) * (1 + drift_amplitude*sin(2π·seq/drift_period + phase))
+brand_weights:
+  drift_period: 20000
+  drift_amplitude: 0.25
+  brands:
+    postobon: {base: 0.45, amplitude: 0.35, period: 3600, phase: 0.0}
+    pepsi:    {base: 0.30, amplitude: 0.40, period: 2700, phase: 2.1}
+    sprite:   {base: 0.25, amplitude: 0.45, period: 4500, phase: 4.2}
+
+# Probabilidad del ruido de redes que aplica el generador (§3.2.2, DEFAULT_RUIDO).
+generator:
+  ruido: 0.20
+
+# Hashtags que añade el simulador (§3.8), solo si faltan en el texto.
+hashtags:
+  probability:
+    instagram: 0.60
+    facebook: 0.15
+    reddit: 0.0
+  # Cuántos se añaden cuando aplica (uniforme entero).
+  count: [1, 2]
+  # Hashtags del sector; además siempre es candidato el de la marca (#Postobon…).
+  sector: ["Colombia", "Gaseosa", "Bebidas", "Refresco"]
+
+users:
+  # Semilla FIJA del pool, independiente de SIM_SEED: el mismo pool sirve al
+  # stream y al histórico (Lote 3.1), así los usuarios se repiten entre orígenes.
+  pool_seed: 1581
+  pool_size: 2000          # por fuente
+  zipf_s: 1.1              # actividad tipo Zipf
+  followers_lognormal: {mu: 5.0, sigma: 1.4}
+
+reddit:
+  subreddits: ["r/colombia", "r/medellin", "r/bogota", "r/cali", "r/barranquilla", "r/AskLatinAmerica", "r/gaseosas_co"]
+  flairs: ["Opinión", "Pregunta", "Discusión", "Comida", "Humor"]
+  flair_probability: 0.35
+
+instagram:
+  # Cada cuántos seq la cuenta "publica" una media nueva; un comment se asocia a
+  # una de las últimas `recent_media` medias de la cuenta de la marca.
+  media_every: 40
+  recent_media: 3
+  media_types: {IMAGE: 0.6, VIDEO: 0.25, CAROUSEL_ALBUM: 0.15}
+
+# Caos controlado (§3.9). Solo actúa con SIM_CHAOS_ENABLED=true.
+chaos:
+  enabled: false
+  rates:
+    duplicate: 0.005
+    late: 0.01
+    null_fields: 0.01
+    malformed: 0.002
+  late_minutes: [2, 30]

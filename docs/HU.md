@@ -1,6 +1,6 @@
 # TrendAnalyzer · Historias de Usuario (HU)
 
-> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.10** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
+> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.15** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
 > Cada HU tiene un ID **HU-000**, su fase/lote de `ARCHITECTURE.md` §7, responsable, sprint y criterios de aceptación verificables.
 
 ---
@@ -57,16 +57,16 @@ Criterios de aceptación: lista verificable.
 | HU-005 | Recursos de streaming (BigQuery, secreto HMAC) | 2 · 2.4 | M + C | Must | 2 | ⬜ |
 | HU-006 | Federación OIDC GCP → AWS | 3 · 3.2 | M | Must | 2 | ⬜ |
 | HU-007 | Infraestructura AWS del lakehouse | 4 · 4.1 | M | Must | 2 | ⬜ |
-| HU-046 | Bootstrap de Terraform y entornos | 1 · 1.0 | M | Must | 2 | ⬜ |
+| HU-046 | Bootstrap de Terraform y entornos | 1 · 1.0 | M | Must | 2 | ✅ |
 | **E2 · Simulación de fuentes** | | | | | | |
-| HU-008 | Adaptación del generador de comentarios | 1 · 1.1 | A | Must | 2 | ⬜ |
-| HU-009 | Librería común | 1 · 1.1 | A | Must | 2 | ⬜ |
-| HU-010 | Fuente Facebook simulada | 1 · 1.2 | A | Must | 2 | ⬜ |
-| HU-011 | Fuente Reddit simulada | 1 · 1.2 | A | Must | 2 | ⬜ |
-| HU-012 | Fuente Instagram simulada | 1 · 1.2 | A | Must | 2 | ⬜ |
-| HU-013 | Cursor persistente y emisión determinista | 1 · 1.2 | A | Must | 2 | ⬜ |
-| HU-014 | Enriquecimiento sintético | 1 · 1.2 | A | Must | 2 | ⬜ |
-| HU-015 | Caos controlado | 1 · 1.2 | A | Should | 2 | ⬜ |
+| HU-008 | Adaptación del generador de comentarios | 1 · 1.1 | A | Must | 2 | ✅ |
+| HU-009 | Librería común | 1 · 1.1 | A | Must | 2 | ✅ |
+| HU-010 | Fuente Facebook simulada | 1 · 1.2 | A | Must | 2 | ✅ |
+| HU-011 | Fuente Reddit simulada | 1 · 1.2 | A | Must | 2 | ✅ |
+| HU-012 | Fuente Instagram simulada | 1 · 1.2 | A | Must | 2 | ✅ |
+| HU-013 | Cursor persistente y emisión determinista | 1 · 1.2 | A | Must | 2 | ✅ |
+| HU-014 | Enriquecimiento sintético | 1 · 1.2 | A | Must | 2 | ✅ |
+| HU-015 | Caos controlado | 1 · 1.2 | A | Should | 2 | ✅ |
 | HU-016 | Despliegue del simulador | 1 · 1.3 | A + M | Must | 2 | ⬜ |
 | HU-017 | Verificación de la ingesta | 1 · 1.4 | A | Should | 2 | ⬜ |
 | HU-047 | Entorno local de desarrollo | 1 · 1.5 | A | Should | 2 | ⬜ |
@@ -256,7 +256,7 @@ Criterios de aceptación: lista verificable.
 - Los nombres de marca se protegen del *typo* del ruido; con el ruido por defecto, ≥ 95% de los comentarios conservan la marca detectable por alias normalizados (sin tildes ni mayúsculas).
 - Se expone una función que extrae `hashtags[]` del texto con regex, porque los cierres ya incluyen hashtags (`#Colombia`, `#<marca>`).
 - Se elimina todo `sleep`, bucle infinito, `print` o escritura directa a archivo; la unicidad en batch usa `hashlib`, no `hash()` de Python.
-- `scripts/generate_comments.py --n 50000 --seed 7 --out comentarios.csv` genera un CSV con las columnas `marca,comentario,categoria,sentimiento`, escrito con el módulo `csv`; los snapshots opcionales se suben a `gs://…-ta-datasets/snapshots/` y no se versionan.
+- `scripts/generate_comments.py --n 50000 --seed 7 --out comentarios.csv` genera un CSV con las columnas `marca,comentario,sentimiento` (más `categoria` con `--categoria`; §3.2.1 #7), escrito con el módulo `csv`; los snapshots opcionales se suben a `gs://…-ta-datasets/snapshots/` y no se versionan.
 - Tests con `pytest`: misma semilla ⇒ mismo comentario; la marca pedida aparece en la columna y en el texto; el mapeo categoría → sentimiento se cumple.
 ### HU-009 · Librería común
 

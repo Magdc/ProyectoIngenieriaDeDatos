@@ -1,6 +1,6 @@
 # TrendAnalyzer · ARCHITECTURE
 
-> Documento maestro de arquitectura y contratos. **Versión vigente: 2.18.**
+> Documento maestro de arquitectura y contratos. **Versión vigente: 2.19.**
 > Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md) · Plan por fases, trazabilidad HU y estado: [`PLAN.md`](PLAN.md) · Historias de usuario: `HU.md` · Visión general: `README.md`.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 
@@ -20,6 +20,8 @@ Este archivo está pensado para que **baste con leerlo (o pegármelo) para const
 | Saber **qué infraestructura base existe** y cómo aplicarla (estado remoto, APIs, presupuestos) | **§5.14** |
 | Saber qué hay en GCP (topics, buckets, service accounts, Cloud Run) y cómo desplegar el simulador | **§5.15** |
 | Comprobar que el simulador emite bien (tasa, ids únicos, `seq`, reinicio) | **§3.11** |
+| Levantar el simulador en local, sin nube ni credenciales | **§3.12** y `project/LOCAL_DEV.md` |
+| Comprobar qué está encendido antes de validar un lote | **§8** (preflight) |
 | Saber qué construir y en qué orden | `PLAN.md` §1 (fases y lotes) |
 | Saber qué historias de usuario cubre cada fase o lote | **`PLAN.md` §1 y §2** (detalle en `HU.md`) |
 | Saber en qué estado está cada fase y lote | **`PLAN.md` §3** |
@@ -65,7 +67,7 @@ El README menciona **Firestore, Cloud SQL, Neptune y Dataplex**, que **no están
 
 ### 1.4 Historial de cambios
 
-Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.18), la más reciente primero. Este documento describe siempre la versión vigente (2.18).
+Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.19), la más reciente primero. Este documento describe siempre la versión vigente (2.19).
 
 ---
 
@@ -472,7 +474,7 @@ Otras opciones: `--sources`, `--subscription FUENTE=NOMBRE` (reutilizar una susc
 
 **Pruebas** (`src/ingest_check/tests/`, 54): métricas, ventanas por `publish_time`, reentregas frente a duplicados, caos, umbrales, cursor (local y GCS con cliente falso), reglas de reinicio, CLI completo con reloj y backend falsos (`measure`, `restart-check` en los tres modos, errores de configuración) y `PubSubBackend` con un `SubscriberClient` falso (nombres, expiración, nunca `-df`, `ack` siempre, limpieza). `test_ingest_schema.py` valida los ejemplos de envelope de `contracts/examples/valid/` contra los schemas reales; se omite si falta `contracts/` o no hay ejemplos de envelope sin anonimizar. Ninguna prueba usa red ni credenciales.
 
-> **Estado de la verificación (v2.18):** en el repo (WSL), `python -m pytest src/ingest_check -q` da **54 passed** con `contracts/`. Contra GCP (20-oct-2026, simulador con caos apagado, evidencia en `evidencia/ingesta_measure.json` y `evidencia/ingesta_restart.json`; la carpeta `evidencia/` es local y no se versiona salvo que el equipo decida lo contrario):
+> **Estado de la verificación (v2.18):** en el repo (WSL), `python -m pytest src/ingest_check -q` dio 52 passed con `contracts/` en la primera versión; el diagnóstico añadido después suma 2 pruebas (54), que se integraron al repo con el Lote 1.5 (§3.12). Contra GCP (20-oct-2026, simulador con caos apagado, evidencia en `evidencia/ingesta_measure.json` y `evidencia/ingesta_restart.json`; la carpeta `evidencia/` es local y no se versiona salvo que el equipo decida lo contrario):
 >
 > - `measure --duration 120`: **OK** en las tres fuentes. Reddit 58 mensajes (0,483 msg/s, `seq` 367–424), Facebook 62 (0,517 msg/s, 368–429), Instagram 59 (0,492 msg/s, 355–413); tasa total 1,492 msg/s; 100 % de `event_id` únicos, sin duplicados ni huecos de `seq`; todos cumplen `envelope.v1.schema.json`; cursor en 400 con `seed = 7`.
 > - `restart-check --restart gcloud` (revisión `ta-stream-simulator-00002-dt9`): **OK**. Antes del reinicio el `seq` llegó a 522, 524 y 505; después reanudó en 500 en las tres fuentes y siguió hasta 567, 560 y 563; repetidos 23, 25 y 6 (≤ 50, mismos ids); cursor 450 → 550.
@@ -484,6 +486,39 @@ Otras opciones: `--sources`, `--subscription FUENTE=NOMBRE` (reutilizar una susc
 - **URL del servicio.** `gcloud` mostró `https://ta-stream-simulator-63567159332.us-central1.run.app` (URL determinista) y `describe` mostró `https://ta-stream-simulator-kyu3kofmtq-uc.a.run.app`; las dos apuntan al mismo servicio. El output `simulator_url` de Terraform es la que vale para el resto del proyecto (§5.9).
 
 **Lote 1.5:** el consumidor local de validación puede reutilizar `ingest_check` tal cual contra el emulador (`PUBSUB_EMULATOR_HOST`, `--cursor local`).
+
+### 3.12 Entorno local con emulador (Lote 1.5)
+
+> Entregado en el Lote 1.5 (HU-047) y **cerrado en v2.19**, validado en la máquina del equipo (WSL con Docker Desktop). El criterio de `DirectRunner` de HU-047 queda para el Lote 2.1. Rutas relativas a `project/`; guía paso a paso en `LOCAL_DEV.md`. No toca §5.2–§5.8 ni `contracts/`.
+
+**Qué levanta.** `docker-compose.yml` (proyecto Compose `trendanalyzer-local`) con cuatro servicios y un volumen:
+
+| Servicio | Imagen | Qué hace |
+|---|---|---|
+| `pubsub-emulator` | `gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators` | `gcloud beta emulators pubsub start --project=ta-local` en el puerto 8085 (`PUBSUB_EMULATOR_PORT` en el host). Guarda todo en memoria. |
+| `pubsub-init` | `ta-local-tools` (`local/validator.Dockerfile`) | Crea los nombres de §5.3 en el emulador (`ta-raw-{source}`, `ta-raw-{source}-df`, `ta-dlq`, `ta-alerts`) con `scripts/local_pubsub_init.py`, deja el volumen del cursor con dueño uid 10001 y termina. Idempotente. |
+| `simulator` | `ta-stream-simulator:local`, construida con `src/simulator/Dockerfile`, *target* `runtime` (no corre la etapa `test`; esa la corre Cloud Build) | La misma imagen que Cloud Run (§5.15), con `PUBSUB_EMULATOR_HOST`, `SIM_STATE_BACKEND=local` y `SIM_STATE_DIR=/state`. Puerto 8080 (`SIM_PORT`). Sonda de salud en `/healthz`, que dentro del contenedor sí responde (la restricción de §3.1 es del *frontend* de Cloud Run). `stop_grace_period` de 20 s para guardar el cursor al recibir `SIGTERM`. |
+| `validator` | `ta-local-tools` | Perfil `tools`, solo bajo demanda. Es `scripts/verify_ingest.py` (§3.11) contra el emulador, con `--validate yes` (cada mensaje contra `envelope.v1.schema.json`) y `--cursor local` (lee el volumen en solo lectura). |
+| Volumen `sim-state` | — | Cursor del simulador. Sobrevive a `down`; `reset` lo borra. |
+
+La imagen `ta-local-tools` (Python 3.11 slim) solo trae dependencias con las versiones de `constraints.txt` del Lote 1.3 y `jsonschema` 4.26.0; el código (`src/`, `scripts/`, `contracts/`) se monta en `/work` en solo lectura, así que un cambio de código no exige reconstruirla. Su contexto de construcción es `local/`, de modo que no depende de la lista de permitidos de `project/.dockerignore`.
+
+**Valores locales de §5.1** (fijos en el Compose): `ENV=local`, `GCP_PROJECT=ta-local` (ficticio: el real nunca aparece en el archivo), `GCP_REGION=us-central1`, `SIM_SOURCES` y `SIM_TOPIC_TEMPLATE` por defecto, `SIM_SEED` (7) y `SIM_CHAOS_ENABLED` (`false`) configurables desde el shell. Ningún servicio monta credenciales de GCP ni de AWS; una prueba lo comprueba.
+
+**`scripts/local_dev.sh`**: `preflight` (Docker, `docker compose`, puertos y archivos; no cambia nada), `up` (construye, levanta y espera a que el simulador esté sano), `status` (contenedores, `/healthz` desde el host y cursor del volumen), `verify [seg]`, `restart-check` (lanza `restart-check --restart wait` y a los 70 s hace `docker compose restart simulator`), `logs`, `down` y `reset`. Las corridas dejan `evidencia/local_measure.json` y `evidencia/local_restart.json`.
+
+**Seguridad.** `ingest_check.emulator` (y por tanto `local_pubsub_init.py`) se niega a correr sin `PUBSUB_EMULATOR_HOST`: en GCP la topología la crea Terraform y el script no debe tocarla.
+
+**`DirectRunner` (criterio de HU-047).** El pipeline de Dataflow no existe hasta el Lote 2.1. Las suscripciones `ta-raw-{source}-df` ya se crean en el emulador para que ese lote sume un servicio `dataflow-local` (Apache Beam con `DirectRunner`) a este mismo Compose; el criterio se comprueba al cerrar el 2.1. Mientras nadie las consuma, acumulan mensajes en memoria.
+
+**Pruebas** (en `src/ingest_check/tests/`, se suman a las del Lote 1.4): `test_ingest_emulator.py` (nombres de §5.3, idempotencia, rechazo sin emulador), `test_local_compose.py` (servicios, orden de arranque, variables de §5.1, volumen compartido, rutas montadas existentes y ausencia de credenciales) y, en `test_ingest_cli.py`, que con el emulador las instrucciones de reinicio sean locales (`docker compose restart simulator`) y no de Cloud Run. Total del paquete: **65** con `contracts/` presente.
+
+> **Estado de la verificación (v2.19):** en la máquina del equipo (WSL, Docker 29.7.2, Compose v5.5.1; evidencia en `evidencia/local_measure.json` y `evidencia/local_restart.json`):
+>
+> - `local_dev.sh preflight`: OK. `up`: imágenes descargadas y construidas en ~1,5 min; emulador sano, `pubsub-init` terminado y simulador sano.
+> - `verify` (60 s): **OK** en las tres fuentes. Reddit 29 mensajes (0,483 msg/s), Facebook 29 (0,483), Instagram 32 (0,533); 100 % de ids únicos, `seq` sin huecos, todos cumplen `envelope.v1.schema.json`, cursor en 50 con `seed = 7`.
+> - `restart-check` con `docker compose restart simulator`: **OK**. Antes del reinicio el `seq` llegó a 130, 132 y 131; después reanudó en 131, 133 y 132 (el siguiente exacto) con **0 repetidos**; cursor 100 → 150. A diferencia de Cloud Run (§3.11), no hay solapamiento: el `SIGTERM` guarda el cursor y la instancia nueva arranca después.
+> - Pruebas: la primera corrida dio 62 en vez de 64 porque el repo no tenía el diagnóstico del Lote 1.4 (solo se habían copiado los documentos del cierre). Con `stats.py`, `cli.py` y `test_ingest_cli.py` al día: 65.
 
 ---
 
@@ -538,6 +573,8 @@ Otras opciones: `--sources`, `--subscription FUENTE=NOMBRE` (reutilizar una susc
 | `SIM_TOPIC_TEMPLATE` | `ta-raw-{source}` | Nombre del topic (§5.3). |
 | `SIM_CONFIG` | `src/simulator/config/sim.yaml` | Otra configuración. |
 | `SIM_MAX_EVENTS` | sin límite | Corta cada worker tras N eventos (pruebas locales). |
+
+En el entorno local (§3.12) se usan `GCP_PROJECT=ta-local`, `ENV=local`, `PUBSUB_EMULATOR_HOST=pubsub-emulator:8085`, `SIM_STATE_BACKEND=local` y `SIM_STATE_DIR=/state`.
 
 **Nombres:** prefijo `ta-` en todos los recursos. Labels/tags: `project=trend-analyzer`, `env=dev`, `owner=alejandro`. En AWS se aplican con `default_tags` del proveedor; en GCP, con `labels` en los recursos que los admiten (el bucket de estado lo hace; `google_project_service`, el presupuesto y los canales de notificación no). El bucket de estado de GCP es una excepción de nombre: `{GCP_PROJECT}-ta-tfstate` (§5.14).
 **Código:** Python 3.11, type hints, `pytest`, logs JSON a stdout, configuración por env vars + YAML, cero secretos en el repo.
@@ -895,6 +932,7 @@ Resultados en BigQuery `dq_results` (columnas en §5.5) y `s3://…/quality/`. E
 | Terraform | §5.1, §5.8, §5.9, §5.14 | Estado actual de `infra/` y `terraform.tfvars` (sin secretos) |
 | Desplegar, actualizar o apagar el simulador | §5.15 e `infra/DEPLOY_SIMULATOR.md` | Salida de `terraform plan` y, si falla, los logs de Cloud Run |
 | Verificar la ingesta o reutilizar el verificador | §3.11, §5.3, §5.4 | Los JSON de `verify_ingest.py` (`--json-out`) si algo falla |
+| Trabajar en local (emulador) o sumar un servicio al Compose | §3.12, §5.1, §5.3 y `LOCAL_DEV.md` | Salida de `local_dev.sh preflight` y `status` |
 | Aplicar o ampliar la infraestructura base | §5.14 e `infra/BOOTSTRAP.md` | `billing_account_id`, montos de presupuesto y salida de `terraform plan` |
 | Dashboard | §5.7 (Curated) | Región de QuickSight |
 | Cambiar o validar un contrato | §5.2, §5.13 | — |
@@ -917,7 +955,7 @@ Valores por defecto que evitan decidir en cada lote. Se ajustan aquí primero.
 | Ruido y hashtags del generador | *Adoptado por defecto en v2.14.* Ruido en el 20 % de los comentarios (`DEFAULT_RUIDO`) sin perder nunca la marca; hashtags canónicos truncados a 100 caracteres. | HU-008, HU-009 |
 | Secretos | *Pre-commit* con `gitleaks`; `terraform.tfvars` en `.gitignore` y `terraform.tfvars.example` versionado. | HU-041, HU-046 |
 | Estado de Terraform | Remoto: GCS con versionado (GCP) y S3 con bloqueo (AWS). | HU-046 |
-| Desarrollo local | `docker-compose` con emulador de Pub/Sub + simulador + `DirectRunner`, sin credenciales. | HU-047 |
+| Desarrollo local | `docker-compose` con emulador de Pub/Sub + simulador + consumidor de validación, sin credenciales (§3.12). `DirectRunner` se suma en el Lote 2.1. | HU-047 |
 | Canal de alertas | Correo. Un suscriptor de `ta-alerts` escribe un log estructurado (`severity=WARNING`, `alert=trend`) y una alerta basada en logs de Cloud Monitoring envía el correo mediante un canal de notificación de tipo email. Las direcciones van en `terraform.tfvars` (`alert_emails`, que no se versiona); por ahora el único destinatario es el correo de Alejandro. Sin SMTP ni secretos. | HU-039 |
 | Prueba de humo E2E | `scripts/smoke_e2e.py` sigue un evento centinela (`event_id` conocido) desde el simulador hasta `ta_curated.fact_posts` y reporta latencia por etapa. | HU-048 |
 | Retención del estado de Terraform | GCS: se conservan las 10 versiones no vigentes más recientes. S3: las versiones no vigentes expiran a los 90 días y los *uploads* multiparte incompletos a los 7. | HU-046 |
@@ -1127,7 +1165,7 @@ infra/
 │
 ├── docs/
 │   ├── ARCHITECTURE.md                    <- este archivo: arquitectura y contratos (versión vigente)
-│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.18)
+│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.19)
 │   ├── PLAN.md                            <- fases y lotes, matriz HU y estado del proyecto
 │   ├── HU.md                              <- historias de usuario (HU-001 a HU-048)
 │   ├── GLOSSARY.md                        <- glosario del proyecto
@@ -1136,7 +1174,9 @@ infra/
 │   └── trend_analyzer_multicloud.jpg      <- exportación del diagrama
 │
 └── project/                               <- código, contratos e infraestructura (las rutas de este documento son relativas a aquí)
-    ├── docker-compose.yml                 <- entorno local: emulador Pub/Sub + simulador (HU-047)
+    ├── docker-compose.yml                 <- Lote 1.5: emulador Pub/Sub + simulador + validador (§3.12)
+    ├── LOCAL_DEV.md                       <- Lote 1.5: guía del entorno local
+    ├── local/validator.Dockerfile         <- Lote 1.5: imagen ta-local-tools (pubsub-init y validator)
     ├── contracts/                         <- copia legible por máquina de §5 (Fase 0, entregado en v2.7)
     │   ├── README.md  requirements.txt
     │   ├── envelope.v1.schema.json
@@ -1167,6 +1207,9 @@ infra/
     │   ├── generate_comments.py           <- Lote 1.1: CLI del generador, snapshots CSV / histórico (§3.2.2)
     │   ├── build_simulator_image.sh       <- Lote 1.3: construye, prueba (Python 3.11) y publica la imagen
     │   ├── verify_ingest.py               <- Lote 1.4: tasa, ids únicos, seq y reinicio (§3.11)
+    │   ├── local_dev.sh                   <- Lote 1.5: preflight, up, verify, restart-check, down (§3.12)
+    │   ├── local_pubsub_init.py           <- Lote 1.5: topología de §5.3 en el emulador
+    │   ├── preflight.sh                   <- Lote 1.5: estado real de la nube, solo lectura (§8)
     │   └── smoke_e2e.py                   <- prueba de humo extremo a extremo (HU-048)
     └── src/
         ├── conftest.py                    <- Lote 1.1: fixture envelope_validator (valida contra contracts/)
@@ -1189,6 +1232,7 @@ infra/
         │   └── requirements.txt           <- PyYAML (1.1) + Faker y clientes de Pub/Sub y GCS (1.2)
         ├── ingest_check/                  <- Lote 1.4: verificador de ingesta (§3.11); no entra en la imagen
         │   ├── stats.py  cursor.py  schema.py  pubsub_io.py  cli.py  testing.py
+        │   ├── emulator.py                <- Lote 1.5: topología del emulador
         │   ├── requirements.txt
         │   └── tests/
         ├── streaming/                     <- Dataflow (Beam)
@@ -1222,18 +1266,21 @@ Contexto: ARCHITECTURE.md adjunto (usa §<secciones de la matriz 5.11>).
 Entorno real: <outputs de Terraform / proyecto / región / cualquier valor que cambie>
 Restricciones: <opcional: lo que ya existe y no hay que tocar>
 Entrégame: archivos completos en las rutas de §6, con tests y comandos para validarlos.
+Estado actual: <salida de `bash scripts/preflight.sh` (nube) o `bash scripts/local_dev.sh preflight` (local)>
 ```
 
 **Lo que yo entrego:**
 1. Archivos completos en la ruta exacta de §6 (no fragmentos).
 2. Pruebas y los comandos para correrlas.
 3. La confirmación de **qué criterios de aceptación de cada HU** quedan cubiertos (y cuáles no).
-4. Una lista de **"contratos tocados"**: si un lote requiere cambiar §5, lo digo explícitamente y propongo el cambio al documento antes de que el código lo asuma.
+4. Si el lote se valida contra algo que corre (nube o local), una sección **Preflight** antes de los comandos de validación (qué debe estar activo y qué no hace falta, cómo comprobarlo con la salida esperada, cómo encenderlo con el `plan` esperado y cuánto esperar) y una sección **Apagado** después (cómo volver al estado de ahorro y confirmar que nada sigue cobrando, incluidos recursos temporales).
+5. Una lista de **"contratos tocados"**: si un lote requiere cambiar §5, lo digo explícitamente y propongo el cambio al documento antes de que el código lo asuma.
 
 **Reglas que me impongo:**
 - Si un archivo depende de otro ya existente, uso §5 y **no necesito verlo**.
 - Nunca invento nombres de recursos: uso los de §5 o los `outputs` que me pasen.
 - Nunca hardcodeo secretos ni IDs; todo va por variable de entorno.
+- No asumo que ningún recurso esté encendido: el estado por defecto es "apagado para ahorrar" (`simulator_running = false`, sin Dataflow corriendo). El estado real me lo dan con la salida de `scripts/preflight.sh`. Si una validación falla, primero descarto un recurso apagado antes de cambiar código.
 
 **Reglas para ustedes:**
 - Si cambian una interfaz en el código, actualicen §5 en el mismo commit.

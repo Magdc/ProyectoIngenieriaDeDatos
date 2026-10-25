@@ -1,10 +1,27 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.18**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.19**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.19 · desde v2.18
+
+**Lote que lo motiva:** Lote 1.5 (HU-047) · entrega y cierre
+
+| Área | Cambio |
+|---|---|
+| Lote 1.5 (HU-047) | Entregado: `docker-compose.yml` con `pubsub-emulator`, `pubsub-init`, `simulator` y `validator` (perfil `tools`); `LOCAL_DEV.md`; `local/validator.Dockerfile` (imagen `ta-local-tools`); `scripts/local_dev.sh`, `scripts/local_pubsub_init.py` y `src/ingest_check/emulator.py`. Detalle en **§3.12**. |
+| Entorno local | Sin credenciales de GCP ni de AWS. El simulador usa la misma imagen de Cloud Run (*target* `runtime`) contra el emulador, con cursor en el volumen `sim-state`. El validador es el verificador del Lote 1.4 con validación contra `envelope.v1.schema.json`. `pubsub-init` crea los nombres de §5.3 y se niega a correr fuera del emulador. |
+| `DirectRunner` | El criterio de HU-047 que lo pide se comprueba con el Lote 2.1, que crea el pipeline y sumará `dataflow-local` al Compose (opción acordada). Las suscripciones `-df` ya existen en el emulador. Anotado en HU.md y en PLAN.md §1. |
+| Preflight | Nuevo `scripts/preflight.sh` (estado real de la nube, solo lectura) y regla en §8: cada lote con validación trae secciones de *preflight* y de apagado, y no asume recursos encendidos. Motivo: en el Lote 1.4 la validación empezó con el simulador apagado. |
+| Verificación | En WSL con Docker Desktop (Docker 29.7.2, Compose v5.5.1): `preflight` OK; `up` en ~1,5 min; `verify` **OK** (0,483 / 0,483 / 0,533 msg/s, 100 % de ids únicos, schema válido, cursor con `seed = 7`); `restart-check` **OK** con `docker compose restart simulator` (reanuda en el `seq` siguiente, 0 repetidos, cursor 100 → 150). Evidencia en `evidencia/local_measure.json` y `local_restart.json`. Sin solapamiento de instancias, a diferencia de Cloud Run (v2.18). |
+| Corrección | La primera corrida dio 62 pruebas en vez de 64: el repo no tenía el diagnóstico de la v2.18 (`stats.py`, `cli.py`, `test_ingest_cli.py`), porque del cierre del Lote 1.4 solo se copiaron los documentos. Se entregan de nuevo. Además, con el emulador las instrucciones de `restart-check` ahora indican `docker compose restart simulator` y no Terraform ni gcloud (una prueba nueva: 65 en total). `LOCAL_DEV.md` aclara que el *target* `runtime` no corre las pruebas de la imagen. |
+| Estado | Lote 1.5 ✅ en PLAN.md §3. HU-047 sigue en 🟨 solo por el criterio de `DirectRunner` (Lote 2.1), así que la Fase 1 se cierra con ese lote. |
+| Contratos | **Sin cambios** en §5.2–§5.8 ni en `contracts/`. `schema_version` sigue en `"1.0"`. §5.1 suma los valores locales; §5.12 (desarrollo local) aclara que `DirectRunner` llega con el Lote 2.1. |
+| Documento | Nueva §3.12; ampliadas §0, §5.1, §5.11, §5.12, §6, §8, PLAN.md §1 y §3 y HU.md (HU-047). |
+| Pendiente | Enlazar `LOCAL_DEV.md` desde el README (criterio de HU-047). Siguen abiertos los de v2.17 (permiso de Cloud Build en Terraform y `GET /health`). |
 
 ## v2.18 · desde v2.17
 

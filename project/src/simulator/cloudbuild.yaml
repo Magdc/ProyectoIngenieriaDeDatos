@@ -1,0 +1,29 @@
+# Cloud Build del simulador (Lote 1.3). Se lanza desde project/ con:
+#   gcloud builds submit . --config=src/simulator/cloudbuild.yaml --substitutions=_TAG=<tag>
+# (o con scripts/build_simulator_image.sh). Primero corre las pruebas en Python 3.11;
+# si fallan, no se publica la imagen.
+substitutions:
+  _REGION: us-central1
+  _REPO: ta-images
+  _IMAGE: stream-simulator
+  _TAG: dev
+options:
+  logging: CLOUD_LOGGING_ONLY
+  dynamicSubstitutions: true
+steps:
+  - id: test
+    name: gcr.io/cloud-builders/docker
+    args: ["build", "-f", "src/simulator/Dockerfile", "--target", "test", "."]
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - src/simulator/Dockerfile
+      - --target
+      - runtime
+      - -t
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_IMAGE}:${_TAG}
+      - .
+images:
+  - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO}/${_IMAGE}:${_TAG}

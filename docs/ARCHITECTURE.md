@@ -1,6 +1,6 @@
 # TrendAnalyzer · ARCHITECTURE
 
-> Documento maestro de arquitectura y contratos. **Versión vigente: 2.15.**
+> Documento maestro de arquitectura y contratos. **Versión vigente: 2.17.**
 > Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md) · Plan por fases, trazabilidad HU y estado: [`PLAN.md`](PLAN.md) · Historias de usuario: `HU.md` · Visión general: `README.md`.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 
@@ -18,6 +18,7 @@ Este archivo está pensado para que **baste con leerlo (o pegármelo) para const
 | Saber **cómo hablarle a cada componente** (formatos, nombres, topics, tablas, IAM) | **§5 (contratos)** |
 | Saber **cómo se valida cada contrato** y cómo mantener §5 y `contracts/` alineados | **§5.13** |
 | Saber **qué infraestructura base existe** y cómo aplicarla (estado remoto, APIs, presupuestos) | **§5.14** |
+| Saber qué hay en GCP (topics, buckets, service accounts, Cloud Run) y cómo desplegar el simulador | **§5.15** |
 | Saber qué construir y en qué orden | `PLAN.md` §1 (fases y lotes) |
 | Saber qué historias de usuario cubre cada fase o lote | **`PLAN.md` §1 y §2** (detalle en `HU.md`) |
 | Saber en qué estado está cada fase y lote | **`PLAN.md` §3** |
@@ -63,7 +64,7 @@ El README menciona **Firestore, Cloud SQL, Neptune y Dataplex**, que **no están
 
 ### 1.4 Historial de cambios
 
-Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.15), la más reciente primero. Este documento describe siempre la versión vigente (2.15).
+Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.17), la más reciente primero. Este documento describe siempre la versión vigente (2.17).
 
 ---
 
@@ -140,6 +141,8 @@ flowchart LR
 - *Plan B si el costo molesta:* una VM `e2-small` en GCE con el mismo contenedor (ADR-02, §9).
 
 El contenedor expone `GET /healthz` (requisito de Cloud Run) y, opcionalmente, `POST /control/scenario` (§3.7). El resto es un loop de fondo.
+
+> **Restricción de Cloud Run (observada en el Lote 1.3):** el *frontend* de Google reserva algunas rutas terminadas en `z`, como `/healthz`, y responde 404 antes de llegar al contenedor. Las sondas de arranque y de vida sí llegan, porque llaman al contenedor directamente, así que `/healthz` sirve para ellas. Para consultar el estado desde fuera hace falta otra ruta (propuesta: `GET /health`, pendiente; §5.15).
 
 ### 3.2 El generador de comentarios
 
@@ -749,14 +752,14 @@ Solo `fact_posts` está particionada (por `dt`, con partition projection). Las d
 | Identidad | Nube | Permisos |
 |---|---|---|
 | `sa-simulator` | GCP | `pubsub.publisher` en `ta-raw-*`; `storage.objectUser` en `…-ta-datasets` |
-| `sa-dataflow` | GCP | `pubsub.subscriber`; `bigquery.dataEditor` en `ta_stream`; `storage.objectAdmin` en `…-ta-lake`; `secretmanager.secretAccessor` en `ta-hmac-key`; `dataflow.worker` |
+| `sa-dataflow` | GCP | `pubsub.subscriber`; `pubsub.publisher` en `ta-dlq` *(v2.16: los inválidos van a `ta-dlq`, HU-018)*; `bigquery.dataEditor` en `ta_stream`; `storage.objectAdmin` en `…-ta-lake`; `secretmanager.secretAccessor` en `ta-hmac-key`; `dataflow.worker` |
 | `sa-exporter` | GCP | `storage.objectViewer` en `…-ta-lake`; objeto escritura en `export-state/`; puede emitir OIDC |
 | `ta-gcp-exporter-role` | AWS | `s3:PutObject`, `s3:HeadObject`, `kms:GenerateDataKey` solo sobre `raw/origin=stream/` |
 | `ta-glue-role` | AWS | R/W en `raw/ trusted/ curated/ quality/`; Glue Catalog; logs |
 | `ta-historical-loader` | AWS | `s3:PutObject` en `raw/origin=historical/` (perfil/SSO del desarrollador) |
 | `ta-quicksight-role` | AWS | `athena:*` en workgroup `ta-analytics`; lectura `curated/` |
 
-**Estado tras el Lote 1.0:** ninguna de estas identidades existe todavía. El bootstrap no crea service accounts ni roles; las de GCP llegan con el Lote 1.3 y las de AWS con las Fases 3 y 4. Mientras tanto, Terraform opera con las credenciales de Alejandro (§5.1).
+**Estado tras el Lote 1.3:** las tres identidades de GCP existen (§5.15). `sa-simulator` y `sa-exporter` tienen todos sus permisos; a `sa-dataflow` le faltan `bigquery.dataEditor` y `secretmanager.secretAccessor`, que llegan con el Lote 2.4 junto con `ta_stream` y `ta-hmac-key`. La escritura de `sa-exporter` en `export-state/` se limita con una condición de IAM sobre el prefijo; la emisión del token OIDC se configura en el Lote 3.2. Las identidades de AWS llegan con las Fases 3 y 4. Terraform sigue operando con las credenciales de Alejandro (§5.1).
 
 ### 5.9 Salidas de Terraform (outputs que consumen los demás)
 
@@ -770,7 +773,7 @@ Solo `fact_posts` está particionada (por `dt`, con partition projection). Las d
 | Raíz | Outputs |
 |---|---|
 | `infra/gcp/bootstrap` | `tfstate_bucket`, `enabled_services`, `budget_name` |
-| `infra/gcp/environments/dev` | `project_id`, `region`, `labels` |
+| `infra/gcp/environments/dev` | `project_id`, `region`, `labels`; desde el Lote 1.3, además: `topic_names`, `subscription_names`, `dlq_topic`, `alerts_topic`, `datasets_bucket`, `lake_bucket`, `artifact_registry_url`, `simulator_url` (`null` si no está desplegado) y `service_accounts` (§5.15). `bq_dataset` llega con el Lote 2.4 |
 | `infra/aws/bootstrap` | `tfstate_bucket`, `tflock_table`, `budget_name` |
 | `infra/aws/environments/dev` | `aws_region` |
 
@@ -814,6 +817,7 @@ Resultados en BigQuery `dq_results` (columnas en §5.5) y `s3://…/quality/`. E
 | Jobs de Glue / dbt | §5.2, §5.7, §5.10 | Esquema real de Athena (`SHOW CREATE TABLE`) si ya existe algo |
 | Calidad | §5.5, §5.7, §5.10 | — |
 | Terraform | §5.1, §5.8, §5.9, §5.14 | Estado actual de `infra/` y `terraform.tfvars` (sin secretos) |
+| Desplegar, actualizar o apagar el simulador | §5.15 e `infra/DEPLOY_SIMULATOR.md` | Salida de `terraform plan` y, si falla, los logs de Cloud Run |
 | Aplicar o ampliar la infraestructura base | §5.14 e `infra/BOOTSTRAP.md` | `billing_account_id`, montos de presupuesto y salida de `terraform plan` |
 | Dashboard | §5.7 (Curated) | Región de QuickSight |
 | Cambiar o validar un contrato | §5.2, §5.13 | — |
@@ -949,8 +953,8 @@ infra/
 **Orden de ejecución.** (1) `bash project/infra/validate.sh` (sin credenciales; necesita Terraform ≥ 1.6; corre `terraform fmt -check -recursive` y, en las cuatro raíces, `init -backend=false` + `validate`). (2) `gcp/bootstrap`: `init`, `plan`, `apply`; si falla porque `serviceusage` o `cloudresourcemanager` no están activos, se habilitan con `gcloud services enable` y se repite. (3) `aws/bootstrap`: igual. (4) En cada `environments/dev`: copiar `backend.hcl` y `terraform.tfvars` desde los `*.example`, `init -backend-config=backend.hcl` y `plan` (debe dar **sin cambios**).
 
 **Qué no existe todavía:**
-- Service accounts y roles (§5.8): Lote 1.3 en GCP; Fases 3 y 4 en AWS.
-- Topics, suscripciones, buckets `…-ta-datasets` y `…-ta-lake`, Cloud Run y BigQuery: Lote 1.3 y Fase 2.
+- Service accounts, topics, suscripciones, buckets `…-ta-datasets` y `…-ta-lake`, Artifact Registry y Cloud Run: **Lote 1.3** (§5.15). Roles de AWS: Fases 3 y 4.
+- BigQuery (`ta_stream`): Lote 2.4.
 - Secreto `ta-hmac-key`: Lote 2.4.
 - Bucket S3 del lake, KMS, Glue, Athena y EventBridge: Fase 4. Federación OIDC GCP → AWS: Lote 3.2.
 - Acceso de Miguel y Camila al proyecto GCP: diferido (§9, Fase 0).
@@ -959,6 +963,79 @@ infra/
 - `alert_emails` ya se usa en los bootstraps para los presupuestos. Cuando el Lote 6.2 cree el canal de alertas de tendencias (§5.12), debe declarar su propia variable en `environments/dev` y reutilizar o referenciar los canales para no duplicar correos.
 - El bloqueo con DynamoDB se mantiene para respetar Terraform ≥ 1.6. Con ≥ 1.10 se podría usar `use_lockfile = true` y eliminar la tabla (ADR-15). **Observado al aplicar (v2.12):** el Terraform del equipo es ≥ 1.10 y `init` del entorno AWS avisa `Deprecated Parameter: dynamodb_table`. No bloquea; si se migra, el cambio toca el módulo `tfstate_backend`, el backend de `aws/environments/dev`, `backend.hcl.example` y §5.14 en el mismo commit. Si se sube el mínimo a ≥ 1.10, actualizar también §5.1.
 - Recomendado: agregar un `.gitattributes` con `*.sh text eol=lf`, `*.tf text eol=lf` y `*.hcl text eol=lf`, para que `validate.sh` no falle en WSL por finales de línea CRLF de Windows.
+
+### 5.15 Infraestructura GCP base y despliegue del simulador (Lote 1.3)
+
+> Entregado en el Lote 1.3 (HU-004, HU-016), aplicado y **cerrado en v2.17**. Rutas relativas a `project/`; la guía paso a paso es `infra/DEPLOY_SIMULATOR.md`.
+
+**Cómo se suma al Lote 1.0.** Los archivos nuevos de `infra/gcp/environments/dev/` (`platform.tf`, `variables_platform.tf`, `outputs_platform.tf`) se añaden a los del Lote 1.0 **sin modificarlos**: usan sus variables `project_id`, `region`, `env` y `owner` y el proveedor `google` ya configurado. Las etiquetas (`project`, `env`, `owner`) van en un `local.platform_labels`; algunos recursos suman `component` y `source`.
+
+**Módulos nuevos** (`infra/gcp/modules/`, cada uno con sus variables y outputs en su `main.tf`):
+
+| Módulo | Qué crea | Outputs |
+|---|---|---|
+| `pubsub` | `ta-raw-{source}` y `ta-raw-{source}-df` (pull, ack 60 s, retención 7 días, sin expiración por inactividad); `ta-dlq` y `ta-alerts` con retención de 7 días | `topic_names`, `topic_ids`, `extra_topic_names`, `subscription_names`, `subscription_ids` |
+| `gcs_bucket` | Bucket con acceso uniforme, `public_access_prevention = enforced`, versionado opcional y expiración por prefijo | `name`, `url` |
+| `service_account` | Una service account y sus roles de proyecto | `email`, `member`, `name` |
+| `artifact_registry` | Repositorio Docker; conserva las 10 versiones más recientes y borra lo no etiquetado de más de 7 días | `repository_id`, `url` |
+| `cloud_run_simulator` | `ta-stream-simulator` (§3.1) | `uri`, `name` |
+
+**Recursos del entorno `dev`:**
+
+| Recurso | Nombre | Detalle |
+|---|---|---|
+| Topics y suscripciones | §5.3 | Exactamente los nombres de §5.3. `ta-dlq` y `ta-alerts` no tienen suscripción todavía: la retención del topic permite crearla después y hacer *seek*. |
+| Bucket de datasets | `{GCP_PROJECT}-ta-datasets` | Versionado; las versiones no vigentes se borran a los 7 días (el cursor se guarda cada ~100 s). |
+| Bucket del lake | `{GCP_PROJECT}-ta-lake` | `raw/` y `dlq/` expiran a los 30 días (§5.12). `enriched/` y `export-state/` no expiran. |
+| Artifact Registry | `ta-images` (`us-central1`) | Imagen `stream-simulator:<tag>`; el tag por defecto es el commit corto de git. |
+| Service accounts | `sa-simulator`, `sa-dataflow`, `sa-exporter` | Permisos de §5.8. Los de BigQuery y del secreto HMAC llegan con el Lote 2.4. |
+| Cloud Run | `ta-stream-simulator` | Solo si `simulator_image` no está vacío y `simulator_running = true`. `min = max = 1`, `cpu_idle = false` (CPU siempre asignada), 1 vCPU y 512 MiB, sondas de arranque y de vida en `/healthz`, `deletion_protection = false`. Sin `allUsers` como invocador: la URL exige ID token. |
+
+**Variables de entrada nuevas** (todas con valor por defecto; en `terraform.tfvars` solo hace falta `simulator_image`):
+
+| Variable | Por defecto | Uso |
+|---|---|---|
+| `artifact_repository` | `ta-images` | Repositorio Docker. |
+| `simulator_image` | `""` | Imagen a desplegar. Vacía = no se crea el servicio. |
+| `simulator_running` | `true` | `false` borra el servicio (deja de cobrar); el cursor se conserva en GCS. |
+| `sim_seed` | `7` | `SIM_SEED`. |
+| `sim_chaos_enabled` | `false` | `SIM_CHAOS_ENABLED`. |
+| `simulator_cpu`, `simulator_memory` | `1`, `512Mi` | Recursos del contenedor. |
+
+**Variables de entorno del contenedor:** `ENV`, `GCP_PROJECT`, `GCP_REGION`, `SIM_SEED`, `SIM_CHAOS_ENABLED`, `SIM_PUBLISHER=pubsub`, `SIM_STATE_BACKEND=gcs` y `SIM_STATE_BUCKET` (§5.1). `PORT` lo fija Cloud Run.
+
+**Imagen** (`src/simulator/Dockerfile`, contexto `project/`):
+
+| Etapa | Contenido |
+|---|---|
+| `deps` | Instala `requirements.txt` con las versiones exactas de `constraints.txt` (Faker 40.43.0, PyYAML 6.0.3, google-cloud-pubsub 2.43.0, google-cloud-storage 3.17.1). |
+| `test` | Python 3.11 con `pytest`, `jsonschema` y `referencing`; corre `src/common` y `src/simulator` contra `contracts/`. Falla si alguna prueba falla **o se omite**. |
+| `runtime` | Python 3.11 slim, usuario sin privilegios (uid 10001), sin pruebas; `CMD python -m simulator.app`. |
+
+`project/.dockerignore` y `project/.gcloudignore` son listas de permitidos: solo entran `pytest.ini`, `contracts/`, `src/conftest.py`, `src/common/`, `src/simulator/` y `scripts/generate_comments.py`. `src/simulator/cloudbuild.yaml` construye primero la etapa `test` y después `runtime`; `scripts/build_simulator_image.sh` lo lanza (modo `cloudbuild`, por defecto) o usa el Docker local (modo `docker`).
+
+**Orden de aplicación:** (1) `validate.sh`; (2) `apply` sin imagen: crea la base; (3) construir y publicar la imagen; (4) `simulator_image` en `terraform.tfvars` y `apply`: crea el servicio; (5) verificar; (6) apagar con `simulator_running = false` cuando no se use.
+
+**Costo.** La instancia siempre encendida es el mayor costo fijo hasta ahora; los presupuestos del Lote 1.0 avisan pero no cortan. Los scripts de encendido y apagado son del Lote 7.3; mientras tanto, `simulator_running`.
+
+**Verificación al aplicar (v2.17).** Los seis pasos de `infra/DEPLOY_SIMULATOR.md` pasaron: `validate.sh` en verde; `apply` de la base sin cambios ni destrucciones sobre el Lote 1.0; imagen construida en Cloud Build con la etapa de pruebas en Python 3.11 sin omitidas; servicio *Ready* con `min = max = 1` y CPU siempre asignada; mensajes en las tres suscripciones `ta-raw-{source}-df`; cursor en `sim-state/`; y, tras apagar y encender con `simulator_running`, `worker_start` continúa desde el `seq` del cursor y no desde 0. Los logs muestran `simulator_start` y un `worker_start` por fuente, sin `publish_error`.
+
+**Observaciones al aplicar:**
+- **Permiso de Cloud Build.** En este proyecto Cloud Build usa la cuenta de servicio por defecto de Compute Engine (`63567159332-compute@developer.gserviceaccount.com`), que no tenía permisos: `gcloud builds submit` falló con `storage.objects.get` denegado. Se le concedió `roles/cloudbuild.builds.builder` a nivel de proyecto con `gcloud`, **fuera de Terraform**. Pendiente: declararlo en `platform.tf` (o crear una cuenta de compilación propia) para que no quede deriva.
+- **`/healthz` desde fuera da 404** por la restricción de §3.1. El criterio de HU-016 se comprobó con el servicio *Ready* (sus sondas usan `/healthz`). Pendiente: agregar `GET /health` en `app.py` y usarlo en el paso 5 de `infra/DEPLOY_SIMULATOR.md`, que todavía llama a `/healthz` con `curl`.
+
+**Valores reales (v2.17)** — se consultan con `terraform -chdir=project/infra/gcp/environments/dev output`:
+
+| Output | Valor |
+|---|---|
+| `topic_names` | `reddit` → `ta-raw-reddit`, `facebook` → `ta-raw-facebook`, `instagram` → `ta-raw-instagram` |
+| `subscription_names` | `ta-raw-{reddit,facebook,instagram}-df` |
+| `dlq_topic`, `alerts_topic` | `ta-dlq`, `ta-alerts` |
+| `datasets_bucket` | `project-0568d9ba-848f-413c-88b-ta-datasets` |
+| `lake_bucket` | `project-0568d9ba-848f-413c-88b-ta-lake` |
+| `artifact_registry_url` | `us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images` |
+| `service_accounts` | `sa-simulator@project-0568d9ba-848f-413c-88b.iam.gserviceaccount.com`, `sa-dataflow@…`, `sa-exporter@…` (mismo dominio) |
+| `simulator_url` | URL de Cloud Run (`https://ta-stream-simulator-…run.app`); `null` con el servicio apagado |
 
 ---
 
@@ -973,7 +1050,7 @@ infra/
 │
 ├── docs/
 │   ├── ARCHITECTURE.md                    <- este archivo: arquitectura y contratos (versión vigente)
-│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.15)
+│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.17)
 │   ├── PLAN.md                            <- fases y lotes, matriz HU y estado del proyecto
 │   ├── HU.md                              <- historias de usuario (HU-001 a HU-048)
 │   ├── GLOSSARY.md                        <- glosario del proyecto
@@ -993,14 +1070,17 @@ infra/
     │   ├── athena/{posts_raw,posts,curated}.sql
     │   ├── examples/{valid,invalid}/
     │   └── tests/test_contracts.py
-    ├── infra/                             <- Lote 1.0 entregado (§5.14)
+    ├── .dockerignore  .gcloudignore       <- Lote 1.3: listas de permitidos para la imagen y Cloud Build
+    ├── infra/                             <- Lote 1.0 entregado (§5.14) · Lote 1.3 (§5.15)
     │   ├── BOOTSTRAP.md                   <- guía de ejecución del bootstrap
+    │   ├── DEPLOY_SIMULATOR.md            <- Lote 1.3: base de GCP y despliegue del simulador
     │   ├── validate.sh                    <- fmt + validate sin credenciales
     │   ├── .gitignore                     <- excluye estado, tfvars y backend.hcl
     │   ├── gcp/
     │   │   ├── bootstrap/                 <- estado local: APIs, bucket de estado, presupuesto
     │   │   ├── modules/{project_services,tfstate_bucket,budget}/
-    │   │   └── environments/dev/          <- estado remoto (GCS)
+    │   │   ├── modules/{pubsub,gcs_bucket,service_account,artifact_registry,cloud_run_simulator}/   <- Lote 1.3
+    │   │   └── environments/dev/          <- estado remoto (GCS); Lote 1.3: platform.tf, variables_platform.tf, outputs_platform.tf
     │   └── aws/
     │       ├── bootstrap/                 <- estado local: bucket de estado, tabla de bloqueo, presupuesto
     │       ├── modules/{tfstate_backend,budget}/
@@ -1008,6 +1088,7 @@ infra/
     ├── pytest.ini                         <- Lote 1.1: pythonpath = src, testpaths = src
     ├── scripts/
     │   ├── generate_comments.py           <- Lote 1.1: CLI del generador, snapshots CSV / histórico (§3.2.2)
+    │   ├── build_simulator_image.sh       <- Lote 1.3: construye, prueba (Python 3.11) y publica la imagen
     │   └── smoke_e2e.py                   <- prueba de humo extremo a extremo (HU-048)
     └── src/
         ├── conftest.py                    <- Lote 1.1: fixture envelope_validator (valida contra contracts/)
@@ -1026,7 +1107,8 @@ infra/
         │   ├── config/brands.yaml         <- Lote 1.1
         │   ├── config/sim.yaml            <- Lote 1.2 entregado
         │   ├── tests/                     <- Lote 1.1: marcas, generador, CLI y contrato del generador · Lote 1.2: núcleo, cursor, caos y contrato del simulador
-        │   └── Dockerfile  requirements.txt                  <- requirements.txt: PyYAML (1.1) + Faker y clientes de Pub/Sub y GCS (1.2); Dockerfile en Lote 1.3
+        │   ├── Dockerfile  cloudbuild.yaml  constraints.txt  <- Lote 1.3 (§5.15)
+        │   └── requirements.txt           <- PyYAML (1.1) + Faker y clientes de Pub/Sub y GCS (1.2)
         ├── streaming/                     <- Dataflow (Beam)
         ├── historical/                    <- full load (usa el mismo generador)
         ├── exporter/                      <- gcs-to-s3

@@ -1,0 +1,7 @@
+# Versiones exactas para la imagen del simulador (Lote 1.3). requirements.txt fija los rangos;
+# este archivo fija la versión que se instala en Docker, para que la imagen sea reproducible.
+# Faker en especial: otra versión cambia los nombres del pool de usuarios (§3.10).
+PyYAML==6.0.3
+Faker==40.43.0
+google-cloud-pubsub==2.43.0
+google-cloud-storage==3.17.1

@@ -1,0 +1,13 @@
+# Contexto de Docker = project/. Lista de permitidos: todo lo demás queda fuera
+# (infra/ con .terraform/ y estado, scripts/, otras carpetas de src/).
+*
+!pytest.ini
+!contracts/
+!src/conftest.py
+!src/common/
+!src/simulator/
+!scripts/generate_comments.py
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/.sim-state/

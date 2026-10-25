@@ -1,0 +1,18 @@
+# Archivos que `gcloud builds submit` sube desde project/ (Lote 1.3).
+# Lista de permitidos, igual que .dockerignore: lo demás (infra/ con .terraform/, estado, etc.) no se sube.
+/*
+!/.dockerignore
+!/pytest.ini
+!/contracts/
+!/src/
+/src/*
+!/src/conftest.py
+!/src/common/
+!/src/simulator/
+!/scripts/
+/scripts/*
+!/scripts/generate_comments.py
+__pycache__/
+*.pyc
+.pytest_cache/
+.sim-state/

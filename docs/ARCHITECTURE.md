@@ -1,6 +1,6 @@
 # TrendAnalyzer · ARCHITECTURE
 
-> Documento maestro de arquitectura y contratos. **Versión vigente: 2.17.**
+> Documento maestro de arquitectura y contratos. **Versión vigente: 2.18.**
 > Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md) · Plan por fases, trazabilidad HU y estado: [`PLAN.md`](PLAN.md) · Historias de usuario: `HU.md` · Visión general: `README.md`.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 
@@ -19,6 +19,7 @@ Este archivo está pensado para que **baste con leerlo (o pegármelo) para const
 | Saber **cómo se valida cada contrato** y cómo mantener §5 y `contracts/` alineados | **§5.13** |
 | Saber **qué infraestructura base existe** y cómo aplicarla (estado remoto, APIs, presupuestos) | **§5.14** |
 | Saber qué hay en GCP (topics, buckets, service accounts, Cloud Run) y cómo desplegar el simulador | **§5.15** |
+| Comprobar que el simulador emite bien (tasa, ids únicos, `seq`, reinicio) | **§3.11** |
 | Saber qué construir y en qué orden | `PLAN.md` §1 (fases y lotes) |
 | Saber qué historias de usuario cubre cada fase o lote | **`PLAN.md` §1 y §2** (detalle en `HU.md`) |
 | Saber en qué estado está cada fase y lote | **`PLAN.md` §3** |
@@ -64,7 +65,7 @@ El README menciona **Firestore, Cloud SQL, Neptune y Dataplex**, que **no están
 
 ### 1.4 Historial de cambios
 
-Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.17), la más reciente primero. Este documento describe siempre la versión vigente (2.17).
+Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.18), la más reciente primero. Este documento describe siempre la versión vigente (2.18).
 
 ---
 
@@ -410,6 +411,80 @@ Hay que poder apagarlo para medir la línea base de los KPIs.
 
 > **Estado de la verificación (v2.15):** desde la raíz del repo, `python -m pytest -c project/pytest.ini -rs` da **134 passed, 0 omitidas** (incluye `test_simulator_contract.py` contra los `contracts/` reales) y `python -m pytest project/contracts/tests -q` da **18 passed**. Entorno: WSL (Ubuntu) con un entorno virtual; las dependencias se instalan con `python -m pip install -r project/src/simulator/requirements.txt pytest jsonschema referencing`. La corrida tarda unos 3 minutos con el repo en `/mnt/c` (OneDrive); es la lentitud del sistema de archivos, no del código.
 
+### 3.11 Verificación de la ingesta (Lote 1.4)
+
+> Entregado en el Lote 1.4 (HU-017), aplicado contra GCP y **cerrado en v2.18**. Rutas relativas a `project/`. No toca §5.2–§5.8 ni `contracts/`: el verificador solo **lee** los topics de §5.3 y el cursor de §5.4.
+
+**Qué hace.** `scripts/verify_ingest.py` se suscribe a `ta-raw-{source}` y reporta por fuente: mensajes y tasa (msg/s), `event_id` únicos y copias repetidas, `seq` mínimo y máximo (el "seq actual"), el `seq` del cursor en `sim-state/{source}.json` e integridad básica (JSON, campos `event_id`/`source`/`seq`, atributos de §5.3 coherentes con el cuerpo y, si están `jsonschema`, `referencing` y `contracts/`, validación contra `envelope.v1.schema.json`). Con `restart-check` comprueba además que el `seq` continúa tras reiniciar el servicio.
+
+**Suscripciones.** Por defecto crea una suscripción temporal por topic, `ta-verify-{source}-{AAAAMMDDhhmmss}-{4 hex}` (pull, ack 60 s, retención 10 min, expiración por inactividad de 1 día y etiquetas `project`, `env`, `owner`, `component=ingest-verify`), y la borra al terminar (`--keep-subscriptions` la conserva). **Nunca** consume `ta-raw-{source}-df`: son de Dataflow y el CLI rechaza cualquier nombre terminado en `-df`. Como la suscripción es nueva, solo recibe lo publicado después de crearla; cada mensaje se asigna a la ventana por su `publish_time` de Pub/Sub, de modo que la latencia de entrega no altera la tasa. Al final se reciben 5 s más (`--drain`) para los mensajes en vuelo. Con `PUBSUB_EMULATOR_HOST` (Lote 1.5) se crean sin expiración ni etiquetas.
+
+| Ruta | Contenido |
+|---|---|
+| `scripts/verify_ingest.py` | Punto de entrada; añade `src/` al `sys.path` y llama a `ingest_check.cli.main()`. |
+| `src/ingest_check/stats.py` | Puro, sin nube: `parse_message()` → `Observation`, `IngestStats` (seguro para hilos), `summarize()` por fuente y ventana, `measure_checks()`, `cursor_checks()`, `restart_checks()` y `verdict()`. |
+| `src/ingest_check/cursor.py` | `parse_cursor()` y lectores `GcsCursorReader` (`gs://{bucket}/sim-state/`), `LocalCursorReader` (`SIM_STATE_DIR`) y `NullCursorReader`. Solo lectura. |
+| `src/ingest_check/schema.py` | `load_envelope_validator()`: registra todos los `contracts/*.schema.json` por `$id` y por nombre de archivo. |
+| `src/ingest_check/pubsub_io.py` | `PubSubBackend`: crea o reutiliza suscripciones, *streaming pull*, `ack` siempre, y limpieza. |
+| `src/ingest_check/cli.py` | Comandos `measure` y `restart-check`, reporte de texto y JSON. |
+| `src/ingest_check/testing.py` | Dobles de prueba (reloj, backend y envelopes sintéticos); reutilizables en el Lote 1.5. |
+| `src/ingest_check/requirements.txt` | `google-cloud-pubsub` y `google-cloud-storage` (versiones de `simulator/constraints.txt`) más `jsonschema` y `referencing`. |
+
+**Criterios** (umbrales configurables por opción):
+
+| Verificación | Pasa | Aviso | Falla |
+|---|---|---|---|
+| Mensajes por fuente | ≥ 10 en la ventana | — | < 10 (los demás criterios de esa fuente no se evalúan) |
+| Tasa | 0,35–0,65 msg/s (§3.5: ~0,5) | — | fuera de rango |
+| `event_id` únicos | ≥ 99 % y ninguna copia sin marca de caos | ≥ 99 % con copias sin marca | < 99 % |
+| Cuerpo y schema | todos válidos | inválidos con `--expect-chaos` | inválidos sin caos |
+| Atributos | `event_id` y `source` iguales al cuerpo; `source` = topic | — | incoherentes |
+| `seq` | sin huecos entre mínimo y máximo | con huecos (mensajes en vuelo, malformados) | — |
+| Cursor | semilla = `--seed`; `seq` a ≤ 55 del último observado | sin cursor o desfasado | semilla distinta |
+| Reinicio | tras reiniciar, `seq` mínimo ≥ máximo previo − 50 y luego lo supera | el máximo previo es < 50 (no concluyente) | vuelve atrás más de 50, no reanuda o no progresa |
+| Repetidos tras reiniciar | ≤ 50 `event_id` (mismos ids, §3.6) | — | > 50 |
+| Cursor antes → después | misma semilla y `seq` que no retrocede | — | cambia la semilla o retrocede |
+
+**Diagnóstico.** El reporte incluye los mensajes recibidos en total (también fuera de ventana) y el desfase de reloj (mediana de recepción local − `publish_time`). Si el desfase supera 2 s (típico de WSL tras suspender el equipo), las ventanas se corrigen al reloj local y se avisa. Si no llega ningún mensaje a ningún topic, el reporte sugiere comprobar que el servicio esté encendido (`gcloud run services describe` y el output `simulator_url`). `--region` (por defecto `GCP_REGION`) vale para ambos comandos.
+
+Las reentregas de Pub/Sub (mismo `message_id`) no cuentan como duplicado. Las copias con `sim.chaos = ["duplicate"]` se informan aparte. Salida: 0 = pasa (con o sin avisos), 1 = falla, 2 = error de uso o de infraestructura (topic inexistente, sin credenciales).
+
+**Reinicio** (`restart-check`): observa `--before` s (90), pide el reinicio y observa `--after` s (120) desde que el servicio vuelve.
+
+| `--restart` | Cómo |
+|---|---|
+| `manual` (por defecto) | Usted reinicia (por ejemplo `simulator_running = false` → `apply` → `true` → `apply`, como en `infra/DEPLOY_SIMULATOR.md`) y pulsa Enter cuando el servicio está *Ready*. Necesita terminal. |
+| `wait` | Espera `--restart-wait` s (180) a un reinicio hecho por otro medio. |
+| `gcloud` | `gcloud run services update ta-stream-simulator --update-env-vars TA_RESTART_NONCE=<epoch>`: crea una revisión nueva y el contenedor anterior recibe `SIGTERM` (guarda el cursor). **Deriva:** `TA_RESTART_NONCE` no está en Terraform; el siguiente `apply` la quita y eso vuelve a reiniciar el servicio (inofensivo). |
+
+**Permisos de quien lo corre** (credenciales de usuario, §5.1): crear y borrar suscripciones adjuntas a `ta-raw-*` (`roles/pubsub.editor` en el proyecto; Owner y Editor lo incluyen), leer `sim-state/` en `…-ta-datasets` (`roles/storage.objectViewer`) y, con `--restart gcloud`, `roles/run.developer`. No usa ninguna service account de §5.8.
+
+```bash
+# desde project/, con ADC (gcloud auth application-default login)
+python -m pip install -r src/ingest_check/requirements.txt
+export GCP_PROJECT=project-0568d9ba-848f-413c-88b
+python scripts/verify_ingest.py measure --duration 120 --json-out evidencia/ingesta_measure.json
+python scripts/verify_ingest.py restart-check --restart manual --json-out evidencia/ingesta_restart.json
+python -m pytest src/ingest_check -q      # pruebas del verificador, sin nube
+```
+
+Otras opciones: `--sources`, `--subscription FUENTE=NOMBRE` (reutilizar una suscripción propia), `--cursor gcs|local|none`, `--state-bucket`, `--state-dir`, `--seed`, `--checkpoint-every`, `--validate auto|yes|no`, `--contracts`, `--expect-chaos` (por defecto `SIM_CHAOS_ENABLED`), `--rate-min`, `--rate-max`, `--min-messages`, `--min-unique-ratio`, `--drain`. Lee del entorno `GCP_PROJECT`, `GCP_REGION`, `SIM_SOURCES`, `SIM_TOPIC_TEMPLATE`, `SIM_STATE_BACKEND`, `SIM_STATE_BUCKET`, `SIM_STATE_DIR`, `SIM_SEED`, `SIM_CHAOS_ENABLED` y `ENV` (§5.1); no define variables nuevas.
+
+**Pruebas** (`src/ingest_check/tests/`, 54): métricas, ventanas por `publish_time`, reentregas frente a duplicados, caos, umbrales, cursor (local y GCS con cliente falso), reglas de reinicio, CLI completo con reloj y backend falsos (`measure`, `restart-check` en los tres modos, errores de configuración) y `PubSubBackend` con un `SubscriberClient` falso (nombres, expiración, nunca `-df`, `ack` siempre, limpieza). `test_ingest_schema.py` valida los ejemplos de envelope de `contracts/examples/valid/` contra los schemas reales; se omite si falta `contracts/` o no hay ejemplos de envelope sin anonimizar. Ninguna prueba usa red ni credenciales.
+
+> **Estado de la verificación (v2.18):** en el repo (WSL), `python -m pytest src/ingest_check -q` da **54 passed** con `contracts/`. Contra GCP (20-oct-2026, simulador con caos apagado, evidencia en `evidencia/ingesta_measure.json` y `evidencia/ingesta_restart.json`; la carpeta `evidencia/` es local y no se versiona salvo que el equipo decida lo contrario):
+>
+> - `measure --duration 120`: **OK** en las tres fuentes. Reddit 58 mensajes (0,483 msg/s, `seq` 367–424), Facebook 62 (0,517 msg/s, 368–429), Instagram 59 (0,492 msg/s, 355–413); tasa total 1,492 msg/s; 100 % de `event_id` únicos, sin duplicados ni huecos de `seq`; todos cumplen `envelope.v1.schema.json`; cursor en 400 con `seed = 7`.
+> - `restart-check --restart gcloud` (revisión `ta-stream-simulator-00002-dt9`): **OK**. Antes del reinicio el `seq` llegó a 522, 524 y 505; después reanudó en 500 en las tres fuentes y siguió hasta 567, 560 y 563; repetidos 23, 25 y 6 (≤ 50, mismos ids); cursor 450 → 550.
+> - Una primera corrida dio 0 mensajes porque el servicio estaba apagado (`simulator_running = false`; con el servicio borrado, Terraform no guarda el output `simulator_url` porque vale `null`). De ahí el diagnóstico de abajo.
+
+**Observaciones del cierre (no bloquean):**
+- **Reanudación en el último *checkpoint*.** Las tres fuentes reanudaron exactamente en 500, el último múltiplo de 50, y no en el `seq` del `SIGTERM`. Al cambiar de revisión, Cloud Run arranca la instancia nueva antes de apagar la vieja: la nueva lee el cursor guardado (500) mientras la vieja sigue publicando, y el guardado de la vieja al recibir `SIGTERM` llega tarde. Por eso hay hasta ~25 eventos repetidos con **los mismos** `event_id`, dentro de la garantía de al menos una vez (§3.6); Dataflow los deduplica (HU-018). Mientras dura el solapamiento hay dos emisores a la vez, pese a `max = 1`. Un apagado con `simulator_running = false` → `true` no tiene solapamiento.
+- **Deriva de `TA_RESTART_NONCE`.** `--restart gcloud` deja esa variable en el servicio; el siguiente `terraform apply` la quita y crea otra revisión.
+- **URL del servicio.** `gcloud` mostró `https://ta-stream-simulator-63567159332.us-central1.run.app` (URL determinista) y `describe` mostró `https://ta-stream-simulator-kyu3kofmtq-uc.a.run.app`; las dos apuntan al mismo servicio. El output `simulator_url` de Terraform es la que vale para el resto del proyecto (§5.9).
+
+**Lote 1.5:** el consumidor local de validación puede reutilizar `ingest_check` tal cual contra el emulador (`PUBSUB_EMULATOR_HOST`, `--cursor local`).
+
 ---
 
 ## 4. Flujo extremo a extremo
@@ -612,6 +687,7 @@ Normalización de engagement: `likes` = `score` (Reddit) | `reactions_total` (Fa
 - **Cuerpo:** JSON UTF-8 del envelope (§5.2).
 - **Atributos del mensaje:** `event_id`, `source`, `origin`, `schema_version`. Dataflow usa `event_id` como `id_label` para deduplicar.
 - **Publica:** `sa-simulator`. **Consume:** `sa-dataflow`.
+- **Verificación (§3.11):** `scripts/verify_ingest.py` crea suscripciones temporales `ta-verify-{source}-{run}` sobre estos topics y las borra al terminar (expiran solas a 1 día). Ningún componente depende de ellas y nunca se consumen las `ta-raw-{source}-df`.
 - Sin ordenamiento garantizado (no se necesita).
 
 ### 5.4 Google Cloud Storage
@@ -773,7 +849,7 @@ Solo `fact_posts` está particionada (por `dt`, con partition projection). Las d
 | Raíz | Outputs |
 |---|---|
 | `infra/gcp/bootstrap` | `tfstate_bucket`, `enabled_services`, `budget_name` |
-| `infra/gcp/environments/dev` | `project_id`, `region`, `labels`; desde el Lote 1.3, además: `topic_names`, `subscription_names`, `dlq_topic`, `alerts_topic`, `datasets_bucket`, `lake_bucket`, `artifact_registry_url`, `simulator_url` (`null` si no está desplegado) y `service_accounts` (§5.15). `bq_dataset` llega con el Lote 2.4 |
+| `infra/gcp/environments/dev` | `project_id`, `region`, `labels`; desde el Lote 1.3, además: `topic_names`, `subscription_names`, `dlq_topic`, `alerts_topic`, `datasets_bucket`, `lake_bucket`, `artifact_registry_url`, `simulator_url` (`null` si no está desplegado; Terraform no guarda outputs nulos, así que `terraform output simulator_url` responde *not found*) y `service_accounts` (§5.15). `bq_dataset` llega con el Lote 2.4 |
 | `infra/aws/bootstrap` | `tfstate_bucket`, `tflock_table`, `budget_name` |
 | `infra/aws/environments/dev` | `aws_region` |
 
@@ -818,6 +894,7 @@ Resultados en BigQuery `dq_results` (columnas en §5.5) y `s3://…/quality/`. E
 | Calidad | §5.5, §5.7, §5.10 | — |
 | Terraform | §5.1, §5.8, §5.9, §5.14 | Estado actual de `infra/` y `terraform.tfvars` (sin secretos) |
 | Desplegar, actualizar o apagar el simulador | §5.15 e `infra/DEPLOY_SIMULATOR.md` | Salida de `terraform plan` y, si falla, los logs de Cloud Run |
+| Verificar la ingesta o reutilizar el verificador | §3.11, §5.3, §5.4 | Los JSON de `verify_ingest.py` (`--json-out`) si algo falla |
 | Aplicar o ampliar la infraestructura base | §5.14 e `infra/BOOTSTRAP.md` | `billing_account_id`, montos de presupuesto y salida de `terraform plan` |
 | Dashboard | §5.7 (Curated) | Región de QuickSight |
 | Cambiar o validar un contrato | §5.2, §5.13 | — |
@@ -1050,7 +1127,7 @@ infra/
 │
 ├── docs/
 │   ├── ARCHITECTURE.md                    <- este archivo: arquitectura y contratos (versión vigente)
-│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.17)
+│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.18)
 │   ├── PLAN.md                            <- fases y lotes, matriz HU y estado del proyecto
 │   ├── HU.md                              <- historias de usuario (HU-001 a HU-048)
 │   ├── GLOSSARY.md                        <- glosario del proyecto
@@ -1089,6 +1166,7 @@ infra/
     ├── scripts/
     │   ├── generate_comments.py           <- Lote 1.1: CLI del generador, snapshots CSV / histórico (§3.2.2)
     │   ├── build_simulator_image.sh       <- Lote 1.3: construye, prueba (Python 3.11) y publica la imagen
+    │   ├── verify_ingest.py               <- Lote 1.4: tasa, ids únicos, seq y reinicio (§3.11)
     │   └── smoke_e2e.py                   <- prueba de humo extremo a extremo (HU-048)
     └── src/
         ├── conftest.py                    <- Lote 1.1: fixture envelope_validator (valida contra contracts/)
@@ -1109,6 +1187,10 @@ infra/
         │   ├── tests/                     <- Lote 1.1: marcas, generador, CLI y contrato del generador · Lote 1.2: núcleo, cursor, caos y contrato del simulador
         │   ├── Dockerfile  cloudbuild.yaml  constraints.txt  <- Lote 1.3 (§5.15)
         │   └── requirements.txt           <- PyYAML (1.1) + Faker y clientes de Pub/Sub y GCS (1.2)
+        ├── ingest_check/                  <- Lote 1.4: verificador de ingesta (§3.11); no entra en la imagen
+        │   ├── stats.py  cursor.py  schema.py  pubsub_io.py  cli.py  testing.py
+        │   ├── requirements.txt
+        │   └── tests/
         ├── streaming/                     <- Dataflow (Beam)
         ├── historical/                    <- full load (usa el mismo generador)
         ├── exporter/                      <- gcs-to-s3

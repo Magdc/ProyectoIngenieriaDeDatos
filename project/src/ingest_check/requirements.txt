@@ -1,0 +1,8 @@
+# Verificador de ingesta (Lote 1.4). Se instala en la máquina de quien verifica, no en la imagen.
+# Mismas versiones que el simulador (constraints.txt, Lote 1.3).
+-c ../simulator/constraints.txt
+google-cloud-pubsub
+google-cloud-storage
+# Opcionales: validación contra contracts/envelope.v1.schema.json (--validate auto|yes)
+jsonschema
+referencing

@@ -1,6 +1,6 @@
 # TrendAnalyzer · Historias de Usuario (HU)
 
-> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.17** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
+> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.18** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
 > Cada HU tiene un ID **HU-000**, su fase/lote de `ARCHITECTURE.md` §7, responsable, sprint y criterios de aceptación verificables.
 
 ---
@@ -68,7 +68,7 @@ Criterios de aceptación: lista verificable.
 | HU-014 | Enriquecimiento sintético | 1 · 1.2 | A | Must | 2 | ✅ |
 | HU-015 | Caos controlado | 1 · 1.2 | A | Should | 2 | ✅ |
 | HU-016 | Despliegue del simulador | 1 · 1.3 | A + M | Must | 2 | ✅ |
-| HU-017 | Verificación de la ingesta | 1 · 1.4 | A | Should | 2 | ⬜ |
+| HU-017 | Verificación de la ingesta | 1 · 1.4 | A | Should | 2 | ✅ |
 | HU-047 | Entorno local de desarrollo | 1 · 1.5 | A | Should | 2 | ⬜ |
 | **E3 · Streaming en GCP** | | | | | | |
 | HU-018 | Validación, deduplicación y DLQ | 2 · 2.1 | C | Must | 2 | ⬜ |

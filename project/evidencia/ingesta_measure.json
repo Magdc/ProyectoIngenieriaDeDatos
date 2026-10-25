@@ -1,0 +1,275 @@
+{
+  "tool": "verify_ingest 1.0",
+  "command": "measure",
+  "generated_at": "2026-10-21T00:16:11.790Z",
+  "project": "project-0568d9ba-848f-413c-88b",
+  "sources": [
+    "reddit",
+    "facebook",
+    "instagram"
+  ],
+  "topic_template": "ta-raw-{source}",
+  "cursor_backend": "gs://project-0568d9ba-848f-413c-88b-ta-datasets/sim-state/",
+  "schema_validation": true,
+  "expect_chaos": false,
+  "thresholds": {
+    "rate_min": 0.35,
+    "rate_max": 0.65,
+    "min_messages": 10,
+    "min_unique_ratio": 0.99,
+    "checkpoint_every": 50
+  },
+  "window": {
+    "start": "2026-10-21T00:16:18.665Z",
+    "end": "2026-10-21T00:18:18.666Z",
+    "seconds": 120.002
+  },
+  "total_rate_msg_s": 1.4917,
+  "per_source": {
+    "reddit": {
+      "source": "reddit",
+      "window_s": 120.002,
+      "deliveries": 58,
+      "messages": 58,
+      "redeliveries": 0,
+      "rate_msg_s": 0.4833,
+      "unique_event_ids": 58,
+      "unique_ratio": 1.0,
+      "duplicate_copies": 0,
+      "chaos_duplicates": 0,
+      "unexpected_duplicates": 0,
+      "malformed": 0,
+      "incomplete": 0,
+      "schema_checked": true,
+      "schema_invalid": 0,
+      "attr_mismatch": 0,
+      "source_mismatch": 0,
+      "seq_min": 367,
+      "seq_max": 424,
+      "seq_gaps": 0,
+      "kinds": {
+        "comment": 41,
+        "post": 17
+      },
+      "chaos": {},
+      "sample_errors": [],
+      "cursor": {
+        "seed": 7,
+        "seq": 400,
+        "updated_at": "2026-10-21T00:17:27.174Z"
+      }
+    },
+    "facebook": {
+      "source": "facebook",
+      "window_s": 120.002,
+      "deliveries": 62,
+      "messages": 62,
+      "redeliveries": 0,
+      "rate_msg_s": 0.5167,
+      "unique_event_ids": 62,
+      "unique_ratio": 1.0,
+      "duplicate_copies": 0,
+      "chaos_duplicates": 0,
+      "unexpected_duplicates": 0,
+      "malformed": 0,
+      "incomplete": 0,
+      "schema_checked": true,
+      "schema_invalid": 0,
+      "attr_mismatch": 0,
+      "source_mismatch": 0,
+      "seq_min": 368,
+      "seq_max": 429,
+      "seq_gaps": 0,
+      "kinds": {
+        "comment": 47,
+        "post": 15
+      },
+      "chaos": {},
+      "sample_errors": [],
+      "cursor": {
+        "seed": 7,
+        "seq": 400,
+        "updated_at": "2026-10-21T00:17:16.773Z"
+      }
+    },
+    "instagram": {
+      "source": "instagram",
+      "window_s": 120.002,
+      "deliveries": 59,
+      "messages": 59,
+      "redeliveries": 0,
+      "rate_msg_s": 0.4917,
+      "unique_event_ids": 59,
+      "unique_ratio": 1.0,
+      "duplicate_copies": 0,
+      "chaos_duplicates": 0,
+      "unexpected_duplicates": 0,
+      "malformed": 0,
+      "incomplete": 0,
+      "schema_checked": true,
+      "schema_invalid": 0,
+      "attr_mismatch": 0,
+      "source_mismatch": 0,
+      "seq_min": 355,
+      "seq_max": 413,
+      "seq_gaps": 0,
+      "kinds": {
+        "comment": 59
+      },
+      "chaos": {},
+      "sample_errors": [],
+      "cursor": {
+        "seed": 7,
+        "seq": 400,
+        "updated_at": "2026-10-21T00:17:49.814Z"
+      }
+    }
+  },
+  "checks": [
+    {
+      "source": "reddit",
+      "check": "mensajes",
+      "status": "ok",
+      "detail": "58 mensajes en 120 s"
+    },
+    {
+      "source": "reddit",
+      "check": "tasa",
+      "status": "ok",
+      "detail": "0.483 msg/s (esperado 0.35–0.65, ~0.5)"
+    },
+    {
+      "source": "reddit",
+      "check": "event_id únicos",
+      "status": "ok",
+      "detail": "58 únicos de 58 (100.00%); copias repetidas 0 (de caos 0)"
+    },
+    {
+      "source": "reddit",
+      "check": "cuerpo",
+      "status": "ok",
+      "detail": "todos los cuerpos son JSON con event_id, source y seq"
+    },
+    {
+      "source": "reddit",
+      "check": "schema",
+      "status": "ok",
+      "detail": "todos cumplen envelope.v1.schema.json"
+    },
+    {
+      "source": "reddit",
+      "check": "atributos",
+      "status": "ok",
+      "detail": "atributos y source coherentes con el cuerpo"
+    },
+    {
+      "source": "reddit",
+      "check": "seq",
+      "status": "ok",
+      "detail": "seq 367–424 sin huecos"
+    },
+    {
+      "source": "reddit",
+      "check": "cursor",
+      "status": "ok",
+      "detail": "cursor seq=400 (seed=7); último seq observado 424"
+    },
+    {
+      "source": "facebook",
+      "check": "mensajes",
+      "status": "ok",
+      "detail": "62 mensajes en 120 s"
+    },
+    {
+      "source": "facebook",
+      "check": "tasa",
+      "status": "ok",
+      "detail": "0.517 msg/s (esperado 0.35–0.65, ~0.5)"
+    },
+    {
+      "source": "facebook",
+      "check": "event_id únicos",
+      "status": "ok",
+      "detail": "62 únicos de 62 (100.00%); copias repetidas 0 (de caos 0)"
+    },
+    {
+      "source": "facebook",
+      "check": "cuerpo",
+      "status": "ok",
+      "detail": "todos los cuerpos son JSON con event_id, source y seq"
+    },
+    {
+      "source": "facebook",
+      "check": "schema",
+      "status": "ok",
+      "detail": "todos cumplen envelope.v1.schema.json"
+    },
+    {
+      "source": "facebook",
+      "check": "atributos",
+      "status": "ok",
+      "detail": "atributos y source coherentes con el cuerpo"
+    },
+    {
+      "source": "facebook",
+      "check": "seq",
+      "status": "ok",
+      "detail": "seq 368–429 sin huecos"
+    },
+    {
+      "source": "facebook",
+      "check": "cursor",
+      "status": "ok",
+      "detail": "cursor seq=400 (seed=7); último seq observado 429"
+    },
+    {
+      "source": "instagram",
+      "check": "mensajes",
+      "status": "ok",
+      "detail": "59 mensajes en 120 s"
+    },
+    {
+      "source": "instagram",
+      "check": "tasa",
+      "status": "ok",
+      "detail": "0.492 msg/s (esperado 0.35–0.65, ~0.5)"
+    },
+    {
+      "source": "instagram",
+      "check": "event_id únicos",
+      "status": "ok",
+      "detail": "59 únicos de 59 (100.00%); copias repetidas 0 (de caos 0)"
+    },
+    {
+      "source": "instagram",
+      "check": "cuerpo",
+      "status": "ok",
+      "detail": "todos los cuerpos son JSON con event_id, source y seq"
+    },
+    {
+      "source": "instagram",
+      "check": "schema",
+      "status": "ok",
+      "detail": "todos cumplen envelope.v1.schema.json"
+    },
+    {
+      "source": "instagram",
+      "check": "atributos",
+      "status": "ok",
+      "detail": "atributos y source coherentes con el cuerpo"
+    },
+    {
+      "source": "instagram",
+      "check": "seq",
+      "status": "ok",
+      "detail": "seq 355–413 sin huecos"
+    },
+    {
+      "source": "instagram",
+      "check": "cursor",
+      "status": "ok",
+      "detail": "cursor seq=400 (seed=7); último seq observado 413"
+    }
+  ],
+  "verdict": "ok"
+}

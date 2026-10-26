@@ -1,0 +1,74 @@
+[
+  {
+    "name": "window_start",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE",
+    "description": "Inicio de la ventana deslizante, en tiempo del evento (event_time, UTC)."
+  },
+  {
+    "name": "window_end",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE",
+    "description": "Fin (exclusivo) de la ventana: window_start + 5 min."
+  },
+  {
+    "name": "brand",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Clave canónica de la marca (brand_primary del post)."
+  },
+  {
+    "name": "source",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Red social simulada: reddit, facebook o instagram."
+  },
+  {
+    "name": "n_posts",
+    "type": "INTEGER",
+    "mode": "NULLABLE",
+    "description": "Posts de la marca y la fuente con event_time dentro de la ventana."
+  },
+  {
+    "name": "n_negative",
+    "type": "INTEGER",
+    "mode": "NULLABLE",
+    "description": "Posts con sentiment_label = negative."
+  },
+  {
+    "name": "n_positive",
+    "type": "INTEGER",
+    "mode": "NULLABLE",
+    "description": "Posts con sentiment_label = positive."
+  },
+  {
+    "name": "avg_sentiment",
+    "type": "FLOAT",
+    "mode": "NULLABLE",
+    "description": "Media con signo en [-1, 1]: positivo +score, negativo -score, neutro 0. Nulo si ningún post de la ventana tiene sentimiento."
+  },
+  {
+    "name": "emotion_counts",
+    "type": "JSON",
+    "mode": "NULLABLE",
+    "description": "Conteo por emoción (las 7 clases de §3.3, siempre presentes)."
+  },
+  {
+    "name": "zscore_volume",
+    "type": "FLOAT",
+    "mode": "NULLABLE",
+    "description": "z-score de n_posts frente a las ventanas anteriores (baseline móvil). Nulo con menos de 2 ventanas de baseline."
+  },
+  {
+    "name": "zscore_sentiment",
+    "type": "FLOAT",
+    "mode": "NULLABLE",
+    "description": "z-score de avg_sentiment frente al baseline móvil. Nulo sin baseline suficiente."
+  },
+  {
+    "name": "is_alert",
+    "type": "BOOLEAN",
+    "mode": "NULLABLE",
+    "description": "Cambio brusco de volumen o sentimiento. Siempre false hasta tener 60 ventanas de baseline."
+  }
+]

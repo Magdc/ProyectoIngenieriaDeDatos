@@ -1,0 +1,32 @@
+[
+  {
+    "name": "received_at",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE",
+    "description": "Cuándo Dataflow rechazó el mensaje (atributo dlq_received_at, UTC)."
+  },
+  {
+    "name": "source",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Fuente de la suscripción donde llegó el mensaje (atributo dlq_source)."
+  },
+  {
+    "name": "error_type",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "encoding, json, schema, attributes o routing (atributo dlq_error_type)."
+  },
+  {
+    "name": "error_detail",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Primer error de validación (atributo dlq_error_detail, máximo 1.024 bytes)."
+  },
+  {
+    "name": "raw_message",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Cuerpo del mensaje tal como llegó; los bytes que no son UTF-8 van como \\xNN."
+  }
+]

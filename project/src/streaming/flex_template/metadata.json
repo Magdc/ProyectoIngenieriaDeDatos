@@ -1,0 +1,66 @@
+{
+  "name": "TrendAnalyzer streaming",
+  "description": "Pipeline de streaming del Lote 2.4: validación, deduplicación, DLQ, raw/, enriched/ con NLP, posts_enriched, trend_windows y dlq_events. Parámetros tomados de los outputs de Terraform (scripts/dataflow_template.py).",
+  "parameters": [
+    {
+      "name": "output_root",
+      "label": "Lake de GCS",
+      "helpText": "Raíz del lake (gs://{proyecto}-ta-lake). Output lake_bucket.",
+      "isOptional": true
+    },
+    {
+      "name": "nlp_container_image",
+      "label": "Imagen de los workers con NLP",
+      "helpText": "{artifact_registry_url}/dataflow-nlp:{etiqueta} (Lote 2.3).",
+      "isOptional": true
+    },
+    {
+      "name": "posts_enriched_table",
+      "label": "Tabla posts_enriched",
+      "helpText": "proyecto:ta_stream.posts_enriched. Output posts_enriched_table.",
+      "isOptional": true
+    },
+    {
+      "name": "trend_windows_table",
+      "label": "Tabla trend_windows",
+      "helpText": "proyecto:ta_stream.trend_windows. Output trend_windows_table.",
+      "isOptional": true
+    },
+    {
+      "name": "dlq_events_table",
+      "label": "Tabla dlq_events",
+      "helpText": "proyecto:ta_stream.dlq_events. Output dlq_events_table.",
+      "isOptional": true
+    },
+    {
+      "name": "dlq_df_subscription",
+      "label": "Suscripción ta-dlq-df",
+      "helpText": "projects/{proyecto}/subscriptions/ta-dlq-df. Output dlq_df_subscription.",
+      "isOptional": true
+    },
+    {
+      "name": "trends_enabled",
+      "label": "Rama de tendencias",
+      "helpText": "auto, true o false.",
+      "isOptional": true
+    },
+    {
+      "name": "dlq_bq_enabled",
+      "label": "DLQ a BigQuery",
+      "helpText": "auto, true o false.",
+      "isOptional": true
+    },
+    {
+      "name": "trend_z_threshold",
+      "label": "Umbral de z-score",
+      "helpText": "Por defecto 3.0.",
+      "isOptional": true
+    },
+    {
+      "name": "trend_min_posts",
+      "label": "Posts mínimos para alertar",
+      "helpText": "Por defecto 5.",
+      "isOptional": true
+    }
+  ]
+}

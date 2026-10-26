@@ -1,0 +1,1573 @@
+[
+  {
+    "insertId": "7544884260666478420:153931:0:48675",
+    "jsonPayload": {
+      "line": "streaming_shuffle_writer_record_acceptor.cc:114",
+      "message": "[daxStreamingDiagnostics1][windmillRequestResponse]Emitting late records. This may cause watermark delays. Source computation: P18. Late data bound: 2026-10-23T19:15:59+00:00. Record timestamp: 2026-10-23T19:12:38.031+00:00. Record watermark hold: [not set]",
+      "thread": "115"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:57:04.518050706Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:56:38.955649Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CLTglOLFqKTiag"
+      }
+    ],
+    "insertId": "7544884260666478420:153935:0:131086",
+    "jsonPayload": {
+      "job": "2026-10-23_12_12_28-6235619416906386498",
+      "logger": "/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/worker_status.py:365",
+      "message": "Operation ongoing in bundle process_bundle-38820-38994 for PTransform{name=Enriched/NLP/Emotion/BatchElements/ParDo(_StatefulBatchElementsDoFn)-ptransform-210, state=start-msecs} for at least 1025.69 seconds without outputting or completing.\nCurrent Traceback:\n  File \"/usr/local/lib/python3.11/threading.py\", line 1002, in _bootstrap\n    self._bootstrap_inner()\n\n  File \"/usr/local/lib/python3.11/threading.py\", line 1045, in _bootstrap_inner\n    self.run()\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/utils/thread_pool_executor.py\", line 53, in run\n    self._work_item.run()\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/utils/thread_pool_executor.py\", line 37, in run\n    self._future.set_result(self._fn(*self._fn_args, **self._fn_kwargs))\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 383, in task\n    self._execute(\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 310, in _execute\n    response = task()\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 384, in <lambda>\n    lambda: self.create_worker().do_instruction(request), request)\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 671, in do_instruction\n    return getattr(self, request_type)(\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 709, in process_bundle\n    bundle_processor.process_bundle(\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/bundle_processor.py\", line 1337, in process_bundle\n    for element in data_channel.input_elements(instruction_id,\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/data_plane.py\", line 591, in input_elements\n    element = received.get(timeout=1)\n\n  File \"/usr/local/lib/python3.11/threading.py\", line 331, in wait\n    gotit = waiter.acquire(True, timeout)\n",
+      "portability_worker_id": "sdk-0-0",
+      "thread": "lull_operation_logger",
+      "worker": "ta-stream-dev-10231212-2del-harness-3dgh"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "supportability",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fworker",
+    "receiveTimestamp": "2026-10-23T19:46:04.520548812Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:45:54.188616514Z"
+  },
+  {
+    "insertId": "7544884260666478420:153931:0:47555",
+    "jsonPayload": {
+      "line": "streaming_shuffle_writer_record_acceptor.cc:114",
+      "message": "[daxStreamingDiagnostics1][windmillRequestResponse]Emitting late records. This may cause watermark delays. Source computation: P6. Late data bound: 2026-10-23T19:15:59+00:00. Record timestamp: 2026-10-23T19:03:59.999+00:00. Record watermark hold: [not set]",
+      "thread": "179"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:41:04.516231684Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:40:39.953117Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CLTglOLFqKTiag"
+      }
+    ],
+    "insertId": "7544884260666478420:153935:0:119986",
+    "jsonPayload": {
+      "job": "2026-10-23_12_12_28-6235619416906386498",
+      "logger": "/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/worker_status.py:365",
+      "message": "Operation ongoing in bundle process_bundle-38794-38954 for PTransform{name=Enriched/NLP/Emotion/BatchElements/ParDo(_StatefulBatchElementsDoFn)-ptransform-210, state=start-msecs} for at least 725.20 seconds without outputting or completing.\nCurrent Traceback:\n  File \"/usr/local/lib/python3.11/threading.py\", line 1002, in _bootstrap\n    self._bootstrap_inner()\n\n  File \"/usr/local/lib/python3.11/threading.py\", line 1045, in _bootstrap_inner\n    self.run()\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/utils/thread_pool_executor.py\", line 53, in run\n    self._work_item.run()\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/utils/thread_pool_executor.py\", line 37, in run\n    self._future.set_result(self._fn(*self._fn_args, **self._fn_kwargs))\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 383, in task\n    self._execute(\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 310, in _execute\n    response = task()\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 384, in <lambda>\n    lambda: self.create_worker().do_instruction(request), request)\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 671, in do_instruction\n    return getattr(self, request_type)(\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 709, in process_bundle\n    bundle_processor.process_bundle(\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/bundle_processor.py\", line 1337, in process_bundle\n    for element in data_channel.input_elements(instruction_id,\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/data_plane.py\", line 591, in input_elements\n    element = received.get(timeout=1)\n\n  File \"/usr/local/lib/python3.11/threading.py\", line 331, in wait\n    gotit = waiter.acquire(True, timeout)\n",
+      "portability_worker_id": "sdk-0-0_sibling_1",
+      "thread": "lull_operation_logger",
+      "worker": "ta-stream-dev-10231212-2del-harness-3dgh"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "supportability",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fworker",
+    "receiveTimestamp": "2026-10-23T19:40:04.516680580Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:39:54.189339160Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CLTglOLFqKTiag"
+      }
+    ],
+    "insertId": "7544884260666478420:153935:0:117567",
+    "jsonPayload": {
+      "job": "2026-10-23_12_12_28-6235619416906386498",
+      "logger": "/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/worker_status.py:365",
+      "message": "Operation ongoing in bundle process_bundle-38820-38994 for PTransform{name=Enriched/NLP/Emotion/BatchElements/ParDo(_StatefulBatchElementsDoFn)-ptransform-210, state=start-msecs} for at least 665.72 seconds without outputting or completing.\nCurrent Traceback:\n  File \"/usr/local/lib/python3.11/threading.py\", line 1002, in _bootstrap\n    self._bootstrap_inner()\n\n  File \"/usr/local/lib/python3.11/threading.py\", line 1045, in _bootstrap_inner\n    self.run()\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/utils/thread_pool_executor.py\", line 53, in run\n    self._work_item.run()\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/utils/thread_pool_executor.py\", line 37, in run\n    self._future.set_result(self._fn(*self._fn_args, **self._fn_kwargs))\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 383, in task\n    self._execute(\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 310, in _execute\n    response = task()\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 384, in <lambda>\n    lambda: self.create_worker().do_instruction(request), request)\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 671, in do_instruction\n    return getattr(self, request_type)(\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 709, in process_bundle\n    bundle_processor.process_bundle(\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/bundle_processor.py\", line 1337, in process_bundle\n    for element in data_channel.input_elements(instruction_id,\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/data_plane.py\", line 591, in input_elements\n    element = received.get(timeout=1)\n\n  File \"/usr/local/lib/python3.11/threading.py\", line 331, in wait\n    gotit = waiter.acquire(True, timeout)\n",
+      "portability_worker_id": "sdk-0-0",
+      "thread": "lull_operation_logger",
+      "worker": "ta-stream-dev-10231212-2del-harness-3dgh"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "supportability",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fworker",
+    "receiveTimestamp": "2026-10-23T19:39:54.519587219Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:39:54.180884361Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CLTglOLFqKTiag"
+      }
+    ],
+    "insertId": "7544884260666478420:153935:0:100191",
+    "jsonPayload": {
+      "job": "2026-10-23_12_12_28-6235619416906386498",
+      "logger": "/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/worker_status.py:365",
+      "message": "Operation ongoing in bundle process_bundle-38794-38954 for PTransform{name=Enriched/NLP/Emotion/BatchElements/ParDo(_StatefulBatchElementsDoFn)-ptransform-210, state=start-msecs} for at least 365.08 seconds without outputting or completing.\nCurrent Traceback:\n  File \"/usr/local/lib/python3.11/threading.py\", line 1002, in _bootstrap\n    self._bootstrap_inner()\n\n  File \"/usr/local/lib/python3.11/threading.py\", line 1045, in _bootstrap_inner\n    self.run()\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/utils/thread_pool_executor.py\", line 53, in run\n    self._work_item.run()\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/utils/thread_pool_executor.py\", line 37, in run\n    self._future.set_result(self._fn(*self._fn_args, **self._fn_kwargs))\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 383, in task\n    self._execute(\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 310, in _execute\n    response = task()\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 384, in <lambda>\n    lambda: self.create_worker().do_instruction(request), request)\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 671, in do_instruction\n    return getattr(self, request_type)(\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 709, in process_bundle\n    bundle_processor.process_bundle(\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/bundle_processor.py\", line 1337, in process_bundle\n    for element in data_channel.input_elements(instruction_id,\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/data_plane.py\", line 591, in input_elements\n    element = received.get(timeout=1)\n\n  File \"/usr/local/lib/python3.11/threading.py\", line 331, in wait\n    gotit = waiter.acquire(True, timeout)\n",
+      "portability_worker_id": "sdk-0-0_sibling_1",
+      "thread": "lull_operation_logger",
+      "worker": "ta-stream-dev-10231212-2del-harness-3dgh"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "supportability",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fworker",
+    "receiveTimestamp": "2026-10-23T19:34:04.514038969Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:33:54.186064481Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CLTglOLFqKTiag"
+      }
+    ],
+    "insertId": "7544884260666478420:153935:0:97772",
+    "jsonPayload": {
+      "job": "2026-10-23_12_12_28-6235619416906386498",
+      "logger": "/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/worker_status.py:365",
+      "message": "Operation ongoing in bundle process_bundle-38820-38994 for PTransform{name=Enriched/NLP/Emotion/BatchElements/ParDo(_StatefulBatchElementsDoFn)-ptransform-210, state=start-msecs} for at least 305.60 seconds without outputting or completing.\nCurrent Traceback:\n  File \"/usr/local/lib/python3.11/threading.py\", line 1002, in _bootstrap\n    self._bootstrap_inner()\n\n  File \"/usr/local/lib/python3.11/threading.py\", line 1045, in _bootstrap_inner\n    self.run()\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/utils/thread_pool_executor.py\", line 53, in run\n    self._work_item.run()\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/utils/thread_pool_executor.py\", line 37, in run\n    self._future.set_result(self._fn(*self._fn_args, **self._fn_kwargs))\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 383, in task\n    self._execute(\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 310, in _execute\n    response = task()\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 384, in <lambda>\n    lambda: self.create_worker().do_instruction(request), request)\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 671, in do_instruction\n    return getattr(self, request_type)(\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py\", line 709, in process_bundle\n    bundle_processor.process_bundle(\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/bundle_processor.py\", line 1337, in process_bundle\n    for element in data_channel.input_elements(instruction_id,\n\n  File \"/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/data_plane.py\", line 591, in input_elements\n    element = received.get(timeout=1)\n\n  File \"/usr/local/lib/python3.11/threading.py\", line 331, in wait\n    gotit = waiter.acquire(True, timeout)\n",
+      "portability_worker_id": "sdk-0-0",
+      "thread": "lull_operation_logger",
+      "worker": "ta-stream-dev-10231212-2del-harness-3dgh"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "supportability",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fworker",
+    "receiveTimestamp": "2026-10-23T19:33:54.512936498Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:33:54.177847623Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CIiWmMmE_LniMg"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:46989",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f39997830, with stack:\n--- Thread (name: futex-default-SDomainT/96) stack: ---\n    @     0x557ab2df6436  thread::(anonymous namespace)::FutexDomain::RawSwap()\n    @     0x557ab2df5b60  thread::(anonymous namespace)::FutexDomain::SwapCurrent()\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "88"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:34:14.530953563Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:49.018829Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CMHI09Wp_-rWbA"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:45772",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f395c63f0, with stack:\n--- Thread (name: futex-default-SDomainT/178) stack: ---\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "88"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:54.532026242Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:49.017750Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CMHI09Wp_-rWbA"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:43579",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f394ab470, with stack:\n--- Thread (name: futex-default-SDomainT/177) stack: ---\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "88"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:54.532026242Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:49.016170Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CMHI09Wp_-rWbA"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:42525",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f3a495530, with stack:\n--- Thread (name: futex-default-SDomainT/170) stack: ---\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "88"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:54.532026242Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:49.015794Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CMHI09Wp_-rWbA"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:41471",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f3ba30030, with stack:\n--- Thread (name: futex-default-SDomainT/186) stack: ---\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "88"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:54.532026242Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:49.013680Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CMHI09Wp_-rWbA"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:40417",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f393dced0, with stack:\n--- Thread (name: futex-default-SDomainT/184) stack: ---\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "88"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:54.532026242Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:49.012324Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CIiWmMmE_LniMg"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:39363",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f3ba30f00, with stack:\n--- Thread (name: futex-default-SDomainT/185) stack: ---\n    @     0x557ab2df6436  thread::(anonymous namespace)::FutexDomain::RawSwap()\n    @     0x557ab2df5b60  thread::(anonymous namespace)::FutexDomain::SwapCurrent()\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "88"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:54.532026242Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:49.009437Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CMHI09Wp_-rWbA"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:38145",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f394f6e40, with stack:\n--- Thread (name: futex-default-SDomainT/171) stack: ---\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "88"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:54.532026242Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:49.007966Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CJins5W56buf-AE"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:44718",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f3a49bb60, with stack:\n--- Thread (name: futex-default-SDomainT/173) stack: ---\n    @     0x557ab2df5a89  thread::(anonymous namespace)::FutexDomain::BlockCurrent()\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "90"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:54.532026242Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:49.001985Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CMHI09Wp_-rWbA"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:36037",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f3b171710, with stack:\n--- Thread (name: futex-default-SDomainT/175) stack: ---\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "90"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:54.532026242Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:49.001584Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CMHI09Wp_-rWbA"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:37091",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f3ae68ab0, with stack:\n--- Thread (name: futex-default-SDomainT/176) stack: ---\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "88"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:54.532026242Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:48.997985Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CMHI09Wp_-rWbA"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:34983",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f38e0ba70, with stack:\n--- Thread (name: futex-default-SDomainT/100) stack: ---\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "90"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:54.532026242Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:48.997723Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CIiWmMmE_LniMg"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:33929",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f393ad740, with stack:\n--- Thread (name: futex-default-SDomainT/187) stack: ---\n    @     0x557ab2df6436  thread::(anonymous namespace)::FutexDomain::RawSwap()\n    @     0x557ab2df5b60  thread::(anonymous namespace)::FutexDomain::SwapCurrent()\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "90"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:54.532026242Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:48.991677Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CMHI09Wp_-rWbA"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:32711",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f394fa2d0, with stack:\n--- Thread (name: futex-default-SDomainT/142) stack: ---\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "88"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:54.532026242Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:48.968891Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CMHI09Wp_-rWbA"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:31657",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f3b13d1a0, with stack:\n--- Thread (name: futex-default-SDomainT/179) stack: ---\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "90"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:54.532026242Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:48.968444Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CMHI09Wp_-rWbA"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:30603",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f393dc780, with stack:\n--- Thread (name: futex-default-SDomainT/183) stack: ---\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "90"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:54.532026242Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:48.966539Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CIiWmMmE_LniMg"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:28495",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f398585d0, with stack:\n--- Thread (name: futex-default-SDomainT/174) stack: ---\n    @     0x557ab2df6436  thread::(anonymous namespace)::FutexDomain::RawSwap()\n    @     0x557ab2df5b60  thread::(anonymous namespace)::FutexDomain::SwapCurrent()\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "90"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:54.532026242Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:48.963305Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CMHI09Wp_-rWbA"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:29549",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f395f4c90, with stack:\n--- Thread (name: futex-default-SDomainT/181) stack: ---\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "88"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:54.532026242Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:48.960628Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CIiWmMmE_LniMg"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:27277",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f3d0d6180, with stack:\n--- Thread (name: futex-default-SDomainT/172) stack: ---\n    @     0x557ab2df6436  thread::(anonymous namespace)::FutexDomain::RawSwap()\n    @     0x557ab2df5b60  thread::(anonymous namespace)::FutexDomain::SwapCurrent()\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "90"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:54.532026242Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:48.956610Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CMHI09Wp_-rWbA"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:26059",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f38e07320, with stack:\n--- Thread (name: futex-default-SDomainT/180) stack: ---\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "88"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:54.532026242Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:48.955679Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CMHI09Wp_-rWbA"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:25005",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f3945e750, with stack:\n--- Thread (name: futex-default-SDomainT/182) stack: ---\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "88"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:54.532026242Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:48.955060Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CMHI09Wp_-rWbA"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:23951",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f3c351680, with stack:\n--- Thread (name: futex-default-SDomainT/149) stack: ---\n    @     0x557ab0366b16  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "88"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:54.532026242Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:33:36.131356Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CMHI09Wp_-rWbA"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:22897",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f3af2dce0, with stack:\n--- Thread (name: futex-default-SDomainT/115) stack: ---\n    @     0x557ab0366b16  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "90"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:33:14.511504032Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:32:49.602528Z"
+  },
+  {
+    "insertId": "7544884260666478420:153931:0:21843",
+    "jsonPayload": {
+      "line": "streaming_shuffle_writer_record_acceptor.cc:114",
+      "message": "[daxStreamingDiagnostics1][windmillRequestResponse]Emitting late records. This may cause watermark delays. Source computation: P18. Late data bound: 2026-10-23T19:15:59+00:00. Record timestamp: 2026-10-23T19:03:48.775+00:00. Record watermark hold: [not set]",
+      "thread": "96"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:29:14.519577945Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:28:47.754869Z"
+  },
+  {
+    "insertId": "7544884260666478420:153931:0:21506",
+    "jsonPayload": {
+      "line": "streaming_worker_client.cc:1077",
+      "message": "Error while processing a work item: CANCELLED: Work item processing failed due to cancellation after processing.\n=== Source Location Trace: ===\ndist_proc/dax/workflow/worker/streaming/streaming_worker_client.cc:884",
+      "thread": "96"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:25:34.519339699Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:25:12.777954Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CMHI09Wp_-rWbA"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:20985",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f3af2c990, with stack:\n--- Thread (name: futex-default-SDomainT/96) stack: ---\n    @     0x557ab0366b16  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "90"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:22:44.532149097Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:22:22.715867Z"
+  },
+  {
+    "errorGroups": [
+      {
+        "id": "CIiWmMmE_LniMg"
+      }
+    ],
+    "insertId": "7544884260666478420:153931:0:19932",
+    "jsonPayload": {
+      "line": "state_sampler.cc:168",
+      "message": "Stuck state: workflow-msec-finish, reporter: 0x581f3b1dfbf0, with stack:\n--- Thread (name: futex-default-SDomainT/115) stack: ---\n    @     0x557ab2df6436  thread::(anonymous namespace)::FutexDomain::RawSwap()\n    @     0x557ab2df5b60  thread::(anonymous namespace)::FutexDomain::SwapCurrent()\n    @     0x557ab03674b5  base::scheduling::Downcalls::UserSchedule()\n    @     0x557ab0366008  AbslInternalPerThreadSemWait\n    @     0x557ab036352d  absl::CondVar::WaitCommon()\n    @     0x557ab0364d6f  thread::SelectUntil()\n    @     0x557ab1836fa6  dist_proc::dax::workflow::FnApiServiceImpl::BundleHandleImpl::WaitToFinish()\n    @     0x557ab178593f  dist_proc::dax::workflow::FnApiProcessBundleOperator::Finish()\n    @     0x557ab07e330f  dist_proc::dax::workflow::WorkItemProcessorImpl::Process()\n    @     0x557ab07f24eb  absl::internal_any_invocable::RemoteInvoker<>()\n    @     0x557ab0353f75  thread::Fiber::InvokeFiberBody()\n    @     0x557ab2df67c6  thread::(anonymous namespace)::FutexDomainThread::WorkLoop()\n    @     0x557ab111b9ec  thread::CommonFiberDomainThread::Run()\n    @     0x557ab0e677fb  Thread::ThreadBody()\n    @     0x793ab459c1f5  (unknown)",
+      "thread": "88"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:22:24.520226477Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:22:22.681800Z"
+  },
+  {
+    "insertId": "7544884260666478420:153935:0:67811",
+    "jsonPayload": {
+      "instruction": "process_bundle-19523-19571",
+      "job": "2026-10-23_12_12_28-6235619416906386498",
+      "logger": "/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py:1333",
+      "message": "Retrieving state 3740 times costed 240 seconds. It may be due to insufficient state cache size and/or frequent direct access of states.\nConsider adding '--max_cache_memory_usage_mb' pipeline option to increase state cache size or switch to materialized (pvalue.AsList) side input if applicable.",
+      "portability_worker_id": "sdk-0-0",
+      "step": "Dedup/FirstCopy",
+      "thread": "Thread-19",
+      "work": "19523",
+      "worker": "ta-stream-dev-10231212-2del-harness-3dgh"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "supportability",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fworker",
+    "receiveTimestamp": "2026-10-23T19:19:04.517470911Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": "Dedup/FirstCopy"
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:18:49.755199193Z"
+  },
+  {
+    "insertId": "7544884260666478420:153931:0:18714",
+    "jsonPayload": {
+      "line": "streaming_worker_client.cc:1077",
+      "message": "Error while processing a work item: INTERNAL: Windmill failed to commit the work item. CommitStatus: NOT_FOUND\n=== Source Location Trace: ===\ndist_proc/dax/workflow/worker/streaming/streaming_worker_client.cc:1002",
+      "thread": "84"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:19:04.514037961Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:18:38.068735Z"
+  },
+  {
+    "insertId": "7544884260666478420:153935:0:67095",
+    "jsonPayload": {
+      "instruction": "process_bundle-13126-13165",
+      "job": "2026-10-23_12_12_28-6235619416906386498",
+      "logger": "/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py:1333",
+      "message": "Retrieving state 2186 times costed 120 seconds. It may be due to insufficient state cache size and/or frequent direct access of states.\nConsider adding '--max_cache_memory_usage_mb' pipeline option to increase state cache size or switch to materialized (pvalue.AsList) side input if applicable.",
+      "portability_worker_id": "sdk-0-0_sibling_1",
+      "step": "Dedup/FirstCopy",
+      "thread": "Thread-34",
+      "work": "13126",
+      "worker": "ta-stream-dev-10231212-2del-harness-3dgh"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "supportability",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fworker",
+    "receiveTimestamp": "2026-10-23T19:18:04.524957952Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": "Dedup/FirstCopy"
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:17:52.342507839Z"
+  },
+  {
+    "insertId": "7544884260666478420:153935:0:66369",
+    "jsonPayload": {
+      "instruction": "process_bundle-12183-12220",
+      "job": "2026-10-23_12_12_28-6235619416906386498",
+      "logger": "/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py:1333",
+      "message": "Retrieving state 2309 times costed 120 seconds. It may be due to insufficient state cache size and/or frequent direct access of states.\nConsider adding '--max_cache_memory_usage_mb' pipeline option to increase state cache size or switch to materialized (pvalue.AsList) side input if applicable.",
+      "portability_worker_id": "sdk-0-0",
+      "step": "Dedup/FirstCopy",
+      "thread": "Thread-20",
+      "work": "12183",
+      "worker": "ta-stream-dev-10231212-2del-harness-3dgh"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "supportability",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fworker",
+    "receiveTimestamp": "2026-10-23T19:17:54.529400082Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": "Dedup/FirstCopy"
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:17:43.782797098Z"
+  },
+  {
+    "insertId": "7544884260666478420:153935:0:62787",
+    "jsonPayload": {
+      "instruction": "process_bundle-8162-8192",
+      "job": "2026-10-23_12_12_28-6235619416906386498",
+      "logger": "/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py:1333",
+      "message": "Retrieving state 1193 times costed 60 seconds. It may be due to insufficient state cache size and/or frequent direct access of states.\nConsider adding '--max_cache_memory_usage_mb' pipeline option to increase state cache size or switch to materialized (pvalue.AsList) side input if applicable.",
+      "portability_worker_id": "sdk-0-0_sibling_1",
+      "step": "Dedup/FirstCopy",
+      "thread": "Thread-30",
+      "work": "8162",
+      "worker": "ta-stream-dev-10231212-2del-harness-3dgh"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "supportability",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fworker",
+    "receiveTimestamp": "2026-10-23T19:17:24.515216072Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": "Dedup/FirstCopy"
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:17:11.825021982Z"
+  },
+  {
+    "insertId": "7544884260666478420:153935:0:62065",
+    "jsonPayload": {
+      "instruction": "process_bundle-8054-8084",
+      "job": "2026-10-23_12_12_28-6235619416906386498",
+      "logger": "/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker.py:1333",
+      "message": "Retrieving state 1390 times costed 60 seconds. It may be due to insufficient state cache size and/or frequent direct access of states.\nConsider adding '--max_cache_memory_usage_mb' pipeline option to increase state cache size or switch to materialized (pvalue.AsList) side input if applicable.",
+      "portability_worker_id": "sdk-0-0",
+      "step": "Dedup/FirstCopy",
+      "thread": "Thread-30",
+      "work": "8054",
+      "worker": "ta-stream-dev-10231212-2del-harness-3dgh"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "supportability",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fworker",
+    "receiveTimestamp": "2026-10-23T19:17:14.517880526Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": "Dedup/FirstCopy"
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:17:10.883893966Z"
+  },
+  {
+    "insertId": "7544884260666478420:153935:0:36781",
+    "jsonPayload": {
+      "job": "2026-10-23_12_12_28-6235619416906386498",
+      "logger": "/usr/local/lib/python3.11/site-packages/apache_beam/options/pipeline_options.py:570",
+      "message": "Discarding unparseable args: ['--autoscalingAlgorithm=NONE', '--contracts_dir=../contracts', '--dataflowJobId=2026-10-23_12_12_28-6235619416906386498', '--dedup_window_seconds=3600', '--direct_runner_use_stacked_bundle', '--dlq_bq_enabled=auto', '--dlq_df_subscription=auto', '--dlq_events_table=auto', '--dlq_table=', '--dlq_topic=ta-dlq', '--enriched_enabled=true', '--gcpTempLocation=gs://project-0568d9ba-848f-413c-88b-ta-lake/_dataflow/temp/ta-stream-dev.1792782616.063664', '--jobId=2026-10-23_12_12_28-6235619416906386498', '--maxNumWorkers=1', '--nlp_batch_size=16', '--nlp_enabled=auto', '--numWorkers=1', '--output_root=gs://project-0568d9ba-848f-413c-88b-ta-lake', '--pipelineProtoHash=', '--pipelineUrl=gs://project-0568d9ba-848f-413c-88b-ta-lake/_dataflow/staging/ta-stream-dev.1792782616.063664/pipeline.pb', '--pipeline_type_check', '--posts_enriched_table=auto', '--pubsub_id_label=event_id', '--raw_window_seconds=300', '--sources=reddit,facebook,instagram', '--subscription_template=ta-raw-{source}-df', '--tempLocation=gs://project-0568d9ba-848f-413c-88b-ta-lake/_dataflow/temp/ta-stream-dev.1792782616.063664', '--trend_allowed_lateness_seconds=1800', '--trend_baseline_windows=60', '--trend_late_delay_seconds=auto', '--trend_min_posts=5', '--trend_period_seconds=60', '--trend_window_seconds=300', '--trend_windows_table=auto', '--trend_z_threshold=3', '--trends_enabled=auto', '--trends_root=auto']",
+      "portability_worker_id": "sdk-0-0_sibling_1",
+      "thread": "MainThread",
+      "worker": "ta-stream-dev-10231212-2del-harness-3dgh"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "supportability",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fworker",
+    "receiveTimestamp": "2026-10-23T19:15:54.514228523Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:15:54.135031461Z"
+  },
+  {
+    "insertId": "7544884260666478420:153935:0:32180",
+    "jsonPayload": {
+      "job": "2026-10-23_12_12_28-6235619416906386498",
+      "logger": "/usr/local/lib/python3.11/site-packages/apache_beam/options/pipeline_options.py:570",
+      "message": "Discarding unparseable args: ['--autoscalingAlgorithm=NONE', '--contracts_dir=../contracts', '--dataflowJobId=2026-10-23_12_12_28-6235619416906386498', '--dedup_window_seconds=3600', '--direct_runner_use_stacked_bundle', '--dlq_bq_enabled=auto', '--dlq_df_subscription=auto', '--dlq_events_table=auto', '--dlq_table=', '--dlq_topic=ta-dlq', '--enriched_enabled=true', '--gcpTempLocation=gs://project-0568d9ba-848f-413c-88b-ta-lake/_dataflow/temp/ta-stream-dev.1792782616.063664', '--jobId=2026-10-23_12_12_28-6235619416906386498', '--maxNumWorkers=1', '--nlp_batch_size=16', '--nlp_enabled=auto', '--numWorkers=1', '--output_root=gs://project-0568d9ba-848f-413c-88b-ta-lake', '--pipelineProtoHash=', '--pipelineUrl=gs://project-0568d9ba-848f-413c-88b-ta-lake/_dataflow/staging/ta-stream-dev.1792782616.063664/pipeline.pb', '--pipeline_type_check', '--posts_enriched_table=auto', '--pubsub_id_label=event_id', '--raw_window_seconds=300', '--sources=reddit,facebook,instagram', '--subscription_template=ta-raw-{source}-df', '--tempLocation=gs://project-0568d9ba-848f-413c-88b-ta-lake/_dataflow/temp/ta-stream-dev.1792782616.063664', '--trend_allowed_lateness_seconds=1800', '--trend_baseline_windows=60', '--trend_late_delay_seconds=auto', '--trend_min_posts=5', '--trend_period_seconds=60', '--trend_window_seconds=300', '--trend_windows_table=auto', '--trend_z_threshold=3', '--trends_enabled=auto', '--trends_root=auto']",
+      "portability_worker_id": "sdk-0-0",
+      "thread": "MainThread",
+      "worker": "ta-stream-dev-10231212-2del-harness-3dgh"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "supportability",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fworker",
+    "receiveTimestamp": "2026-10-23T19:15:54.514228523Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:15:54.130010128Z"
+  },
+  {
+    "insertId": "7544884260666478420:153935:0:30422",
+    "jsonPayload": {
+      "job": "2026-10-23_12_12_28-6235619416906386498",
+      "logger": "/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker_main.py:419",
+      "message": "No session file found:  User registered objects (e.g. schema, logical type) throughregisteries may not be effective./var/opt/google/staged/pickled_main_session",
+      "portability_worker_id": "sdk-0-0_sibling_1",
+      "thread": "MainThread",
+      "worker": "ta-stream-dev-10231212-2del-harness-3dgh"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "supportability",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fworker",
+    "receiveTimestamp": "2026-10-23T19:15:54.514228523Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:15:54.125157356Z"
+  },
+  {
+    "insertId": "7544884260666478420:153935:0:28732",
+    "jsonPayload": {
+      "job": "2026-10-23_12_12_28-6235619416906386498",
+      "logger": "/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker_main.py:419",
+      "message": "No session file found:  User registered objects (e.g. schema, logical type) throughregisteries may not be effective./var/opt/google/staged/pickled_main_session",
+      "portability_worker_id": "sdk-0-0",
+      "thread": "MainThread",
+      "worker": "ta-stream-dev-10231212-2del-harness-3dgh"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "supportability",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fworker",
+    "receiveTimestamp": "2026-10-23T19:15:54.514228523Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:15:54.120290517Z"
+  }
+]

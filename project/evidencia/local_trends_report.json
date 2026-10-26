@@ -1,0 +1,98 @@
+{
+  "command": "report",
+  "verdict": "OK",
+  "checks": [
+    {
+      "id": "T2",
+      "title": "Hay ventanas de cada fuente",
+      "status": "OK",
+      "detail": "reddit: 3 marcas, facebook: 3 marcas, instagram: 3 marcas",
+      "data": {
+        "reddit": [
+          "pepsi",
+          "postobon",
+          "sprite"
+        ],
+        "facebook": [
+          "pepsi",
+          "postobon",
+          "sprite"
+        ],
+        "instagram": [
+          "pepsi",
+          "postobon",
+          "sprite"
+        ]
+      }
+    },
+    {
+      "id": "T3",
+      "title": "Reglas de cada fila de trend_windows",
+      "status": "OK",
+      "detail": "254 filas, 0 con problemas",
+      "data": {
+        "rows": 254,
+        "bad": []
+      }
+    },
+    {
+      "id": "T4",
+      "title": "Conteos de cada ventana = recálculo desde los posts",
+      "status": "OK",
+      "detail": "18/18 ventanas iguales (100.0%); distintas 0, faltan 0, sobran 0",
+      "data": {
+        "compared": 18,
+        "matched": 18,
+        "ratio": 1.0,
+        "mismatches": [],
+        "missing": [],
+        "extra": [],
+        "n_mismatches": 0,
+        "n_missing": 0,
+        "n_extra": 0,
+        "lo": "2026-10-23T01:35:00.000Z",
+        "hi": "2026-10-23T01:41:05.752Z"
+      }
+    },
+    {
+      "id": "T5",
+      "title": "Arranque en frío: sin alertas en la primera hora",
+      "status": "OK",
+      "detail": "0 alertas antes de 2026-10-23T02:34:42.490Z; 0 en total",
+      "data": {
+        "since": "2026-10-23T01:34:42.490Z",
+        "cold_until": "2026-10-23T02:34:42.490Z",
+        "alerts": 0,
+        "alerts_in_cold_start": []
+      }
+    },
+    {
+      "id": "T6",
+      "title": "z-scores calculados",
+      "status": "OK",
+      "detail": "64/254 filas con zscore_volume (nulo con menos de 2 ventanas de baseline)",
+      "data": {}
+    },
+    {
+      "id": "T7",
+      "title": "Latencia event_time → process_time (p95 < 5 min)",
+      "status": "OK",
+      "detail": "p50 4.1 s · p95 7.1 s · máx 9.6 s (n = 541)",
+      "data": {
+        "n": 541,
+        "p50": 4.089,
+        "p95": 7.132,
+        "max": 9.609
+      }
+    }
+  ],
+  "mode": "local",
+  "lake": "/mnt/c/Users/frank/Documents/baul/uni/2026-2/ProyectoDatos/repo_personal/project/.local-lake",
+  "since": "2026-10-23T01:34:42.490Z",
+  "versions": {
+    "keys": 90,
+    "rows": 254,
+    "keys_with_late_panes": 74,
+    "max_versions": 7
+  }
+}

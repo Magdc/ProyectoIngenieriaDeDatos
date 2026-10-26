@@ -1,0 +1,298 @@
+{
+  "verdict": "ok",
+  "checks": [
+    {
+      "name": "filas recientes",
+      "status": "ok",
+      "detail": "269 filas en 9 archivos",
+      "source": "reddit"
+    },
+    {
+      "name": "archivos legibles",
+      "status": "ok",
+      "detail": "todos",
+      "source": "reddit"
+    },
+    {
+      "name": "columnas = posts_enriched",
+      "status": "ok",
+      "detail": "coinciden",
+      "source": "reddit"
+    },
+    {
+      "name": "sin identidad en claro",
+      "status": "ok",
+      "detail": "ninguna columna ni clave user_id/handle",
+      "source": "reddit"
+    },
+    {
+      "name": "reglas por fila (hash, engagement, brand_primary)",
+      "status": "ok",
+      "detail": "todas cumplen",
+      "source": "reddit"
+    },
+    {
+      "name": "copias de event_id",
+      "status": "ok",
+      "detail": "0 copias",
+      "source": "reddit"
+    },
+    {
+      "name": "cobertura raw → enriched",
+      "status": "ok",
+      "detail": "9/9 (100.0%)",
+      "source": "reddit"
+    },
+    {
+      "name": "NLP presente",
+      "status": "ok",
+      "detail": "269/269 filas con sentimiento, emoción y versión",
+      "source": "reddit"
+    },
+    {
+      "name": "NLP: etiquetas, scores y versión",
+      "status": "ok",
+      "detail": "todas cumplen",
+      "source": "reddit"
+    },
+    {
+      "name": "latencia event_time → process_time (p95)",
+      "status": "ok",
+      "detail": "8.0 s",
+      "source": "reddit"
+    },
+    {
+      "name": "filas recientes",
+      "status": "ok",
+      "detail": "273 filas en 9 archivos",
+      "source": "facebook"
+    },
+    {
+      "name": "archivos legibles",
+      "status": "ok",
+      "detail": "todos",
+      "source": "facebook"
+    },
+    {
+      "name": "columnas = posts_enriched",
+      "status": "ok",
+      "detail": "coinciden",
+      "source": "facebook"
+    },
+    {
+      "name": "sin identidad en claro",
+      "status": "ok",
+      "detail": "ninguna columna ni clave user_id/handle",
+      "source": "facebook"
+    },
+    {
+      "name": "reglas por fila (hash, engagement, brand_primary)",
+      "status": "ok",
+      "detail": "todas cumplen",
+      "source": "facebook"
+    },
+    {
+      "name": "copias de event_id",
+      "status": "ok",
+      "detail": "0 copias",
+      "source": "facebook"
+    },
+    {
+      "name": "cobertura raw → enriched",
+      "status": "ok",
+      "detail": "10/10 (100.0%)",
+      "source": "facebook"
+    },
+    {
+      "name": "NLP presente",
+      "status": "ok",
+      "detail": "273/273 filas con sentimiento, emoción y versión",
+      "source": "facebook"
+    },
+    {
+      "name": "NLP: etiquetas, scores y versión",
+      "status": "ok",
+      "detail": "todas cumplen",
+      "source": "facebook"
+    },
+    {
+      "name": "latencia event_time → process_time (p95)",
+      "status": "ok",
+      "detail": "8.3 s",
+      "source": "facebook"
+    },
+    {
+      "name": "filas recientes",
+      "status": "ok",
+      "detail": "266 filas en 9 archivos",
+      "source": "instagram"
+    },
+    {
+      "name": "archivos legibles",
+      "status": "ok",
+      "detail": "todos",
+      "source": "instagram"
+    },
+    {
+      "name": "columnas = posts_enriched",
+      "status": "ok",
+      "detail": "coinciden",
+      "source": "instagram"
+    },
+    {
+      "name": "sin identidad en claro",
+      "status": "ok",
+      "detail": "ninguna columna ni clave user_id/handle",
+      "source": "instagram"
+    },
+    {
+      "name": "reglas por fila (hash, engagement, brand_primary)",
+      "status": "ok",
+      "detail": "todas cumplen",
+      "source": "instagram"
+    },
+    {
+      "name": "copias de event_id",
+      "status": "ok",
+      "detail": "0 copias",
+      "source": "instagram"
+    },
+    {
+      "name": "cobertura raw → enriched",
+      "status": "ok",
+      "detail": "10/10 (100.0%)",
+      "source": "instagram"
+    },
+    {
+      "name": "NLP presente",
+      "status": "ok",
+      "detail": "266/266 filas con sentimiento, emoción y versión",
+      "source": "instagram"
+    },
+    {
+      "name": "NLP: etiquetas, scores y versión",
+      "status": "ok",
+      "detail": "todas cumplen",
+      "source": "instagram"
+    },
+    {
+      "name": "latencia event_time → process_time (p95)",
+      "status": "ok",
+      "detail": "7.3 s",
+      "source": "instagram"
+    },
+    {
+      "name": "user_hash determinista (1 a 1)",
+      "status": "ok",
+      "detail": "23 usuarios; 0 con más de un hash; 0 hashes compartidos",
+      "source": null
+    }
+  ],
+  "stats": {
+    "lake_root": "/mnt/c/Users/frank/Documents/baul/uni/2026-2/ProyectoDatos/repo_personal/project/.local-lake",
+    "hours": 1.0,
+    "generated_at": "2026-10-23T01:44:07.115861+00:00",
+    "reddit": {
+      "files": 9,
+      "unreadable_files": 0,
+      "rows": 269,
+      "rows_in_window": 269,
+      "unique_event_ids": 269,
+      "extra_copies": 0,
+      "latency_ms_p50": 3982,
+      "latency_ms_p95": 7952,
+      "raw_events": 9,
+      "joined": 9,
+      "sentiment_counts": {
+        "positive": 86,
+        "neutral": 85,
+        "negative": 98
+      },
+      "emotion_counts": {
+        "joy": 74,
+        "neutral": 140,
+        "sadness": 26,
+        "anger": 24,
+        "surprise": 1,
+        "fear": 3,
+        "disgust": 1
+      },
+      "nlp_model_versions": {
+        "robertuito-sentiment@a2cc0f67ebd7+robertuito-emotion@bcd6835f4d1a": 269
+      },
+      "sentiment_vs_ground_truth": {
+        "labelled": 187,
+        "agree": 170,
+        "accuracy": 0.9091
+      }
+    },
+    "facebook": {
+      "files": 9,
+      "unreadable_files": 0,
+      "rows": 273,
+      "rows_in_window": 273,
+      "unique_event_ids": 273,
+      "extra_copies": 0,
+      "latency_ms_p50": 4549,
+      "latency_ms_p95": 8321,
+      "raw_events": 10,
+      "joined": 10,
+      "sentiment_counts": {
+        "negative": 99,
+        "neutral": 90,
+        "positive": 84
+      },
+      "emotion_counts": {
+        "neutral": 142,
+        "joy": 77,
+        "anger": 25,
+        "fear": 4,
+        "sadness": 21,
+        "surprise": 2,
+        "disgust": 2
+      },
+      "nlp_model_versions": {
+        "robertuito-sentiment@a2cc0f67ebd7+robertuito-emotion@bcd6835f4d1a": 273
+      },
+      "sentiment_vs_ground_truth": {
+        "labelled": 191,
+        "agree": 175,
+        "accuracy": 0.9162
+      }
+    },
+    "instagram": {
+      "files": 9,
+      "unreadable_files": 0,
+      "rows": 266,
+      "rows_in_window": 266,
+      "unique_event_ids": 266,
+      "extra_copies": 0,
+      "latency_ms_p50": 3899,
+      "latency_ms_p95": 7271,
+      "raw_events": 10,
+      "joined": 10,
+      "sentiment_counts": {
+        "neutral": 97,
+        "positive": 88,
+        "negative": 81
+      },
+      "emotion_counts": {
+        "neutral": 131,
+        "joy": 78,
+        "disgust": 1,
+        "anger": 31,
+        "sadness": 22,
+        "surprise": 1,
+        "fear": 2
+      },
+      "nlp_model_versions": {
+        "robertuito-sentiment@a2cc0f67ebd7+robertuito-emotion@bcd6835f4d1a": 266
+      },
+      "sentiment_vs_ground_truth": {
+        "labelled": 198,
+        "agree": 182,
+        "accuracy": 0.9192
+      }
+    }
+  }
+}

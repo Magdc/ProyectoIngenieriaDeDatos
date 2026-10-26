@@ -1,0 +1,64 @@
+{
+  "command": "dlq-check",
+  "verdict": "OK",
+  "checks": [
+    {
+      "id": "D1",
+      "title": "Defectos publicados en ta-raw-reddit",
+      "status": "OK",
+      "detail": "3 mensajes, marca ta-verify-dlqbq-20261023T154705-968dfd",
+      "data": {
+        "message_ids": {
+          "truncated_json": "22085507540259002",
+          "missing_fields": "22085952107119220",
+          "not_utf8": "23207103330565663"
+        }
+      }
+    },
+    {
+      "id": "D2",
+      "title": "Cada defecto en dlq_events con su error_type",
+      "status": "OK",
+      "detail": "3/3 en 20.9 s",
+      "data": {
+        "rows": [
+          {
+            "received_at": "2026-10-23T15:47:07.982Z",
+            "source": "reddit",
+            "error_type": "schema",
+            "error_detail": "(raíz): Additional properties are not allowed ('ta_verify' was unexpected)",
+            "raw_message": "{\"schema_version\": \"1.0\", \"ta_verify\": \"ta-verify-dlqbq-20261023T154705-968dfd\"}"
+          },
+          {
+            "received_at": "2026-10-23T15:47:08.297Z",
+            "source": "reddit",
+            "error_type": "encoding",
+            "error_detail": "cuerpo no UTF-8: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte",
+            "raw_message": "\\xff\\xfe ta-verify-dlqbq-20261023T154705-968dfd \\xff"
+          },
+          {
+            "received_at": "2026-10-23T15:47:07.975Z",
+            "source": "reddit",
+            "error_type": "json",
+            "error_detail": "JSON inválido: Expecting value: line 1 column 69 (char 68)",
+            "raw_message": "{\"ta_verify\": \"ta-verify-dlqbq-20261023T154705-968dfd\", \"truncado\": "
+          }
+        ],
+        "elapsed_s": 20.9
+      }
+    },
+    {
+      "id": "D3",
+      "title": "Sin copias repetidas en dlq_events",
+      "status": "OK",
+      "detail": "copias {'truncated_json': 1, 'missing_fields': 1, 'not_utf8': 1}",
+      "data": {
+        "truncated_json": 1,
+        "missing_fields": 1,
+        "not_utf8": 1
+      }
+    }
+  ],
+  "marker": "ta-verify-dlqbq-20261023T154705-968dfd",
+  "elapsed_s": 20.9
+}

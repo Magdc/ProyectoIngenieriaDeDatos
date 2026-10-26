@@ -1,0 +1,449 @@
+{
+  "command": "report",
+  "verdict": "OK",
+  "checks": [
+    {
+      "id": "T1",
+      "title": "Tablas y vista de ta_stream con las columnas de §5.5",
+      "status": "OK",
+      "detail": "trend_windows, dlq_events, dq_results y trend_windows_latest",
+      "data": {
+        "trend_windows": [
+          "window_start",
+          "window_end",
+          "brand",
+          "source",
+          "n_posts",
+          "n_negative",
+          "n_positive",
+          "avg_sentiment",
+          "emotion_counts",
+          "zscore_volume",
+          "zscore_sentiment",
+          "is_alert"
+        ],
+        "dlq_events": [
+          "received_at",
+          "source",
+          "error_type",
+          "error_detail",
+          "raw_message"
+        ],
+        "dq_results": [
+          "run_id",
+          "run_ts",
+          "layer",
+          "table_name",
+          "suite",
+          "check_name",
+          "kpi",
+          "observed_value",
+          "threshold",
+          "passed",
+          "details"
+        ]
+      }
+    },
+    {
+      "id": "T2",
+      "title": "Hay ventanas de cada fuente",
+      "status": "OK",
+      "detail": "reddit: 3 marcas, facebook: 3 marcas, instagram: 3 marcas",
+      "data": {
+        "reddit": [
+          "pepsi",
+          "postobon",
+          "sprite"
+        ],
+        "facebook": [
+          "pepsi",
+          "postobon",
+          "sprite"
+        ],
+        "instagram": [
+          "pepsi",
+          "postobon",
+          "sprite"
+        ]
+      }
+    },
+    {
+      "id": "T3",
+      "title": "Reglas de cada fila de trend_windows",
+      "status": "OK",
+      "detail": "446 filas, 0 con problemas",
+      "data": {
+        "rows": 446,
+        "bad": []
+      }
+    },
+    {
+      "id": "T4",
+      "title": "Conteos de cada ventana = recálculo desde los posts",
+      "status": "OK",
+      "detail": "216/216 ventanas iguales (100.0%); distintas 0, faltan 0, sobran 0",
+      "data": {
+        "compared": 216,
+        "matched": 216,
+        "ratio": 1.0,
+        "mismatches": [],
+        "missing": [],
+        "extra": [],
+        "n_mismatches": 0,
+        "n_missing": 0,
+        "n_extra": 0,
+        "lo": "2026-10-23T23:03:00.000Z",
+        "hi": "2026-10-23T23:31:43.913Z"
+      }
+    },
+    {
+      "id": "T5",
+      "title": "Arranque en frío: sin alertas en la primera hora",
+      "status": "OK",
+      "detail": "0 alertas antes de 2026-10-24T00:02:23.687Z; 0 en total",
+      "data": {
+        "since": "2026-10-23T23:02:23.687Z",
+        "cold_until": "2026-10-24T00:02:23.687Z",
+        "alerts": 0,
+        "alerts_in_cold_start": []
+      }
+    },
+    {
+      "id": "T5b",
+      "title": "Sin alertas en las ventanas del cambio de job (drenado)",
+      "status": "OK",
+      "detail": "0 alertas",
+      "data": {
+        "from": "2026-10-23T22:47:23.687Z",
+        "to": "2026-10-23T23:02:23.687Z",
+        "alerts": []
+      }
+    },
+    {
+      "id": "T6",
+      "title": "z-scores calculados",
+      "status": "OK",
+      "detail": "260/446 filas con zscore_volume (nulo con menos de 2 ventanas de baseline)",
+      "data": {}
+    },
+    {
+      "id": "T7",
+      "title": "Latencia event_time → process_time (p95 < 5 min)",
+      "status": "OK",
+      "detail": "p50 2.9 s · p95 5.1 s · máx 5.6 s (n = 1072)",
+      "data": {
+        "n": 1072,
+        "p50": 2.919,
+        "p95": 5.09,
+        "max": 5.624
+      }
+    },
+    {
+      "id": "T8",
+      "title": "Detección: fin de ventana → fila en trend_windows (p95 < 5 min)",
+      "status": "OK",
+      "detail": "p50 44.0 s · p95 61.3 s · máx 61.3 s (n = 63)",
+      "data": {
+        "n": 63,
+        "p50": 43.99,
+        "p95": 61.322,
+        "max": 61.322,
+        "censored": 0,
+        "windows": [
+          {
+            "window_start": "2026-10-23T23:18:00.000Z",
+            "window_end": "2026-10-23T23:23:00.000Z",
+            "keys": 9,
+            "not_seen": 0,
+            "first_seen": "2026-10-23T23:23:47.529Z",
+            "latency_first_s": 47.5,
+            "latency_last_s": 47.5
+          },
+          {
+            "window_start": "2026-10-23T23:19:00.000Z",
+            "window_end": "2026-10-23T23:24:00.000Z",
+            "keys": 9,
+            "not_seen": 0,
+            "first_seen": "2026-10-23T23:24:30.251Z",
+            "latency_first_s": 30.3,
+            "latency_last_s": 30.3
+          },
+          {
+            "window_start": "2026-10-23T23:20:00.000Z",
+            "window_end": "2026-10-23T23:25:00.000Z",
+            "keys": 9,
+            "not_seen": 0,
+            "first_seen": "2026-10-23T23:25:33.969Z",
+            "latency_first_s": 34.0,
+            "latency_last_s": 34.0
+          },
+          {
+            "window_start": "2026-10-23T23:21:00.000Z",
+            "window_end": "2026-10-23T23:26:00.000Z",
+            "keys": 9,
+            "not_seen": 0,
+            "first_seen": "2026-10-23T23:26:37.241Z",
+            "latency_first_s": 37.2,
+            "latency_last_s": 37.2
+          },
+          {
+            "window_start": "2026-10-23T23:22:00.000Z",
+            "window_end": "2026-10-23T23:27:00.000Z",
+            "keys": 9,
+            "not_seen": 0,
+            "first_seen": "2026-10-23T23:28:01.322Z",
+            "latency_first_s": 61.3,
+            "latency_last_s": 61.3
+          },
+          {
+            "window_start": "2026-10-23T23:23:00.000Z",
+            "window_end": "2026-10-23T23:28:00.000Z",
+            "keys": 9,
+            "not_seen": 0,
+            "first_seen": "2026-10-23T23:28:43.990Z",
+            "latency_first_s": 44.0,
+            "latency_last_s": 44.0
+          },
+          {
+            "window_start": "2026-10-23T23:24:00.000Z",
+            "window_end": "2026-10-23T23:29:00.000Z",
+            "keys": 9,
+            "not_seen": 0,
+            "first_seen": "2026-10-23T23:29:47.399Z",
+            "latency_first_s": 47.4,
+            "latency_last_s": 47.4
+          }
+        ],
+        "polls": 35,
+        "interval_s": 20.0,
+        "horizon_s": 300.0,
+        "keys_seen_total": 108,
+        "pairs": 9
+      }
+    }
+  ],
+  "versions": {
+    "keys": 288,
+    "rows": 446,
+    "keys_with_late_panes": 75,
+    "max_versions": 4
+  },
+  "mode": "cloud",
+  "project": "project-0568d9ba-848f-413c-88b",
+  "since": "2026-10-23T23:02:23.687Z",
+  "steady_from": "2026-10-23T23:22:21.519Z",
+  "caught_up": {
+    "caught_up": true,
+    "at_ms": 1792797741519,
+    "waited_s": 594.7,
+    "lag_s": 81.519,
+    "threshold_s": 150.0,
+    "history": [
+      {
+        "at": "2026-10-23T23:12:26.845Z",
+        "lag_s": null
+      },
+      {
+        "at": "2026-10-23T23:12:48.609Z",
+        "lag_s": null
+      },
+      {
+        "at": "2026-10-23T23:13:10.826Z",
+        "lag_s": null
+      },
+      {
+        "at": "2026-10-23T23:13:32.348Z",
+        "lag_s": null
+      },
+      {
+        "at": "2026-10-23T23:13:53.480Z",
+        "lag_s": 233.48
+      },
+      {
+        "at": "2026-10-23T23:14:14.533Z",
+        "lag_s": 254.533
+      },
+      {
+        "at": "2026-10-23T23:14:36.091Z",
+        "lag_s": 276.091
+      },
+      {
+        "at": "2026-10-23T23:14:57.129Z",
+        "lag_s": 297.129
+      },
+      {
+        "at": "2026-10-23T23:15:18.399Z",
+        "lag_s": 318.399
+      },
+      {
+        "at": "2026-10-23T23:15:39.706Z",
+        "lag_s": 339.706
+      },
+      {
+        "at": "2026-10-23T23:16:01.025Z",
+        "lag_s": 361.025
+      },
+      {
+        "at": "2026-10-23T23:16:22.022Z",
+        "lag_s": 382.022
+      },
+      {
+        "at": "2026-10-23T23:16:43.350Z",
+        "lag_s": 403.35
+      },
+      {
+        "at": "2026-10-23T23:17:04.329Z",
+        "lag_s": 424.329
+      },
+      {
+        "at": "2026-10-23T23:17:25.570Z",
+        "lag_s": 445.57
+      },
+      {
+        "at": "2026-10-23T23:17:46.695Z",
+        "lag_s": 406.695
+      },
+      {
+        "at": "2026-10-23T23:18:07.897Z",
+        "lag_s": 427.897
+      },
+      {
+        "at": "2026-10-23T23:18:28.815Z",
+        "lag_s": 448.815
+      },
+      {
+        "at": "2026-10-23T23:18:49.765Z",
+        "lag_s": 469.765
+      },
+      {
+        "at": "2026-10-23T23:19:10.962Z",
+        "lag_s": 490.962
+      },
+      {
+        "at": "2026-10-23T23:19:31.863Z",
+        "lag_s": 511.863
+      },
+      {
+        "at": "2026-10-23T23:19:53.134Z",
+        "lag_s": 533.134
+      },
+      {
+        "at": "2026-10-23T23:20:14.517Z",
+        "lag_s": 554.517
+      },
+      {
+        "at": "2026-10-23T23:20:35.709Z",
+        "lag_s": 575.709
+      },
+      {
+        "at": "2026-10-23T23:20:56.586Z",
+        "lag_s": 596.586
+      },
+      {
+        "at": "2026-10-23T23:21:17.545Z",
+        "lag_s": 617.545
+      },
+      {
+        "at": "2026-10-23T23:21:38.543Z",
+        "lag_s": 158.543
+      },
+      {
+        "at": "2026-10-23T23:21:59.905Z",
+        "lag_s": 179.905
+      },
+      {
+        "at": "2026-10-23T23:22:21.519Z",
+        "lag_s": 81.519
+      }
+    ]
+  },
+  "latency_steady": {
+    "n": 1072,
+    "p50": 2.919,
+    "p95": 5.09,
+    "max": 5.624
+  },
+  "latency_all": {
+    "n": 2876,
+    "p50": 3.905,
+    "p95": 463.504,
+    "max": 559.759
+  },
+  "detection": {
+    "n": 63,
+    "p50": 43.99,
+    "p95": 61.322,
+    "max": 61.322,
+    "censored": 0,
+    "windows": [
+      {
+        "window_start": "2026-10-23T23:18:00.000Z",
+        "window_end": "2026-10-23T23:23:00.000Z",
+        "keys": 9,
+        "not_seen": 0,
+        "first_seen": "2026-10-23T23:23:47.529Z",
+        "latency_first_s": 47.5,
+        "latency_last_s": 47.5
+      },
+      {
+        "window_start": "2026-10-23T23:19:00.000Z",
+        "window_end": "2026-10-23T23:24:00.000Z",
+        "keys": 9,
+        "not_seen": 0,
+        "first_seen": "2026-10-23T23:24:30.251Z",
+        "latency_first_s": 30.3,
+        "latency_last_s": 30.3
+      },
+      {
+        "window_start": "2026-10-23T23:20:00.000Z",
+        "window_end": "2026-10-23T23:25:00.000Z",
+        "keys": 9,
+        "not_seen": 0,
+        "first_seen": "2026-10-23T23:25:33.969Z",
+        "latency_first_s": 34.0,
+        "latency_last_s": 34.0
+      },
+      {
+        "window_start": "2026-10-23T23:21:00.000Z",
+        "window_end": "2026-10-23T23:26:00.000Z",
+        "keys": 9,
+        "not_seen": 0,
+        "first_seen": "2026-10-23T23:26:37.241Z",
+        "latency_first_s": 37.2,
+        "latency_last_s": 37.2
+      },
+      {
+        "window_start": "2026-10-23T23:22:00.000Z",
+        "window_end": "2026-10-23T23:27:00.000Z",
+        "keys": 9,
+        "not_seen": 0,
+        "first_seen": "2026-10-23T23:28:01.322Z",
+        "latency_first_s": 61.3,
+        "latency_last_s": 61.3
+      },
+      {
+        "window_start": "2026-10-23T23:23:00.000Z",
+        "window_end": "2026-10-23T23:28:00.000Z",
+        "keys": 9,
+        "not_seen": 0,
+        "first_seen": "2026-10-23T23:28:43.990Z",
+        "latency_first_s": 44.0,
+        "latency_last_s": 44.0
+      },
+      {
+        "window_start": "2026-10-23T23:24:00.000Z",
+        "window_end": "2026-10-23T23:29:00.000Z",
+        "keys": 9,
+        "not_seen": 0,
+        "first_seen": "2026-10-23T23:29:47.399Z",
+        "latency_first_s": 47.4,
+        "latency_last_s": 47.4
+      }
+    ],
+    "polls": 35,
+    "interval_s": 20.0,
+    "horizon_s": 300.0,
+    "keys_seen_total": 108,
+    "pairs": 9
+  }
+}

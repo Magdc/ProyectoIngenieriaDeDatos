@@ -1,53 +1,53 @@
 {
   "command": "check",
   "verdict": "ok",
-  "checked_at": "2026-10-22T20:40:14+00:00",
+  "checked_at": "2026-10-23T01:45:43+00:00",
   "target": "emulator",
   "plan": {
-    "run_id": "20261022203923-e408",
-    "sentinel_event_id": "314f7d06-c805-5b75-be4e-0c94f2783a86",
+    "run_id": "20261023014412-e7e3",
+    "sentinel_event_id": "6c2de287-6c79-5a40-8b0f-2764d421ddad",
     "messages": [
       {
         "name": "sentinel",
         "topic_source": "reddit",
         "expect": "raw",
-        "event_id": "314f7d06-c805-5b75-be4e-0c94f2783a86"
+        "event_id": "6c2de287-6c79-5a40-8b0f-2764d421ddad"
       },
       {
         "name": "sentinel_duplicate",
         "topic_source": "reddit",
         "expect": "raw",
-        "event_id": "314f7d06-c805-5b75-be4e-0c94f2783a86"
+        "event_id": "6c2de287-6c79-5a40-8b0f-2764d421ddad"
       },
       {
         "name": "truncated_json",
         "topic_source": "reddit",
         "expect": "json",
-        "event_id": "62042b3c-831a-5f7b-ad33-b88baa960912"
+        "event_id": "9157425a-e9ab-55a8-8ba7-e64711d8fd8a"
       },
       {
         "name": "missing_field",
         "topic_source": "reddit",
         "expect": "schema",
-        "event_id": "8fcfc8b1-ea47-5b26-b780-f684837a283a"
+        "event_id": "a09a6c78-d4a0-55e5-99bb-1c23d5917123"
       },
       {
         "name": "attribute_mismatch",
         "topic_source": "reddit",
         "expect": "attributes",
-        "event_id": "ad126204-2a5f-5bd7-af50-6f3e76d3a070"
+        "event_id": "a12430d8-16d6-5444-9949-8fd6ae2006ab"
       },
       {
         "name": "wrong_topic",
         "topic_source": "facebook",
         "expect": "routing",
-        "event_id": "9b9b0412-65f3-5907-bdba-761ba8b991c5"
+        "event_id": "a2814e7e-a2a8-5ab1-a623-c033ece91af2"
       },
       {
         "name": "not_utf8",
         "topic_source": "reddit",
         "expect": "encoding",
-        "event_id": "f9456b33-a7f7-5f15-9abc-7b62b7e663b0"
+        "event_id": "a55db54e-a838-57a5-b96e-52d412f7a12c"
       }
     ]
   },
@@ -55,7 +55,7 @@
     {
       "name": "sentinel_in_raw_once",
       "status": "ok",
-      "detail": "1 copia(s) del centinela 314f7d06-c805-5b75-be4e-0c94f2783a86 en raw/ (esperada 1; se publicó 2 veces)"
+      "detail": "1 copia(s) del centinela 6c2de287-6c79-5a40-8b0f-2764d421ddad en raw/ (esperada 1; se publicó 2 veces)"
     },
     {
       "name": "dlq_file:truncated_json",
@@ -122,36 +122,36 @@
   "summary": {
     "root": "/lake",
     "hours_scanned": [
-      "2026-10-22T19",
-      "2026-10-22T20"
+      "2026-10-23T00",
+      "2026-10-23T01"
     ],
     "raw": {
       "reddit": {
-        "files": 7,
-        "lines": 170,
-        "unique_event_ids": 170,
+        "files": 11,
+        "lines": 308,
+        "unique_event_ids": 308,
         "duplicate_event_ids": 0,
         "extra_copies": 0,
         "bad_lines": 0
       },
       "facebook": {
-        "files": 7,
-        "lines": 179,
-        "unique_event_ids": 179,
+        "files": 11,
+        "lines": 307,
+        "unique_event_ids": 307,
         "duplicate_event_ids": 0,
         "extra_copies": 0,
         "bad_lines": 0
       },
       "instagram": {
-        "files": 7,
-        "lines": 166,
-        "unique_event_ids": 166,
+        "files": 11,
+        "lines": 297,
+        "unique_event_ids": 297,
         "duplicate_event_ids": 0,
         "extra_copies": 0,
         "bad_lines": 0
       }
     },
-    "raw_total_lines": 515,
+    "raw_total_lines": 912,
     "raw_total_extra_copies": 0,
     "dlq": {
       "files": 1,

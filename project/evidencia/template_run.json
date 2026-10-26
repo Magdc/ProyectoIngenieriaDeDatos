@@ -1,0 +1,13 @@
+{
+  "job_name": "ta-stream-dev",
+  "template_spec": "gs://project-0568d9ba-848f-413c-88b-ta-lake/_dataflow/templates/ta-stream.json",
+  "parameters": {
+    "output_root": "gs://project-0568d9ba-848f-413c-88b-ta-lake",
+    "nlp_container_image": "us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/dataflow-nlp:latest",
+    "posts_enriched_table": "project-0568d9ba-848f-413c-88b:ta_stream.posts_enriched",
+    "trend_windows_table": "project-0568d9ba-848f-413c-88b:ta_stream.trend_windows",
+    "dlq_events_table": "project-0568d9ba-848f-413c-88b:ta_stream.dlq_events",
+    "dlq_df_subscription": "projects/project-0568d9ba-848f-413c-88b/subscriptions/ta-dlq-df"
+  },
+  "dry_run": false
+}

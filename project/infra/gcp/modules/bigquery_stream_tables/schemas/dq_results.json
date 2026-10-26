@@ -1,0 +1,68 @@
+[
+  {
+    "name": "run_id",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Identifica la corrida de verificación."
+  },
+  {
+    "name": "run_ts",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED",
+    "description": "Instante de la corrida (partición)."
+  },
+  {
+    "name": "layer",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Capa verificada: stream, raw, trusted o curated."
+  },
+  {
+    "name": "table_name",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Tabla verificada."
+  },
+  {
+    "name": "suite",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Suite de Great Expectations, test de dbt o verificador."
+  },
+  {
+    "name": "check_name",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Nombre de la verificación."
+  },
+  {
+    "name": "kpi",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "completitud, unicidad, duplicados, anonimizacion, latencia, precision_nlp u otro (§5.10)."
+  },
+  {
+    "name": "observed_value",
+    "type": "FLOAT",
+    "mode": "NULLABLE",
+    "description": "Valor medido."
+  },
+  {
+    "name": "threshold",
+    "type": "FLOAT",
+    "mode": "NULLABLE",
+    "description": "Umbral del KPI."
+  },
+  {
+    "name": "passed",
+    "type": "BOOLEAN",
+    "mode": "REQUIRED",
+    "description": "Si la verificación pasó."
+  },
+  {
+    "name": "details",
+    "type": "JSON",
+    "mode": "NULLABLE",
+    "description": "Detalle libre de la verificación."
+  }
+]

@@ -1,0 +1,2281 @@
+[
+  {
+    "insertId": "7544884260666478420:153935:0:36781",
+    "jsonPayload": {
+      "job": "2026-10-23_12_12_28-6235619416906386498",
+      "logger": "/usr/local/lib/python3.11/site-packages/apache_beam/options/pipeline_options.py:570",
+      "message": "Discarding unparseable args: ['--autoscalingAlgorithm=NONE', '--contracts_dir=../contracts', '--dataflowJobId=2026-10-23_12_12_28-6235619416906386498', '--dedup_window_seconds=3600', '--direct_runner_use_stacked_bundle', '--dlq_bq_enabled=auto', '--dlq_df_subscription=auto', '--dlq_events_table=auto', '--dlq_table=', '--dlq_topic=ta-dlq', '--enriched_enabled=true', '--gcpTempLocation=gs://project-0568d9ba-848f-413c-88b-ta-lake/_dataflow/temp/ta-stream-dev.1792782616.063664', '--jobId=2026-10-23_12_12_28-6235619416906386498', '--maxNumWorkers=1', '--nlp_batch_size=16', '--nlp_enabled=auto', '--numWorkers=1', '--output_root=gs://project-0568d9ba-848f-413c-88b-ta-lake', '--pipelineProtoHash=', '--pipelineUrl=gs://project-0568d9ba-848f-413c-88b-ta-lake/_dataflow/staging/ta-stream-dev.1792782616.063664/pipeline.pb', '--pipeline_type_check', '--posts_enriched_table=auto', '--pubsub_id_label=event_id', '--raw_window_seconds=300', '--sources=reddit,facebook,instagram', '--subscription_template=ta-raw-{source}-df', '--tempLocation=gs://project-0568d9ba-848f-413c-88b-ta-lake/_dataflow/temp/ta-stream-dev.1792782616.063664', '--trend_allowed_lateness_seconds=1800', '--trend_baseline_windows=60', '--trend_late_delay_seconds=auto', '--trend_min_posts=5', '--trend_period_seconds=60', '--trend_window_seconds=300', '--trend_windows_table=auto', '--trend_z_threshold=3', '--trends_enabled=auto', '--trends_root=auto']",
+      "portability_worker_id": "sdk-0-0_sibling_1",
+      "thread": "MainThread",
+      "worker": "ta-stream-dev-10231212-2del-harness-3dgh"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "supportability",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fworker",
+    "receiveTimestamp": "2026-10-23T19:15:54.514228523Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:15:54.135031461Z"
+  },
+  {
+    "insertId": "7544884260666478420:153935:0:32180",
+    "jsonPayload": {
+      "job": "2026-10-23_12_12_28-6235619416906386498",
+      "logger": "/usr/local/lib/python3.11/site-packages/apache_beam/options/pipeline_options.py:570",
+      "message": "Discarding unparseable args: ['--autoscalingAlgorithm=NONE', '--contracts_dir=../contracts', '--dataflowJobId=2026-10-23_12_12_28-6235619416906386498', '--dedup_window_seconds=3600', '--direct_runner_use_stacked_bundle', '--dlq_bq_enabled=auto', '--dlq_df_subscription=auto', '--dlq_events_table=auto', '--dlq_table=', '--dlq_topic=ta-dlq', '--enriched_enabled=true', '--gcpTempLocation=gs://project-0568d9ba-848f-413c-88b-ta-lake/_dataflow/temp/ta-stream-dev.1792782616.063664', '--jobId=2026-10-23_12_12_28-6235619416906386498', '--maxNumWorkers=1', '--nlp_batch_size=16', '--nlp_enabled=auto', '--numWorkers=1', '--output_root=gs://project-0568d9ba-848f-413c-88b-ta-lake', '--pipelineProtoHash=', '--pipelineUrl=gs://project-0568d9ba-848f-413c-88b-ta-lake/_dataflow/staging/ta-stream-dev.1792782616.063664/pipeline.pb', '--pipeline_type_check', '--posts_enriched_table=auto', '--pubsub_id_label=event_id', '--raw_window_seconds=300', '--sources=reddit,facebook,instagram', '--subscription_template=ta-raw-{source}-df', '--tempLocation=gs://project-0568d9ba-848f-413c-88b-ta-lake/_dataflow/temp/ta-stream-dev.1792782616.063664', '--trend_allowed_lateness_seconds=1800', '--trend_baseline_windows=60', '--trend_late_delay_seconds=auto', '--trend_min_posts=5', '--trend_period_seconds=60', '--trend_window_seconds=300', '--trend_windows_table=auto', '--trend_z_threshold=3', '--trends_enabled=auto', '--trends_root=auto']",
+      "portability_worker_id": "sdk-0-0",
+      "thread": "MainThread",
+      "worker": "ta-stream-dev-10231212-2del-harness-3dgh"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "supportability",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fworker",
+    "receiveTimestamp": "2026-10-23T19:15:54.514228523Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:15:54.130010128Z"
+  },
+  {
+    "insertId": "7544884260666478420:153935:0:30422",
+    "jsonPayload": {
+      "job": "2026-10-23_12_12_28-6235619416906386498",
+      "logger": "/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker_main.py:419",
+      "message": "No session file found:  User registered objects (e.g. schema, logical type) throughregisteries may not be effective./var/opt/google/staged/pickled_main_session",
+      "portability_worker_id": "sdk-0-0_sibling_1",
+      "thread": "MainThread",
+      "worker": "ta-stream-dev-10231212-2del-harness-3dgh"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "supportability",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fworker",
+    "receiveTimestamp": "2026-10-23T19:15:54.514228523Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:15:54.125157356Z"
+  },
+  {
+    "insertId": "7544884260666478420:153935:0:28732",
+    "jsonPayload": {
+      "job": "2026-10-23_12_12_28-6235619416906386498",
+      "logger": "/usr/local/lib/python3.11/site-packages/apache_beam/runners/worker/sdk_worker_main.py:419",
+      "message": "No session file found:  User registered objects (e.g. schema, logical type) throughregisteries may not be effective./var/opt/google/staged/pickled_main_session",
+      "portability_worker_id": "sdk-0-0",
+      "thread": "MainThread",
+      "worker": "ta-stream-dev-10231212-2del-harness-3dgh"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "supportability",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fworker",
+    "receiveTimestamp": "2026-10-23T19:15:54.514228523Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:15:54.120290517Z"
+  },
+  {
+    "insertId": "7544884260666478420:153931:0:9407",
+    "jsonPayload": {
+      "line": "text_format.cc:569",
+      "message": "Warning parsing text-format dist_proc.dax.workflow.WorkflowConfigProto: 1:168 (N = 1): text format contains deprecated field \"agent_tag\"",
+      "thread": "14"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fharness",
+    "receiveTimestamp": "2026-10-23T19:14:34.520125004Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:14:10.037386Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=8da;b=703f90679890473191537d07b70895a3;m=2ae5256;t=65e86c84d2c28;x=36aa807d3a80a3d0",
+    "jsonPayload": {
+      "line": "eviction_manager.go:272",
+      "message": "\"eviction manager: failed to check if we have separate container filesystem. Ignoring.\" err=\"no imagefs label for configured runtime\"",
+      "thread": "1305"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fkubelet",
+    "receiveTimestamp": "2026-10-23T19:14:04.835682301Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:13:59.393205Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=8d6;b=703f90679890473191537d07b70895a3;m=2ae4148;t=65e86c84d1b1a;x=2df6d992f9f1dae2",
+    "jsonPayload": {
+      "line": "manager.go:525",
+      "message": "\"Failed to read data from checkpoint\" err=\"checkpoint is not found\" checkpoint=\"kubelet_internal_checkpoint\"",
+      "thread": "1305"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fkubelet",
+    "receiveTimestamp": "2026-10-23T19:14:04.835682301Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-10-23T19:13:59.388901Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=8b9;b=703f90679890473191537d07b70895a3;m=2ac7797;t=65e86c84b5169;x=18092c47c14f309f",
+    "jsonPayload": {
+      "line": "csi_plugin.go:370",
+      "message": "Skipping CSINode initialization, kubelet running in standalone mode",
+      "thread": "1305"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fkubelet",
+    "receiveTimestamp": "2026-10-23T19:14:04.835682301Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:59.271773Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=8b8;b=703f90679890473191537d07b70895a3;m=2ac7797;t=65e86c84b5169;x=724ff142694ffe97",
+    "jsonPayload": {
+      "line": "csi_plugin.go:286",
+      "message": "kubernetes.io/csi: kubeclient not set, assuming standalone kubelet",
+      "thread": "1305"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fkubelet",
+    "receiveTimestamp": "2026-10-23T19:14:04.835682301Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:59.271727Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=8b6;b=703f90679890473191537d07b70895a3;m=2ac6d2a;t=65e86c84b46fc;x=c21008131ecf3611",
+    "jsonPayload": {
+      "line": "probe.go:272",
+      "message": "Flexvolume plugin directory at /usr/libexec/kubernetes/kubelet-plugins/volume/exec/ does not exist. Recreating.",
+      "thread": "1305"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fkubelet",
+    "receiveTimestamp": "2026-10-23T19:14:04.835682301Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:59.269078Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=7a9;b=703f90679890473191537d07b70895a3;m=1f93759;t=65e86c798112c;x=b13ebf12128f8245",
+    "jsonPayload": {
+      "message": "Configuration file /usr/lib/systemd/system/crash-sender.timer is marked world-inaccessible. This has no effect as configuration data is accessible via APIs without restrictions. Proceeding anyway."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:47.524396Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=7a8;b=703f90679890473191537d07b70895a3;m=1f93391;t=65e86c7980d63;x=cd628168950868bd",
+    "jsonPayload": {
+      "message": "Configuration file /usr/lib/systemd/system/systemd-tmpfiles-clean.timer is marked world-inaccessible. This has no effect as configuration data is accessible via APIs without restrictions. Proceeding anyway."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:47.523427Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=786;b=703f90679890473191537d07b70895a3;m=1ea1211;t=65e86c788ebe3;x=645eab527d588944",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 1105, but reception only permitted for main PID 1005"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:46.531811Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=780;b=703f90679890473191537d07b70895a3;m=1e9a683;t=65e86c7888055;x=20b0d7205d07409c",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 1104, but reception only permitted for main PID 1005"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:46.504277Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=77f;b=703f90679890473191537d07b70895a3;m=1e970f3;t=65e86c7884ac4;x=a31d8ff067d869f2",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 1103, but reception only permitted for main PID 1005"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:46.490564Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=77e;b=703f90679890473191537d07b70895a3;m=1e947f1;t=65e86c78821c3;x=a5e299e65fcc826",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 1102, but reception only permitted for main PID 1005"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:46.480067Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=77c;b=703f90679890473191537d07b70895a3;m=1e917ec;t=65e86c787f1bd;x=625f9691c6acdae8",
+    "jsonPayload": {
+      "message": "Cannot find unit for notify message of PID 1100, ignoring."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:46.467773Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=77b;b=703f90679890473191537d07b70895a3;m=1e8ecb1;t=65e86c787c683;x=ef0ab5a7a3efc9ea",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 1089, but reception only permitted for main PID 1005"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:46.456707Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=771;b=703f90679890473191537d07b70895a3;m=1e71ec5;t=65e86c785f897;x=384ae7b8290b0ec4",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 1088, but reception only permitted for main PID 1005"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:46.338455Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=770;b=703f90679890473191537d07b70895a3;m=1e6e7cd;t=65e86c785c19f;x=ab9d7c786e45c315",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 1084, but reception only permitted for main PID 1005"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:46.324383Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=76e;b=703f90679890473191537d07b70895a3;m=1e676bd;t=65e86c785508f;x=4f12aeed4c7902f4",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 1082, but reception only permitted for main PID 1005"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:46.295439Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=75f;b=703f90679890473191537d07b70895a3;m=1e53372;t=65e86c7840d44;x=7622dd2bf5d33f53",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 1076, but reception only permitted for main PID 1005"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:46.212676Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=752;b=703f90679890473191537d07b70895a3;m=1e4e141;t=65e86c783bb13;x=6ba97f9e2ccae236",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 1075, but reception only permitted for main PID 1005"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:46.191635Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=751;b=703f90679890473191537d07b70895a3;m=1e4a976;t=65e86c7838348;x=a592d3f0401fb7f6",
+    "jsonPayload": {
+      "message": "Cannot find unit for notify message of PID 1074, ignoring."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:46.177352Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=750;b=703f90679890473191537d07b70895a3;m=1e47d38;t=65e86c783570a;x=3c31e1cb8a26ff72",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 1073, but reception only permitted for main PID 1005"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:46.166026Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=74f;b=703f90679890473191537d07b70895a3;m=1e4618c;t=65e86c7833b5e;x=782341b56c619d71",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 1072, but reception only permitted for main PID 1005"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:46.158942Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=74e;b=703f90679890473191537d07b70895a3;m=1e420e3;t=65e86c782fab4;x=5044261a31ea4b70",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 1071, but reception only permitted for main PID 1005"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:46.142388Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=74d;b=703f90679890473191537d07b70895a3;m=1e3f04b;t=65e86c782ca1d;x=2fc3cad1df432127",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 1070, but reception only permitted for main PID 1005"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:46.129949Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=6b2;b=703f90679890473191537d07b70895a3;m=185cb5b;t=65e86c724a52d;x=c8830d008f8ceab6",
+    "jsonPayload": {
+      "message": "device_policy_manager.service: Got notification message from PID 902, but reception only permitted for main PID 857"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:39.960109Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=6ae;b=703f90679890473191537d07b70895a3;m=185b37c;t=65e86c7248d4e;x=2270fb345c4abe0d",
+    "jsonPayload": {
+      "message": "No console-ramoops file found after watchdog reset"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:39.953998Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=6a8;b=703f90679890473191537d07b70895a3;m=1859409;t=65e86c7246ddb;x=25e0d95a4daa596f",
+    "jsonPayload": {
+      "message": "Cannot find unit for notify message of PID 893, ignoring."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:39.945947Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=69e;b=703f90679890473191537d07b70895a3;m=161be88;t=65e86c700985a;x=e6723f19303d6f8b",
+    "jsonPayload": {
+      "message": "device_policy_manager.service: Got notification message from PID 892, but reception only permitted for main PID 857"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:37.597530Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=69d;b=703f90679890473191537d07b70895a3;m=1616884;t=65e86c7004256;x=599060339a703d4e",
+    "jsonPayload": {
+      "message": "device_policy_manager.service: Got notification message from PID 891, but reception only permitted for main PID 857"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:37.575510Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=69c;b=703f90679890473191537d07b70895a3;m=15ffc6e;t=65e86c6fed640;x=662be0003b1ce9a5",
+    "jsonPayload": {
+      "message": "Cannot find unit for notify message of PID 890, ignoring."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:37.482304Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=69b;b=703f90679890473191537d07b70895a3;m=15fd67a;t=65e86c6feb04c;x=ce4f6af02b8b2570",
+    "jsonPayload": {
+      "message": "device_policy_manager.service: Got notification message from PID 889, but reception only permitted for main PID 857"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:37.472588Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=69a;b=703f90679890473191537d07b70895a3;m=15f9ce5;t=65e86c6fe76b6;x=8ca46b00b5569b5c",
+    "jsonPayload": {
+      "message": "Cannot find unit for notify message of PID 888, ignoring."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:37.457846Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=699;b=703f90679890473191537d07b70895a3;m=15f7c9a;t=65e86c6fe566c;x=4759a1e0eb035ae2",
+    "jsonPayload": {
+      "message": "device_policy_manager.service: Got notification message from PID 887, but reception only permitted for main PID 857"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:37.449580Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=690;b=703f90679890473191537d07b70895a3;m=15f252e;t=65e86c6fdff00;x=7b7e842c4a02cb42",
+    "jsonPayload": {
+      "message": "Cannot find unit for notify message of PID 886, ignoring."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:37.427200Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=68f;b=703f90679890473191537d07b70895a3;m=15f02f9;t=65e86c6fddccb;x=e106922588a02f9e",
+    "jsonPayload": {
+      "message": "Cannot find unit for notify message of PID 885, ignoring."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:37.418443Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=689;b=703f90679890473191537d07b70895a3;m=15d2741;t=65e86c6fc0113;x=cef2703ac7cd8108",
+    "jsonPayload": {
+      "message": "device_policy_manager.service: Got notification message from PID 882, but reception only permitted for main PID 857"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:37.296659Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=687;b=703f90679890473191537d07b70895a3;m=15cd8d0;t=65e86c6fbb2a2;x=ca6ca0e7bac4cea1",
+    "jsonPayload": {
+      "message": "device_policy_manager.service: Got notification message from PID 881, but reception only permitted for main PID 857"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:37.276578Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=675;b=703f90679890473191537d07b70895a3;m=1472f13;t=65e86c6e608e5;x=8d98cce391cc59d6",
+    "jsonPayload": {
+      "message": "device_policy_manager.service: Referenced but unset environment variable evaluates to an empty string: GLOBAL_ARGS"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:14:04.837173928Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:35.856869Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=64b;b=703f90679890473191537d07b70895a3;m=eaf71e;t=65e86c689d0f0;x=271858c1a3d0f45b",
+    "jsonPayload": {
+      "message": "Local plugin \"ManagedWorkloadIdentityExtension\" does not have local manifest file, skipping local installation"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:29.813232Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=64a;b=703f90679890473191537d07b70895a3;m=ea5372;t=65e86c6892d44;x=b92c539c110bc4ed",
+    "jsonPayload": {
+      "message": "Local plugin \"GuestTelemetryExtension\" does not have local manifest file, skipping local installation"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:29.771332Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=634;b=703f90679890473191537d07b70895a3;m=c6b9f0;t=65e86c66593c2;x=d6e6516a32e6d1bd",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 611, but reception only permitted for main PID 490"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:27.438274Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=630;b=703f90679890473191537d07b70895a3;m=c370fa;t=65e86c6624acc;x=61d70f37b2e514b4",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 610, but reception only permitted for main PID 490"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:27.222988Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=62f;b=703f90679890473191537d07b70895a3;m=c34c6d;t=65e86c662263f;x=e952053d66423176",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 609, but reception only permitted for main PID 490"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:27.213631Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=62e;b=703f90679890473191537d07b70895a3;m=c32ab5;t=65e86c6620486;x=d297e35d03af9858",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 608, but reception only permitted for main PID 490"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:27.204998Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=62d;b=703f90679890473191537d07b70895a3;m=c30c32;t=65e86c661e604;x=d85b7d1dbad361ab",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 607, but reception only permitted for main PID 490"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:27.197188Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=62c;b=703f90679890473191537d07b70895a3;m=c2e982;t=65e86c661c354;x=8b1f53f29d8aa06d",
+    "jsonPayload": {
+      "message": "Cannot find unit for notify message of PID 596, ignoring."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:27.188308Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=622;b=703f90679890473191537d07b70895a3;m=c15171;t=65e86c6602b43;x=2b1bb8c5ec6ddbb3",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 595, but reception only permitted for main PID 490"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:27.083843Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=621;b=703f90679890473191537d07b70895a3;m=c1311e;t=65e86c6600af0;x=30058272f4c9e897",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 594, but reception only permitted for main PID 490"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:27.075568Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=620;b=703f90679890473191537d07b70895a3;m=c10e32;t=65e86c65fe804;x=2940ee4f8643d358",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 593, but reception only permitted for main PID 490"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:27.066628Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=5d6;b=703f90679890473191537d07b70895a3;m=a8cf2c;t=65e86c647a8fe;x=4cd6b11b5cfd1adc",
+    "jsonPayload": {
+      "message": "Cannot find unit for notify message of PID 563, ignoring."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:25.477630Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=5c9;b=703f90679890473191537d07b70895a3;m=a88edc;t=65e86c64768ae;x=9536f258e9ed9352",
+    "jsonPayload": {
+      "message": "Cannot find unit for notify message of PID 562, ignoring."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:25.461166Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=5c8;b=703f90679890473191537d07b70895a3;m=a86b1b;t=65e86c64744ed;x=a924c90eb0bf00c0",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 561, but reception only permitted for main PID 490"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:25.452013Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=5c7;b=703f90679890473191537d07b70895a3;m=a83e67;t=65e86c6471839;x=42ea06242c99b797",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 559, but reception only permitted for main PID 490"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:25.440569Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=5c6;b=703f90679890473191537d07b70895a3;m=a6b754;t=65e86c6459126;x=880102552612a115",
+    "jsonPayload": {
+      "message": "Cannot find unit for notify message of PID 558, ignoring."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:25.340454Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=5c5;b=703f90679890473191537d07b70895a3;m=a69054;t=65e86c6456a26;x=fe734737d308c38f",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 557, but reception only permitted for main PID 490"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:25.330470Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=5c4;b=703f90679890473191537d07b70895a3;m=a668f8;t=65e86c64542ca;x=a28bc168559ea43b",
+    "jsonPayload": {
+      "message": "google-guest-agent.service: Got notification message from PID 556, but reception only permitted for main PID 490"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:25.320394Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=574;b=703f90679890473191537d07b70895a3;m=90d164;t=65e86c62fab36;x=92d8318c95fc6b4a",
+    "jsonPayload": {
+      "message": "Failed to drop supplementary groups: Operation not permitted"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:23.905334Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=467;b=703f90679890473191537d07b70895a3;m=5d2bf9;t=65e86c5fc05ca;x=b0670a16cf9135a5",
+    "jsonPayload": {
+      "message": "loadpin_trigger: loading out-of-tree module taints kernel."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:20.520650Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=41a;b=703f90679890473191537d07b70895a3;m=5d10aa;t=65e86c5fbea7c;x=cf7e960c962473a2",
+    "jsonPayload": {
+      "message": "Configuration file /usr/lib/systemd/system/crash-sender.timer is marked world-inaccessible. This has no effect as configuration data is accessible via APIs without restrictions. Proceeding anyway."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:20.513660Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=419;b=703f90679890473191537d07b70895a3;m=5d1094;t=65e86c5fbea66;x=34653f960ec84462",
+    "jsonPayload": {
+      "message": "Configuration file /usr/lib/systemd/system/systemd-tmpfiles-clean.timer is marked world-inaccessible. This has no effect as configuration data is accessible via APIs without restrictions. Proceeding anyway."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:20.513638Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=3d6;b=703f90679890473191537d07b70895a3;m=5d0a60;t=65e86c5fbe432;x=d7306f5ef93e9710",
+    "jsonPayload": {
+      "message": "GPT: Use GNU Parted to correct GPT errors."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:20.512050Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=3d5;b=703f90679890473191537d07b70895a3;m=5d0a4e;t=65e86c5fbe421;x=6d0d585415849d53",
+    "jsonPayload": {
+      "message": "GPT:52428799 != 62914559"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:20.512033Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=3d4;b=703f90679890473191537d07b70895a3;m=5d0a3d;t=65e86c5fbe40f;x=1e84f08dc24aaf7f",
+    "jsonPayload": {
+      "message": "GPT:Alternate GPT header not at the end of the disk."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:20.512015Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=3d3;b=703f90679890473191537d07b70895a3;m=5d0a28;t=65e86c5fbe3fa;x=d13ed593844c1525",
+    "jsonPayload": {
+      "message": "GPT:52428799 != 62914559"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:20.511994Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=3d1;b=703f90679890473191537d07b70895a3;m=5d09fd;t=65e86c5fbe3d0;x=dd35ef6bcdbc66d7",
+    "jsonPayload": {
+      "message": "GPT:Primary header thinks Alt. header is not at the end of the disk."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:20.511952Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=3d0;b=703f90679890473191537d07b70895a3;m=5d09e6;t=65e86c5fbe3b8;x=41b5ccb0c19aeb18",
+    "jsonPayload": {
+      "message": "device-mapper: core: CONFIG_IMA_DISABLE_HTABLE is disabled. Duplicate IMA measurements will not be recorded in the IMA log."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:20.511928Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=3c9;b=703f90679890473191537d07b70895a3;m=5d06fd;t=65e86c5fbe0cf;x=22f60cbc6929388a",
+    "jsonPayload": {
+      "message": "i8042: Warning: Keylock active"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:20.511183Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=34c;b=703f90679890473191537d07b70895a3;m=5cb4fb;t=65e86c5fb8ecd;x=1c742ffd303fce04",
+    "jsonPayload": {
+      "message": "acpi PNP0A03:00: fail to add MMCONFIG information, can't access extended configuration space under this bridge"
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:20.490189Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=324;b=703f90679890473191537d07b70895a3;m=5cb16b;t=65e86c5fb8b3d;x=1908e32365baba73",
+    "jsonPayload": {
+      "message": "MMIO Stale Data CPU bug present and SMT on, data leak possible. See https://www.kernel.org/doc/html/latest/admin-guide/hw-vuln/processor_mmio_stale_data.html for more details."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:20.489277Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=323;b=703f90679890473191537d07b70895a3;m=5cb160;t=65e86c5fb8b32;x=fd45fff27d25a105",
+    "jsonPayload": {
+      "message": "TAA CPU bug present and SMT on, data leak possible. See https://www.kernel.org/doc/html/latest/admin-guide/hw-vuln/tsx_async_abort.html for more details."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:20.489266Z"
+  },
+  {
+    "insertId": "s=fd6ba8d313bd43b680d9f6611ff10f25;i=322;b=703f90679890473191537d07b70895a3;m=5cb154;t=65e86c5fb8b26;x=bbb92d074a4e12f5",
+    "jsonPayload": {
+      "message": "MDS CPU bug present and SMT on, data leak possible. See https://www.kernel.org/doc/html/latest/admin-guide/hw-vuln/mds.html for more details."
+    },
+    "labels": {
+      "compute.googleapis.com/resource_id": "7544884260666478420",
+      "compute.googleapis.com/resource_name": "ta-stream-dev-10231212-2del-harness-3dgh",
+      "compute.googleapis.com/resource_type": "instance",
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fsystem",
+    "receiveTimestamp": "2026-10-23T19:13:55.039502831Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "timestamp": "2026-10-23T19:13:20.489254Z"
+  },
+  {
+    "insertId": "yq8saxc1ha",
+    "labels": {
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fjob-message",
+    "receiveTimestamp": "2026-10-23T19:12:41.645631893Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "textPayload": "DoFn uses keyed state. Liquid sharding will be disabled. Parallelism will be set to default",
+    "timestamp": "2026-10-23T19:12:40.809308755Z"
+  },
+  {
+    "insertId": "yq8saxc1h9",
+    "labels": {
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fjob-message",
+    "receiveTimestamp": "2026-10-23T19:12:41.645631893Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "textPayload": "Streaming job has set up its own fixed sharding configuration. Liquid sharding will be disabled. Parallelism will be set to default",
+    "timestamp": "2026-10-23T19:12:40.777384007Z"
+  },
+  {
+    "insertId": "yq8saxc1gt",
+    "labels": {
+      "dataflow.googleapis.com/job_id": "2026-10-23_12_12_28-6235619416906386498",
+      "dataflow.googleapis.com/job_name": "ta-stream-dev",
+      "dataflow.googleapis.com/log_type": "system",
+      "dataflow.googleapis.com/region": "us-central1"
+    },
+    "logName": "projects/project-0568d9ba-848f-413c-88b/logs/dataflow.googleapis.com%2Fjob-message",
+    "receiveTimestamp": "2026-10-23T19:12:31.639165886Z",
+    "resource": {
+      "labels": {
+        "job_id": "2026-10-23_12_12_28-6235619416906386498",
+        "job_name": "ta-stream-dev",
+        "project_id": "project-0568d9ba-848f-413c-88b",
+        "region": "us-central1",
+        "step_id": ""
+      },
+      "type": "dataflow_step"
+    },
+    "severity": "WARNING",
+    "textPayload": "The requested max number of workers (1) is ignored as autoscaling is explicitly disabled (autoscalingAlgorithm=NONE).",
+    "timestamp": "2026-10-23T19:12:30.141604346Z"
+  }
+]

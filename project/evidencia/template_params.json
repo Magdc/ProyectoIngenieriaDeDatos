@@ -1,0 +1,49 @@
+{
+  "env": {
+    "project": "project-0568d9ba-848f-413c-88b",
+    "region": "us-central1",
+    "env": "dev",
+    "lake_bucket": "project-0568d9ba-848f-413c-88b-ta-lake",
+    "service_account": "sa-dataflow@project-0568d9ba-848f-413c-88b.iam.gserviceaccount.com",
+    "artifact_registry_url": "us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images",
+    "template_spec": "gs://project-0568d9ba-848f-413c-88b-ta-lake/_dataflow/templates/ta-stream.json",
+    "launcher_image": "us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/dataflow-launcher",
+    "labels": {
+      "env": "dev",
+      "owner": "alejandro",
+      "project": "trend-analyzer"
+    },
+    "posts_enriched_table": "project-0568d9ba-848f-413c-88b:ta_stream.posts_enriched",
+    "trend_windows_table": "project-0568d9ba-848f-413c-88b:ta_stream.trend_windows",
+    "dlq_events_table": "project-0568d9ba-848f-413c-88b:ta_stream.dlq_events",
+    "dlq_subscription": "projects/project-0568d9ba-848f-413c-88b/subscriptions/ta-dlq-df"
+  },
+  "job_name": "ta-stream-dev",
+  "parameters": {
+    "output_root": "gs://project-0568d9ba-848f-413c-88b-ta-lake",
+    "nlp_container_image": "us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/dataflow-nlp:latest",
+    "posts_enriched_table": "project-0568d9ba-848f-413c-88b:ta_stream.posts_enriched",
+    "trend_windows_table": "project-0568d9ba-848f-413c-88b:ta_stream.trend_windows",
+    "dlq_events_table": "project-0568d9ba-848f-413c-88b:ta_stream.dlq_events",
+    "dlq_df_subscription": "projects/project-0568d9ba-848f-413c-88b/subscriptions/ta-dlq-df"
+  },
+  "run_command": [
+    "gcloud",
+    "dataflow",
+    "flex-template",
+    "run",
+    "ta-stream-dev",
+    "--template-file-gcs-location=gs://project-0568d9ba-848f-413c-88b-ta-lake/_dataflow/templates/ta-stream.json",
+    "--project=project-0568d9ba-848f-413c-88b",
+    "--region=us-central1",
+    "--service-account-email=sa-dataflow@project-0568d9ba-848f-413c-88b.iam.gserviceaccount.com",
+    "--temp-location=gs://project-0568d9ba-848f-413c-88b-ta-lake/_dataflow/temp",
+    "--staging-location=gs://project-0568d9ba-848f-413c-88b-ta-lake/_dataflow/staging",
+    "--worker-machine-type=e2-standard-2",
+    "--num-workers=1",
+    "--max-workers=1",
+    "--enable-streaming-engine",
+    "--additional-user-labels=env=dev,owner=alejandro,project=trend-analyzer,component=streaming",
+    "--parameters=output_root=gs://project-0568d9ba-848f-413c-88b-ta-lake,nlp_container_image=us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/dataflow-nlp:latest,posts_enriched_table=project-0568d9ba-848f-413c-88b:ta_stream.posts_enriched,trend_windows_table=project-0568d9ba-848f-413c-88b:ta_stream.trend_windows,dlq_events_table=project-0568d9ba-848f-413c-88b:ta_stream.dlq_events,dlq_df_subscription=projects/project-0568d9ba-848f-413c-88b/subscriptions/ta-dlq-df"
+  ]
+}

@@ -1,6 +1,6 @@
 # TrendAnalyzer · Historias de Usuario (HU)
 
-> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.25** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
+> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.27** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
 > Cada HU tiene un ID **HU-000**, su fase/lote de `ARCHITECTURE.md` §7, responsable, sprint y criterios de aceptación verificables.
 
 ---
@@ -54,7 +54,7 @@ Criterios de aceptación: lista verificable.
 | HU-003 | Decisiones de arquitectura cerradas | 0 | Todos | Must | 2 | ✅ |
 | **E1 · Infraestructura como código** | | | | | | |
 | HU-004 | Infraestructura GCP base | 1 · 1.3 | M | Must | 2 | ✅ |
-| HU-005 | Recursos de streaming (BigQuery, secreto HMAC) | 2 · 2.4 | M + C | Must | 2 | 🟨 |
+| HU-005 | Recursos de streaming (BigQuery, secreto HMAC) | 2 · 2.4 | M + C | Must | 2 | ✅ |
 | HU-006 | Federación OIDC GCP → AWS | 3 · 3.2 | M | Must | 2 | ⬜ |
 | HU-007 | Infraestructura AWS del lakehouse | 4 · 4.1 | M | Must | 2 | ⬜ |
 | HU-046 | Bootstrap de Terraform y entornos | 1 · 1.0 | M | Must | 2 | ✅ |
@@ -76,7 +76,7 @@ Criterios de aceptación: lista verificable.
 | HU-020 | Anonimización de usuarios | 2 · 2.2 | C | Must | 2 | ✅ |
 | HU-021 | Normalización y carga a BigQuery | 2 · 2.2 | C | Must | 2 | ✅ |
 | HU-022 | Análisis de emoción y sentimiento | 2 · 2.3 | C | Must | 2 | ✅ |
-| HU-023 | Detección de tendencias en ventanas | 2 · 2.4 | C | Must | 2 | ⬜ |
+| HU-023 | Detección de tendencias en ventanas | 2 · 2.4 | C | Must | 2 | ✅ |
 | **E4 · Histórico y puente a AWS** | | | | | | |
 | HU-024 | Carga histórica (full load) | 3 · 3.1 | A | Must | 2 | ⬜ |
 | HU-025 | Exportación GCS → S3 | 3 · 3.2 | M | Must | 2 | ⬜ |
@@ -188,6 +188,8 @@ Criterios de aceptación: lista verificable.
 - `posts_enriched` particionada por `DATE(event_time)` y con clustering por `source, brand_primary`.
 - Secreto `ta-hmac-key` creado y accesible solo para `sa-dataflow` (y el loader). *(Adelantado al Lote 2.2: `infra/gcp/modules/hmac_secret` y `scripts/hmac_key.sh`.)*
 - Plantilla de Dataflow parametrizada con los `outputs` de Terraform, sin valores hardcodeados.
+
+*Cerrada en v2.27* (`ARCHITECTURE.md` §3.16): el dataset tiene las cuatro tablas y la vista `trend_windows_latest` (C y E2 OK); el secreto viene del Lote 2.2; el job lanzado desde la plantilla Flex, con todos sus parámetros tomados de `terraform output`, llegó a *Running* con `dataflow-nlp` y las tablas del 2.4 (F1–F5 OK). Detalle de la entrega: `trend_windows`, `dlq_events`, `dq_results` y la vista `trend_windows_latest` (módulo `bigquery_stream_tables`); plantilla Flex con imagen `dataflow-launcher` y parámetros tomados de `terraform output` (`scripts/dataflow_template.py`). Validación en `docs/validation/validation-2-4.md`, partes C, E y F.
 
 ### HU-006 · Federación OIDC GCP → AWS
 
@@ -412,7 +414,7 @@ Criterios de aceptación: lista verificable.
 
 **Criterios de aceptación**
 - Dataflow lee de las suscripciones `ta-raw-{source}-df` y valida contra el schema del envelope.
-- Los eventos inválidos van a `ta-dlq`, a `gs://…/dlq/` y a `dlq_events` con `error_type` y `error_detail` *(`dlq_events` se crea en el Lote 2.4: el pipeline del 2.1 ya la admite con `--dlq_table`.)*
+- Los eventos inválidos van a `ta-dlq`, a `gs://…/dlq/` y a `dlq_events` con `error_type` y `error_detail` *(`dlq_events` llega con el Lote 2.4 (v2.26): la llena la suscripción `ta-dlq-df` que lee el mismo job, sin `--dlq_table`; se comprueba con `verify_trends.py dlq-check`.)*
 - Los duplicados se eliminan por `event_id` (usando `id_label`).
 - El pipeline se prueba primero con `DirectRunner`.
 
@@ -499,6 +501,8 @@ Criterios de aceptación: lista verificable.
 - La latencia `process_time − event_time` cumple p95 < 5 min en eventos no tardíos.
 - Las ventanas toleran eventos tardíos hasta 30 min; los más tardíos se escriben en `posts_enriched` sin recalcular ventanas (contador `late_events`).
 - Arranque en frío: `is_alert = false` hasta tener 60 ventanas de baseline (§5.12).
+
+*Cerrada en v2.27* (`ARCHITECTURE.md` §3.16): latencia p95 `event_time → process_time` de 5,4 s (5,1 s con el job de la plantilla) y detección p95 de 61,3 s (fin de ventana → fila en BigQuery); ventanas de 5 min con paso de 1 min por marca × fuente, con las columnas del contrato (410 filas sin problemas, conciliación 126/126 con `posts_enriched`); tardíos hasta 30 min y descarte con `late_events` (pruebas con `TestStream`); 0 alertas en el arranque en frío. Detalle de la entrega: ventanas deslizantes en tiempo del evento por `brand_primary` × `source`, paneles tardíos acumulativos (versión vigente en la vista `trend_windows_latest`), descarte de lo más tardío con `late_events`, baseline de 60 ventanas y alertas con \|z\| ≥ 3. La latencia p95 la mide `verify_trends.py report` (T7) y la guarda en `dq_results`. Validación en `docs/validation/validation-2-4.md`, partes B, D y E.
 
 ---
 

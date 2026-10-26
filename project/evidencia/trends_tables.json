@@ -1,0 +1,49 @@
+{
+  "command": "tables",
+  "verdict": "OK",
+  "checks": [
+    {
+      "id": "T1",
+      "title": "Tablas y vista de ta_stream con las columnas de §5.5",
+      "status": "OK",
+      "detail": "trend_windows, dlq_events, dq_results y trend_windows_latest",
+      "data": {
+        "trend_windows": [
+          "window_start",
+          "window_end",
+          "brand",
+          "source",
+          "n_posts",
+          "n_negative",
+          "n_positive",
+          "avg_sentiment",
+          "emotion_counts",
+          "zscore_volume",
+          "zscore_sentiment",
+          "is_alert"
+        ],
+        "dlq_events": [
+          "received_at",
+          "source",
+          "error_type",
+          "error_detail",
+          "raw_message"
+        ],
+        "dq_results": [
+          "run_id",
+          "run_ts",
+          "layer",
+          "table_name",
+          "suite",
+          "check_name",
+          "kpi",
+          "observed_value",
+          "threshold",
+          "passed",
+          "details"
+        ]
+      }
+    }
+  ],
+  "project": "project-0568d9ba-848f-413c-88b"
+}

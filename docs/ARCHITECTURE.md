@@ -1,6 +1,6 @@
 # TrendAnalyzer · ARCHITECTURE
 
-> Documento maestro de arquitectura y contratos. **Versión vigente: 2.25.**
+> Documento maestro de arquitectura y contratos. **Versión vigente: 2.27.**
 > Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md) · Plan por fases, trazabilidad HU y estado: [`PLAN.md`](PLAN.md) · Historias de usuario: `HU.md` · Visión general: `README.md`.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 
@@ -24,8 +24,9 @@ Este archivo está pensado para que **baste con leerlo (o pegármelo) para const
 | Correr o verificar el pipeline de streaming (local con DirectRunner o en Dataflow) | **§3.13** y `src/streaming/README.md` |
 | Anonimizar, normalizar y escribir `enriched/` y `posts_enriched`; cargar la llave HMAC | **§3.14** y `src/streaming/ENRICHED.md` |
 | Sentimiento y emoción (RoBERTuito), imagen `dataflow-nlp` y NLP en local | **§3.15** y `docs/validation/validation-2-3.md` |
+| Ventanas de tendencias (`trend_windows`), `dlq_events`, `dq_results` y la plantilla Flex de Dataflow | **§3.16**, `src/streaming/TRENDS.md` y `docs/validation/validation-2-4.md` |
 | Comprobar qué está encendido antes de validar un lote | **§8** (preflight) |
-| Encender, comprobar y apagar lo que cobra; validar el Lote 2.3 con un solo comando | `docs/ACTIVE_SERVICES.md` (`scripts/on.py`, `off.py`, `status.py`) y `scripts/validate_2_3.py` (§3.15) |
+| Encender, comprobar y apagar lo que cobra; validar un lote con un solo comando | `docs/ACTIVE_SERVICES.md` (`scripts/on.py`, `off.py`, `status.py`), `scripts/validate_2_3.py` (§3.15) y `scripts/validate_2_4.py` (§3.16) |
 | Saber qué construir y en qué orden | `PLAN.md` §1 (fases y lotes) |
 | Saber qué historias de usuario cubre cada fase o lote | **`PLAN.md` §1 y §2** (detalle en `HU.md`) |
 | Saber en qué estado está cada fase y lote | **`PLAN.md` §3** |
@@ -71,7 +72,7 @@ El README menciona **Firestore, Cloud SQL, Neptune y Dataplex**, que **no están
 
 ### 1.4 Historial de cambios
 
-Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.25), la más reciente primero. Este documento describe siempre la versión vigente (2.25).
+Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.27), la más reciente primero. Este documento describe siempre la versión vigente (2.27).
 
 ---
 
@@ -776,6 +777,82 @@ En `src/ops/tests/test_ops_validate23.py`, desde v2.25: E2 distingue el permiso 
 >
 > Los "puntos a confirmar" de v2.23 quedaron resueltos: la prueba de humo pasó; las etiquetas mapeadas son las del contrato (`verify_enriched.py`: etiquetas y versión válidas en el 100 %); y `dataflow-local` monta el código en `/work` (D3).
 
+### 3.16 Tendencias, `dlq_events` y plantilla de Dataflow (Lote 2.4)
+
+> Entregado en **v2.26** (HU-005, HU-023) y **cerrado en v2.27** (cierra la Fase 2). Rutas relativas a `project/`; guía del módulo en `src/streaming/TRENDS.md`; validación paso a paso en `docs/validation/validation-2-4.md` y automática con `scripts/validate_2_4.py`. No toca `contracts/` ni `schema_version`. Cierra dos pendientes: `dlq_events` (Lote 2.1) y `roles/pubsub.viewer` para `sa-dataflow` (Lote 2.2). ADR-20.
+
+**Flujo.**
+
+```
+filas con NLP (attach_enriched, §3.14–§3.15) ─► TrendFeatures ─► SlidingWindows(300 s, 60 s) ─► CombinePerKey(marca|fuente)
+   ─► ScoreTrends (baseline en estado) ─┬─► ta_stream.trend_windows      (Dataflow, streaming inserts)
+                                        └─► {output_root}/trend_windows/ (solo local)
+ta-dlq-df ─► DlqEventsToBigQuery ─► ta_stream.dlq_events                (solo Dataflow)
+```
+
+| Ruta | Contenido |
+|---|---|
+| `src/streaming/trends_core.py` | Lógica pura: `TrendConfig`, `window_starts()`, `feature_from_row()`, acumulador, `WindowAggregate`, `score_window()` (baseline, z-score, alerta), `trend_row()`, `row_problems()` y `latest_versions()`. |
+| `src/streaming/trends.py` | `TrendOptions`, `resolve_trends_config()`, `resolve_rows()`, `ExtractTrendFeatures`, `TrendCombineFn`, `AttachWindow`, `ScoreTrendsFn`, `TrendWindows`, `AppendTrendJsonl` y `attach_trends()`. |
+| `src/streaming/dlq_bq.py` | `dlq_row()`, `DlqMessageToRow` y `DlqEventsToBigQuery` (`ta-dlq-df` → `dlq_events`). |
+| `src/streaming/bq_sink.py` | `WriteRowsToBigQuery`: *streaming inserts* con registro de las filas rechazadas. |
+| `src/common/stream_tables.py` | Columnas de `trend_windows`, `dlq_events` y `dq_results`; genera los schemas JSON de Terraform (`python -m common.stream_tables --write …`). |
+| `src/streaming/trends_check.py`, `trends_bq.py`, `trends_cli.py`, `scripts/verify_trends.py` | Verificador (abajo). |
+| `src/streaming/template_tools.py`, `flex_main.py`, `flex_template/{Dockerfile,metadata.json}`, `scripts/dataflow_template.py` | Plantilla Flex (abajo). |
+| `infra/gcp/modules/bigquery_stream_tables/` | Las tres tablas y la vista `trend_windows_latest` (schemas en `schemas/`). |
+| `infra/gcp/environments/dev/{trends,variables_trends,outputs_trends}.tf` | Tablas, `ta-dlq-df` y permisos de `sa-dataflow`. Se suman sin modificar los archivos de los lotes 1.3, 2.2 y 2.3. |
+| `scripts/validate_2_4.py`, `src/ops/validate24.py` | Validación automática (partes A a F). |
+
+**Enganche.** Dos líneas en `pipeline.py` (`from streaming.trends import attach_trends` y `attach_trends(enriched_rows)` con lo que devuelve `attach_enriched(unique)`) y, si hace falta, `return rows` al final de `attach_enriched()` (`TRENDS.md` §2). `test_trends_hook.py` y el paso A4 lo comprueban. La rama lee las opciones del propio pipeline, así que `dataflow_job.sh` no cambia; `TA_TRENDS_ENABLED=false` y `TA_DLQ_BQ_ENABLED=false` la apagan sin pasar opciones.
+
+**Ventanas (HU-023).** Cada fila se re-marca con su `event_time` y entra en `SlidingWindows(300, 60)` (inicios en múltiplos de 60 s). Disparador `AfterWatermark` con paneles tardíos y modo `ACCUMULATING`, con *allowed lateness* de 30 min (§5.12). En Dataflow los datos tardíos se agrupan en un panel por minuto (`AfterProcessingTime(60)`); en local, cada dato tardío dispara su panel (`AfterCount(1)`), porque con `AfterProcessingTime` el `BundleBasedDirectRunner` se queda girando sin avanzar (comprobado con Beam 2.77). Un post con más de 30 min de atraso respecto a la hora actual no entra en ventanas (contador `late_events`); sigue en `posts_enriched`. `brand` = `brand_primary`; las filas sin marca no cuentan (`trend_rows_without_brand`). `n_posts` cuenta también los posts sin NLP; `avg_sentiment` solo los que tienen sentimiento, y `emotion_counts` los que tienen emoción (las 7 claves siempre presentes).
+
+**Versiones de una ventana.** Cada panel es una fila nueva: el panel a tiempo y, si llegan datos tardíos, otros con los conteos acumulados. La versión vigente de cada ventana × marca × fuente es la de **mayor `n_posts`** (crece en cada panel); la vista `trend_windows_latest` la selecciona y es la que deben consultar los lotes 6.1 y 6.2.
+
+**Baseline y alertas.** Un DoFn con estado por `marca|fuente` (ventana global) guarda `n_posts` y `avg_sentiment` de las últimas ventanas. z = (x − media) / máx(desviación estándar, piso), con pisos de 1 post y 0,05 de sentimiento, frente a las 60 ventanas anteriores (las que no tienen posts cuentan como volumen 0). Las primeras ventanas de la clave en el job (incompletas) no entran en el baseline. z es nulo con menos de 2 ventanas de baseline. `is_alert` exige baseline completo (60 ventanas, §5.12), `n_posts ≥ 5` y |z| ≥ 3 en volumen o sentimiento, y que la ventana esté **completa**: si el panel sale antes de que la ventana termine en tiempo real, no alerta (contador `panes_incomplete`). Eso pasa al drenar el job: la marca de agua salta al infinito, Dataflow cierra las ventanas abiertas con los datos que tenga y la caída de volumen es falsa (visto en la validación: 48 alertas del job anterior). Cada alerta deja un log `trend_alert` (insumo del Lote 6.2). Un panel tardío reemplaza su versión en el baseline, pero no recalcula ventanas ya puntuadas. El estado vive en el job: un job nuevo arranca en frío.
+
+**DLQ → BigQuery (HU-018).** El mismo job lee `ta-dlq-df` (suscripción nueva sobre `ta-dlq`, §5.3) y escribe una fila de `dlq_events` por mensaje con los atributos `dlq_*` de §5.3, sin tocar el código del Lote 2.1. `error_detail` llega del atributo (máximo 1.024 bytes; en `dlq/` es de hasta 2.000 caracteres); `raw_message` es el cuerpo en UTF-8 con los bytes inválidos como `\xNN`. No se usa a la vez que `--dlq_table` del 2.1: si esa opción viene, la rama se apaga sola.
+
+**Plantilla Flex (HU-005).** Imagen `dataflow-launcher` (base `python311-template-launcher-base`, dependencias de `src/streaming/requirements.txt`, `src/` y `contracts/`; prueba de humo: Beam 2.77.0 e importar `streaming.pipeline`), construida en Cloud Build con un contexto temporal propio (no usa las listas de permitidos de `project/`). `flex_main.py` corre `streaming.pipeline` como `__main__` desde `src/` (igual que `dataflow_job.sh`, porque las opciones del 2.1 usan rutas relativas: `--contracts_dir=../contracts`, `--setup_file=./setup.py`), pasa el parámetro `nlp_container_image` a `TA_NLP_IMAGE` (§5.1), completa `--streaming` y `--runner` y no espera a que el job termine. El lanzador pasa `--template_location`: con esa opción Beam solo escribe la descripción del job y devuelve un resultado sin job, cuyo `job_id()` falla con `AttributeError` (Beam 2.77); `flex_main.py` lo parchea para que devuelva `None`. La prueba de humo de la imagen comprueba `./setup.py`, `../contracts` y ese parche. Especificación en `gs://{GCP_PROJECT}-ta-lake/_dataflow/templates/ta-stream-{etiqueta}.json` y `ta-stream.json` (§5.4). `dataflow_template.py run` toma todos los parámetros de `terraform output` (§5.9) y lanza `ta-stream-{ENV}` con las mismas características que `dataflow_job.sh start`; se niega si ya hay un job activo con ese nombre. Los workers siguen usando `dataflow-nlp`.
+
+**Terraform.** Módulo `bigquery_stream_tables` (tablas con partición diaria, *clustering* y expiración de §5.5 y §5.12; la vista) y, en `trends.tf`, `ta-dlq-df`, `roles/pubsub.viewer` de `sa-dataflow` en las cuatro suscripciones que lee y `roles/pubsub.subscriber` en `ta-dlq-df` (a nivel de suscripción, no de proyecto). `depends_on` apunta a `module.pubsub` y `module.bigquery_stream`. Plan esperado con `-target` de los recursos del lote: **10 a crear, 0 a cambiar, 0 a destruir**. Los outputs que solo usan variables (`dataflow_template_spec`, `dataflow_launcher_image`) llevan `depends_on` a `ta-dlq-df`: con `-target`, Terraform solo guarda los outputs que dependen de algún recurso del objetivo (observado en la validación; `test_trends_terraform.py` lo exige para todos los outputs del lote).
+
+**Verificador** (`scripts/verify_trends.py`, sin Beam):
+
+- `tables`: T1, tablas y vista con las columnas de §5.5.
+- `report` (`--local` o BigQuery, desde `--since`): T2 ventanas de las tres fuentes; T3 reglas de cada fila; T4 conciliación de la versión vigente de cada ventana cerrada con el recálculo desde los posts (`posts_enriched` o `enriched/`, con `trends_core`), ≥ 99 %; T5 sin alertas en la primera hora; T5b sin alertas en las ventanas del cambio de job (AVISO; las deja el drenado de un job sin la corrección); T6 z-scores; T7 latencia p95 `event_time → process_time` desde que el job se puso al día (o sin los 10 primeros minutos; KPI < 5 min); con `--watch-minutes` (≥ 6), T8 latencia de detección (fin de ventana → fila visible en BigQuery) por ventana × marca × fuente: con `--wait-caught-up-minutes` primero espera a que la ventana más reciente haya cerrado hace ≤ 150 s; cuentan las ventanas que cerraron ≥ 5 min antes del final y las que no aparecieron entran con su cota inferior; con `--write-dq`, T9: los KPI en `dq_results` (capa `stream`, `suite = verify_trends`).
+- `dlq-check --allow-cloud`: publica en `ta-raw-reddit` tres defectos con una marca (`json`, `schema`, `encoding`) y espera verlos en `dlq_events` con su `error_type` y `source = reddit`.
+
+Salida 0 / 1 / 2 como los demás verificadores; `--json-out` guarda la evidencia.
+
+**Métricas** (espacio `trends`): `trend_rows_in`, `late_events`, `trend_rows_without_brand`, `trend_rows_unrecognized`, `panes_on_time`, `panes_late`, `panes_incomplete`, `window_emit_delay_ms`, `windows_emitted`, `alerts`, `bq_failed_rows`. Espacio `dlq_bq`: `dlq_rows`, `received_at_fallback`, `rows_without_type`, `unexpected_error_type`, `bq_failed_rows`. **Logs:** `trends_config` y `dlq_bq_attached` en la terminal del lanzador; en los workers, `trend_alert`, `trend_row_unrecognized`, `trend_bq_insert_failed` y `dlq_bq_insert_failed`.
+
+**Pruebas** (sin red ni credenciales): 167 en `src/streaming/tests/` (`test_trends_core`, `_config`, `_pipeline`, `_verifier`, `_terraform`, `_contract`, `_hook` y `test_flex_template`) y 46 en `src/ops/tests/test_ops_validate24.py`: 213 en el repositorio. Cubren la lógica pura (ventanas, acumulador, z-score, arranque en frío, poda del estado, reglas de fila), la rama completa con `TestStream` en el `BundleBasedDirectRunner` (paneles a tiempo y tardíos, descarte de más de 30 min, claves por marca y fuente, alerta tras el baseline, drenado sin alertas falsas, salida local), la configuración por runner, la DLQ, el verificador con lake local y BigQuery falsos, la plantilla (argumentos, comandos, parámetros = metadatos), el validador, y, con el repositorio presente, los schemas de Terraform = código, la DDL de `contracts/bigquery/`, `common.label_map`, los nombres de módulos de `depends_on` y el enganche.
+
+> **Estado de la verificación (v2.26, antes de entregar):** en un entorno aislado con Python 3.11.15 y Apache Beam 2.77.0: **181 passed, 9 omitidas**. Las 9 necesitan archivos del repositorio (`contracts/`, `pipeline.py`, `enriched.py`, `platform.tf`, `streaming.tf`, `common.label_map`); con un repositorio simulado con esas piezas pasan las 23 de esos archivos (y `validate_2_4.py tests` dio B1 = 190 passed, 0 omitidas). Terraform: `fmt -check` y `validate` en verde con OpenTofu 1.8.5 y el proveedor `google` 6.10 sobre una raíz que imita a `environments/dev`. El grafo de Dataflow con los sumideros reales (`WriteToBigQuery`, `ReadFromPubSub` de `ta-dlq-df`) se tradujo a un job de Runner v2 con `--dry_run=True`, sin enviarlo. **No** se corrió con el código real de los lotes 2.1 a 2.3, ni en local, ni en GCP; no se construyó la imagen del lanzador.
+
+> **Primera validación (A–C, v2.26):** en la máquina del equipo, A OK; B1 190 passed sin omitidas, B2 345, B3 18 y B4 72; C1–C3 OK (plan de 10 recursos, aplicado). C4 falló: el apply con `-target` no guardó `dataflow_template_spec` ni `dataflow_launcher_image`, que solo usan variables. Corrección: `depends_on` en esos dos outputs, el validador aplica también cuando el plan solo cambia outputs, y C4 marca AVISO (no FALLA) si faltan solo esos dos, que `dataflow_template.py` sabe derivar. Con la corrección, B1 pasa a 194, B2 a 346 y B4 a 75.
+>
+> **Primer intento de E:** el validador se quedó sin mostrar nada mientras leía `terraform output` (lento en `/mnt/c`) y E4a agotó los 300 s esperando a `dataflow_job.sh drain`. Corrección: el drenado se pide con `gcloud dataflow jobs drain` y se espera consultando el estado; los comandos corren sin entrada estándar (un script que pida confirmación falla en vez de esperar en silencio); los pasos largos muestran su salida mientras corren; y se avisa al leer `terraform output`. Pruebas del lote: 200 (B4 81).
+>
+> **Primera corrida completa de E (v2.26):** E1–E6 OK (`dlq-check`: 3/3 en 20,7 s), E8 y E9 OK, E10 OK (0 errores del lote y 0 `GETTING_PUBSUB_SUBSCRIPTION_FAILED`). E7: T1–T7 y T9 OK (410 filas sin problemas, conciliación 126/126, latencia p95 5,4 s) y **T8 FALLA** (p50 52,6 s, p95 = máx = 310,5 s con 108 claves: una sola ventana de 12, observada justo cuando el job terminaba de cargar los modelos y procesaba el *backlog* del cambio). T5 informó 48 alertas antes de `since`: las escribió el job anterior **al drenarse** (ventanas cerradas con datos parciales). Correcciones: (1) las ventanas emitidas antes de terminar en tiempo real no alertan (`complete`), con una prueba que reproduce el drenado con `TestStream`; (2) T8 espera a que el job se ponga al día, cuenta solo ventanas con 5 min de margen e incluye las que no aparecieron con su cota inferior (antes una observación sin ventanas nuevas daba AVISO); (3) nuevo T5b; (4) `--no-restart` comprueba las opciones del job. Pruebas del lote: 213 (B2 357, B4 83).
+>
+> **Parte F, primer intento:** F1 OK y F2 OK (imagen `dataflow-launcher:20261023-1918` construida en 1 min 48 s, prueba de humo "lanzador listo", plantilla publicada). F3 quedó esperando el drenado del job de E sin mostrar avance (solo imprimía cambios de estado). El validador ahora informa cada 2 min y acepta `--cancel-after-minutes`. Pruebas del lote: 215 (B4 85).
+>
+> **Parte F, segundo intento:** F3 OK (el job de E ya estaba cancelado; antes, su worker había reiniciado los procesos del SDK a las 19:15:54 UTC y la marca de agua quedó detenida en el paso `Enriched/NLP/Emotion/BatchElements`, por lo que el drenado no podía terminar; sin mensajes de memoria en los logs de severidad WARNING o mayor, causa por confirmar). F4 falló: el job de la plantilla no llegó a *Running* en 25 min. Causa **confirmada** en los logs del lanzador (`AttributeError: 'NoneType' object has no attribute 'id'`, con `--template_location=…/template_launches/<id>/job_object` entre los argumentos) y en el código de Beam 2.77: con `--template_location` el resultado no tiene job y `result.job_id()` (que el pipeline del 2.1 llama para el log `dataflow_submitted`) lanza `AttributeError`; además el lanzador no trabajaba desde `src/`. Corrección en `flex_main.py` y en el Dockerfile (`WORKDIR` en `src/`, prueba de humo ampliada); el validador sigue el job por su id y avisa enseguida si termina en *Failed*, con los errores del lanzador. El servicio solo registra "Template launch failed: exit status 1" como error; el traceback de Python llega en los logs del lanzador con severidad INFO, y el validador ahora también los trae. Los mismos logs muestran que el lanzador pasa las etiquetas juntas (`--labels=component=streaming,env=dev,…`) y sueltas; Beam parte solo en el primer `=` y la junta solo queda bien porque las sueltas vienen después, así que `flex_main.py` las separa (una por clave). Pruebas del lote: 224 (B2 362, B4 89). Hay que reconstruir la imagen.
+
+> **Cierre (v2.27).** Evidencia: A y B OK (B1 190 sin omitidas en el repositorio antes de las correcciones; 224 con ellas); C OK (10 recursos aplicados; outputs corregidos); E, segunda corrida: E1–E6 y E8–E10 OK, T1–T7 y T9 OK (410 filas sin problemas, conciliación 126/126, **latencia p95 `event_time → process_time` de 5,4 s**, KPI de HU-023), `dlq-check` 3/3 en 20,7 s, 0 `GETTING_PUBSUB_SUBSCRIPTION_FAILED`, detección p50 52,6 s; F1–F5 OK con la imagen corregida: el job lanzado desde la plantilla llegó a *Running* con `dataflow-nlp` y las tablas del 2.4 (criterio de plantilla de HU-005). F6 OK con el job de la plantilla, tras descartar el atraso de las suscripciones (`gcloud pubsub subscriptions seek`): 446 filas sin problemas, conciliación **216/216**, 0 alertas en el arranque y en el cambio de job, latencia p95 `event_time → process_time` de **5,1 s** y **detección p95 de 61,3 s** (p50 44,0 s, 63 claves); F7 y F8 OK. (Un intento previo de F6 arrancó con más de una hora de atraso, porque el job anterior se trabó y se canceló con el simulador encendido; T4/T7/T8 midieron ese atraso.) **Abierto, sin bloquear:** (1) la prueba en GCP de que el drenado no deja alertas falsas (cubierta por la prueba con `TestStream`); (2) la parte D (local con DirectRunner); (3) la causa del reinicio de los procesos del SDK que trabó el NLP de un job (19:15 UTC del 23-oct; sin mensajes de memoria en los logs; pico de memoria pendiente desde el 2.3). Recomendación operativa: apagar el simulador cuando el job esté apagado (`off.py`) o, antes de relanzar en desarrollo, descartar el atraso con `gcloud pubsub subscriptions seek … --time=<ahora>`.
+
+**Hallazgos durante el desarrollo:**
+- Con `TestStream`, el `BundleBasedDirectRunner` se queda girando al 100 % de CPU si los paneles tardíos usan `AfterProcessingTime`; por eso en local el disparador tardío es `AfterCount(1)` y `--trend_late_delay_seconds > 0` se rechaza fuera de Dataflow.
+- En modo streaming, el DirectRunner pierde las métricas de los *bundles* que no emiten nada; las pruebas de contadores llaman a los DoFn directamente.
+
+**Puntos a confirmar al validar (pueden pedir un ajuste pequeño):**
+- Qué devuelve `attach_enriched()`: `attach_trends` acepta la `PCollection` o un objeto con `rows`, `nlp_rows`, `enriched_rows`… (A4 y `test_trends_hook.py`).
+- Los nombres `module.pubsub` y `module.bigquery_stream` de los `depends_on` (C1 y `test_trends_terraform.py` dicen cuál cambiar).
+- Plantilla: que el lanzador pase `--project`, `--region`, `--temp_location` y `--staging_location` al programa y que el job arranque con `nlp_container_image` y `--setup_file` (F4–F5).
+- Si el aviso `GETTING_PUBSUB_SUBSCRIPTION_FAILED` también pide permiso sobre los topics (E10).
+
 ---
 
 ## 4. Flujo extremo a extremo
@@ -783,12 +860,12 @@ En `src/ops/tests/test_ops_validate23.py`, desde v2.25: E2 distingue el permiso 
 | # | Etapa | Componente | Entrada | Salida | Latencia objetivo |
 |---|---|---|---|---|---|
 | 1 | Emisión | `stream-simulator` (+ generador de comentarios) | Comentario `marca,comentario` generado en proceso | Mensaje Pub/Sub `ta-raw-{source}` | 1–3 s entre mensajes |
-| 2 | Validación + dedup | Dataflow | Pub/Sub | Válidos continúan; inválidos → `ta-dlq` + `gs://…/dlq/` | segundos |
+| 2 | Validación + dedup | Dataflow | Pub/Sub | Válidos continúan; inválidos → `ta-dlq` + `gs://…/dlq/` (y de `ta-dlq-df` a BigQuery `dlq_events`, §3.16) | segundos |
 | 3 | Anonimización | Dataflow | Envelope con `author.user_id/handle` | `author.user_hash` (HMAC); sin handle ni id en claro | segundos |
 | 4 | Normalización | Dataflow | `payload` específico de red | `likes/shares/comments` normalizados | segundos |
 | 5 | NLP | Dataflow (`RunInference`) | `text` | `sentiment_*`, `emotion_*` | segundos |
 | 6 | Escritura | Dataflow | Evento enriquecido | BigQuery `posts_enriched` + GCS `raw/` y `enriched/` | < 1 min |
-| 7 | Tendencias | Dataflow (ventanas) | Eventos enriquecidos | BigQuery `trend_windows` | **< 5 min** (KPI) |
+| 7 | Tendencias | Dataflow (ventanas, §3.16) | Eventos enriquecidos | BigQuery `trend_windows` (versión vigente en `trend_windows_latest`) | **< 5 min** (KPI) |
 | 8 | Exportación | `gcs-to-s3` | GCS `enriched/` | S3 `raw/origin=stream/` | cada 15 min |
 | 9 | Carga histórica | `historical/loader` (mismo generador, en batch) | Comentarios generados con semilla propia | S3 `raw/origin=historical/` | one-shot |
 | 10 | Raw → Trusted | Glue | S3 `raw/` | S3 `trusted/posts/` | horario |
@@ -820,6 +897,8 @@ En `src/ops/tests/test_ops_validate23.py`, desde v2.25: E2 distingue el permiso 
 | `TA_NLP_MODELS_DIR` | `/opt/ta-nlp/models` | workers y `dataflow-local`: modelos horneados en la imagen |
 | `TA_NLP_BATCH_SECONDS` | `5` | Dataflow y local: espera máxima para juntar un lote de NLP (`--nlp_batch_seconds`, 0 a 30; v2.24) |
 | `TA_NLP_THREADS` | núcleos de la máquina | workers y `dataflow-local`: hilos de torch para la inferencia (v2.24) |
+| `TA_TRENDS_ENABLED` | *(vacío = encendida)* | Dataflow y local: `false` apaga la rama de tendencias (`--trends_enabled auto`, §3.16) |
+| `TA_DLQ_BQ_ENABLED` | *(vacío = solo en Dataflow)* | Dataflow: `false` apaga `ta-dlq-df` → `dlq_events` (`--dlq_bq_enabled auto`, §3.16) |
 
 **Variables propias del simulador** (Lote 1.2, §3.10). Solo las lee `ta-stream-simulator`; ningún otro componente depende de ellas.
 
@@ -979,6 +1058,7 @@ Normalización de engagement: `likes` = `score` (Reddit) | `reactions_total` (Fa
 | Topic | `ta-raw-reddit`, `ta-raw-facebook`, `ta-raw-instagram` | Un topic por fuente. |
 | Suscripción | `ta-raw-{source}-df` | Pull, consumida por Dataflow. Ack deadline 60 s. |
 | Topic DLQ | `ta-dlq` | Mensajes que no pasan validación. |
+| Suscripción DLQ | `ta-dlq-df` | *(v2.26)* Pull, la lee el mismo job de Dataflow para escribir `dlq_events` (§3.16). Ack 60 s, retención 7 días, sin expiración. |
 | Topic alertas | `ta-alerts` | Fase 6. |
 | Retención | 7 días | |
 
@@ -987,6 +1067,7 @@ Normalización de engagement: `likes` = `score` (Reddit) | `reactions_total` (Fa
 - **Publica:** `sa-simulator`. **Consume:** `sa-dataflow`.
 - **Mensajes de `ta-dlq` (v2.20, §3.13):** el cuerpo es el mensaje rechazado **tal como llegó** y los atributos son los originales más `dlq_error_type` (§5.5), `dlq_error_detail` (máximo 1.024 bytes), `dlq_source` (fuente de la suscripción) y `dlq_received_at` (UTC, §5.1). Así se puede re-inyectar con `seek` o re-publicación. Publica `sa-dataflow`.
 - **Verificación (§3.11):** `scripts/verify_ingest.py` crea suscripciones temporales `ta-verify-{source}-{run}` sobre estos topics y las borra al terminar (expiran solas a 1 día). Ningún componente depende de ellas y nunca se consumen las `ta-raw-{source}-df`. `scripts/verify_streaming.py check` (§3.13) crea igual `ta-verify-dlq-{run}` sobre `ta-dlq`.
+- **`dlq_events` (v2.26, §3.16):** una fila por mensaje de `ta-dlq-df`, armada con los atributos `dlq_*` de arriba. `scripts/verify_trends.py dlq-check` publica en `ta-raw-reddit` tres mensajes defectuosos con una marca (`ta_verify`) para comprobarlo; terminan en `dlq/`, `ta-dlq` y `dlq_events` como cualquier inválido.
 - Sin ordenamiento garantizado (no se necesita).
 
 ### 5.4 Google Cloud Storage
@@ -1002,6 +1083,7 @@ gs://{GCP_PROJECT}-ta-datasets/
   sim-state/{source}.json                   # cursor del simulador
 gs://{GCP_PROJECT}-ta-lake/
   _dataflow/{temp,staging}/                                  # temporales y paquete del job de Dataflow (v2.20)
+  _dataflow/templates/ta-stream[-{etiqueta}].json            # especificación de la plantilla Flex (v2.26, §3.16)
   raw/source={s}/dt={YYYY-MM-DD}/hr={HH}/part-*.jsonl.gz     # envelope tal cual llegó (auditoría/replay)
   enriched/source={s}/dt={YYYY-MM-DD}/hr={HH}/part-*.parquet # envelope enriquecido, anonimizado
   dlq/dt={YYYY-MM-DD}/part-*.jsonl.gz
@@ -1014,9 +1096,11 @@ Particiones por **fecha/hora de proceso**. El Parquet de `enriched/` usa el **es
 
 **Formato de `enriched/` (v2.22, §3.14).** Archivos `part-{AAAAMMDD}T{hhmmss}Z-p{panel:03d}.parquet` (inicio de la ventana en UTC), Parquet con Snappy, una fila por evento ordenada por `event_id`, con las 24 columnas de `posts_enriched` en el orden de §5.5. Tipos: timestamps `timestamp[ms, UTC]` (INT64 `TIMESTAMP_MILLIS`, ajustado a UTC; no INT96), enteros `int64`, scores `double`, `brands` y `hashtags` `list<string>`, `payload` texto JSON. Las columnas de NLP las rellena el Lote 2.3 (§3.15); van nulas si el NLP está apagado o si su lote de inferencia falló. Mismas reglas de partición que `raw/` (hora de proceso en UTC).
 
+**`trend_windows` no se escribe en GCS (v2.26).** Solo en el lake **local** (sin BigQuery), la rama de tendencias escribe `{output_root}/trend_windows/dt={AAAA-MM-DD}/hr={HH}/part-{AAAAMMDD}T{HH}.jsonl`: una línea por panel con las columnas de `trend_windows`, particionada por la hora de `window_start` (no de proceso). Lo lee `verify_trends.py report --local`; ningún otro componente depende de él.
+
 ### 5.5 BigQuery
 
-Dataset: `ta_stream` (ubicación = región de GCP). Desde v2.22 lo crea Terraform (`infra/gcp/modules/bigquery_stream`) con `posts_enriched`; el Lote 2.4 suma `trend_windows`, `dlq_events` y `dq_results`.
+Dataset: `ta_stream` (ubicación = región de GCP). Desde v2.22 lo crea Terraform (`infra/gcp/modules/bigquery_stream`) con `posts_enriched`; desde v2.26 el módulo `bigquery_stream_tables` suma `trend_windows`, `dlq_events`, `dq_results` y la vista `trend_windows_latest`, con schemas generados desde `common.stream_tables` (una prueba exige que coincidan y otra los compara con `contracts/bigquery/`). Todas sus columnas son `NULLABLE` salvo las obligatorias de `dq_results`; el código nunca deja nulas las que la DDL marca `NOT NULL`.
 
 **`posts_enriched`** — partición por `DATE(event_time)`, clustering `source, brand_primary`, expiración de partición a 90 días (§5.12). Schema de Terraform en `infra/gcp/modules/bigquery_stream/schemas/posts_enriched.json`, generado desde `common.enriched_row.POSTS_ENRICHED_COLUMNS` (una prueba exige que coincidan y otra los compara con `contracts/bigquery/posts_enriched.sql`). Modo `REQUIRED` solo en `event_id` y `event_time`; `brands` y `hashtags` son `REPEATED`. Se escribe con *streaming inserts* (v2.22, §3.14).
 
@@ -1039,7 +1123,7 @@ Dataset: `ta_stream` (ubicación = región de GCP). Desde v2.22 lo crea Terrafor
 | `nlp_model_version` | STRING |
 | `payload` | JSON |
 
-**`trend_windows`** — ventanas deslizantes de 5 min (paso 1 min) por `brand` × `source`.
+**`trend_windows`** — ventanas deslizantes de 5 min (paso 1 min) por `brand` × `source`, en tiempo del evento (`event_time`). Partición por `DATE(window_start)` (90 días, §5.12), clustering `brand, source`. Se escribe con *streaming inserts* (v2.26, §3.16). `brand` es `brand_primary`. **Cada panel de una ventana es una fila**: la versión vigente de cada `window_start` × `brand` × `source` es la de mayor `n_posts`, y la vista **`trend_windows_latest`** la selecciona; los consumidores leen la vista.
 
 | Columna | Tipo |
 |---|---|
@@ -1048,11 +1132,13 @@ Dataset: `ta_stream` (ubicación = región de GCP). Desde v2.22 lo crea Terrafor
 | `n_posts`, `n_negative`, `n_positive` | INT64 |
 | `avg_sentiment` | FLOAT64 (media con signo en [-1, 1]: positivo +score, negativo −score, neutro 0) |
 | `emotion_counts` | JSON |
-| `zscore_volume`, `zscore_sentiment` | FLOAT64 (vs. baseline móvil) |
-| `is_alert` | BOOL |
+| `zscore_volume`, `zscore_sentiment` | FLOAT64 (vs. baseline móvil de 60 ventanas; nulo con menos de 2 ventanas de baseline) |
+| `is_alert` | BOOL (false hasta tener 60 ventanas de baseline, §5.12, y en las ventanas que se emiten antes de terminar, como al drenar el job) |
 
-**`dlq_events`** — `received_at`, `source`, `error_type`, `error_detail`, `raw_message` (STRING). Valores de `error_type` (v2.20, §3.13): `encoding`, `json`, `schema`, `attributes`, `routing`. `source` es la fuente de la suscripción donde llegó el mensaje.
-**`dq_results`** — una fila por verificación de calidad ejecutada (§5.10). Partición por `DATE(run_ts)`, clustering `layer, kpi`. Mismo reporte, además, en `s3://…/quality/{run_date}/`.
+`emotion_counts` es un objeto JSON con las 7 emociones de §3.3 siempre presentes (en ese orden; las que no aparecen valen 0). `avg_sentiment` es nulo si ningún post de la ventana tiene sentimiento.
+
+**`dlq_events`** — `received_at`, `source`, `error_type`, `error_detail`, `raw_message` (STRING). Valores de `error_type` (v2.20, §3.13): `encoding`, `json`, `schema`, `attributes`, `routing`. `source` es la fuente de la suscripción donde llegó el mensaje. Desde v2.26 la llena la suscripción `ta-dlq-df` (§3.16): `error_detail` viene del atributo `dlq_error_detail` (máximo 1.024 bytes) y `raw_message` es el cuerpo en UTF-8 con los bytes inválidos como `\xNN`. Partición por `DATE(received_at)` (30 días, igual que `dlq/`), clustering `source, error_type`.
+**`dq_results`** — una fila por verificación de calidad ejecutada (§5.10). Partición por `DATE(run_ts)` (sin expiración), clustering `layer, kpi`. Mismo reporte, además, en `s3://…/quality/{run_date}/`. Desde v2.26 `verify_trends.py report --write-dq` escribe ahí, con `layer = stream` y `suite = verify_trends`, la latencia p95 de `posts_enriched` y de detección, la conciliación de `trend_windows` y el arranque en frío.
 
 | Columna | Tipo | Notas |
 |---|---|---|
@@ -1132,14 +1218,14 @@ Solo `fact_posts` está particionada (por `dt`, con partition projection). Las d
 | Identidad | Nube | Permisos |
 |---|---|---|
 | `sa-simulator` | GCP | `pubsub.publisher` en `ta-raw-*`; `storage.objectUser` en `…-ta-datasets` |
-| `sa-dataflow` | GCP | `pubsub.subscriber`; `pubsub.publisher` en `ta-dlq` *(v2.16: los inválidos van a `ta-dlq`, HU-018)*; `artifactregistry.reader` en `ta-images` *(v2.23, imagen `dataflow-nlp`)*; `bigquery.dataEditor` en `ta_stream`; `storage.objectAdmin` en `…-ta-lake`; `secretmanager.secretAccessor` en `ta-hmac-key`; `dataflow.worker` |
+| `sa-dataflow` | GCP | `pubsub.subscriber` (y en `ta-dlq-df`, v2.26); `pubsub.viewer` en `ta-raw-{source}-df` y `ta-dlq-df` *(v2.26)*; `pubsub.publisher` en `ta-dlq` *(v2.16: los inválidos van a `ta-dlq`, HU-018)*; `artifactregistry.reader` en `ta-images` *(v2.23, imágenes `dataflow-nlp` y, desde v2.26, `dataflow-launcher`)*; `bigquery.dataEditor` en `ta_stream`; `storage.objectAdmin` en `…-ta-lake`; `secretmanager.secretAccessor` en `ta-hmac-key`; `dataflow.worker` |
 | `sa-exporter` | GCP | `storage.objectViewer` en `…-ta-lake`; objeto escritura en `export-state/`; puede emitir OIDC |
 | `ta-gcp-exporter-role` | AWS | `s3:PutObject`, `s3:HeadObject`, `kms:GenerateDataKey` solo sobre `raw/origin=stream/` |
 | `ta-glue-role` | AWS | R/W en `raw/ trusted/ curated/ quality/`; Glue Catalog; logs |
 | `ta-historical-loader` | AWS | `s3:PutObject` en `raw/origin=historical/` (perfil/SSO del desarrollador) |
 | `ta-quicksight-role` | AWS | `athena:*` en workgroup `ta-analytics`; lectura `curated/` |
 
-**Estado tras el Lote 1.3:** las tres identidades de GCP existen (§5.15). `sa-simulator` y `sa-exporter` tienen todos sus permisos. **Desde el Lote 2.2 (v2.22)** `sa-dataflow` también tiene `bigquery.dataEditor` en el dataset `ta_stream` y `secretmanager.secretAccessor` en `ta-hmac-key` (solo en ese secreto); nadie más tiene acceso de lectura al secreto (el loader histórico usará las credenciales del desarrollador). **Desde el Lote 2.3 (v2.23)**, además, `artifactregistry.reader` en el repositorio `ta-images`, para descargar la imagen `dataflow-nlp`. La escritura de `sa-exporter` en `export-state/` se limita con una condición de IAM sobre el prefijo; la emisión del token OIDC se configura en el Lote 3.2. Las identidades de AWS llegan con las Fases 3 y 4. Terraform sigue operando con las credenciales de Alejandro (§5.1).
+**Estado tras el Lote 1.3:** las tres identidades de GCP existen (§5.15). `sa-simulator` y `sa-exporter` tienen todos sus permisos. **Desde el Lote 2.2 (v2.22)** `sa-dataflow` también tiene `bigquery.dataEditor` en el dataset `ta_stream` y `secretmanager.secretAccessor` en `ta-hmac-key` (solo en ese secreto); nadie más tiene acceso de lectura al secreto (el loader histórico usará las credenciales del desarrollador). **Desde el Lote 2.3 (v2.23)**, además, `artifactregistry.reader` en el repositorio `ta-images`, para descargar la imagen `dataflow-nlp`. **Desde el Lote 2.4 (v2.26)**, `roles/pubsub.viewer` en las cuatro suscripciones que lee (quita el aviso `GETTING_PUBSUB_SUBSCRIPTION_FAILED`) y `roles/pubsub.subscriber` en `ta-dlq-df`, a nivel de suscripción. El lanzador de la plantilla Flex corre con `sa-dataflow`: no necesita más permisos. La escritura de `sa-exporter` en `export-state/` se limita con una condición de IAM sobre el prefijo; la emisión del token OIDC se configura en el Lote 3.2. Las identidades de AWS llegan con las Fases 3 y 4. Terraform sigue operando con las credenciales de Alejandro (§5.1).
 
 ### 5.9 Salidas de Terraform (outputs que consumen los demás)
 
@@ -1153,7 +1239,7 @@ Solo `fact_posts` está particionada (por `dt`, con partition projection). Las d
 | Raíz | Outputs |
 |---|---|
 | `infra/gcp/bootstrap` | `tfstate_bucket`, `enabled_services`, `budget_name` |
-| `infra/gcp/environments/dev` | `project_id`, `region`, `labels`; desde el Lote 1.3, además: `topic_names`, `subscription_names`, `dlq_topic`, `alerts_topic`, `datasets_bucket`, `lake_bucket`, `artifact_registry_url`, `simulator_url` (`null` si no está desplegado; Terraform no guarda outputs nulos, así que `terraform output simulator_url` responde *not found*) y `service_accounts` (§5.15); desde el Lote 2.2: `bq_dataset`, `posts_enriched_table` (`proyecto:ta_stream.posts_enriched`) y `hmac_secret_id` |
+| `infra/gcp/environments/dev` | `project_id`, `region`, `labels`; desde el Lote 1.3, además: `topic_names`, `subscription_names`, `dlq_topic`, `alerts_topic`, `datasets_bucket`, `lake_bucket`, `artifact_registry_url`, `simulator_url` (`null` si no está desplegado; Terraform no guarda outputs nulos, así que `terraform output simulator_url` responde *not found*) y `service_accounts` (§5.15); desde el Lote 2.2: `bq_dataset`, `posts_enriched_table` (`proyecto:ta_stream.posts_enriched`) y `hmac_secret_id`; desde el Lote 2.4: `trend_windows_table`, `dlq_events_table`, `dq_results_table` (`proyecto:ta_stream.…`), `trend_windows_latest_view` (`proyecto.ta_stream.trend_windows_latest`), `dlq_df_subscription`, `dataflow_template_spec` y `dataflow_launcher_image` (los usa `scripts/dataflow_template.py`) |
 | `infra/aws/bootstrap` | `tfstate_bucket`, `tflock_table`, `budget_name` |
 | `infra/aws/environments/dev` | `aws_region` |
 
@@ -1195,6 +1281,7 @@ Resultados en BigQuery `dq_results` (columnas en §5.5) y `s3://…/quality/`. E
 | Correr el pipeline en local o verificarlo | §3.12, §3.13 y `src/streaming/README.md` | Salida de `local_dataflow.sh preflight` y los JSON de `verify_streaming.py` |
 | Rama enriched (anonimización, `enriched/`, `posts_enriched`) | §3.14, §5.2, §5.4, §5.5, §5.8 y `src/streaming/ENRICHED.md` | JSON de `verify_enriched.py`, salida de `hmac_key.sh status` y los logs `enrich_error` / `bq_insert_failed` si los hay |
 | NLP (modelos, imagen `dataflow-nlp`, `RunInference`) | §3.15, §5.2, §5.8 y `docs/validation/validation-2-3.md` | Salida de `build_nlp_image.sh` (la prueba de humo), JSON de `verify_enriched.py --expect-nlp`, `evidencia/validacion_2_3.json` y los logs `nlp_config` / `nlp_inference_failed` |
+| Tendencias, `dlq_events`, `dq_results` o la plantilla Flex | §3.16, §5.3, §5.5, §5.8, §5.12, `src/streaming/TRENDS.md` y `docs/validation/validation-2-4.md` | JSON de `verify_trends.py`, `evidencia/validacion_2_4.json`, la línea `trends_config` del lanzamiento y los logs `trend_bq_insert_failed` / `trend_row_unrecognized` |
 | Encender, apagar o comprobar servicios; validar un lote de punta a punta | `docs/ACTIVE_SERVICES.md`, §8 y la guía de validación del lote | Salida de `python project/scripts/status.py` y el resumen del validador |
 | Exportador | §5.4, §5.6, §5.8 | ARN del rol AWS, bucket S3 |
 | Loader histórico | §3.2, §3.8, §5.2, §5.7 | Perfil AWS, bucket S3 |
@@ -1214,11 +1301,12 @@ Valores por defecto que evitan decidir en cada lote. Se ajustan aquí primero.
 
 | Tema | Valor acordado | HU |
 |---|---|---|
-| Eventos tardíos en ventanas | *Allowed lateness* de 30 min (cubre el caos de §3.9). Un evento más tardío se escribe en `posts_enriched` pero no recalcula ventanas; contador `late_events`. | HU-023 |
+| Eventos tardíos en ventanas | *Allowed lateness* de 30 min (cubre el caos de §3.9). Un evento más tardío se escribe en `posts_enriched` pero no recalcula ventanas; contador `late_events`. *(v2.26)* Paneles tardíos acumulativos: en Dataflow uno por minuto (`AfterProcessingTime(60)`), en local uno por dato (`AfterCount(1)`). | HU-023 |
+| Alertas de tendencia | *(v2.26)* z-score frente a las 60 ventanas anteriores de la marca × fuente (ventanas sin posts = volumen 0), pisos de desviación de 1 post y 0,05 de sentimiento; `is_alert` con baseline completo, `n_posts ≥ 5`, \|z\| ≥ 3 en volumen o sentimiento y la ventana completa (nunca en las ventanas que cierra un drenado). Opciones `--trend_z_threshold`, `--trend_min_posts`, `--trend_baseline_windows`. | HU-023, HU-039 |
 | Arranque en frío del z-score | Sin baseline no hay alertas: `is_alert = false` hasta tener 60 ventanas (1 h). Opcional: sembrar el baseline con `agg_trend_daily` del histórico. | HU-023 |
 | Alertas repetidas | *Cooldown* de 15 min por marca × fuente × tipo de alerta. | HU-039 |
 | Zona horaria | Almacenamiento en UTC; dashboards en `America/Bogota`. | HU-037 |
-| Retención | GCS `raw/` y `dlq/`: 30 días · BigQuery `posts_enriched`: expiración de partición a 90 días (el histórico completo vive en S3) · S3 `athena-results/`: 7 días · Pub/Sub: 7 días. | HU-043 |
+| Retención | GCS `raw/` y `dlq/`: 30 días · BigQuery `posts_enriched` y `trend_windows`: expiración de partición a 90 días (el histórico completo vive en S3) · `dlq_events`: 30 días · `dq_results`: sin expiración · S3 `athena-results/`: 7 días · Pub/Sub: 7 días. | HU-043 |
 | Idempotencia en Glue | Se sobrescriben las particiones `dt` en lugar de añadir: mismo input ⇒ mismo output. | HU-026 |
 | Contratos en CI | La salida del generador y del simulador (≥ 1.000 eventos por fuente, caos apagado) se valida contra `contracts/*.schema.json`. La parte del generador ya existe: `src/simulator/tests/test_generator_contract.py` (Lote 1.1). | HU-001, HU-041 |
 | Mezcla de categorías del generador | *Adoptado por defecto en v2.14 (§9 #12).* Sin sentimiento ni categoría fijos: `gusto` 28 % · `asco` 24 % · `informativo` 18 % · `nostalgia` 15 % · `adiccion` 15 % (ground truth: 28 % `positive`, 24 % `negative`, 18 % `neutral`, 30 % `null`). Constante `PESOS_CATEGORIA`. | HU-008 |
@@ -1232,7 +1320,8 @@ Valores por defecto que evitan decidir en cada lote. Se ajustan aquí primero.
 | Escritura en `posts_enriched` | *Streaming inserts* con reintento de errores transitorios; filas rechazadas al log (`bq_insert_failed`) y al contador `bq_failed_rows`. | HU-021 |
 | NLP | RoBERTuito de pysentimiento (sentimiento y emoción) horneados en la imagen `dataflow-nlp` con su commit; lotes de hasta 16 con espera máxima de 5 s; un modelo por VM en Dataflow y, en local, una carga por proceso sin compartir entre procesos (v2.25); un lote fallido sigue sin NLP (`nlp_failed_rows`). La imagen se publica con el commit de git (o la fecha UTC si `git` no responde) y `:latest`; para un job reproducible se lanza con `TA_NLP_IMAGE=…:{etiqueta}`. | HU-022 |
 | Llave HMAC | Secreto `ta-hmac-key` (32 bytes en hex), leída por el worker; **no se rota** (cambia todos los `user_hash`). En local, llave pública de desarrollo. | HU-020 |
-| Job de Dataflow (dev) | `ta-stream-{ENV}`: 1 × `e2-standard-2`, sin autoescalado, Streaming Engine; se apaga con `drain` fuera de las validaciones y demos. | HU-018, HU-043 |
+| Job de Dataflow (dev) | `ta-stream-{ENV}`: 1 × `e2-standard-2`, sin autoescalado, Streaming Engine; se apaga con `drain` fuera de las validaciones y demos. Se lanza con `dataflow_job.sh start` o, desde v2.26, desde la plantilla Flex (`dataflow_template.py run`, mismas características); nunca los dos a la vez. | HU-018, HU-043, HU-005 |
+| Plantilla Flex | *(v2.26)* Imagen `dataflow-launcher:{commit}` (o fecha UTC) y `:latest`; especificación `ta-stream-{etiqueta}.json` y `ta-stream.json` en `_dataflow/templates/`; parámetros solo desde `terraform output`. | HU-005 |
 | Canal de alertas | Correo. Un suscriptor de `ta-alerts` escribe un log estructurado (`severity=WARNING`, `alert=trend`) y una alerta basada en logs de Cloud Monitoring envía el correo mediante un canal de notificación de tipo email. Las direcciones van en `terraform.tfvars` (`alert_emails`, que no se versiona); por ahora el único destinatario es el correo de Alejandro. Sin SMTP ni secretos. | HU-039 |
 | Prueba de humo E2E | `scripts/smoke_e2e.py` sigue un evento centinela (`event_id` conocido) desde el simulador hasta `ta_curated.fact_posts` y reporta latencia por etapa. | HU-048 |
 | Retención del estado de Terraform | GCS: se conservan las 10 versiones no vigentes más recientes. S3: las versiones no vigentes expiran a los 90 días y los *uploads* multiparte incompletos a los 7. | HU-046 |
@@ -1346,7 +1435,7 @@ infra/
 
 **Qué no existe todavía:**
 - Service accounts, topics, suscripciones, buckets `…-ta-datasets` y `…-ta-lake`, Artifact Registry y Cloud Run: **Lote 1.3** (§5.15). Roles de AWS: Fases 3 y 4.
-- BigQuery (`ta_stream`): `posts_enriched` desde el Lote 2.2; `trend_windows`, `dlq_events` y `dq_results` en el Lote 2.4.
+- BigQuery (`ta_stream`): `posts_enriched` desde el Lote 2.2; `trend_windows`, `dlq_events`, `dq_results` y la vista `trend_windows_latest` desde el Lote 2.4 (§3.16).
 - Secreto `ta-hmac-key`: Lote 2.2 (§3.14).
 - Bucket S3 del lake, KMS, Glue, Athena y EventBridge: Fase 4. Federación OIDC GCP → AWS: Lote 3.2.
 - Acceso de Miguel y Camila al proyecto GCP: diferido (§9, Fase 0).
@@ -1379,7 +1468,7 @@ infra/
 | Topics y suscripciones | §5.3 | Exactamente los nombres de §5.3. `ta-dlq` y `ta-alerts` no tienen suscripción todavía: la retención del topic permite crearla después y hacer *seek*. |
 | Bucket de datasets | `{GCP_PROJECT}-ta-datasets` | Versionado; las versiones no vigentes se borran a los 7 días (el cursor se guarda cada ~100 s). |
 | Bucket del lake | `{GCP_PROJECT}-ta-lake` | `raw/` y `dlq/` expiran a los 30 días (§5.12). `enriched/` y `export-state/` no expiran. |
-| Artifact Registry | `ta-images` (`us-central1`) | Imagen `stream-simulator:<tag>`; el tag por defecto es el commit corto de git. |
+| Artifact Registry | `ta-images` (`us-central1`) | Imagen `stream-simulator:<tag>`; el tag por defecto es el commit corto de git. Desde el Lote 2.3, también `dataflow-nlp`, y desde el 2.4, `dataflow-launcher` (plantilla Flex, §3.16). |
 | Service accounts | `sa-simulator`, `sa-dataflow`, `sa-exporter` | Permisos de §5.8. Los de BigQuery y del secreto HMAC llegan con el Lote 2.2 (§3.14). |
 | Cloud Run | `ta-stream-simulator` | Solo si `simulator_image` no está vacío y `simulator_running = true`. `min = max = 1`, `cpu_idle = false` (CPU siempre asignada), 1 vCPU y 512 MiB, sondas de arranque y de vida en `/healthz`, `deletion_protection = false`. Sin `allUsers` como invocador: la URL exige ID token. |
 
@@ -1442,13 +1531,14 @@ infra/
 │
 ├── docs/
 │   ├── ARCHITECTURE.md                    <- este archivo: arquitectura y contratos (versión vigente)
-│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.25)
+│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.27)
 │   ├── PLAN.md                            <- fases y lotes, matriz HU y estado del proyecto
 │   ├── HU.md                              <- historias de usuario (HU-001 a HU-048)
 │   ├── ACTIVE_SERVICES.md                 <- encender, comprobar y apagar lo que cobra (on.py, off.py, status.py)
 │   ├── validation/                        <- guías de validación, una por lote (desde v2.25; convención en §8)
 │   │   ├── validation-2-2.md              <- Lote 2.2: validación paso a paso
-│   │   └── validation-2-3.md              <- Lote 2.3: validación paso a paso (automática con validate_2_3.py)
+│   │   ├── validation-2-3.md              <- Lote 2.3: validación paso a paso (automática con validate_2_3.py)
+│   │   └── validation-2-4.md              <- Lote 2.4: validación paso a paso (automática con validate_2_4.py)
 │   ├── GLOSSARY.md                        <- glosario del proyecto
 │   ├── NOTAS.md                           <- notas de trabajo
 │   ├── trend_analyzer_multicloud.drawio   <- diagrama editable (v2.5)
@@ -1482,7 +1572,8 @@ infra/
     │   │   ├── modules/{project_services,tfstate_bucket,budget}/
     │   │   ├── modules/{pubsub,gcs_bucket,service_account,artifact_registry,cloud_run_simulator}/   <- Lote 1.3
     │   │   ├── modules/{bigquery_stream,hmac_secret}/   <- Lote 2.2 (bigquery_stream/schemas/posts_enriched.json)
-    │   │   └── environments/dev/          <- estado remoto (GCS); Lote 1.3: platform.tf, variables_platform.tf, outputs_platform.tf; Lote 2.2: streaming.tf, variables_streaming.tf, outputs_streaming.tf; Lote 2.3: nlp.tf
+    │   │   ├── modules/bigquery_stream_tables/   <- Lote 2.4: trend_windows, dlq_events, dq_results y la vista (schemas/)
+    │   │   └── environments/dev/          <- estado remoto (GCS); Lote 1.3: platform.tf, variables_platform.tf, outputs_platform.tf; Lote 2.2: streaming.tf, variables_streaming.tf, outputs_streaming.tf; Lote 2.3: nlp.tf; Lote 2.4: trends.tf, variables_trends.tf, outputs_trends.tf
     │   └── aws/
     │       ├── bootstrap/                 <- estado local: bucket de estado, tabla de bloqueo, presupuesto
     │       ├── modules/{tfstate_backend,budget}/
@@ -1504,6 +1595,9 @@ infra/
     │   ├── local_nlp.sh                   <- Lote 2.3: dataflow-local con NLP (build, up, smoke, restore)
     │   ├── nlp_bench.py                   <- Lote 2.3 (v2.24): velocidad del NLP dentro de la imagen local
     │   ├── validate_2_3.py                <- Lote 2.3: validación automática (partes B a E de docs/validation/validation-2-3.md)
+    │   ├── verify_trends.py               <- Lote 2.4: verificador de trend_windows, dlq_events, latencia y dq_results (§3.16)
+    │   ├── dataflow_template.py           <- Lote 2.4: plantilla Flex (params, build, run) desde los outputs de Terraform
+    │   ├── validate_2_4.py                <- Lote 2.4: validación automática (partes A a F de docs/validation/validation-2-4.md)
     │   ├── on.py  off.py  status.py       <- operación: encender, apagar y ver lo que cobra (ACTIVE_SERVICES.md)
     │   └── smoke_e2e.py                   <- prueba de humo extremo a extremo (HU-048)
     └── src/
@@ -1512,6 +1606,7 @@ infra/
         │   ├── envelope.py  hashing.py  hashtags.py
         │   ├── label_map.py  label_map.yaml
         │   ├── enriched_row.py  parquet_rows.py  hmac_key.py   <- Lote 2.2: fila de posts_enriched, Parquet y llave HMAC (§3.14)
+        │   ├── stream_tables.py           <- Lote 2.4: columnas de trend_windows, dlq_events y dq_results (§3.16)
         │   └── tests/
         ├── simulator/                     <- NUEVO (reemplaza a collectors)
         │   ├── app.py  publisher.py  state.py                <- Lote 1.2 entregado (§3.10)
@@ -1535,8 +1630,10 @@ infra/
         ├── streaming/                     <- Dataflow (Beam). Lote 2.1: pipeline, config, schemas, validate, transforms, records,
         │                                     inject, lake_report, cli, requirements.txt, README.md, tests/ (§3.13).
         │                                     Lote 2.2: enriched, enriched_check, enriched_cli, enriched_testing, ENRICHED.md, tests/test_enriched_* (§3.14).
-        │                                     Lote 2.3: nlp, nlp_testing, nlp_image/ (Dockerfile, fetch_models, image_smoke, cloudbuild), tests/test_nlp* (§3.15)
-        ├── ops/                           <- operación y validación: services (on/off/status), validate23 (validate_2_3.py), tests/
+        │                                     Lote 2.3: nlp, nlp_testing, nlp_image/ (Dockerfile, fetch_models, image_smoke, cloudbuild), tests/test_nlp* (§3.15).
+        │                                     Lote 2.4: trends, trends_core, bq_sink, dlq_bq, trends_check, trends_bq, trends_cli, template_tools,
+        │                                     flex_main, flex_template/ (Dockerfile, metadata.json), TRENDS.md, tests/test_trends_*, test_flex_template (§3.16)
+        ├── ops/                           <- operación y validación: services (on/off/status), validate23 (validate_2_3.py), validate24 (validate_2_4.py), tests/
         ├── historical/                    <- full load (usa el mismo generador)
         ├── exporter/                      <- gcs-to-s3
         ├── lakehouse/{glue_jobs,dbt}/
@@ -1625,20 +1722,21 @@ Estado actual: <salida de `bash scripts/preflight.sh` (nube) o `bash scripts/loc
 | ADR-17 | Pipeline de streaming (Lote 2.1): deduplicación en dos capas (`id_label` + estado por `event_id` en ventanas fijas de 1 h, sin timers), `raw/` y `dlq/` escritos con un `GroupByKey` por partición y ventana de tiempo de proceso (nombre determinista, reintento idempotente) y `BundleBasedDirectRunner` para el modo local | Solo `id_label` (no cubre el DirectRunner ni copias tardías); estado con TTL por timer de tiempo de proceso (retiene la marca de agua en Dataflow); `fileio.WriteToFiles` (nombres menos controlables, gzip aparte); ventanas por *publish time* (el DirectRunner descarta el *backlog* como tardío) |
 | ADR-18 | Rama enriched (Lote 2.2): llave HMAC leída en el worker (`DoFn.setup`) desde Secret Manager por REST con `google-auth`; valor cargado fuera de Terraform (`hmac_key.sh`); fila y Parquet en `src/common/` para que el loader histórico use el mismo código; *streaming inserts* a `posts_enriched`; dataset, tabla, secreto y permisos de `sa-dataflow` adelantados del Lote 2.4 | Llave como opción del pipeline (quedaría en el grafo del job); `random_password` en Terraform (quedaría en el estado); `google-cloud-secret-manager` como dependencia nueva; Storage Write API (exige el servicio de expansión de Java en el launcher y en local); esperar al Lote 2.4 (el 2.2 no tendría dónde escribir) |
 | ADR-19 | NLP (Lote 2.3): `ModelHandler` propio por tarea con `RunInference` y modelo compartido por VM; modelos y commit horneados en una imagen `dataflow-nlp` construida con un contexto propio; solo el preprocesado de pysentimiento, cargado desde su archivo; la etapa se engancha desde `attach_enriched()` y fija `sdk_container_image` en las opciones del pipeline, sin cambiar archivos del Lote 2.1; un lote fallido sigue sin NLP. **v2.25:** el modelo se comparte entre procesos solo en Dataflow; en local (DirectRunner) se carga una vez por proceso (§3.15, "NLP en local") | `HuggingFacePipelineModelHandler` de Beam (menos control del preprocesado y de la versión); descargar los modelos al arrancar el worker (depende de Hugging Face en ejecución); pysentimiento completo (`datasets`, `spacy`); NLP en Cloud Run con Pub/Sub intermedio (plan B de ADR-05, más piezas); descartar las filas que fallan; compartir el modelo también en local (con `MultiProcessShared` el `BundleBasedDirectRunner` se bloquea) |
+| ADR-20 | Tendencias y DLQ en BigQuery (Lote 2.4): ventanas deslizantes en tiempo del evento con `AfterWatermark`, paneles tardíos acumulativos y una fila por panel (vista `trend_windows_latest` con la de mayor `n_posts`); baseline y alertas en un DoFn con estado por marca × fuente; `dlq_events` desde una suscripción `ta-dlq-df` en el mismo job; `pubsub.viewer` por suscripción; plantilla **Flex** con imagen de lanzador propia y parámetros desde `terraform output`; la rama se engancha con `attach_trends()` sin cambiar `dataflow_job.sh` | Agregador propio por tiempo de proceso (más código y sin marca de agua); `MERGE`/actualizar filas en BigQuery (no se puede con *streaming inserts*); esperar 30 min a cerrar cada ventana (incumple el KPI de < 5 min); `--dlq_table` del 2.1 (pide cambiar el lanzamiento); `pubsub.viewer` a nivel de proyecto; plantilla clásica (en Python no admite bien parámetros en tiempo de ejecución para streaming) |
 
 ### Riesgos
 
 | Riesgo | Mitigación |
 |---|---|
 | **Tiempo** (dos entregas: Sprint 2 y Sprint Final) | Paralelizar fases 1–3; NLP en Dataflow es lo más arriesgado → fallback: modelo ligero o NLP en Cloud Run con Pub/Sub intermedio |
-| **Costo** (Dataflow 24/7 + Cloud Run always-on) | `maxNumWorkers=1–2`, apagar fuera de demos, alertas de presupuesto (Lote 7.3) |
+| **Costo** (Dataflow 24/7 + Cloud Run always-on) | `maxNumWorkers=1–2`, apagar fuera de demos, alertas de presupuesto (Lote 7.3). **v2.26:** el Lote 2.4 no suma VMs: las tendencias y la DLQ corren en el mismo worker; la plantilla añade ~0,10 USD por build |
 | Dataflow + modelos HF (imagen pesada, memoria; RoBERTuito requiere `pysentimiento` y su `preprocess_tweet`) | Contenedor personalizado, probar local con `DirectRunner` primero; si la memoria no alcanza, correr solo el modelo de sentimiento y dejar la emoción como mejora. **v2.25:** validado en local y en Dataflow con los dos modelos en un `e2-standard-2`; el riesgo baja a "mitigado" (falta anotar el pico de memoria) |
 | Federación OIDC GCP→AWS no funciona a tiempo | Plan B con llaves en Secret Manager (documentar como deuda) |
 | Licencias de modelos NLP | Uso académico; verificar la licencia de cada modelo en su *model card* (los de pysentimiento se entrenaron con corpus TASS) y citarlos en el informe. **v2.25:** las *model cards* no declaran licencia; pysentimiento advierte que los modelos quedan sujetos a las licencias de sus datos (TASS 2020, EmoEvent), muchas no comerciales. Compatible con el uso académico del proyecto; citas en §3.15 |
 | Modelos entrenados en tweets vs. comentarios con jerga y emojis de Reddit/Facebook/Instagram | Medir contra `label_sentiment`; declarar la limitación en el informe |
 | Generador por plantillas: baja variedad léxica y texto repetido | Ampliar plantillas (§3.2 cambio #5); medir duplicados por `event_id` y **no** por texto; reportar la diversidad léxica en el profiling. **v2.13:** plantillas ampliadas en el Lote 1.1 (5 categorías, 40 informativas y 18 comparativas); medido, 99,995 % de textos únicos en 20.000 comentarios |
 | Infraestructura desde cero (nada aplicado): retrasa la Fase 1 | Lote 1.0 (HU-046) primero; el simulador se desarrolla en local con el emulador (HU-047) mientras se crea el proyecto. **v2.12:** Lote 1.0 aplicado y verificado (§5.14); el riesgo baja a "mitigado" |
-| Falsas alertas al arrancar (z-score sin baseline) | `is_alert = false` hasta 60 ventanas y *cooldown* de 15 min (§5.12) |
+| Falsas alertas al arrancar (z-score sin baseline) | `is_alert = false` hasta 60 ventanas y *cooldown* de 15 min (§5.12). **v2.26:** el baseline vive en el estado del job, así que cada job nuevo vuelve a arrancar en frío (1 h sin alertas); se puede sembrar con el histórico (§5.12) cuando exista el Lote 3.1 |
 | Cuotas de la cuenta de crédito de GCP (p. ej. límite de vCPU) pueden limitar Dataflow con modelos pesados | Verificar cuotas en el Lote 1.0; `maxNumWorkers=1–2`; plan B: NLP en Cloud Run |
 
 ### Preguntas abiertas y respuestas (Fase 0)

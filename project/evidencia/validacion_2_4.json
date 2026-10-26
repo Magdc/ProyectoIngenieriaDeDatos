@@ -1,0 +1,522 @@
+{
+  "lote": "2.4",
+  "parts": {
+    "preflight": {
+      "verdict": "OK",
+      "finished_at": "2026-10-23T01:28:16.489Z",
+      "steps": [
+        {
+          "id": "A1",
+          "title": "Python 3.11 con Beam 2.77.0 y google-cloud-bigquery",
+          "status": "OK",
+          "detail": "Python 3.11, Beam 2.77.0, bigquery True (/root/.venvs/ta-streaming/bin/python)",
+          "data": {}
+        },
+        {
+          "id": "A2",
+          "title": "Archivos del Lote 2.4",
+          "status": "OK",
+          "detail": "20 presentes",
+          "data": {}
+        },
+        {
+          "id": "A3",
+          "title": "Archivos de los lotes 2.1 a 2.3",
+          "status": "OK",
+          "detail": "12 presentes",
+          "data": {}
+        },
+        {
+          "id": "A4",
+          "title": "Enganche de attach_trends (TRENDS.md §2)",
+          "status": "OK",
+          "detail": "pipeline.py llama a attach_trends con las filas de attach_enriched",
+          "data": {}
+        },
+        {
+          "id": "A5",
+          "title": "Herramientas",
+          "status": "OK",
+          "detail": "gcloud, terraform, docker y bash",
+          "data": {
+            "gcloud": true,
+            "terraform": true,
+            "docker": true,
+            "bash": true
+          }
+        },
+        {
+          "id": "A6",
+          "title": "Estado de los servicios (status.py)",
+          "status": "OK",
+          "detail": "ver la salida de arriba",
+          "data": {}
+        }
+      ]
+    },
+    "tests": {
+      "verdict": "OK",
+      "finished_at": "2026-10-23T01:29:29.931Z",
+      "steps": [
+        {
+          "id": "B1",
+          "title": "Pruebas del Lote 2.4 (sin omitidas)",
+          "status": "OK",
+          "detail": "194 passed, 0 failed, 0 skipped",
+          "data": {
+            "passed": 194,
+            "failed": 0,
+            "skipped": 0,
+            "errors": 0,
+            "found": true
+          }
+        },
+        {
+          "id": "B2",
+          "title": "Todo streaming/ (regresión 2.1 a 2.3)",
+          "status": "OK",
+          "detail": "346 passed, 0 failed, 0 skipped",
+          "data": {
+            "passed": 346,
+            "failed": 0,
+            "skipped": 0,
+            "errors": 0,
+            "found": true
+          }
+        },
+        {
+          "id": "B3",
+          "title": "contracts/tests",
+          "status": "OK",
+          "detail": "18 passed, 0 failed, 0 skipped",
+          "data": {
+            "passed": 18,
+            "failed": 0,
+            "skipped": 0,
+            "errors": 0,
+            "found": true
+          }
+        },
+        {
+          "id": "B4",
+          "title": "ops/ (validadores)",
+          "status": "OK",
+          "detail": "75 passed, 0 failed, 0 skipped",
+          "data": {
+            "passed": 75,
+            "failed": 0,
+            "skipped": 0,
+            "errors": 0,
+            "found": true
+          }
+        }
+      ]
+    },
+    "terraform": {
+      "verdict": "OK",
+      "finished_at": "2026-10-23T15:35:19.027Z",
+      "steps": [
+        {
+          "id": "C1",
+          "title": "infra/validate.sh (fmt + validate)",
+          "status": "OK",
+          "detail": "fmt y validate en verde",
+          "data": {}
+        },
+        {
+          "id": "C2",
+          "title": "terraform plan del lote (-target)",
+          "status": "OK",
+          "detail": "sin cambios: el lote ya está aplicado",
+          "data": {
+            "create": [],
+            "update": [],
+            "delete": [],
+            "replace": [],
+            "noop": 21,
+            "outputs": []
+          }
+        },
+        {
+          "id": "C3",
+          "title": "terraform apply",
+          "status": "OK",
+          "detail": "nada que aplicar",
+          "data": {}
+        },
+        {
+          "id": "C4",
+          "title": "Outputs del lote (§5.9)",
+          "status": "OK",
+          "detail": "trend_windows_table=project-0568d9ba-848f-413c-88b:ta_stream.trend_windows, trend_windows_latest_view=project-0568d9ba-848f-413c-88b.ta_stream.trend_windows_latest, dlq_events_table=project-0568d9ba-848f-413c-88b:ta_stream.dlq_events",
+          "data": {}
+        }
+      ]
+    },
+    "local": {
+      "verdict": "OK",
+      "finished_at": "2026-10-23T01:45:43.448Z",
+      "steps": [
+        {
+          "id": "D1",
+          "title": "Docker disponible",
+          "status": "OK",
+          "detail": "Docker 29.7.2",
+          "data": {}
+        },
+        {
+          "id": "D2",
+          "title": "Emulador y simulador reiniciados, sin backlog (local_dev.sh down + up)",
+          "status": "OK",
+          "detail": "#23 DONE 0.0s\n  [OK]    simulator sano\nListo. Siguiente: bash scripts/local_dev.sh verify",
+          "data": {}
+        },
+        {
+          "id": "D3",
+          "title": "Pipeline local con NLP y tendencias",
+          "status": "OK",
+          "detail": "trends_config: enabled=True, local_root=/lake/trend_windows, late_delay=0",
+          "data": {
+            "event": "trends_config",
+            "enabled": true,
+            "reason": "activa",
+            "is_dataflow": false,
+            "project": "ta-local",
+            "bq_table": null,
+            "local_root": "/lake/trend_windows",
+            "dlq_enabled": false,
+            "dlq_reason": "solo_dataflow",
+            "dlq_table": null,
+            "dlq_subscription": null,
+            "trend": {
+              "window_seconds": 300,
+              "period_seconds": 60,
+              "allowed_lateness_seconds": 1800,
+              "late_delay_seconds": 0,
+              "baseline_windows": 60,
+              "z_threshold": 3.0,
+              "min_posts": 5,
+              "volume_std_floor": 1.0,
+              "sentiment_std_floor": 0.05
+            }
+          }
+        },
+        {
+          "id": "D4",
+          "title": "Ventanas en .local-lake/trend_windows",
+          "status": "OK",
+          "detail": "127 filas desde 2026-10-23T01:34:42.490Z",
+          "data": {}
+        },
+        {
+          "id": "D5",
+          "title": "verify_trends.py report --local",
+          "status": "OK",
+          "detail": "T2 OK · T3 OK · T4 OK · T5 OK · T6 OK · T7 OK",
+          "data": {
+            "report": "/mnt/c/Users/frank/Documents/baul/uni/2026-2/ProyectoDatos/repo_personal/project/evidencia/local_trends_report.json",
+            "checks": {
+              "T2": "OK",
+              "T3": "OK",
+              "T4": "OK",
+              "T5": "OK",
+              "T6": "OK",
+              "T7": "OK"
+            }
+          }
+        },
+        {
+          "id": "D6",
+          "title": "Regresión 2.2/2.3: verify_enriched.py --local --expect-nlp",
+          "status": "OK",
+          "detail": "    sentimiento {'negative': 99, 'neutral': 90, 'positive': 84} · emoción {'neutral': 142, 'joy': 77, 'anger': 25, 'fear': 4, 'sadness': 21, 'surprise': 2, 'disgust': 2} · acuerdo con ground truth 0.9162\n  instagram: 266 filas · 266 ids · p95 7271 ms\n    sentimiento {'neutral': 97, 'positive': 88, 'negative': 81} · emoción {'neutral': 131, 'joy': 78, 'disgust': 1, 'anger': 31, 'sadness': 22, 'surprise': 1, 'fear': 2} · acuerdo con ground truth 0.9192",
+          "data": {}
+        },
+        {
+          "id": "D7",
+          "title": "Regresión 2.1: local_dataflow.sh check",
+          "status": "OK",
+          "detail": "  raw/facebook  archivos=11   líneas=307    únicos=307    copias_repetidas=0 líneas_malas=0\n  raw/instagram archivos=11   líneas=297    únicos=297    copias_repetidas=0 líneas_malas=0\n  dlq/ archivos=1 registros=5 por_tipo={'attributes': 1, 'encoding': 1, 'json': 1, 'routing': 1, 'schema': 1} por_fuente={'facebook': 1, 'reddit': 4}",
+          "data": {}
+        }
+      ]
+    },
+    "cloud": {
+      "verdict": "OK",
+      "finished_at": "2026-10-23T16:07:20.950Z",
+      "steps": [
+        {
+          "id": "E1",
+          "title": "Proyecto y credenciales",
+          "status": "OK",
+          "detail": "project-0568d9ba-848f-413c-88b · us-central1 · job ta-stream-dev",
+          "data": {
+            "project": "project-0568d9ba-848f-413c-88b",
+            "region": "us-central1",
+            "env": "dev"
+          }
+        },
+        {
+          "id": "E2",
+          "title": "Tablas trend_windows, dlq_events, dq_results y vista",
+          "status": "OK",
+          "detail": "T1 OK",
+          "data": {
+            "report": "/mnt/c/Users/frank/Documents/baul/uni/2026-2/ProyectoDatos/repo_personal/project/evidencia/trends_tables.json",
+            "checks": {
+              "T1": "OK"
+            }
+          }
+        },
+        {
+          "id": "E3",
+          "title": "Simulador encendido",
+          "status": "OK",
+          "detail": "https://ta-stream-simulator-kyu3kofmtq-uc.a.run.app",
+          "data": {}
+        },
+        {
+          "id": "E4a",
+          "title": "Drenar el job anterior",
+          "status": "OK",
+          "detail": "drenado (2026-10-23_07_46_09-10292586617550137319 Running) para lanzar el del Lote 2.4",
+          "data": {}
+        },
+        {
+          "id": "E4",
+          "title": "Job con el código del 2.4 (dataflow_job.sh start)",
+          "status": "OK",
+          "detail": "ta-stream-dev en Running (2026-10-23_08_40_24-6160022371575344714)",
+          "data": {
+            "job": {
+              "creationTime": "2026-10-23 15:40:24",
+              "id": "2026-10-23_08_40_24-6160022371575344714",
+              "location": "us-central1",
+              "name": "ta-stream-dev",
+              "state": "Running",
+              "stateTime": "2026-10-23 15:41:45",
+              "type": "Streaming"
+            },
+            "trends_config": {
+              "event": "trends_config",
+              "enabled": true,
+              "reason": "activa",
+              "is_dataflow": true,
+              "project": "project-0568d9ba-848f-413c-88b",
+              "bq_table": "project-0568d9ba-848f-413c-88b:ta_stream.trend_windows",
+              "local_root": null,
+              "dlq_enabled": true,
+              "dlq_reason": "activa",
+              "dlq_table": "project-0568d9ba-848f-413c-88b:ta_stream.dlq_events",
+              "dlq_subscription": "projects/project-0568d9ba-848f-413c-88b/subscriptions/ta-dlq-df",
+              "trend": {
+                "window_seconds": 300,
+                "period_seconds": 60,
+                "allowed_lateness_seconds": 1800,
+                "late_delay_seconds": 60,
+                "baseline_windows": 60,
+                "z_threshold": 3.0,
+                "min_posts": 5,
+                "volume_std_floor": 1.0,
+                "sentiment_std_floor": 0.05
+              }
+            }
+          }
+        },
+        {
+          "id": "E5",
+          "title": "trends_config del lanzamiento: tendencias y DLQ a BigQuery",
+          "status": "OK",
+          "detail": "bq_table=project-0568d9ba-848f-413c-88b:ta_stream.trend_windows, dlq_table=project-0568d9ba-848f-413c-88b:ta_stream.dlq_events, late_delay=60 s",
+          "data": {
+            "event": "trends_config",
+            "enabled": true,
+            "reason": "activa",
+            "is_dataflow": true,
+            "project": "project-0568d9ba-848f-413c-88b",
+            "bq_table": "project-0568d9ba-848f-413c-88b:ta_stream.trend_windows",
+            "local_root": null,
+            "dlq_enabled": true,
+            "dlq_reason": "activa",
+            "dlq_table": "project-0568d9ba-848f-413c-88b:ta_stream.dlq_events",
+            "dlq_subscription": "projects/project-0568d9ba-848f-413c-88b/subscriptions/ta-dlq-df",
+            "trend": {
+              "window_seconds": 300,
+              "period_seconds": 60,
+              "allowed_lateness_seconds": 1800,
+              "late_delay_seconds": 60,
+              "baseline_windows": 60,
+              "z_threshold": 3.0,
+              "min_posts": 5,
+              "volume_std_floor": 1.0,
+              "sentiment_std_floor": 0.05
+            }
+          }
+        },
+        {
+          "id": "E6",
+          "title": "ta-dlq → dlq_events (dlq-check)",
+          "status": "OK",
+          "detail": "D1 OK · D2 OK · D3 OK",
+          "data": {
+            "report": "/mnt/c/Users/frank/Documents/baul/uni/2026-2/ProyectoDatos/repo_personal/project/evidencia/dlq_check_2_4.json",
+            "checks": {
+              "D1": "OK",
+              "D2": "OK",
+              "D3": "OK"
+            }
+          }
+        },
+        {
+          "id": "E7",
+          "title": "trend_windows, latencia y dq_results (report)",
+          "status": "OK",
+          "detail": "T1 OK · T2 OK · T3 OK · T4 OK · T5 OK · T5b OK · T6 OK · T7 OK · T8 OK · T9 OK",
+          "data": {
+            "report": "/mnt/c/Users/frank/Documents/baul/uni/2026-2/ProyectoDatos/repo_personal/project/evidencia/trends_report.json",
+            "checks": {
+              "T1": "OK",
+              "T2": "OK",
+              "T3": "OK",
+              "T4": "OK",
+              "T5": "OK",
+              "T5b": "OK",
+              "T6": "OK",
+              "T7": "OK",
+              "T8": "OK",
+              "T9": "OK"
+            }
+          }
+        },
+        {
+          "id": "E8",
+          "title": "Regresión 2.1: verify_streaming.py check",
+          "status": "OK",
+          "detail": "  raw/facebook  archivos=25   líneas=1911   únicos=1911   copias_repetidas=0 líneas_malas=0\n  raw/instagram archivos=25   líneas=1894   únicos=1894   copias_repetidas=0 líneas_malas=0\n  dlq/ archivos=11 registros=24 por_tipo={'attributes': 3, 'encoding': 6, 'json': 6, 'routing': 3, 'schema': 6} por_fuente={'facebook': 3, 'reddit': 21}",
+          "data": {}
+        },
+        {
+          "id": "E9",
+          "title": "Regresión 2.2/2.3: verify_enriched.py --expect-nlp",
+          "status": "OK",
+          "detail": "    sentimiento {'neutral': 253, 'positive': 277, 'negative': 298} · emoción {'neutral': 413, 'sadness': 82, 'anger': 71, 'joy': 245, 'fear': 10, 'surprise': 4, 'disgust': 3} · acuerdo con ground truth 0.9223\n  instagram: 3661 filas · 3661 ids · p95 325362 ms\n    sentimiento {'negative': 287, 'neutral': 284, 'positive': 263} · emoción {'neutral': 407, 'joy': 245, 'anger': 92, 'sadness': 79, 'disgust': 5, 'surprise': 3, 'fear': 3} · acuerdo con ground truth 0.9049",
+          "data": {}
+        },
+        {
+          "id": "E10",
+          "title": "Logs de los workers sin errores del lote",
+          "status": "OK",
+          "detail": "trend_bq_insert_failed 0, dlq_bq_insert_failed 0, trend_row_unrecognized 0, nlp_inference_failed 0, GETTING_PUBSUB_SUBSCRIPTION_FAILED 0, trend_alert 0",
+          "data": {
+            "trend_bq_insert_failed": 0,
+            "dlq_bq_insert_failed": 0,
+            "trend_row_unrecognized": 0,
+            "nlp_inference_failed": 0,
+            "GETTING_PUBSUB_SUBSCRIPTION_FAILED": 0,
+            "trend_alert": 0
+          }
+        }
+      ]
+    },
+    "template": {
+      "verdict": "FALLA",
+      "finished_at": "2026-10-23T22:43:30.952Z",
+      "steps": [
+        {
+          "id": "F1",
+          "title": "Parámetros desde los outputs de Terraform",
+          "status": "OK",
+          "detail": "dlq_df_subscription, dlq_events_table, nlp_container_image, output_root, posts_enriched_table, trend_windows_table",
+          "data": {}
+        },
+        {
+          "id": "F2",
+          "title": "Imagen dataflow-launcher y plantilla",
+          "status": "OK",
+          "detail": "us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/dataflow-launcher:20261023-2202",
+          "data": {
+            "tag": "20261023-2202",
+            "image": "us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/dataflow-launcher:20261023-2202",
+            "template_spec": "gs://project-0568d9ba-848f-413c-88b-ta-lake/_dataflow/templates/ta-stream.json",
+            "template_spec_tag": "gs://project-0568d9ba-848f-413c-88b-ta-lake/_dataflow/templates/ta-stream-20261023-2202.json",
+            "dry_run": false
+          }
+        },
+        {
+          "id": "F3",
+          "title": "Drenar el job anterior",
+          "status": "OK",
+          "detail": "no hay ta-stream-dev activo",
+          "data": {}
+        },
+        {
+          "id": "F4",
+          "title": "Job lanzado desde la plantilla Flex",
+          "status": "OK",
+          "detail": "ta-stream-dev en Running (2026-10-23_15_04_44-17801110254895247150)",
+          "data": {
+            "job": {
+              "id": "2026-10-23_15_04_44-17801110254895247150",
+              "name": "ta-stream-dev",
+              "state": "JOB_STATE_RUNNING"
+            },
+            "trends_config": null
+          }
+        },
+        {
+          "id": "F5",
+          "title": "El job usa la imagen de NLP y las tablas del 2.4",
+          "status": "OK",
+          "detail": "{'dataflow-nlp': True, 'trend_windows': True, 'dlq_events': True}",
+          "data": {
+            "dataflow-nlp": true,
+            "trend_windows": true,
+            "dlq_events": true
+          }
+        },
+        {
+          "id": "F6",
+          "title": "trend_windows con el job de la plantilla",
+          "status": "FALLA",
+          "detail": "T1 OK · T2 OK · T3 OK · T4 FALLA · T5 OK · T5b OK · T6 OK · T7 FALLA · T8 FALLA",
+          "data": {
+            "report": "/mnt/c/Users/frank/Documents/baul/uni/2026-2/ProyectoDatos/repo_personal/project/evidencia/template_trends_report.json",
+            "checks": {
+              "T1": "OK",
+              "T2": "OK",
+              "T3": "OK",
+              "T4": "FALLA",
+              "T5": "OK",
+              "T5b": "OK",
+              "T6": "OK",
+              "T7": "FALLA",
+              "T8": "FALLA"
+            }
+          }
+        },
+        {
+          "id": "F7",
+          "title": "verify_streaming.py check con el job de la plantilla",
+          "status": "FALLA",
+          "detail": "  raw/facebook  archivos=5    líneas=5530   únicos=5530   copias_repetidas=0 líneas_malas=0\n  raw/instagram archivos=5    líneas=5544   únicos=5544   copias_repetidas=0 líneas_malas=0\n  dlq/ archivos=12 registros=24 por_tipo={'attributes': 3, 'encoding': 6, 'json': 6, 'routing': 3, 'schema': 6} por_fuente={'facebook': 3, 'reddit': 21}",
+          "data": {}
+        },
+        {
+          "id": "F8",
+          "title": "Logs de los workers sin errores del lote",
+          "status": "OK",
+          "detail": "trend_bq_insert_failed 0, dlq_bq_insert_failed 0, trend_row_unrecognized 0, nlp_inference_failed 0, GETTING_PUBSUB_SUBSCRIPTION_FAILED 0, trend_alert 0",
+          "data": {
+            "trend_bq_insert_failed": 0,
+            "dlq_bq_insert_failed": 0,
+            "trend_row_unrecognized": 0,
+            "nlp_inference_failed": 0,
+            "GETTING_PUBSUB_SUBSCRIPTION_FAILED": 0,
+            "trend_alert": 0
+          }
+        }
+      ]
+    }
+  },
+  "updated_at": "2026-10-23T22:43:30.960Z"
+}

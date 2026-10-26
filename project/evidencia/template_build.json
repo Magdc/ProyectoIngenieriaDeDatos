@@ -1,0 +1,7 @@
+{
+  "tag": "20261023-2202",
+  "image": "us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/dataflow-launcher:20261023-2202",
+  "template_spec": "gs://project-0568d9ba-848f-413c-88b-ta-lake/_dataflow/templates/ta-stream.json",
+  "template_spec_tag": "gs://project-0568d9ba-848f-413c-88b-ta-lake/_dataflow/templates/ta-stream-20261023-2202.json",
+  "dry_run": false
+}

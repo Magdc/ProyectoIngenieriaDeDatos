@@ -14,7 +14,8 @@ En GCP lo lanza `scripts/dataflow_job.sh start` (DataflowRunner).
 
 from __future__ import annotations
 
-from streaming.enriched import attach_enriched 
+from streaming.enriched import attach_enriched
+from streaming.trends import attach_trends 
 
 import json
 import logging
@@ -61,7 +62,8 @@ def build_from_messages(messages, cfg: StreamConfig) -> dict:
     checked = messages | "Validate" >> beam.ParDo(ValidateFn(cfg.bundle)).with_outputs(
         DLQ_TAG, main="valid")
     unique = checked.valid | "Dedup" >> DedupByEventId(cfg.dedup_window_seconds)
-    attach_enriched(unique)  
+    enriched_rows = attach_enriched(unique) 
+    attach_trends(enriched_rows)
 
     raw_files = (
         unique  # ya marcado con la hora de proceso por DedupByEventId

@@ -1,0 +1,301 @@
+{
+  "lote": "5.1",
+  "hu": [
+    "HU-031"
+  ],
+  "parts": {
+    "A": {
+      "title": "Preflight del código",
+      "status": "OK",
+      "started_at": "2026-10-26T15:39:56.390922+00:00",
+      "finished_at": "2026-10-26T15:40:02.966917+00:00",
+      "steps": [
+        {
+          "id": "A1",
+          "title": "Python y dependencias",
+          "status": "OK",
+          "detail": "Python 3.11.17; pyarrow 25.0.1, yaml 6.0.3, boto3 1.43.118",
+          "data": {}
+        },
+        {
+          "id": "A2",
+          "title": "los 18 archivos del lote",
+          "status": "OK",
+          "detail": "18 presentes",
+          "data": {}
+        },
+        {
+          "id": "A3",
+          "title": "archivos de lotes anteriores que usa",
+          "status": "OK",
+          "detail": "10 presentes",
+          "data": {}
+        },
+        {
+          "id": "A4",
+          "title": "capas del profiler = contracts/athena (posts_raw, posts)",
+          "status": "OK",
+          "detail": "24 columnas de Raw y 24 de Trusted, en orden, y sus particiones",
+          "data": {}
+        },
+        {
+          "id": "A5",
+          "title": "herramientas",
+          "status": "OK",
+          "detail": "aws presente",
+          "data": {}
+        },
+        {
+          "id": "A6",
+          "title": "caché local fuera del repo",
+          "status": "OK",
+          "detail": "/root/.cache/trendanalyzer/quality · libre 1019.3 GB",
+          "data": {
+            "cache": "/root/.cache/trendanalyzer/quality"
+          }
+        },
+        {
+          "id": "A7",
+          "title": "servicios que cobran (ops.services.status)",
+          "status": "OK",
+          "detail": "local: Docker no responde\nGCP simulador: apagado · terraform.tfvars simulator_running = None\nGCP Dataflow: ningún job activo",
+          "data": {
+            "lines": [
+              "local: Docker no responde",
+              "GCP simulador: apagado · terraform.tfvars simulator_running = None",
+              "GCP Dataflow: ningún job activo"
+            ]
+          }
+        }
+      ]
+    },
+    "B": {
+      "title": "Pruebas",
+      "status": "OK",
+      "started_at": "2026-10-26T15:40:02.970710+00:00",
+      "finished_at": "2026-10-26T15:40:12.496703+00:00",
+      "steps": [
+        {
+          "id": "B1",
+          "title": "pytest src/quality",
+          "status": "OK",
+          "detail": "165 passed, 0 skipped, 0 failed (esperado 165 passed, 0 skipped)",
+          "data": {
+            "passed": 165,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0
+          }
+        },
+        {
+          "id": "B2",
+          "title": "pytest test_ops_validate51.py",
+          "status": "OK",
+          "detail": "24 passed, 0 failed (esperado 24)",
+          "data": {
+            "passed": 24,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0
+          }
+        },
+        {
+          "id": "B3",
+          "title": "pytest contracts/tests",
+          "status": "OK",
+          "detail": "18 passed (esperado 18)",
+          "data": {
+            "passed": 18,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0
+          }
+        },
+        {
+          "id": "B4",
+          "title": "regresión de ops.services (test_ops_services.py)",
+          "status": "OK",
+          "detail": "23 passed, 0 failed",
+          "data": {
+            "passed": 23,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0
+          }
+        }
+      ]
+    },
+    "C": {
+      "title": "Raw: caché de S3 y profiling real",
+      "status": "OK",
+      "started_at": "2026-10-26T15:40:12.500629+00:00",
+      "finished_at": "2026-10-26T15:43:22.205764+00:00",
+      "steps": [
+        {
+          "id": "C1",
+          "title": "credenciales de AWS (solo lectura)",
+          "status": "OK",
+          "detail": "cuenta 648617469176 · cuenta raíz",
+          "data": {
+            "account": "648617469176"
+          }
+        },
+        {
+          "id": "C2",
+          "title": "sincronizar raw/ a la caché",
+          "status": "OK",
+          "detail": "13257 objetos (182.7 MB): histórico 12102 (esperado 12102), stream 1155; bajados 0, ya estaban 13257, fallidos 0",
+          "data": {
+            "objects": 13257,
+            "historical": 12102,
+            "stream": 1155
+          }
+        },
+        {
+          "id": "C3",
+          "title": "repetir la sincronización no baja nada",
+          "status": "OK",
+          "detail": "por bajar 0",
+          "data": {
+            "pending": 0
+          }
+        },
+        {
+          "id": "C4",
+          "title": "profile --layer raw",
+          "status": "OK",
+          "detail": "13257 archivos, 221637 filas en 176.6 s → profiling_raw_5_1.json, profiling_raw_5_1.md",
+          "data": {}
+        },
+        {
+          "id": "C5",
+          "title": "cobertura de HU-031 (columnas, orígenes, fuentes, texto, duplicados)",
+          "status": "OK",
+          "detail": "24 columnas con nulos, cardinalidad, tipo y distribución; historical y stream × 3 fuentes; diversidad léxica; event_id",
+          "data": {}
+        },
+        {
+          "id": "C6",
+          "title": "resultados del profiling de Raw",
+          "status": "OK",
+          "detail": "histórico 50000 filas (esperado 50000), stream 171637; historical: completitud 1.0, unicidad 1.0, duplicados 0.0, anonimización 1.0; stream: completitud 1.0, unicidad 0.999988, duplicados 1.2e-05, anonimización 1.0\nanomalías: 0 error, 3 aviso, 16 info",
+          "data": {
+            "kpi": {
+              "*": {
+                "completitud": 1.0,
+                "unicidad": 0.999991,
+                "duplicados": 9e-06,
+                "anonimizacion": 1.0
+              },
+              "historical": {
+                "completitud": 1.0,
+                "unicidad": 1.0,
+                "duplicados": 0.0,
+                "anonimizacion": 1.0
+              },
+              "stream": {
+                "completitud": 1.0,
+                "unicidad": 0.999988,
+                "duplicados": 1.2e-05,
+                "anonimizacion": 1.0
+              }
+            },
+            "anomalies": {
+              "error": 0,
+              "warning": 3,
+              "info": 16
+            }
+          }
+        },
+        {
+          "id": "C7",
+          "title": "reglas propuestas para HU-032",
+          "status": "OK",
+          "detail": "63 reglas (Raw 56, Trusted 54); KPI de §5.10 cubiertos\nen Raw hoy: 55 cumplen, no cumplen: errores —, avisos ['DQ-63']",
+          "data": {
+            "rules": 63,
+            "failing_errors": [],
+            "failing_warnings": [
+              "DQ-63"
+            ]
+          }
+        },
+        {
+          "id": "C8",
+          "title": "evidencia sin datos personales ni volcados",
+          "status": "OK",
+          "detail": "sin user_hash ni user_id; tamaños profiling_raw_5_1.json 412 KB, profiling_raw_5_1.md 26 KB, profiling_sync_raw_5_1.json 1 KB",
+          "data": {}
+        },
+        {
+          "id": "C9",
+          "title": "ARCHITECTURE §5.10 = catálogo de reglas del código",
+          "status": "OK",
+          "detail": "63 reglas iguales",
+          "data": {}
+        }
+      ]
+    },
+    "D": {
+      "title": "Trusted: real si existe; si no, simulado con el contrato de §5.7",
+      "status": "AVISO",
+      "started_at": "2026-10-26T15:43:22.210411+00:00",
+      "finished_at": "2026-10-26T15:47:38.651104+00:00",
+      "steps": [
+        {
+          "id": "D1",
+          "title": "trusted/posts/ en S3",
+          "status": "AVISO",
+          "detail": "vacío: Trusted no existe todavía (lo crea el Lote 4.2). Se valida la herramienta con un Trusted simulado; el profiling real de Trusted queda pendiente",
+          "data": {
+            "objects": 0,
+            "pending": "Lote 4.2"
+          }
+        },
+        {
+          "id": "D2",
+          "title": "Trusted simulado desde Raw",
+          "status": "OK",
+          "detail": "543 archivos, 221635 event_id distintos de 221637 filas de Raw",
+          "data": {}
+        },
+        {
+          "id": "D3",
+          "title": "profile --layer trusted sobre el simulado",
+          "status": "OK",
+          "detail": "221635 filas en 220.3 s → profiling_trusted_synth_5_1.json",
+          "data": {}
+        },
+        {
+          "id": "D4",
+          "title": "contrato de Trusted en el profiling (simulado)",
+          "status": "OK",
+          "detail": "221635 filas; dt = DATE(event_time) en todas: True; unicidad 1.0; DQ-58 filas frente a Raw: {'*': {'trusted_rows': 221635, 'raw_distinct': 221635}} → cumple; text_clean perfilado: True",
+          "data": {}
+        },
+        {
+          "id": "D5",
+          "title": "detecta los 4 defectos inyectados",
+          "status": "OK",
+          "detail": "duplicate_event_id: detectado, dt_mismatch: detectado, null_text_clean: detectado, identity_column: detectado",
+          "data": {
+            "detected": {
+              "duplicate_event_id": true,
+              "dt_mismatch": true,
+              "null_text_clean": true,
+              "identity_column": true
+            }
+          }
+        },
+        {
+          "id": "D6",
+          "title": "evidencia de Trusted sin datos personales",
+          "status": "OK",
+          "detail": "sin user_hash ni user_id",
+          "data": {}
+        }
+      ]
+    }
+  },
+  "updated_at": "2026-10-26T15:47:38.651182+00:00"
+}

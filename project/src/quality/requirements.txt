@@ -1,0 +1,13 @@
+# Lote 5.1 (HU-031): profiling de Raw y Trusted. No añade dependencias: usa las versiones que ya
+# trae ~/.venvs/ta-streaming (comprobadas el 26-oct-2026). No las instale ahí: ese entorno lo
+# comparten otros lotes. Si hiciera falta un entorno propio:
+#
+#   uv venv --python 3.11 ~/.venvs/ta-quality && source ~/.venvs/ta-quality/bin/activate
+#   python -m pip install -r project/src/quality/requirements.txt pytest
+#
+# - pyarrow: lectura de los Parquet (la trae Apache Beam en src/streaming/requirements.txt).
+# - boto3: listar y bajar de S3 (solo para sync y publish).
+# - PyYAML: brands.yaml (la trae el simulador).
+pyarrow==25.0.1
+boto3==1.43.118
+PyYAML==6.0.3

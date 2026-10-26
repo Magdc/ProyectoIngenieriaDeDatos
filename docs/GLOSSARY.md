@@ -370,7 +370,7 @@ Retiene mensajes 7 días y entrega **al menos una vez**, por eso la deduplicaci�
 | `raw/` | Datos tal como llegan (ya anonimizados), de origen `stream` e `historical`. |
 | `trusted/` | Datos unificados, deduplicados, con tipos correctos y reglas de calidad aplicadas. |
 | `curated/` | Modelo analítico listo para consumo (hechos, dimensiones, agregados, aristas). |
-| `quality/` | Reportes de Great Expectations. |
+| `quality/` | Reportes de Great Expectations (Lote 5.2) y, opcional, el informe del profiling (`quality/{fecha}/profiling/`, apagado por defecto; §3.20). |
 | `athena-results/` | Resultados de consultas de Athena (se borran a los 7 días). |
 
 Todo se guarda en **Parquet + Snappy**.
@@ -576,7 +576,9 @@ Es idempotente: **sobrescribe las particiones `dt`** en lugar de añadir.
 
 **Qué es:** análisis exploratorio de un conjunto de datos para conocer su estructura, nulos, distribuciones y anomalías.
 
-**Rol en TrendAnalyzer:** se aplica sobre Raw y Trusted para entender el estado real de los datos antes de definir reglas de calidad (HU-031). Incluye reportar la **diversidad léxica**, dado que el generador usa plantillas.
+**Rol en TrendAnalyzer:** se aplica sobre Raw y Trusted para entender el estado real de los datos antes de definir reglas de calidad (HU-031). Incluye reportar la **diversidad léxica**, dado que el generador usa plantillas. Desde v2.33 lo hace `scripts/profile_data.py` (Lote 5.1); qué mide, cómo se usa y lo que encontró en Raw están en `ARCHITECTURE.md` §3.20, y las reglas que propone, en §5.10.
+
+**Términos del informe:** *TTR* (tipos / tokens), *MATTR* (TTR medio en ventanas deslizantes de 500 tokens; no depende del tamaño del texto), *hapax* (palabras que aparecen una sola vez), *distinct-2* (bigramas distintos / bigramas) y *esqueleto* (el texto en minúsculas, sin tildes, hashtags ni signos y con la marca enmascarada, para medir cuánto se repiten las plantillas). Definiciones exactas en `ARCHITECTURE.md` §3.20.
 
 ### Calidad de datos y KPIs
 

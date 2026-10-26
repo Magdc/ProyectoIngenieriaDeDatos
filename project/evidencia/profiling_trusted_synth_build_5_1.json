@@ -1,0 +1,9 @@
+{
+ "raw_files": 13257,
+ "raw_rows": 221637,
+ "distinct_event_ids": 221635,
+ "files": 543,
+ "partitions": 543,
+ "defects": [],
+ "out_root": "/root/.cache/trendanalyzer/quality/synthetic/trusted"
+}

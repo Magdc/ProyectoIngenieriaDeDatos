@@ -1,0 +1,45 @@
+{
+ "bucket": "ta-dev-648617469176-lake",
+ "prefix": "raw/",
+ "cache_root": "/root/.cache/trendanalyzer/quality/s3/ta-dev-648617469176-lake",
+ "started_at": "2026-10-26T15:40:13Z",
+ "finished_at": "2026-10-26T15:40:18Z",
+ "duration_s": 4.8,
+ "objects": 13257,
+ "bytes": 182734247,
+ "to_download": 0,
+ "downloaded": 0,
+ "downloaded_bytes": 0,
+ "skipped_same_size": 13257,
+ "failed": 0,
+ "failures": [],
+ "stale_local": 0,
+ "dry_run": false,
+ "by_prefix": {
+  "origin=historical/source=facebook": {
+   "objects": 4030,
+   "bytes": 45580344
+  },
+  "origin=historical/source=instagram": {
+   "objects": 4031,
+   "bytes": 42890444
+  },
+  "origin=historical/source=reddit": {
+   "objects": 4041,
+   "bytes": 42397993
+  },
+  "origin=stream/source=facebook": {
+   "objects": 385,
+   "bytes": 17860434
+  },
+  "origin=stream/source=instagram": {
+   "objects": 385,
+   "bytes": 16606523
+  },
+  "origin=stream/source=reddit": {
+   "objects": 385,
+   "bytes": 17398509
+  }
+ },
+ "ok": true
+}

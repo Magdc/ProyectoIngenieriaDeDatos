@@ -1,0 +1,14 @@
+{
+ "raw_files": 400,
+ "raw_rows": 1405,
+ "distinct_event_ids": 1405,
+ "files": 21,
+ "partitions": 20,
+ "defects": [
+  "duplicate_event_id",
+  "dt_mismatch",
+  "null_text_clean",
+  "identity_column"
+ ],
+ "out_root": "/root/.cache/trendanalyzer/quality/synthetic/trusted-defects"
+}

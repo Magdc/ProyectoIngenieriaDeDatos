@@ -1,0 +1,108 @@
+{
+  "status": "OK",
+  "steps": [
+    {
+      "id": "D1",
+      "name": "Importaciones",
+      "status": "OK",
+      "detail": "13 módulos importan",
+      "data": {}
+    },
+    {
+      "id": "D2",
+      "name": "Simulador (EventFactory)",
+      "status": "OK",
+      "detail": "EventFactory(...); semilla 3101 aplicada; caos apagado; origin nativo 'historical'",
+      "data": {
+        "describe": {
+          "how": "EventFactory(...)",
+          "make": "simulator.factory.EventFactory.make(source: 'str', seq: 'int', now: 'datetime', scenario: 'Optional[Scenario]' = None) -> 'Emission'",
+          "now_as_epoch": false,
+          "native_origin": "historical"
+        },
+        "self_check": {
+          "reddit": {
+            "origin": "historical",
+            "event_id_ok": true,
+            "lag_s": 4.786
+          },
+          "facebook": {
+            "origin": "historical",
+            "event_id_ok": true,
+            "lag_s": 0.223
+          },
+          "instagram": {
+            "origin": "historical",
+            "event_id_ok": true,
+            "lag_s": 1.974
+          }
+        }
+      }
+    },
+    {
+      "id": "D3",
+      "name": "Llave HMAC",
+      "status": "OK",
+      "detail": "common.hmac_key.load_hmac_key(local_dev) (huella 2a16578149ff63ef, str de 64 caracteres)",
+      "data": {
+        "attempts": []
+      }
+    },
+    {
+      "id": "D4",
+      "name": "Anonimización y contratos",
+      "status": "OK",
+      "detail": "9 eventos anonimizados con common.enriched_row.enrich_envelope(envelope: 'Mapping[str, Any]', key: 'str', process_time: 'str') -> 'dict[str, Any]'; envelope.v1 y envelope.enriched.v1 OK",
+      "data": {
+        "example": {
+          "event_id": "3c37efe6-5ee0-5d3e-aa2a-15b6ceeccca3",
+          "origin": "historical",
+          "author": {
+            "user_hash": "a9665a33067574228bafdd8b128db0411054076dc3c6a3b37a0a72f4cfe27a17",
+            "followers": 18
+          },
+          "likes": 19,
+          "shares": null,
+          "comments": null,
+          "process_time": "2026-10-24T19:29:35.577Z"
+        }
+      }
+    },
+    {
+      "id": "D5",
+      "name": "Fila y Parquet",
+      "status": "OK",
+      "detail": "9 filas, 24 columnas en orden; {'event_time': 'timestamp[ms, tz=UTC]', 'brands': 'list<element: string>', 'payload': 'string'}",
+      "data": {
+        "row_example": {
+          "event_id": "3c37efe6-5ee0-5d3e-aa2a-15b6ceeccca3",
+          "origin": "historical",
+          "source": "reddit",
+          "generator": "comment-gen@1.0",
+          "event_time": "2026-06-01T15:29:57.220Z",
+          "ingest_time": "2026-06-01T15:30:00.000Z",
+          "process_time": "2026-10-24T19:29:35.577Z",
+          "user_hash": "a9665a33067574228bafdd8b128db0411054076dc3c6a3b37a0a72f4cfe27a17",
+          "followers": 18,
+          "text": "A ver, escuchen: hay días en los que lo úinco que necesito es un vaso de Postobón. Con eso me conformo. 💯",
+          "lang": "es",
+          "brands": [
+            "postobon"
+          ],
+          "brand_primary": "postobon",
+          "hashtags": [],
+          "likes": 19,
+          "shares": null,
+          "comments": null,
+          "sentiment_label": "positive",
+          "sentiment_score": 0.9,
+          "emotion_label": "joy",
+          "emotion_score": 0.8,
+          "label_sentiment": "positive",
+          "nlp_model_version": "robertuito-sentiment@aaaaaaaaaaaa+robertuito-emotion@bbbbbbbbbbbb",
+          "payload": "{\"reddit_id\":\"t1_402zo3j\",\"kind\":\"comment\",\"subreddit\":\"r/medellin\",\"title\":null,\"parent_id\":\"t3_imxmh67\",\"score\":19,\"upvote_ratio\":null,\"num_comments\":null,\"permalink\":\"/r/medellin/comments/imxmh67/_/402zo3j/\",\"flair\":null}"
+        }
+      }
+    }
+  ]
+}

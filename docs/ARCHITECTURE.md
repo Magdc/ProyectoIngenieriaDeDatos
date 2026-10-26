@@ -1,6 +1,6 @@
 # TrendAnalyzer · ARCHITECTURE
 
-> Documento maestro de arquitectura y contratos. **Versión vigente: 2.27.**
+> Documento maestro de arquitectura y contratos. **Versión vigente: 2.29.**
 > Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md) · Plan por fases, trazabilidad HU y estado: [`PLAN.md`](PLAN.md) · Historias de usuario: `HU.md` · Visión general: `README.md`.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 
@@ -25,8 +25,9 @@ Este archivo está pensado para que **baste con leerlo (o pegármelo) para const
 | Anonimizar, normalizar y escribir `enriched/` y `posts_enriched`; cargar la llave HMAC | **§3.14** y `src/streaming/ENRICHED.md` |
 | Sentimiento y emoción (RoBERTuito), imagen `dataflow-nlp` y NLP en local | **§3.15** y `docs/validation/validation-2-3.md` |
 | Ventanas de tendencias (`trend_windows`), `dlq_events`, `dq_results` y la plantilla Flex de Dataflow | **§3.16**, `src/streaming/TRENDS.md` y `docs/validation/validation-2-4.md` |
+| Generar y cargar el histórico (loader, NLP en lote, bucket S3 del lake, KMS y rol `ta-historical-loader`) | **§3.17**, `src/historical/HISTORICAL.md` y `docs/validation/validation-3-1.md` |
 | Comprobar qué está encendido antes de validar un lote | **§8** (preflight) |
-| Encender, comprobar y apagar lo que cobra; validar un lote con un solo comando | `docs/ACTIVE_SERVICES.md` (`scripts/on.py`, `off.py`, `status.py`), `scripts/validate_2_3.py` (§3.15) y `scripts/validate_2_4.py` (§3.16) |
+| Encender, comprobar y apagar lo que cobra; validar un lote con un solo comando | `docs/ACTIVE_SERVICES.md` (`scripts/on.py`, `off.py`, `status.py`), `scripts/validate_2_3.py` (§3.15), `scripts/validate_2_4.py` (§3.16) y `scripts/validate_3_1.py` (§3.17) |
 | Saber qué construir y en qué orden | `PLAN.md` §1 (fases y lotes) |
 | Saber qué historias de usuario cubre cada fase o lote | **`PLAN.md` §1 y §2** (detalle en `HU.md`) |
 | Saber en qué estado está cada fase y lote | **`PLAN.md` §3** |
@@ -54,7 +55,7 @@ Todo lo que viene después de Pub/Sub (Dataflow, GCS, BigQuery, S3, Glue, Athena
 | Cloud Run (collectors) | Pasa a ser un único servicio always-on `stream-simulator` (§3.1). Los collectors reales (`src/collectors/`) quedan como código legado/opcional. |
 | Cloud Scheduler → Cloud Run | Cambia de rol: ya no dispara polling. Dispara el **exportador GCS→S3** cada 15 min (y opcionalmente escenarios de demo, §3.7). |
 | Secret Manager (credenciales de APIs) | Ya no guarda tokens de Mastodon/Reddit. Guarda la **llave HMAC de anonimización**. |
-| Datasets históricos → S3 | Se mantiene. Se precisa: `scripts/generate_comments.py` / `historical/loader` generan registros con el **mismo generador** y el mismo envelope (§5.2) y los suben a `s3://…/raw/origin=historical/`. |
+| Datasets históricos → S3 | Se mantiene. Se precisa: `src/historical/` (`scripts/load_historical.py`, Lote 3.1, §3.17) genera los registros con el **mismo simulador y generador**, el mismo envelope (§5.2), la misma anonimización y el mismo NLP, y los sube a `s3://…/raw/origin=historical/`. |
 | *(no existe)* Datasets de emociones en GCS | Ya no se usan (v2.2). El bucket `…-ta-datasets` solo guarda el estado del simulador y snapshots opcionales del generador (§5.4). |
 | *(no existe)* GCS → S3 | **Falta en el diagrama.** Se agrega el exportador `gcs-to-s3` (§5.6). Hoy el único camino GCP→AWS dibujado es BigQuery→QuickSight. |
 | Flecha huérfana `? → EventBridge` | Sin origen. Se resuelve: EventBridge es un **schedule** que dispara el workflow de Glue (§5.7). |
@@ -72,7 +73,7 @@ El README menciona **Firestore, Cloud SQL, Neptune y Dataplex**, que **no están
 
 ### 1.4 Historial de cambios
 
-Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.27), la más reciente primero. Este documento describe siempre la versión vigente (2.27).
+Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.29), la más reciente primero. Este documento describe siempre la versión vigente (2.29).
 
 ---
 
@@ -853,6 +854,83 @@ Salida 0 / 1 / 2 como los demás verificadores; `--json-out` guarda la evidencia
 - Plantilla: que el lanzador pase `--project`, `--region`, `--temp_location` y `--staging_location` al programa y que el job arranque con `nlp_container_image` y `--setup_file` (F4–F5).
 - Si el aviso `GETTING_PUBSUB_SUBSCRIPTION_FAILED` también pide permiso sobre los topics (E10).
 
+### 3.17 Carga histórica (Lote 3.1)
+
+> Entregado en **v2.28** (HU-024) y **cerrado en v2.29**; validación en `docs/validation/validation-3-1.md` (automática con `scripts/validate_3_1.py`). Rutas relativas a `project/`; guía del módulo en `src/historical/HISTORICAL.md`. No toca `contracts/` ni `schema_version`. Adelanta del Lote 4.1 (HU-007) el bucket del lake, su llave KMS y el rol `ta-historical-loader` (ADR-21), igual que el Lote 2.2 adelantó el dataset de BigQuery (ADR-18): sin ellos el histórico no tendría dónde escribir.
+
+**Flujo.**
+
+```
+EventFactory.make(source, seq, t) ─► aceptación por tendencias ─► enrich_envelope() + ta-hmac-key ─► stage1/   (host)
+   (simulador, HIST_SEED = 3101)        (plan.py)                     (anonimizado)
+stage1/ ─► streaming.nlp (RunInference, RoBERTuito) ─► stage2/                                     (imagen de NLP)
+stage2/ ─► rows_to_parquet_bytes() ─► {root}/raw/origin=historical/source=…/dt=…/hr=…/part-*.parquet  (host)
+        ─► upload (rol ta-historical-loader, SSE-KMS) ─► s3://ta-dev-{cuenta}-lake/raw/origin=historical/…
+```
+
+`{root}` es un espejo local del bucket (`project/.local-s3/`, no se versiona). Cada etapa es reanudable y deja su resumen en `{root}/_historical/s{seed}/` (`generate.json`, `nlp.json`, `output.json`, `upload.json`).
+
+| Ruta | Contenido |
+|---|---|
+| `src/historical/plan.py` | Lógica pura: `HistoricalConfig`, `load_config()`, `TrendModel` (factores de marca y sentimiento, intensidad por hora), `slot_times()` (reparto en el tiempo), `acceptance()`, `accept_draw()`, `split_counts()`, `plan_summary()`. |
+| `src/historical/config/historical.yaml` | Plan por defecto: semilla 3101, 50.000 filas, 180 días, perfiles semanal y horario (hora local UTC−5), crecimiento, tendencias de marca y episodios. |
+| `src/historical/adapters.py` | Llamadas al código de los lotes 1.1–2.3 (simulador, `enrich_envelope`, `to_posts_enriched_row`, `rows_to_parquet_bytes`, `load_hmac_key`, `nlp_from_options`) con descubrimiento de firmas (`call_flexible`). |
+| `src/historical/generate.py`, `nlp_batch.py`, `writer.py` | Etapas 1 a 3. |
+| `src/historical/verify.py`, `bq.py`, `s3io.py` | Verificación H1–H14, cruces con `posts_enriched` y subida/comprobación en S3. |
+| `src/historical/doctor.py`, `cli.py`, `schema.py`, `work.py`, `testing.py` | Diagnóstico de adaptadores, CLI, validación contra `contracts/`, archivos de etapa y dobles de prueba. |
+| `src/historical/requirements.txt` | `boto3` y `jsonschema` (el simulador va con su `constraints.txt`; pyarrow y BigQuery vienen con Beam). |
+| `scripts/load_historical.py`, `scripts/historical_nlp.sh` | CLI (`plan`, `doctor`, `generate`, `nlp`, `write`, `verify`, `upload`, `status`) y la etapa de NLP en la imagen `ta-dataflow-nlp-local:local`. |
+| `infra/aws/modules/{kms_key,s3_lake,historical_loader_role}/`, `infra/aws/environments/dev/{lake,variables_lake,outputs_lake}.tf` | Terraform de AWS (abajo). Se suman a los archivos del Lote 1.0 sin modificarlos. |
+| `scripts/validate_3_1.py`, `src/ops/validate31.py` | Validación automática (partes A a F). |
+
+**Mismo código que el stream (HU-024).**
+- *Generador y simulador:* cada registro sale de `EventFactory.make(source, seq, t)` (§3.10) con `SIM_SEED = HIST_SEED` (3101) y el caos apagado: el mismo generador, `BrandSelector`, pool de usuarios (`users.pool_seed = 1581`, independiente de la semilla), engagement, hashtags y payloads. `t` es el instante del plan; `event_time = t − lag` (0–5 s) e `ingest_time = t`.
+- *Envelope:* el mismo de §5.2 con `origin = "historical"` y `event_id = uuid5("historical|{source}|{seed}|{seq}")` (§3.6), así que no choca con el stream ni entre semillas.
+- *Anonimización:* `common.enriched_row.enrich_envelope()` con la llave de `ta-hmac-key` leída con `common.hmac_key` y las credenciales del desarrollador (§5.8): el mismo `user_id` da el mismo `user_hash` que en el stream. Antes de publicar la etapa 1 se cruzan los 500 `user_hash` más activos con `posts_enriched`; si el stream tiene filas y ninguno coincide, se aborta sin escribir.
+- *NLP:* el PTransform de `streaming.nlp.nlp_from_options()` (§3.15) en un pipeline batch con el `BundleBasedDirectRunner`, dentro de la imagen de NLP local del Lote 2.3 (modelos horneados, sin credenciales): mismo preprocesado, mapeo de etiquetas y `nlp_model_version` que el stream. Lotes de 16 sin espera (`--nlp_batch_seconds 0`).
+- *Fila y Parquet:* `to_posts_enriched_row()` y `rows_to_parquet_bytes()` (§3.14): las 24 columnas de `posts_enriched` en orden, el mismo formato que `enriched/` (§5.4).
+
+**Plan del dataset** (`historical.yaml`, §5.12). Por cada fuente, N/3 instantes en las 4.320 horas de la ventana `[as_of − 180 d, as_of)` con intensidad = semana × hora local × crecimiento (+30 %) × ruido diario (σ = 0,10) × factor medio de marcas, repartidos con suma exacta. Para cada instante se piden eventos al simulador con `seq` creciente y se **acepta** cada uno con probabilidad `factor_marca × factor_sentimiento / máximo` (sorteo propio `Random("{seed}|{source}|{seq}|hist-accept")`): el `seq` crece con el tiempo, como en el stream, y la mezcla de marcas y sentimiento sigue el plan sin modificar el simulador. Tendencias: Pepsi +35 % de punta a punta, Postobón −10 %, Sprite estable. Episodios: `campana_sprite` (hace 120 días, 10 días, volumen ×1,8, positivos ×1,5) y `crisis_postobon` (hace 40 días, 6 días, volumen ×1,5, negativos ×3, positivos ×0,6). Aceptación media esperada ~0,7. `as_of` por defecto es hoy a las 00:00 UTC y queda guardado: las corridas siguientes lo reutilizan.
+
+**Reejecutable sin duplicar.** Misma semilla, configuración y `as_of` ⇒ mismo *digest* (sha256 de `source|seq|event_id|event_time`), mismos `event_id` y mismas claves de S3. `generate` no repite si el plan no cambió (`--force`), `--digest-only` lo comprueba sin escribir, `write` reescribe las mismas claves (y borra del espejo local los Parquet de la semilla que ya no correspondan) y `upload` omite los objetos que ya existen con el mismo tamaño.
+
+**Archivos** (§5.7). `raw/origin=historical/source={s}/dt={AAAA-MM-DD}/hr={HH}/part-historical-s{seed}-{AAAAMMDD}T{HH}.parquet`, con `dt`/`hr` = fecha y hora UTC de `event_time` (en el stream son las del proceso en GCS, que difieren de `event_time` en segundos). Un archivo por fuente y hora, filas ordenadas por `event_id`: unos 12.000 archivos de ~9 KB (≈ 110 MB) para 50.000 filas. Es el precio de respetar la proyección por `hr` de `posts_raw`; Trusted (Lote 4.2) reparte por `DATE(event_time)` y compacta.
+
+**AWS, adelantado del Lote 4.1** (`infra/aws/environments/dev/lake.tf`):
+
+| Recurso | Nombre | Detalle |
+|---|---|---|
+| Llave KMS + alias | `alias/ta-dev-lake` | Rotación anual; política por defecto de la cuenta (los permisos se dan con IAM). 1 USD/mes. |
+| Bucket | `ta-dev-648617469176-lake` (`ta-{env}-{aws_account_id}-lake`) | SSE-KMS por defecto con la llave y *bucket key*; bloqueo total de acceso público; `BucketOwnerEnforced`; política que deniega todo sin TLS; `athena-results/` expira a 7 días y los *multipart* incompletos a 7 (§5.12); `force_destroy = false`. Sin versionado (lo decide el 4.1). |
+| Rol | `ta-historical-loader` | Lo asumen los principales de la cuenta (`historical_loader_principals` lo limita). `s3:PutObject` en `raw/origin=historical/*`, `s3:ListBucket` con `s3:prefix` = `raw/origin=historical/*` y `kms:GenerateDataKey` en la llave. Sin lectura, borrado ni otros prefijos. La cuenta raíz de AWS no puede asumir roles: con ella, `upload --no-role` sube con el perfil y F3 prueba la política con `iam simulate-principal-policy`. |
+
+Plan con `-target` de los tres módulos: **10 a crear, 0 a cambiar, 0 a destruir**. Outputs nuevos en §5.9. El Lote 4.1 suma Glue, Athena, EventBridge y las políticas de Glue y QuickSight sobre la misma llave.
+
+**Verificación** (`load_historical.py verify`): H1 archivos y particiones = `event_time`; H2 columnas y tipos; H3 filas por fuente, unicidad y `origin`; H4 `event_id` = fórmula para los `seq` aceptados; H5 ventana de 180 días; H6 estacionalidad semanal (r ≥ 0,8) y horaria (r ≥ 0,9) y crecimiento; H7 tendencias de marca; H8 episodios (volumen y ground truth); H9 anonimización; H10 engagement; H11 NLP en el 100 %, una versión y motor real; H12 marcas y hashtags; con `--bq`, H13 `user_hash` compartidos con el stream y la misma `nlp_model_version`; con `--s3`, H14 objetos = `output.json` y SSE-KMS. Con menos de 10.000 filas, H6 y H8 solo avisan.
+
+**Pruebas** (`src/historical/tests/`, 142; `src/ops/tests/test_ops_validate31.py`, 39; sin red, Docker ni nube): plan (configuración, reparto exacto y estacional, aceptación, determinismo entre procesos), etapas con dobles (aceptación, digest, anonimización en disco, abortos, reanudación y reintento del NLP, particiones, idempotencia), verificador (cada regla detecta su defecto), adaptadores con variantes de firma, S3 y BigQuery falsos, CLI de punta a punta, Terraform (nombres, cifrado, mínimo privilegio, variables declaradas en la raíz, `terraform fmt`), scripts y, en `test_hist_repo.py`, el simulador, la anonimización, la fila y el Parquet **reales** con `contracts/`.
+
+> **Estado de la verificación (v2.28, antes de entregar):** en un entorno aislado con Python 3.11 y Apache Beam 2.77.0. Sin el repositorio: 143 passed y 9 omitidas (las 8 de `test_hist_repo.py` y `terraform fmt`; además falla `test_encaja_con_la_raiz_del_entorno`, que necesita las variables del Lote 1.0). Con un repositorio simulado (simulador, `common/` y `streaming.nlp` con las firmas de §3.2.2, §3.10, §3.14 y §3.15, y una aproximación de `contracts/`) y OpenTofu como `terraform`: **154 passed, 0 omitidas**; y la CLI completa (`doctor`, `generate`, `nlp` con el motor Beam, `write`, `verify`) de punta a punta. Terraform: `fmt -check` y `validate` en verde con OpenTofu 1.8.5 y el proveedor `aws` 5.80 sobre una raíz que imita a `environments/dev`; `plan` sin conexión con `-target`: 10 a crear. **No** se corrió con el código real de los lotes 1.1–2.3, ni con los modelos de NLP, ni contra GCP o AWS.
+
+> **Primera validación (A y C, v2.28):** A1 y A4 fallaron porque a `ta-streaming` le faltaban `faker` y `boto3` (dependencias del punto 3 de la guía), no por el código. C0–C1 OK (cuenta `648617469176`, `validate.sh` en verde); C2a falló con `Missing region value`: el backend S3 del entorno AWS es parcial y el validador corría `init` sin `-backend-config=backend.hcl`. En esta copia del repo el entorno AWS no tenía `backend.hcl` ni `terraform.tfvars` (no se versionan). Correcciones: nuevo C0b que los exige antes de `init`, con los valores de §5.9; `init` con `-backend-config=backend.hcl`; C0 avisa si el perfil es la cuenta raíz, y F sube entonces con `--no-role` y prueba el rol con `iam simulate-principal-policy` (6 casos, también con un usuario IAM); `upload` explica por qué la raíz no puede asumir el rol; A6 distingue Docker apagado de imagen ausente; la instrucción de instalación sirve desde la raíz. **E3** falló con `llave HMAC vacía` (mensaje del código del Lote 2.2): `load_key()` aceptaba un resultado vacío y `make_enricher()` solo reconocía nombres exactos del parámetro de la llave. Ahora un resultado vacío pasa al siguiente camino (`load_hmac_key` → `access_secret` → `gcloud`), el parámetro se busca por nombre parecido (`key`, `secret`, `hmac`, `llave`) y, si no aparece, falla con la firma; `generate` imprime el camino usado y la huella. Pruebas: 130 + 35.
+>
+> **E3 y E4 (v2.28):** E3 OK: la llave coincide con el stream (500 de 500 `user_hash` más activos en `posts_enriched`; 176.715 filas de stream). E4 corría a ~2,3 filas/s (≈ 6 h para 50.000): el loader forzaba `--nlp_batch_seconds 0`, y con eso el pipeline no espera a llenar el lote y RunInference trabaja casi de a una fila (lo mismo que §3.15 describe en local). Además, con la espera por defecto y un último lote incompleto (667 filas por fuente), el `BundleBasedDirectRunner` en batch rechazaba las filas que el temporizador suelta al final en el `GroupByKey` de `WriteToText`. Correcciones: ya no se fuerza la espera (queda la del pipeline, 5 s), la salida se recoge con un `Map` en el mismo proceso (sin `GroupByKey`), `--runner bundle|fnapi` y `--batch-seconds` opcionales, el tamaño real de cada lote se registra (`batch_mean` y `nlp_batches` por archivo) y `historical_nlp.sh doctor --nlp-bench N` mide filas/s y lote medio por configuración y recomienda la mejor. Los archivos ya procesados se conservan. Medido en la máquina del equipo (`--nlp-bench 160`, 16 núcleos visibles, torch con 16 hilos): `bundle` con espera por defecto 2,89 filas/s con lote medio 16; `bundle` con 0 s 2,37 (lote 10,7); `fnapi` 3,06 (lote 16). Es decir, los lotes ya se llenan pero un proceso no pasa de ~3 filas/s. Se agrega `--workers N`: N procesos (`spawn`) con sus modelos y `núcleos / N` hilos de torch, cada uno con sus archivos, y el benchmark mide también 4 procesos en paralelo y la parte del tiempo que es inferencia. Pruebas: 136 + 36.
+>
+> **Segundo benchmark (v2.28): fuera el `FnApiRunner`.** Con 1 proceso: espera por defecto 2,60 filas/s (lote 16, inferencia el 98 % del tiempo), 0 s 2,24 (lote 11,0), `fnapi` 2,67 (lote 16, 99 %): el costo es la inferencia misma, no Beam. La prueba de 4 procesos con `fnapi` falló con `AssertionError: A total of 1 time-pending bundles did not execute`. Causa, reproducida con Beam 2.77.0 y un transform de la misma forma (dos `RunInference` con lotes de 16 y espera de 5 s): el NLP del stream agrupa en lotes con estado y temporizador (`_StatefulBatchElementsDoFn`, dos por pipeline según los avisos) en dos pasos encadenados; el `FnApiRunner` usa como hora de disparo de un temporizador de tiempo de proceso la marca de tiempo del elemento (`hold_timestamp`), y las filas del último lote parcial del primer paso salen con el temporizador de ventana y la marca máxima; el lote parcial del segundo paso queda entonces *time-pending* para siempre y el runner termina con esa aserción (4 o 1.990 filas) o, según el momento, **pierde esas filas sin error** (40 filas → 32). El `BundleBasedDirectRunner` entrega todas (4, 37, 40 y 1.990). El benchmark de 160 filas con 1 proceso no lo mostró porque 160 es múltiplo de 16. Por eso `nlp` usa siempre el `BundleBasedDirectRunner` (`--runner fnapi` y `validate_3_1.py --nlp-runner fnapi` se rechazan explicando por qué) y la velocidad se busca con `--workers`; el benchmark compara 1 proceso con 2 y 4 procesos en paralelo (`--bench-workers 2,4`), cuenta las filas que falten en cada configuración y no se queda esperando a un proceso que el sistema mate por memoria. Pruebas: 139 + 37 (nueva: dos agrupaciones con estado encadenadas y lotes parciales de 4 y 37 filas).
+>
+> **La causa de la lentitud (v2.28).** No era el loader ni la CPU: el entorno local del stream (`trendanalyzer-local-*`, lotes 1.5–2.4) seguía encendido en Docker, y su `dataflow-local` corre el mismo NLP sin parar sobre lo que emite el simulador. `docker stats` lo mostró al 778 % de CPU y con 1,6 GB de los 7,4 GB de Docker. Las dos cargas, cada una con torch en 16 hilos, se estorbaban. Con ese entorno apagado (`local_dataflow.sh down-all`): `nlp_bench.py` (Lote 2.3, misma imagen) da **41 comentarios/s** con lote 16 y los dos modelos, igual con 1 hilo que con 16; el loader, **35,3 filas/s** con 1 proceso (antes 2,6, unas 13 veces menos) y **45,5** con 4 procesos × 4 hilos en el benchmark de 160 filas (40 por proceso, donde pesan el arranque y los lotes incompletos). En la carga real, en cambio, con 4 procesos × 4 hilos cada proceso hizo ~4 filas/s (≈ 16 en total, ~8,5 min por archivo de 2.000 filas, inferencia el 98 % del tiempo): el benchmark usaba textos sintéticos cortos, y el costo de estos modelos crece con el largo del texto (hasta 128 tokens), así que sobreestimaba unas 3 veces. Ahora `--nlp-bench` mide con filas reales de `stage1/` cuando existen (D7 lo indica, con la mediana de caracteres) y solo con textos sintéticos si todavía no se corrió `generate`. Las 50.000 filas toman ~50 min. Para que el entorno del stream no vuelva a competir, el validador comprueba los contenedores encendidos: **A8** avisa en el preflight y **D5a/E4a** no arrancan el NLP mientras el entorno del stream u otro contenedor de NLP esté encendido (`--allow-busy` corre igual; si ya corre `ta-hist-nlp`, pide esperar o `historical_nlp.sh stop`). Pruebas: 140 + 39.
+>
+> **E4–E7 (v2.28).** Con el entorno del stream apagado y `--nlp-workers 4`, E4 terminó (50.000 filas con NLP, 0 sin NLP); E5 escribió **12.102 archivos**; E7 dio el mismo digest (`939248b3…`). E6: H1–H6 y H8–H13 OK (50.000 filas = plan; semana r = 0,991, hora r = 1,000, final/inicio 1,36 frente a 1,34; `campana_sprite` ×4,69 y `crisis_postobon` ×1,45; 4.547 `user_hash` 1 a 1; NLP en el 100 % con acuerdo del 91,8 % con `label_sentiment`; 500 de 500 `user_hash` en el stream y la misma `nlp_model_version`). **H7 dio AVISO** (`sprite: cambio +0.033 vs esperado -0.021`), y era un falso aviso: H7 calculaba lo esperado como si el simulador entregara las tres marcas en proporción fija, pero el `BrandSelector` mueve su mezcla con `seq` (base × ciclo × deriva, §3.10) y el plan solo la multiplica. Corrección: H7 reconstruye los candidatos del primer y el último mes (los `seq` rechazados entre dos aceptados comparten el instante del aceptado), pide su marca al simulador (`EventFactory.make`, determinista por `seq`) y suma la probabilidad de aceptación del plan. Así compara la participación observada con la esperada (tolerancia de ±2 pp o 4 σ) y muestra la tendencia aplicada frente a la marca sin tendencia: Pepsi ≈ ×1,28 y Postobón ≈ ×0,92 entre los puntos medios del primer y el último mes. Sin el simulador vuelve al cálculo uniforme y lo dice en el detalle. Pruebas: 142 + 39 (nuevas: deriva de marcas por `seq` que el cálculo uniforme marca y el nuevo no, y una tendencia del plan que no está en los datos).
+>
+> **Cierre (v2.29).** A OK (A1–A8); B OK (B1 142, B2 39, B3 18, B4 28); C en AVISO solo por la cuenta raíz (10 recursos aplicados; SSE-KMS y acceso público bloqueado); D OK (600 filas con NLP real, H1–H12, mismo digest, reescribir sin cambios; corrió antes de las correcciones de E4, que cubren E y F); E OK salvo el falso aviso de H7 descrito arriba; F en AVISO solo por la cuenta raíz: **12.102 objetos** en `s3://ta-dev-648617469176-lake/raw/origin=historical/` en 164,7 s, la política del rol cumple los 6 casos (simulada), **H1–H12 y H14 OK en S3 con el verificador corregido, incluido H7**, y la segunda subida no sube nada (12.102 omitidos). **Abierto, sin bloquear:** probar la asunción real de `ta-historical-loader` con un usuario IAM o SSO.
+
+**Puntos a confirmar al validar (pueden pedir un ajuste pequeño en `adapters.py`; `doctor` y `test_hist_repo.py` lo dicen antes de la corrida larga):**
+- Cómo se construye `EventFactory` (solo con la configuración, o con un `build_factory`) y que `load_config()` aplique `SIM_SEED` del entorno.
+- Que `make(source, seq, now)` respete el `now` que se le pasa (`datetime` UTC) y devuelva el envelope en `Emission`.
+- Los nombres de parámetro de `enrich_envelope()` (llave y hora de proceso) y que `load_hmac_key()` devuelva la llave igual que en los workers (E3 lo comprueba contra el stream).
+- Que `nlp_from_options()` acepte unas opciones de un pipeline batch con `BundleBasedDirectRunner` y devuelva el PTransform (D3).
+- La velocidad del NLP en la máquina del equipo (D5): de ella sale el tiempo de E4.
+
 ---
 
 ## 4. Flujo extremo a extremo
@@ -867,7 +945,7 @@ Salida 0 / 1 / 2 como los demás verificadores; `--json-out` guarda la evidencia
 | 6 | Escritura | Dataflow | Evento enriquecido | BigQuery `posts_enriched` + GCS `raw/` y `enriched/` | < 1 min |
 | 7 | Tendencias | Dataflow (ventanas, §3.16) | Eventos enriquecidos | BigQuery `trend_windows` (versión vigente en `trend_windows_latest`) | **< 5 min** (KPI) |
 | 8 | Exportación | `gcs-to-s3` | GCS `enriched/` | S3 `raw/origin=stream/` | cada 15 min |
-| 9 | Carga histórica | `historical/loader` (mismo generador, en batch) | Comentarios generados con semilla propia | S3 `raw/origin=historical/` | one-shot |
+| 9 | Carga histórica | `src/historical` (`load_historical.py`: mismo simulador, anonimización y NLP, en lote; §3.17) | Comentarios generados con semilla propia (`HIST_SEED`) | S3 `raw/origin=historical/` | one-shot (reejecutable sin duplicar) |
 | 10 | Raw → Trusted | Glue | S3 `raw/` | S3 `trusted/posts/` | horario |
 | 11 | Trusted → Curated | Glue/dbt | `trusted/` | S3 `curated/*` | horario |
 | 12 | Consulta | Athena → QuickSight | `curated/` | Dashboards | **< 3 s** (KPI) |
@@ -890,7 +968,7 @@ Salida 0 / 1 / 2 como los demás verificadores; `--json-out` guarda la evidencia
 | `AWS_REGION` | `us-east-1` *(confirmada)* | exportador, loader, Glue |
 | `AWS_ACCOUNT_ID` | `648617469176` *(confirmado; va en `terraform.tfvars`, no en el código)* | Terraform, exportador, loader |
 | `TA_HMAC_SECRET_NAME` | `ta-hmac-key` | Dataflow, loader |
-| `SIM_SEED` | `7` | simulador, loader histórico |
+| `SIM_SEED` | `7` | simulador (el loader histórico usa `HIST_SEED`) |
 | `SIM_CHAOS_ENABLED` | `false` | simulador (§3.9) |
 | `TA_NLP_IMAGE` | `{GCP_REGION}-docker.pkg.dev/{GCP_PROJECT}/ta-images/dataflow-nlp:latest` | Dataflow (launcher): imagen de los workers con NLP (§3.15) |
 | `TA_NLP_ENABLED` | *(vacío = auto)* | Dataflow: `false` apaga el NLP (§3.15) |
@@ -899,6 +977,11 @@ Salida 0 / 1 / 2 como los demás verificadores; `--json-out` guarda la evidencia
 | `TA_NLP_THREADS` | núcleos de la máquina | workers y `dataflow-local`: hilos de torch para la inferencia (v2.24) |
 | `TA_TRENDS_ENABLED` | *(vacío = encendida)* | Dataflow y local: `false` apaga la rama de tendencias (`--trends_enabled auto`, §3.16) |
 | `TA_DLQ_BQ_ENABLED` | *(vacío = solo en Dataflow)* | Dataflow: `false` apaga `ta-dlq-df` → `dlq_events` (`--dlq_bq_enabled auto`, §3.16) |
+| `HIST_SEED` | `3101` | loader histórico (§3.17): semilla del histórico, distinta de `SIM_SEED` |
+| `HIST_N` | `50000` | loader histórico: total de registros |
+| `TA_HIST_ROOT` | `project/.local-s3` | loader histórico: espejo local del bucket (no se versiona) |
+| `TA_LAKE_BUCKET`, `TA_LAKE_KMS_KEY_ARN`, `TA_HIST_LOADER_ROLE_ARN` | outputs `lake_bucket`, `kms_key_arn`, `historical_loader_role_arn` de `infra/aws` (§5.9) | `load_historical.py upload` y `verify --s3` (el validador los toma de `terraform output`) |
+| `AWS_PROFILE` | perfil de AWS CLI del desarrollador | Terraform de AWS, `load_historical.py upload` (asume `ta-historical-loader`) |
 
 **Variables propias del simulador** (Lote 1.2, §3.10). Solo las lee `ta-stream-simulator`; ningún otro componente depende de ellas.
 
@@ -1178,6 +1261,8 @@ s3://…-lake/
 Formato: **Parquet + Snappy**. Particiones registradas con **partition projection** en Athena (sin crawlers, más simple y barato).
 
 - **Raw** (`ta_raw.posts_raw`): rutas `raw/origin=…/source=…/dt=…/hr=…/`; también el histórico escribe `hr`. Claves de partición `part_origin`, `part_source`, `part_dt`, `part_hr` (las columnas `origin` y `source` ya viajan dentro del Parquet). Columnas = las de BigQuery `posts_enriched`.
+- **Raw histórico** *(v2.28, §3.17, ADR-21)*: `raw/origin=historical/source={s}/dt={AAAA-MM-DD}/hr={HH}/part-historical-s{seed}-{AAAAMMDD}T{HH}.parquet`. `dt`/`hr` son la fecha y hora UTC de `event_time` (en el stream, las del proceso en GCS). Un archivo por fuente y hora, filas ordenadas por `event_id`, mismo Parquet que `enriched/` (§5.4), SSE-KMS con la llave del lake. Solo lo escribe `ta-historical-loader`; reejecutar reescribe las mismas claves.
+- **Existe desde el Lote 3.1** *(v2.28)*: el bucket `ta-dev-648617469176-lake`, la llave `alias/ta-dev-lake` y el rol `ta-historical-loader`, adelantados del Lote 4.1 (§3.17). Glue, Athena, EventBridge y los demás roles llegan con la Fase 4.
 - **Trusted** (`ta_trusted.posts`): `trusted/posts/source=…/dt=…/`, con `dt = DATE(event_time)` UTC; añade `text_clean`; `source` es partición, no columna.
 - DDL en `project/contracts/athena/`, copia verificada de esta sección (§5.13). Las columnas de Curated están definidas abajo.
 
@@ -1222,10 +1307,10 @@ Solo `fact_posts` está particionada (por `dt`, con partition projection). Las d
 | `sa-exporter` | GCP | `storage.objectViewer` en `…-ta-lake`; objeto escritura en `export-state/`; puede emitir OIDC |
 | `ta-gcp-exporter-role` | AWS | `s3:PutObject`, `s3:HeadObject`, `kms:GenerateDataKey` solo sobre `raw/origin=stream/` |
 | `ta-glue-role` | AWS | R/W en `raw/ trusted/ curated/ quality/`; Glue Catalog; logs |
-| `ta-historical-loader` | AWS | `s3:PutObject` en `raw/origin=historical/` (perfil/SSO del desarrollador) |
+| `ta-historical-loader` | AWS | Rol que asumen los desarrolladores de la cuenta con su perfil *(v2.28)*: `s3:PutObject` en `raw/origin=historical/*`; `s3:ListBucket` solo con `s3:prefix` = `raw/origin=historical/*` (subida idempotente); `kms:GenerateDataKey` en la llave del lake. Sin lectura ni borrado |
 | `ta-quicksight-role` | AWS | `athena:*` en workgroup `ta-analytics`; lectura `curated/` |
 
-**Estado tras el Lote 1.3:** las tres identidades de GCP existen (§5.15). `sa-simulator` y `sa-exporter` tienen todos sus permisos. **Desde el Lote 2.2 (v2.22)** `sa-dataflow` también tiene `bigquery.dataEditor` en el dataset `ta_stream` y `secretmanager.secretAccessor` en `ta-hmac-key` (solo en ese secreto); nadie más tiene acceso de lectura al secreto (el loader histórico usará las credenciales del desarrollador). **Desde el Lote 2.3 (v2.23)**, además, `artifactregistry.reader` en el repositorio `ta-images`, para descargar la imagen `dataflow-nlp`. **Desde el Lote 2.4 (v2.26)**, `roles/pubsub.viewer` en las cuatro suscripciones que lee (quita el aviso `GETTING_PUBSUB_SUBSCRIPTION_FAILED`) y `roles/pubsub.subscriber` en `ta-dlq-df`, a nivel de suscripción. El lanzador de la plantilla Flex corre con `sa-dataflow`: no necesita más permisos. La escritura de `sa-exporter` en `export-state/` se limita con una condición de IAM sobre el prefijo; la emisión del token OIDC se configura en el Lote 3.2. Las identidades de AWS llegan con las Fases 3 y 4. Terraform sigue operando con las credenciales de Alejandro (§5.1).
+**Estado tras el Lote 1.3:** las tres identidades de GCP existen (§5.15). `sa-simulator` y `sa-exporter` tienen todos sus permisos. **Desde el Lote 2.2 (v2.22)** `sa-dataflow` también tiene `bigquery.dataEditor` en el dataset `ta_stream` y `secretmanager.secretAccessor` en `ta-hmac-key` (solo en ese secreto); nadie más tiene acceso de lectura al secreto (el loader histórico usará las credenciales del desarrollador). **Desde el Lote 2.3 (v2.23)**, además, `artifactregistry.reader` en el repositorio `ta-images`, para descargar la imagen `dataflow-nlp`. **Desde el Lote 2.4 (v2.26)**, `roles/pubsub.viewer` en las cuatro suscripciones que lee (quita el aviso `GETTING_PUBSUB_SUBSCRIPTION_FAILED`) y `roles/pubsub.subscriber` en `ta-dlq-df`, a nivel de suscripción. El lanzador de la plantilla Flex corre con `sa-dataflow`: no necesita más permisos. La escritura de `sa-exporter` en `export-state/` se limita con una condición de IAM sobre el prefijo; la emisión del token OIDC se configura en el Lote 3.2. Las identidades de AWS llegan con las Fases 3 y 4; **desde el Lote 3.1 (v2.28)** existe `ta-historical-loader` (`infra/aws/modules/historical_loader_role`). El loader lee `ta-hmac-key` con las credenciales del desarrollador, no con una service account. Terraform sigue operando con las credenciales de Alejandro (§5.1).
 
 ### 5.9 Salidas de Terraform (outputs que consumen los demás)
 
@@ -1241,7 +1326,7 @@ Solo `fact_posts` está particionada (por `dt`, con partition projection). Las d
 | `infra/gcp/bootstrap` | `tfstate_bucket`, `enabled_services`, `budget_name` |
 | `infra/gcp/environments/dev` | `project_id`, `region`, `labels`; desde el Lote 1.3, además: `topic_names`, `subscription_names`, `dlq_topic`, `alerts_topic`, `datasets_bucket`, `lake_bucket`, `artifact_registry_url`, `simulator_url` (`null` si no está desplegado; Terraform no guarda outputs nulos, así que `terraform output simulator_url` responde *not found*) y `service_accounts` (§5.15); desde el Lote 2.2: `bq_dataset`, `posts_enriched_table` (`proyecto:ta_stream.posts_enriched`) y `hmac_secret_id`; desde el Lote 2.4: `trend_windows_table`, `dlq_events_table`, `dq_results_table` (`proyecto:ta_stream.…`), `trend_windows_latest_view` (`proyecto.ta_stream.trend_windows_latest`), `dlq_df_subscription`, `dataflow_template_spec` y `dataflow_launcher_image` (los usa `scripts/dataflow_template.py`) |
 | `infra/aws/bootstrap` | `tfstate_bucket`, `tflock_table`, `budget_name` |
-| `infra/aws/environments/dev` | `aws_region` |
+| `infra/aws/environments/dev` | `aws_region`; desde el Lote 3.1 (v2.28): `lake_bucket`, `lake_bucket_arn`, `kms_key_arn`, `kms_key_alias` y `historical_loader_role_arn` (los usan `load_historical.py upload` y, desde el 4.1, Glue y Athena) |
 
 **Valores reales aplicados (Lote 1.0):**
 
@@ -1284,7 +1369,7 @@ Resultados en BigQuery `dq_results` (columnas en §5.5) y `s3://…/quality/`. E
 | Tendencias, `dlq_events`, `dq_results` o la plantilla Flex | §3.16, §5.3, §5.5, §5.8, §5.12, `src/streaming/TRENDS.md` y `docs/validation/validation-2-4.md` | JSON de `verify_trends.py`, `evidencia/validacion_2_4.json`, la línea `trends_config` del lanzamiento y los logs `trend_bq_insert_failed` / `trend_row_unrecognized` |
 | Encender, apagar o comprobar servicios; validar un lote de punta a punta | `docs/ACTIVE_SERVICES.md`, §8 y la guía de validación del lote | Salida de `python project/scripts/status.py` y el resumen del validador |
 | Exportador | §5.4, §5.6, §5.8 | ARN del rol AWS, bucket S3 |
-| Loader histórico | §3.2, §3.8, §5.2, §5.7 | Perfil AWS, bucket S3 |
+| Loader histórico | §3.17, §3.2, §3.8, §3.10, §5.2, §5.7, §5.8, `src/historical/HISTORICAL.md` y `docs/validation/validation-3-1.md` | Salida de `load_historical.py doctor`, `evidencia/validacion_3_1.json`, los JSON de `verify` y `terraform output` de `infra/aws` |
 | Jobs de Glue / dbt | §5.2, §5.7, §5.10 | Esquema real de Athena (`SHOW CREATE TABLE`) si ya existe algo |
 | Calidad | §5.5, §5.7, §5.10 | — |
 | Terraform | §5.1, §5.8, §5.9, §5.14 | Estado actual de `infra/` y `terraform.tfvars` (sin secretos) |
@@ -1323,6 +1408,7 @@ Valores por defecto que evitan decidir en cada lote. Se ajustan aquí primero.
 | Job de Dataflow (dev) | `ta-stream-{ENV}`: 1 × `e2-standard-2`, sin autoescalado, Streaming Engine; se apaga con `drain` fuera de las validaciones y demos. Se lanza con `dataflow_job.sh start` o, desde v2.26, desde la plantilla Flex (`dataflow_template.py run`, mismas características); nunca los dos a la vez. | HU-018, HU-043, HU-005 |
 | Plantilla Flex | *(v2.26)* Imagen `dataflow-launcher:{commit}` (o fecha UTC) y `:latest`; especificación `ta-stream-{etiqueta}.json` y `ta-stream.json` en `_dataflow/templates/`; parámetros solo desde `terraform output`. | HU-005 |
 | Canal de alertas | Correo. Un suscriptor de `ta-alerts` escribe un log estructurado (`severity=WARNING`, `alert=trend`) y una alerta basada en logs de Cloud Monitoring envía el correo mediante un canal de notificación de tipo email. Las direcciones van en `terraform.tfvars` (`alert_emails`, que no se versiona); por ahora el único destinatario es el correo de Alejandro. Sin SMTP ni secretos. | HU-039 |
+| Carga histórica | *(v2.28, §3.17)* `HIST_SEED = 3101`, 50.000 filas repartidas por igual entre las tres fuentes, 180 días hasta `as_of` (hoy 00:00 UTC, guardado en `generate.json`). Estacionalidad semanal y horaria en hora local (UTC−5), +30 % de crecimiento, ruido diario σ = 0,10, Pepsi +35 % y Postobón −10 % de punta a punta, `campana_sprite` (hace 120 días) y `crisis_postobon` (hace 40 días). NLP en lotes de 16 con la espera del pipeline (5 s), siempre con el `BundleBasedDirectRunner` y en procesos paralelos (`--workers`). Archivos por `source/dt/hr` de `event_time`. Constantes en `src/historical/config/historical.yaml`. | HU-024 |
 | Prueba de humo E2E | `scripts/smoke_e2e.py` sigue un evento centinela (`event_id` conocido) desde el simulador hasta `ta_curated.fact_posts` y reporta latencia por etapa. | HU-048 |
 | Retención del estado de Terraform | GCS: se conservan las 10 versiones no vigentes más recientes. S3: las versiones no vigentes expiran a los 90 días y los *uploads* multiparte incompletos a los 7. | HU-046 |
 | Presupuestos | Solo avisan por correo; no cortan el gasto. GCP: 50 %, 90 % y 100 % del gasto real y 100 % del pronóstico. AWS: 50 %, 80 % y 100 % del gasto real y 100 % del pronóstico. Montos aplicados: 400000 COP (GCP) y 50 USD (AWS) (§9 #10). | HU-046, HU-043 |
@@ -1437,7 +1523,7 @@ infra/
 - Service accounts, topics, suscripciones, buckets `…-ta-datasets` y `…-ta-lake`, Artifact Registry y Cloud Run: **Lote 1.3** (§5.15). Roles de AWS: Fases 3 y 4.
 - BigQuery (`ta_stream`): `posts_enriched` desde el Lote 2.2; `trend_windows`, `dlq_events`, `dq_results` y la vista `trend_windows_latest` desde el Lote 2.4 (§3.16).
 - Secreto `ta-hmac-key`: Lote 2.2 (§3.14).
-- Bucket S3 del lake, KMS, Glue, Athena y EventBridge: Fase 4. Federación OIDC GCP → AWS: Lote 3.2.
+- Glue, Athena y EventBridge: Fase 4. El bucket S3 del lake, su llave KMS y el rol `ta-historical-loader` existen desde el Lote 3.1 (v2.28, ADR-21). Federación OIDC GCP → AWS: Lote 3.2.
 - Acceso de Miguel y Camila al proyecto GCP: diferido (§9, Fase 0).
 
 **Observaciones para lotes futuros:**
@@ -1531,14 +1617,15 @@ infra/
 │
 ├── docs/
 │   ├── ARCHITECTURE.md                    <- este archivo: arquitectura y contratos (versión vigente)
-│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.27)
+│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.29)
 │   ├── PLAN.md                            <- fases y lotes, matriz HU y estado del proyecto
 │   ├── HU.md                              <- historias de usuario (HU-001 a HU-048)
 │   ├── ACTIVE_SERVICES.md                 <- encender, comprobar y apagar lo que cobra (on.py, off.py, status.py)
 │   ├── validation/                        <- guías de validación, una por lote (desde v2.25; convención en §8)
 │   │   ├── validation-2-2.md              <- Lote 2.2: validación paso a paso
 │   │   ├── validation-2-3.md              <- Lote 2.3: validación paso a paso (automática con validate_2_3.py)
-│   │   └── validation-2-4.md              <- Lote 2.4: validación paso a paso (automática con validate_2_4.py)
+│   │   ├── validation-2-4.md              <- Lote 2.4: validación paso a paso (automática con validate_2_4.py)
+│   │   └── validation-3-1.md              <- Lote 3.1: validación paso a paso (automática con validate_3_1.py)
 │   ├── GLOSSARY.md                        <- glosario del proyecto
 │   ├── NOTAS.md                           <- notas de trabajo
 │   ├── trend_analyzer_multicloud.drawio   <- diagrama editable (v2.5)
@@ -1577,7 +1664,8 @@ infra/
     │   └── aws/
     │       ├── bootstrap/                 <- estado local: bucket de estado, tabla de bloqueo, presupuesto
     │       ├── modules/{tfstate_backend,budget}/
-    │       └── environments/dev/          <- estado remoto (S3)
+    │       ├── modules/{kms_key,s3_lake,historical_loader_role}/   <- Lote 3.1: llave y bucket del lake, rol del loader (ADR-21)
+    │       └── environments/dev/          <- estado remoto (S3); Lote 3.1: lake.tf, variables_lake.tf, outputs_lake.tf
     ├── pytest.ini                         <- Lote 1.1: pythonpath = src, testpaths = src
     ├── scripts/
     │   ├── generate_comments.py           <- Lote 1.1: CLI del generador, snapshots CSV / histórico (§3.2.2)
@@ -1598,6 +1686,9 @@ infra/
     │   ├── verify_trends.py               <- Lote 2.4: verificador de trend_windows, dlq_events, latencia y dq_results (§3.16)
     │   ├── dataflow_template.py           <- Lote 2.4: plantilla Flex (params, build, run) desde los outputs de Terraform
     │   ├── validate_2_4.py                <- Lote 2.4: validación automática (partes A a F de docs/validation/validation-2-4.md)
+    │   ├── load_historical.py             <- Lote 3.1: loader histórico (plan, doctor, generate, nlp, write, verify, upload, status)
+    │   ├── historical_nlp.sh              <- Lote 3.1: etapa de NLP del histórico en la imagen ta-dataflow-nlp-local
+    │   ├── validate_3_1.py                <- Lote 3.1: validación automática (partes A a F de docs/validation/validation-3-1.md)
     │   ├── on.py  off.py  status.py       <- operación: encender, apagar y ver lo que cobra (ACTIVE_SERVICES.md)
     │   └── smoke_e2e.py                   <- prueba de humo extremo a extremo (HU-048)
     └── src/
@@ -1633,8 +1724,10 @@ infra/
         │                                     Lote 2.3: nlp, nlp_testing, nlp_image/ (Dockerfile, fetch_models, image_smoke, cloudbuild), tests/test_nlp* (§3.15).
         │                                     Lote 2.4: trends, trends_core, bq_sink, dlq_bq, trends_check, trends_bq, trends_cli, template_tools,
         │                                     flex_main, flex_template/ (Dockerfile, metadata.json), TRENDS.md, tests/test_trends_*, test_flex_template (§3.16)
-        ├── ops/                           <- operación y validación: services (on/off/status), validate23 (validate_2_3.py), validate24 (validate_2_4.py), tests/
-        ├── historical/                    <- full load (usa el mismo generador)
+        ├── ops/                           <- operación y validación: services (on/off/status), validate23 (validate_2_3.py), validate24 (validate_2_4.py), validate31 (validate_3_1.py), tests/
+        ├── historical/                    <- Lote 3.1: full load con el mismo simulador, anonimización y NLP (§3.17)
+        │                                     plan, adapters, generate, nlp_batch, writer, verify, bq, s3io, doctor, cli, schema, work, testing,
+        │                                     config/historical.yaml, requirements.txt, HISTORICAL.md, tests/test_hist_*
         ├── exporter/                      <- gcs-to-s3
         ├── lakehouse/{glue_jobs,dbt}/
         ├── quality/                       <- Great Expectations
@@ -1723,6 +1816,7 @@ Estado actual: <salida de `bash scripts/preflight.sh` (nube) o `bash scripts/loc
 | ADR-18 | Rama enriched (Lote 2.2): llave HMAC leída en el worker (`DoFn.setup`) desde Secret Manager por REST con `google-auth`; valor cargado fuera de Terraform (`hmac_key.sh`); fila y Parquet en `src/common/` para que el loader histórico use el mismo código; *streaming inserts* a `posts_enriched`; dataset, tabla, secreto y permisos de `sa-dataflow` adelantados del Lote 2.4 | Llave como opción del pipeline (quedaría en el grafo del job); `random_password` en Terraform (quedaría en el estado); `google-cloud-secret-manager` como dependencia nueva; Storage Write API (exige el servicio de expansión de Java en el launcher y en local); esperar al Lote 2.4 (el 2.2 no tendría dónde escribir) |
 | ADR-19 | NLP (Lote 2.3): `ModelHandler` propio por tarea con `RunInference` y modelo compartido por VM; modelos y commit horneados en una imagen `dataflow-nlp` construida con un contexto propio; solo el preprocesado de pysentimiento, cargado desde su archivo; la etapa se engancha desde `attach_enriched()` y fija `sdk_container_image` en las opciones del pipeline, sin cambiar archivos del Lote 2.1; un lote fallido sigue sin NLP. **v2.25:** el modelo se comparte entre procesos solo en Dataflow; en local (DirectRunner) se carga una vez por proceso (§3.15, "NLP en local") | `HuggingFacePipelineModelHandler` de Beam (menos control del preprocesado y de la versión); descargar los modelos al arrancar el worker (depende de Hugging Face en ejecución); pysentimiento completo (`datasets`, `spacy`); NLP en Cloud Run con Pub/Sub intermedio (plan B de ADR-05, más piezas); descartar las filas que fallan; compartir el modelo también en local (con `MultiProcessShared` el `BundleBasedDirectRunner` se bloquea) |
 | ADR-20 | Tendencias y DLQ en BigQuery (Lote 2.4): ventanas deslizantes en tiempo del evento con `AfterWatermark`, paneles tardíos acumulativos y una fila por panel (vista `trend_windows_latest` con la de mayor `n_posts`); baseline y alertas en un DoFn con estado por marca × fuente; `dlq_events` desde una suscripción `ta-dlq-df` en el mismo job; `pubsub.viewer` por suscripción; plantilla **Flex** con imagen de lanzador propia y parámetros desde `terraform output`; la rama se engancha con `attach_trends()` sin cambiar `dataflow_job.sh` | Agregador propio por tiempo de proceso (más código y sin marca de agua); `MERGE`/actualizar filas en BigQuery (no se puede con *streaming inserts*); esperar 30 min a cerrar cada ventana (incumple el KPI de < 5 min); `--dlq_table` del 2.1 (pide cambiar el lanzamiento); `pubsub.viewer` a nivel de proyecto; plantilla clásica (en Python no admite bien parámetros en tiempo de ejecución para streaming) |
+| ADR-21 | Histórico (Lote 3.1): reutilizar `EventFactory` del simulador con otra semilla y elegir los eventos por **aceptación** según un plan de tendencias (sin tocar el simulador); etapas reanudables con el NLP del pipeline (`nlp_from_options`) en lote dentro de la imagen de NLP local; Parquet por `source/dt/hr` de `event_time`; adelantar del Lote 4.1 el bucket del lake, su llave KMS y el rol `ta-historical-loader` (solo `PutObject`/`ListBucket` bajo `raw/origin=historical/` y `GenerateDataKey`) | `scripts/generate_comments.py` + usuarios y payloads propios (no sería el mismo pool ni los mismos payloads); forzar marca y sentimiento con escenarios (marcaría `sim.scenario`); NLP en Dataflow batch (cuesta y suma una plantilla); particiones por hora de carga (reejecutar en otro momento duplicaría Raw); esperar al 4.1 o escribir con las credenciales de administrador |
 
 ### Riesgos
 
@@ -1736,6 +1830,7 @@ Estado actual: <salida de `bash scripts/preflight.sh` (nube) o `bash scripts/loc
 | Modelos entrenados en tweets vs. comentarios con jerga y emojis de Reddit/Facebook/Instagram | Medir contra `label_sentiment`; declarar la limitación en el informe |
 | Generador por plantillas: baja variedad léxica y texto repetido | Ampliar plantillas (§3.2 cambio #5); medir duplicados por `event_id` y **no** por texto; reportar la diversidad léxica en el profiling. **v2.13:** plantillas ampliadas en el Lote 1.1 (5 categorías, 40 informativas y 18 comparativas); medido, 99,995 % de textos únicos en 20.000 comentarios |
 | Infraestructura desde cero (nada aplicado): retrasa la Fase 1 | Lote 1.0 (HU-046) primero; el simulador se desarrolla en local con el emulador (HU-047) mientras se crea el proyecto. **v2.12:** Lote 1.0 aplicado y verificado (§5.14); el riesgo baja a "mitigado" |
+| Histórico en muchos Parquet pequeños (~12.000 de ~9 KB, uno por fuente y hora) | Lo exige la proyección por `hr` de `posts_raw`; Athena solo lee las particiones pedidas y Trusted (4.2) reparte por `DATE(event_time)`. Si molesta, el 4.2 puede compactar Raw histórico por día *(v2.28)* |
 | Falsas alertas al arrancar (z-score sin baseline) | `is_alert = false` hasta 60 ventanas y *cooldown* de 15 min (§5.12). **v2.26:** el baseline vive en el estado del job, así que cada job nuevo vuelve a arrancar en frío (1 h sin alertas); se puede sembrar con el histórico (§5.12) cuando exista el Lote 3.1 |
 | Cuotas de la cuenta de crédito de GCP (p. ej. límite de vCPU) pueden limitar Dataflow con modelos pesados | Verificar cuotas en el Lote 1.0; `maxNumWorkers=1–2`; plan B: NLP en Cloud Run |
 

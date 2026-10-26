@@ -1,6 +1,6 @@
 # TrendAnalyzer · Historias de Usuario (HU)
 
-> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.27** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
+> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.29** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
 > Cada HU tiene un ID **HU-000**, su fase/lote de `ARCHITECTURE.md` §7, responsable, sprint y criterios de aceptación verificables.
 
 ---
@@ -78,7 +78,7 @@ Criterios de aceptación: lista verificable.
 | HU-022 | Análisis de emoción y sentimiento | 2 · 2.3 | C | Must | 2 | ✅ |
 | HU-023 | Detección de tendencias en ventanas | 2 · 2.4 | C | Must | 2 | ✅ |
 | **E4 · Histórico y puente a AWS** | | | | | | |
-| HU-024 | Carga histórica (full load) | 3 · 3.1 | A | Must | 2 | ⬜ |
+| HU-024 | Carga histórica (full load) | 3 · 3.1 | A | Must | 2 | ✅ |
 | HU-025 | Exportación GCS → S3 | 3 · 3.2 | M | Must | 2 | ⬜ |
 | **E5 · Lakehouse en AWS** | | | | | | |
 | HU-026 | Capa Trusted | 4 · 4.2 | C | Must | 2 | ⬜ |
@@ -217,7 +217,7 @@ Criterios de aceptación: lista verificable.
 - Bucket `ta-{ENV}-{account_id}-lake` con carpetas `raw/`, `trusted/`, `curated/`, `quality/`, `athena-results/`, cifrado con KMS.
 - Bases Glue `ta_raw`, `ta_trusted`, `ta_curated` con tablas que usan partition projection.
 - Workgroup `ta-analytics` con límite de bytes escaneados por consulta.
-- Roles `ta-glue-role`, `ta-historical-loader`, `ta-quicksight-role` con mínimo privilegio.
+- Roles `ta-glue-role`, `ta-historical-loader`, `ta-quicksight-role` con mínimo privilegio. *(El bucket con KMS, la llave y `ta-historical-loader` se adelantan en el Lote 3.1, v2.28.)*
 - Outputs definidos: `lake_bucket`, `glue_db_names`, `athena_workgroup`, `exporter_role_arn`, `glue_role_arn`, `kms_key_arn`.
 
 ### HU-046 · Bootstrap de Terraform y entornos
@@ -522,6 +522,9 @@ Criterios de aceptación: lista verificable.
 - Usa el mismo envelope (`origin = "historical"`), el mismo pool de usuarios y el mismo código de anonimización y NLP (`src/common/`); el NLP corre en lote.
 - Escribe Parquet a `s3://…/raw/origin=historical/`.
 - Se ejecuta una vez y es reejecutable sin duplicar datos (`event_id` determinista por semilla y `seq`).
+
+*Cerrada en v2.29* (entregada en v2.28; `ARCHITECTURE.md` §3.17; `docs/validation/validation-3-1.md`): 50.000 registros en 12.102 Parquet bajo `raw/origin=historical/`, 180 días con estacionalidad (r semanal 0,99, horaria 1,00), tendencias de marca y dos episodios; 500 de 500 `user_hash` compartidos con el stream y la misma versión de NLP; reejecutar da el mismo digest y la segunda subida no sube nada. `src/historical/` reutiliza `EventFactory` del simulador con `HIST_SEED = 3101` (mismo generador y pool de usuarios), `origin = historical`; anonimiza con `enrich_envelope()` y la llave `ta-hmac-key`; corre el NLP de `streaming.nlp` en lote en la imagen de NLP local; escribe Parquet por `source/dt/hr` de `event_time` y lo sube a `s3://ta-dev-…-lake/raw/origin=historical/` con el rol `ta-historical-loader`. Estacionalidad, tendencias y episodios en `config/historical.yaml`; digest y claves deterministas para reejecutar sin duplicar. Adelanta de HU-007 el bucket, la llave KMS y el rol del loader.
+
 ### HU-025 · Exportación GCS → S3
 
 | Épica | Fase · Lote | Responsable | Prioridad | Sprint | Depende de |

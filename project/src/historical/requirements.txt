@@ -1,0 +1,12 @@
+# Lote 3.1 (HU-024): dependencias del loader histórico en el host (~/.venvs/ta-streaming).
+#
+#   python -m pip install -c src/simulator/constraints.txt \
+#       -r src/simulator/requirements.txt -r src/historical/requirements.txt
+#
+# - El simulador (Faker, PyYAML) va con constraints.txt: otra versión de Faker cambia los
+#   nombres del pool de usuarios (los user_id y user_hash no cambian).
+# - pyarrow, google-auth y google-cloud-bigquery ya llegan con src/streaming/requirements.txt
+#   (Apache Beam 2.77.0 con [gcp]).
+# - El NLP en lote no usa este archivo: corre en la imagen ta-dataflow-nlp-local:local.
+boto3==1.43.118
+jsonschema==4.26.0

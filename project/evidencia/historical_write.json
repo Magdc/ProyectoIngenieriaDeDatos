@@ -1,0 +1,19 @@
+{
+  "digest": "939248b34361f5e0c82ff1faf0c7a19093cfeb3d8a2131eb73971a373d9b175b",
+  "seed": 3101,
+  "rows": 50000,
+  "n_files": 12102,
+  "written": 12102,
+  "unchanged": 0,
+  "removed": [],
+  "rows_per_source": {
+    "facebook": 16667,
+    "instagram": 16666,
+    "reddit": 16667
+  },
+  "bytes": 130868781,
+  "missing_nlp": 0,
+  "written_at": "2026-10-24T18:58:19.157Z",
+  "seconds": 861.2,
+  "validation": "yes"
+}

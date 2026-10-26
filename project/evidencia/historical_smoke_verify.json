@@ -1,0 +1,270 @@
+{
+  "status": "OK",
+  "seed": 3199,
+  "root": ".local-s3/_smoke",
+  "checked_at": "2026-10-24T14:29:46.824Z",
+  "summary": {
+    "rows": 600,
+    "files": 600,
+    "rows_per_source": {
+      "facebook": 200,
+      "instagram": 200,
+      "reddit": 200
+    },
+    "digest": "7aa506da76e3388f1fc3aa78763312393468482a178df5e32291bd88a6cb461e",
+    "as_of": "2026-10-24T00:00:00.000Z",
+    "start": "2026-08-25T00:00:00.000Z"
+  },
+  "checks": [
+    {
+      "id": "H1",
+      "name": "Archivos y particiones",
+      "status": "OK",
+      "detail": "600 archivos, particiones = event_time UTC",
+      "data": {
+        "files": 600,
+        "extra": [],
+        "missing": []
+      }
+    },
+    {
+      "id": "H2",
+      "name": "Columnas y tipos",
+      "status": "OK",
+      "detail": "24 columnas en orden",
+      "data": {
+        "columns": [
+          "event_id",
+          "origin",
+          "source",
+          "generator",
+          "event_time",
+          "ingest_time",
+          "process_time",
+          "user_hash",
+          "followers",
+          "text",
+          "lang",
+          "brands",
+          "brand_primary",
+          "hashtags",
+          "likes",
+          "shares",
+          "comments",
+          "sentiment_label",
+          "sentiment_score",
+          "emotion_label",
+          "emotion_score",
+          "label_sentiment",
+          "nlp_model_version",
+          "payload"
+        ],
+        "reference": "POSTS_ENRICHED_COLUMNS"
+      }
+    },
+    {
+      "id": "H3",
+      "name": "Conteos y unicidad",
+      "status": "OK",
+      "detail": "600 filas = plan, 100 % event_id únicos, generator comment-gen@1.0",
+      "data": {
+        "rows_per_source": {
+          "facebook": 200,
+          "instagram": 200,
+          "reddit": 200
+        },
+        "generators": {
+          "comment-gen@1.0": 600
+        }
+      }
+    },
+    {
+      "id": "H4",
+      "name": "event_id determinista",
+      "status": "OK",
+      "detail": "event_id = uuid5(historical|source|seed|seq) en todas las filas (reejecutar no crea ids nuevos)",
+      "data": {
+        "seed": 3199
+      }
+    },
+    {
+      "id": "H5",
+      "name": "Ventana de fechas",
+      "status": "OK",
+      "detail": "todas en los últimos 60 días; días con datos por fuente: {'facebook': 60, 'instagram': 60, 'reddit': 60}",
+      "data": {
+        "days_per_source": {
+          "facebook": 60,
+          "instagram": 60,
+          "reddit": 60
+        }
+      }
+    },
+    {
+      "id": "H6",
+      "name": "Estacionalidad y crecimiento",
+      "status": "OK",
+      "detail": "semana r=0.957, hora r=0.939, final/inicio 1.28 (esperado 1.31)",
+      "data": {
+        "weekly_per_day": [
+          8.11,
+          8.33,
+          8.11,
+          9.89,
+          12.12,
+          13.0,
+          11.12
+        ],
+        "hourly": [
+          9,
+          9,
+          6,
+          4,
+          3,
+          7,
+          21,
+          25,
+          19,
+          24,
+          25,
+          34,
+          42,
+          40,
+          38,
+          23,
+          37,
+          28,
+          38,
+          46,
+          49,
+          40,
+          16,
+          17
+        ],
+        "r_weekly": 0.9574441758151832,
+        "r_hourly": 0.9389978756989827,
+        "growth_ratio": 1.282442748091603,
+        "growth_expected": 1.310776343881022
+      }
+    },
+    {
+      "id": "H7",
+      "name": "Tendencias de marca",
+      "status": "OK",
+      "detail": "postobon 50.4%→43.5%, pepsi 40.5%→48.2%, sprite 9.2%→8.3%",
+      "data": {
+        "postobon": {
+          "first": 0.5038,
+          "last": 0.4345,
+          "change": -0.0693,
+          "expected_change": -0.0423
+        },
+        "pepsi": {
+          "first": 0.4046,
+          "last": 0.4821,
+          "change": 0.0776,
+          "expected_change": 0.0615
+        },
+        "sprite": {
+          "first": 0.0916,
+          "last": 0.0833,
+          "change": -0.0083,
+          "expected_change": -0.0192
+        }
+      }
+    },
+    {
+      "id": "H8",
+      "name": "Episodios",
+      "status": "OK",
+      "detail": "campana_sprite: fuera de la ventana, crisis_postobon: volumen ×1.489",
+      "data": {
+        "campana_sprite": {
+          "skipped": "fuera de la ventana"
+        },
+        "crisis_postobon": {
+          "rows": 37,
+          "rows_before": 58,
+          "volume_ratio": 1.489,
+          "volume_needed": 1.25,
+          "gt_negative": [
+            0.224,
+            0.405
+          ],
+          "nlp_negative": [
+            0.362,
+            0.459
+          ],
+          "gt_positive": [
+            0.276,
+            0.108
+          ],
+          "nlp_positive": [
+            0.379,
+            0.243
+          ]
+        }
+      }
+    },
+    {
+      "id": "H9",
+      "name": "Anonimización",
+      "status": "OK",
+      "detail": "sin identidad en claro; 308 user_hash; 1 a 1 con 308 user_id (generate)",
+      "data": {
+        "user_hashes": 308,
+        "generate_users": {
+          "distinct_user_ids": 308,
+          "distinct_user_hashes": 308,
+          "user_ids_with_several_hashes": 0,
+          "hashes_with_several_user_ids": 0
+        }
+      }
+    },
+    {
+      "id": "H10",
+      "name": "Engagement por fuente",
+      "status": "OK",
+      "detail": "likes/shares/comments según §5.2 en las tres fuentes",
+      "data": {}
+    },
+    {
+      "id": "H11",
+      "name": "NLP",
+      "status": "OK",
+      "detail": "NLP en el 100 %; versión robertuito-sentiment@a2cc0f67ebd7+robertuito-emotion@bcd6835f4d1a; acuerdo con label_sentiment 92.1%",
+      "data": {
+        "versions": {
+          "robertuito-sentiment@a2cc0f67ebd7+robertuito-emotion@bcd6835f4d1a": 600
+        },
+        "engines": [
+          "beam"
+        ],
+        "agreement": 0.9212410501193318,
+        "sentiment": {
+          "negative": 215,
+          "neutral": 186,
+          "positive": 199
+        },
+        "emotion": {
+          "anger": 64,
+          "neutral": 315,
+          "sadness": 52,
+          "joy": 156,
+          "disgust": 8,
+          "fear": 1,
+          "surprise": 4
+        }
+      }
+    },
+    {
+      "id": "H12",
+      "name": "Marcas, hashtags y etiquetas",
+      "status": "OK",
+      "detail": "canónicos; 0 filas sin marca",
+      "data": {
+        "without_brand": 0
+      }
+    }
+  ]
+}

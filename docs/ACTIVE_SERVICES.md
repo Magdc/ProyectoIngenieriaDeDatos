@@ -61,6 +61,8 @@ El primero va por la mañana; el segundo, al terminar el día. Al cerrar la sema
 | GCP | Simulador en Cloud Run (`ta-stream-simulator`) | ~2 USD/día | Al terminar la semana de validaciones |
 | GCP | Job de Dataflow (`ta-stream-dev`) | ~0,25 USD/h (~6 USD/día) | **Al terminar cada día** |
 | GCP | Cloud Build (imagen de NLP, Lote 2.3) | ~0,10 USD por construcción | Termina solo |
+| Local | Contenedor `ta-hist-nlp` (NLP del histórico, Lote 3.1) | 0 | Termina solo (40–60 min con 50.000 filas); `bash scripts/historical_nlp.sh stop` lo detiene |
+| AWS | Bucket del lake, llave KMS `alias/ta-dev-lake` y rol `ta-historical-loader` (Lote 3.1) | ~1 USD/mes por la llave; el bucket, centavos (~110 MB) | **Nunca**: no se encienden ni se apagan |
 
 Con el presupuesto mensual de 400.000 COP, dejar el simulador una semana y Dataflow solo en jornadas de trabajo cabe sin problema. Las alertas del presupuesto (Lote 1.0) avisan por correo si algo se queda encendido.
 
@@ -352,9 +354,10 @@ gcloud builds list --region us-central1 --ongoing
 gcloud dataflow jobs list --region us-central1 --status=active
 gcloud run services list --region us-central1 --format="value(name)"
 gcloud builds list --region us-central1 --ongoing
+docker ps --filter name=ta-hist-nlp --format "{{.Names}}"
 ```
 
-Esperado: las tres salidas vacías, o sin `ta-stream-simulator` en la segunda. Lo que queda creado (topics, buckets, BigQuery, secreto, imagen) cuesta centavos al mes y **no** se borra: perder el secreto cambiaría todos los `user_hash`.
+Esperado: las cuatro salidas vacías, o sin `ta-stream-simulator` en la segunda. Lo que queda creado (topics, buckets, BigQuery, secreto, imagen) cuesta centavos al mes y **no** se borra: perder el secreto cambiaría todos los `user_hash`.
 
 ---
 

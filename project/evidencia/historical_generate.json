@@ -1,0 +1,388 @@
+{
+  "tool": "historical-loader@1.0",
+  "lote": "3.1",
+  "plan": {
+    "seed": 3101,
+    "n": 50000,
+    "days": 180,
+    "as_of": "2026-10-24T00:00:00.000Z",
+    "start": "2026-04-27T00:00:00.000Z",
+    "sources": {
+      "reddit": 16667,
+      "facebook": 16667,
+      "instagram": 16666
+    },
+    "chunk_size": 2000,
+    "config_sha256": "87f1c260f28648fd4c4bb43d70aa496a61d208553ccd0c00b8c743f1dc90cbc7",
+    "events": [
+      {
+        "name": "campana_sprite",
+        "brand": "sprite",
+        "start": "2026-06-26T00:00:00.000Z",
+        "end": "2026-07-06T00:00:00.000Z",
+        "volume": 1.8,
+        "sentiment": {
+          "positive": 1.5
+        }
+      },
+      {
+        "name": "crisis_postobon",
+        "brand": "postobon",
+        "start": "2026-09-14T00:00:00.000Z",
+        "end": "2026-09-20T00:00:00.000Z",
+        "volume": 1.5,
+        "sentiment": {
+          "negative": 3.0,
+          "positive": 0.6
+        }
+      }
+    ],
+    "brands": {
+      "postobon": -0.1,
+      "pepsi": 0.35,
+      "sprite": 0.0
+    }
+  },
+  "config": {
+    "seed": 3101,
+    "n": 50000,
+    "days": 180,
+    "as_of": "2026-10-24T00:00:00.000Z",
+    "chunk_size": 2000,
+    "sources": {
+      "reddit": 1.0,
+      "facebook": 1.0,
+      "instagram": 1.0
+    },
+    "local_utc_offset_hours": -5.0,
+    "weekly": [
+      0.85,
+      0.82,
+      0.88,
+      0.95,
+      1.12,
+      1.3,
+      1.18
+    ],
+    "hourly": [
+      0.3,
+      0.2,
+      0.14,
+      0.11,
+      0.11,
+      0.18,
+      0.38,
+      0.62,
+      0.82,
+      0.92,
+      1.0,
+      1.1,
+      1.32,
+      1.28,
+      1.05,
+      0.98,
+      1.02,
+      1.12,
+      1.3,
+      1.46,
+      1.5,
+      1.32,
+      0.95,
+      0.58
+    ],
+    "growth": 0.3,
+    "daily_noise": 0.1,
+    "brands": {
+      "postobon": -0.1,
+      "pepsi": 0.35,
+      "sprite": 0.0
+    },
+    "events": [
+      {
+        "name": "campana_sprite",
+        "brand": "sprite",
+        "start_days_ago": 120.0,
+        "duration_days": 10.0,
+        "volume": 1.8,
+        "sentiment": {
+          "positive": 1.5
+        }
+      },
+      {
+        "name": "crisis_postobon",
+        "brand": "postobon",
+        "start_days_ago": 40.0,
+        "duration_days": 6.0,
+        "volume": 1.5,
+        "sentiment": {
+          "negative": 3.0,
+          "positive": 0.6
+        }
+      }
+    ],
+    "max_candidates_per_slot": 200
+  },
+  "digest": "939248b34361f5e0c82ff1faf0c7a19093cfeb3d8a2131eb73971a373d9b175b",
+  "sources": {
+    "reddit": {
+      "target": 16667,
+      "candidates": 21309,
+      "forced": 0,
+      "last_seq": 21308,
+      "accepted": 16667,
+      "acceptance": 0.7822,
+      "brands": {
+        "postobon": 7063,
+        "pepsi": 5621,
+        "sprite": 3983
+      },
+      "labels": {
+        "null": 4998,
+        "positive": 4641,
+        "negative": 3974,
+        "neutral": 3054
+      },
+      "kinds": {
+        "comment": 11681,
+        "post": 4986
+      },
+      "first_event_time": "2026-04-27T00:06:54.933Z",
+      "last_event_time": "2026-10-23T23:51:45.177Z",
+      "users": 1543,
+      "user_id_min": "u_000001",
+      "user_id_max": "u_001998"
+    },
+    "facebook": {
+      "target": 16667,
+      "candidates": 21173,
+      "forced": 0,
+      "last_seq": 21172,
+      "accepted": 16667,
+      "acceptance": 0.7872,
+      "brands": {
+        "postobon": 7059,
+        "pepsi": 5616,
+        "sprite": 3992
+      },
+      "labels": {
+        "null": 4915,
+        "positive": 4732,
+        "negative": 4070,
+        "neutral": 2950
+      },
+      "kinds": {
+        "comment": 14143,
+        "post": 2524
+      },
+      "first_event_time": "2026-04-27T00:03:59.361Z",
+      "last_event_time": "2026-10-23T23:47:25.584Z",
+      "users": 1511,
+      "user_id_min": "u_002000",
+      "user_id_max": "u_003999"
+    },
+    "instagram": {
+      "target": 16666,
+      "candidates": 21356,
+      "forced": 0,
+      "last_seq": 21355,
+      "accepted": 16666,
+      "acceptance": 0.7804,
+      "brands": {
+        "postobon": 7053,
+        "pepsi": 5544,
+        "sprite": 4069
+      },
+      "labels": {
+        "null": 5042,
+        "positive": 4691,
+        "negative": 4045,
+        "neutral": 2888
+      },
+      "kinds": {
+        "comment": 16666
+      },
+      "first_event_time": "2026-04-27T00:01:32.345Z",
+      "last_event_time": "2026-10-23T23:52:30.630Z",
+      "users": 1493,
+      "user_id_min": "u_004001",
+      "user_id_max": "u_005997"
+    }
+  },
+  "rows": 50000,
+  "invalid_examples": [],
+  "invalid": 0,
+  "envelopes": {
+    "how": "EventFactory(...)",
+    "make": "simulator.factory.EventFactory.make(source: 'str', seq: 'int', now: 'datetime', scenario: 'Optional[Scenario]' = None) -> 'Emission'",
+    "now_as_epoch": false,
+    "native_origin": "historical"
+  },
+  "seconds": 94.3,
+  "users": {
+    "distinct_user_ids": 4547,
+    "distinct_user_hashes": 4547,
+    "user_ids_with_several_hashes": 0,
+    "hashes_with_several_user_ids": 0
+  },
+  "key_check": {
+    "status": "OK",
+    "detail": "500 de 500 user_hash más activos aparecen en el stream (136323 filas de 176715)",
+    "table": "project-0568d9ba-848f-413c-88b.ta_stream.posts_enriched",
+    "n_rows": 176715,
+    "hit_rows": 136323,
+    "hit_users": 500,
+    "stream_users": 5861,
+    "versions": [
+      "robertuito-sentiment@a2cc0f67ebd7+robertuito-emotion@bcd6835f4d1a"
+    ],
+    "bytes_processed": 21957847
+  },
+  "key": {
+    "source": "secret",
+    "detail": "common.hmac_key.load_hmac_key(secret)",
+    "fingerprint": "ec2315037a52f5a4",
+    "check": "bq",
+    "table": "project-0568d9ba-848f-413c-88b.ta_stream.posts_enriched",
+    "attempts": []
+  },
+  "process_time": "2026-10-24T14:57:48.401Z",
+  "stage1": [
+    {
+      "file": "reddit-0000.jsonl.gz",
+      "rows": 2000,
+      "sha256": "0dd24b8635534ec6e34fde44af1358fa0f91353d74d88eb46b2e4f1ef16a816f"
+    },
+    {
+      "file": "reddit-0001.jsonl.gz",
+      "rows": 2000,
+      "sha256": "d9a2e374b68dd58fce37487763fb78eb0a09d6c933ebca35354229fcea50d1ac"
+    },
+    {
+      "file": "reddit-0002.jsonl.gz",
+      "rows": 2000,
+      "sha256": "263b676f70ee93ed2143b559e6f74f22085b25b81dcef29ff30bb253453c2169"
+    },
+    {
+      "file": "reddit-0003.jsonl.gz",
+      "rows": 2000,
+      "sha256": "8f9d3d583ea00c57fa9d9a2d99f5399e3edcec8d93aa50855fd63b7c7049d5c6"
+    },
+    {
+      "file": "reddit-0004.jsonl.gz",
+      "rows": 2000,
+      "sha256": "8726c0d1c6f1039330a9cf8b1c23a58e251213abe4bb85293885ca39c8fd878e"
+    },
+    {
+      "file": "reddit-0005.jsonl.gz",
+      "rows": 2000,
+      "sha256": "3b16c891448054ea1c54c7e7f4537ca65c7f39427a88e37eb521555be0bc8d3e"
+    },
+    {
+      "file": "reddit-0006.jsonl.gz",
+      "rows": 2000,
+      "sha256": "11eddf60647ed7df51a5e712bbf23432abfca78d82609f5d80223d3de2ca4999"
+    },
+    {
+      "file": "reddit-0007.jsonl.gz",
+      "rows": 2000,
+      "sha256": "423c4f4c1cb2ba14fd214d7f748d122efb71a4fae6a4ee2178bb7acc9dd1a32f"
+    },
+    {
+      "file": "reddit-0008.jsonl.gz",
+      "rows": 667,
+      "sha256": "f78d874a1dfe04e8e8087b1caff768ae654ad560522f7f02f47bbfd466d35675"
+    },
+    {
+      "file": "facebook-0000.jsonl.gz",
+      "rows": 2000,
+      "sha256": "c8349d9b8e37c04dbbfe573c356612b72cfb74db249e267ff7b4479e55cd7f9f"
+    },
+    {
+      "file": "facebook-0001.jsonl.gz",
+      "rows": 2000,
+      "sha256": "b60e8953a07086d847cf6cd3ea21fc2590adfbc5c2335886580714e055e2101a"
+    },
+    {
+      "file": "facebook-0002.jsonl.gz",
+      "rows": 2000,
+      "sha256": "b078cb86aaf8433217664cdb341ea31ed320941fe943aba4f4d16c9eaf75a69d"
+    },
+    {
+      "file": "facebook-0003.jsonl.gz",
+      "rows": 2000,
+      "sha256": "2a1fdb2984d49f9494f9a86cfeb8b1449a38c5ac8fafad52cf247142c4b743e1"
+    },
+    {
+      "file": "facebook-0004.jsonl.gz",
+      "rows": 2000,
+      "sha256": "b4300415eba29477f2a3ab4b61abc2a3e07698a70699a667f4a153718564657a"
+    },
+    {
+      "file": "facebook-0005.jsonl.gz",
+      "rows": 2000,
+      "sha256": "eebd15dd00118f3fea20e6ab4e41af219e9283accbbc2bce5b77e318499cbc7e"
+    },
+    {
+      "file": "facebook-0006.jsonl.gz",
+      "rows": 2000,
+      "sha256": "743e25ad1f0323bf94fb64383afb2acddee47be0e1c6efd90ab5aa5b97772eec"
+    },
+    {
+      "file": "facebook-0007.jsonl.gz",
+      "rows": 2000,
+      "sha256": "dbabcc95094106c84116e42797ab8638c5542da04a68a98cf993fcb38cc1949f"
+    },
+    {
+      "file": "facebook-0008.jsonl.gz",
+      "rows": 667,
+      "sha256": "0c2e3d16652a68ff225f556a5199ded60ef7fc8272f5804bfda779f6d86c006e"
+    },
+    {
+      "file": "instagram-0000.jsonl.gz",
+      "rows": 2000,
+      "sha256": "1ce167178b12bbf86242df4897bb052912d721f1cbaab0aeea691df5485f35b9"
+    },
+    {
+      "file": "instagram-0001.jsonl.gz",
+      "rows": 2000,
+      "sha256": "529f72daeae2788b778e12d2d777620fdb454de9478d705abb7c8825f5035500"
+    },
+    {
+      "file": "instagram-0002.jsonl.gz",
+      "rows": 2000,
+      "sha256": "0f9495a66ca7c13219c32516e3f02ff2bc7830132e7513dbf671f01247c63b42"
+    },
+    {
+      "file": "instagram-0003.jsonl.gz",
+      "rows": 2000,
+      "sha256": "c51e5ef66ff95d1a5ab21c22e2025e504c845f71e9e112397d170852c698599a"
+    },
+    {
+      "file": "instagram-0004.jsonl.gz",
+      "rows": 2000,
+      "sha256": "b807186e6851a6c2b5eca480a0eba8637d34e8792262b5cb937149ce762272d2"
+    },
+    {
+      "file": "instagram-0005.jsonl.gz",
+      "rows": 2000,
+      "sha256": "94fcadba25a654a1310bc9ae6d51428439a54fe5b57456dac29af4506ab73b07"
+    },
+    {
+      "file": "instagram-0006.jsonl.gz",
+      "rows": 2000,
+      "sha256": "f806f655719d519e2002d963c2fbe66353f27703d357104f1eb30213858be9bc"
+    },
+    {
+      "file": "instagram-0007.jsonl.gz",
+      "rows": 2000,
+      "sha256": "26d2a5679b1d753699920431859807857bc2336af305025128d6a2b4bfd47a2c"
+    },
+    {
+      "file": "instagram-0008.jsonl.gz",
+      "rows": 666,
+      "sha256": "8eb1fa4de72f84e1b5fb35d073af86ecd51534b4197c3daee0cd69cda274c72c"
+    }
+  ],
+  "generated_at": "2026-10-24T14:59:27.072Z",
+  "validation": "yes"
+}

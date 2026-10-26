@@ -1,0 +1,545 @@
+{
+  "lote": "3.1",
+  "parts": {
+    "A": {
+      "status": "OK",
+      "at": "2026-10-24T19:29:37Z",
+      "steps": [
+        {
+          "id": "A1",
+          "name": "Python y dependencias",
+          "status": "OK",
+          "detail": "Python 3.11.17",
+          "data": {
+            "missing_core": [],
+            "missing_cloud": []
+          }
+        },
+        {
+          "id": "A2",
+          "name": "Archivos del lote",
+          "status": "OK",
+          "detail": "27 presentes",
+          "data": {}
+        },
+        {
+          "id": "A3",
+          "name": "Archivos de lotes anteriores",
+          "status": "OK",
+          "detail": "15 presentes",
+          "data": {}
+        },
+        {
+          "id": "A4",
+          "name": "Adaptadores contra el código real (doctor)",
+          "status": "OK",
+          "detail": "5 pasos OK",
+          "data": {
+            "output": "D1   OK     Importaciones: 13 módulos importan\n  D2   OK     Simulador (EventFactory): EventFactory(...); semilla 3101 aplicada; caos apagado; origin nativo 'historical'\n  D3   OK     Llave HMAC: common.hmac_key.load_hmac_key(local_dev) (huella 2a16578149ff63ef, str de 64 caracteres)\n  D4   OK     Anonimización y contratos: 9 eventos anonimizados con common.enriched_row.enrich_envelope(envelope: 'Mapping[str, Any]', key: 'str', process_time: 'str') -> 'dict[str, Any]'; envelope.v1 y envelope.enriched.v1 OK\n  D5   OK     Fila y Parquet: 9 filas, 24 columnas en orden; {'event_time': 'timestamp[ms, tz=UTC]', 'brands': 'list<element: string>', 'payload': 'string'}\nresultado: OK\nevidencia: evidencia/historical_doctor.json"
+          }
+        },
+        {
+          "id": "A5",
+          "name": "Herramientas",
+          "status": "OK",
+          "detail": "docker, terraform, aws, gcloud, bash",
+          "data": {
+            "docker": true,
+            "terraform": true,
+            "aws": true,
+            "gcloud": true,
+            "bash": true
+          }
+        },
+        {
+          "id": "A6",
+          "name": "Imagen de NLP local",
+          "status": "OK",
+          "detail": "ta-dataflow-nlp-local:local presente",
+          "data": {}
+        },
+        {
+          "id": "A8",
+          "name": "CPU libre para el NLP (D y E)",
+          "status": "OK",
+          "detail": "ningún contenedor del entorno local del stream ni de NLP encendido",
+          "data": {
+            "containers": []
+          }
+        },
+        {
+          "id": "A7",
+          "name": ".gitignore",
+          "status": "OK",
+          "detail": ".local-s3/ ignorado",
+          "data": {}
+        }
+      ],
+      "minutes": 0.1
+    },
+    "B": {
+      "status": "OK",
+      "at": "2026-10-24T19:33:08Z",
+      "steps": [
+        {
+          "id": "B1",
+          "name": "Pruebas del loader (src/historical)",
+          "status": "OK",
+          "detail": "142 passed, 0 failed, 0 skipped",
+          "data": {
+            "counts": {
+              "passed": 142,
+              "failed": 0,
+              "skipped": 0,
+              "errors": 0
+            },
+            "skipped": []
+          }
+        },
+        {
+          "id": "B2",
+          "name": "Pruebas del validador",
+          "status": "OK",
+          "detail": "39 passed, 0 failed, 0 skipped",
+          "data": {
+            "counts": {
+              "passed": 39,
+              "failed": 0,
+              "skipped": 0,
+              "errors": 0
+            },
+            "skipped": []
+          }
+        },
+        {
+          "id": "B3",
+          "name": "Contratos (regresión)",
+          "status": "OK",
+          "detail": "18 passed, 0 failed, 0 skipped",
+          "data": {
+            "counts": {
+              "passed": 18,
+              "failed": 0,
+              "skipped": 0,
+              "errors": 0
+            },
+            "skipped": []
+          }
+        },
+        {
+          "id": "B4",
+          "name": "common/ (regresión)",
+          "status": "OK",
+          "detail": "28 passed, 0 failed, 0 skipped",
+          "data": {
+            "counts": {
+              "passed": 28,
+              "failed": 0,
+              "skipped": 0,
+              "errors": 0
+            },
+            "skipped": []
+          }
+        }
+      ],
+      "minutes": 3.5
+    },
+    "C": {
+      "status": "AVISO",
+      "at": "2026-10-24T02:16:07Z",
+      "steps": [
+        {
+          "id": "C0",
+          "name": "Credenciales de AWS",
+          "status": "AVISO",
+          "detail": "cuenta 648617469176 (arn:aws:iam::648617469176:root); es la cuenta raíz: AWS no le deja asumir roles, así que F sube con el perfil (--no-role) y prueba el rol con iam simulate-principal-policy. Recomendado: un usuario IAM o SSO para el día a día",
+          "data": {}
+        },
+        {
+          "id": "C0b",
+          "name": "backend.hcl y terraform.tfvars del entorno AWS",
+          "status": "OK",
+          "detail": "presentes",
+          "data": {}
+        },
+        {
+          "id": "C1",
+          "name": "infra/validate.sh",
+          "status": "OK",
+          "detail": "fmt y validate en verde",
+          "data": {}
+        },
+        {
+          "id": "C2a",
+          "name": "terraform init (módulos nuevos)",
+          "status": "OK",
+          "detail": "módulos instalados",
+          "data": {}
+        },
+        {
+          "id": "C2",
+          "name": "Plan",
+          "status": "OK",
+          "detail": "10 a crear, 0 a cambiar, 0 a destruir",
+          "data": {
+            "add": 10,
+            "change": 0,
+            "destroy": 0
+          }
+        },
+        {
+          "id": "C3",
+          "name": "Apply",
+          "status": "OK",
+          "detail": "Apply complete! Resources: 10 added, 0 changed, 0 destroyed",
+          "data": {}
+        },
+        {
+          "id": "C4",
+          "name": "Outputs",
+          "status": "OK",
+          "detail": "lake_bucket=ta-dev-648617469176-lake, kms_key_arn=arn:aws:kms:us-east-1:648617469176:key/ff8fece2-53f6-44b4-ad64-983d8755fdff, historical_loader_role_arn=arn:aws:iam::648617469176:role/ta-historical-loader",
+          "data": {
+            "lake_bucket": "ta-dev-648617469176-lake",
+            "kms_key_arn": "arn:aws:kms:us-east-1:648617469176:key/ff8fece2-53f6-44b4-ad64-983d8755fdff",
+            "historical_loader_role_arn": "arn:aws:iam::648617469176:role/ta-historical-loader",
+            "kms_key_alias": "alias/ta-dev-lake",
+            "lake_bucket_arn": "arn:aws:s3:::ta-dev-648617469176-lake"
+          }
+        },
+        {
+          "id": "C5",
+          "name": "Bucket cifrado y privado",
+          "status": "OK",
+          "detail": "SSE-KMS con la llave del lake: sí; acceso público bloqueado: sí",
+          "data": {}
+        }
+      ],
+      "minutes": 9.7
+    },
+    "D": {
+      "status": "OK",
+      "at": "2026-10-24T14:30:49Z",
+      "steps": [
+        {
+          "id": "D1",
+          "name": "Docker",
+          "status": "OK",
+          "detail": "Docker 29.7.2",
+          "data": {}
+        },
+        {
+          "id": "D2",
+          "name": "Imagen de NLP",
+          "status": "OK",
+          "detail": "ta-dataflow-nlp-local:local sha256:f1706e07f50b",
+          "data": {}
+        },
+        {
+          "id": "D3",
+          "name": "NLP real en el contenedor (doctor)",
+          "status": "OK",
+          "detail": "inferencia de 3 filas con streaming.nlp",
+          "data": {}
+        },
+        {
+          "id": "D4",
+          "name": "generate (600 filas, llave local)",
+          "status": "OK",
+          "detail": "etapa 1 escrita en .local-s3/_smoke",
+          "data": {}
+        },
+        {
+          "id": "D5",
+          "name": "NLP en lote (imagen de NLP)",
+          "status": "OK",
+          "detail": "600 filas, 0 sin NLP, versiones ['robertuito-sentiment@a2cc0f67ebd7+robertuito-emotion@bcd6835f4d1a'], ~1.85 filas/s en 5.5 min",
+          "data": {
+            "nlp": {
+              "files": 3,
+              "pending_files": 0,
+              "pending": [],
+              "rows": 600,
+              "nlp_missing": 0,
+              "versions": {
+                "robertuito-sentiment@a2cc0f67ebd7+robertuito-emotion@bcd6835f4d1a": 600
+              },
+              "engines": [
+                "beam"
+              ],
+              "rows_per_s_median": 1.85
+            },
+            "minutes": 5.5
+          }
+        },
+        {
+          "id": "D6",
+          "name": "write",
+          "status": "OK",
+          "detail": "600 archivos (600 escritos, 0 sin cambios, 0 borrados), 600 filas, 5.8 MB en .local-s3/_smoke/raw/origin=historical",
+          "data": {}
+        },
+        {
+          "id": "D7",
+          "name": "Verificación",
+          "status": "OK",
+          "detail": "H1, H2, H3, H4, H5, H6, H7, H8, H9, H10, H11, H12 OK (600 filas, 600 archivos)",
+          "data": {
+            "status": "OK",
+            "summary": {
+              "rows": 600,
+              "files": 600,
+              "rows_per_source": {
+                "facebook": 200,
+                "instagram": 200,
+                "reddit": 200
+              },
+              "digest": "7aa506da76e3388f1fc3aa78763312393468482a178df5e32291bd88a6cb461e",
+              "as_of": "2026-10-24T00:00:00.000Z",
+              "start": "2026-08-25T00:00:00.000Z"
+            }
+          }
+        },
+        {
+          "id": "D8",
+          "name": "Reproducible (digest)",
+          "status": "OK",
+          "detail": "digest: 7aa506da76e3388f1fc3aa78763312393468482a178df5e32291bd88a6cb461e (igual al de generate.json)",
+          "data": {}
+        },
+        {
+          "id": "D9",
+          "name": "Reescribir no cambia nada",
+          "status": "OK",
+          "detail": "600 archivos (0 escritos, 600 sin cambios, 0 borrados), 600 filas, 5.8 MB en .local-s3/_smoke/raw/origin=historical",
+          "data": {}
+        }
+      ],
+      "minutes": 8.4
+    },
+    "E": {
+      "status": "AVISO",
+      "at": "2026-10-24T19:02:16Z",
+      "steps": [
+        {
+          "id": "E1",
+          "name": "GCP (proyecto y ADC)",
+          "status": "OK",
+          "detail": "project-0568d9ba-848f-413c-88b · credenciales OK",
+          "data": {}
+        },
+        {
+          "id": "E2",
+          "name": "posts_enriched del stream",
+          "status": "OK",
+          "detail": "176715 filas de stream en 90 días, 5861 usuarios, versiones NLP ['robertuito-sentiment@a2cc0f67ebd7+robertuito-emotion@bcd6835f4d1a']",
+          "data": {
+            "n_rows": 176715,
+            "hit_rows": 0,
+            "hit_users": 0,
+            "stream_users": 5861,
+            "versions": [
+              "robertuito-sentiment@a2cc0f67ebd7+robertuito-emotion@bcd6835f4d1a"
+            ],
+            "bytes_processed": 21957847
+          }
+        },
+        {
+          "id": "E3",
+          "name": "generate (llave del secreto, cruce con el stream)",
+          "status": "OK",
+          "detail": "50000 filas, digest 939248b34361f5e0…, llave: 500 de 500 user_hash más activos aparecen en el stream (136323 filas de 176715)",
+          "data": {
+            "digest": "939248b34361f5e0c82ff1faf0c7a19093cfeb3d8a2131eb73971a373d9b175b",
+            "key_check": {
+              "status": "OK",
+              "detail": "500 de 500 user_hash más activos aparecen en el stream (136323 filas de 176715)",
+              "table": "project-0568d9ba-848f-413c-88b.ta_stream.posts_enriched",
+              "n_rows": 176715,
+              "hit_rows": 136323,
+              "hit_users": 500,
+              "stream_users": 5861,
+              "versions": [
+                "robertuito-sentiment@a2cc0f67ebd7+robertuito-emotion@bcd6835f4d1a"
+              ],
+              "bytes_processed": 21957847
+            }
+          }
+        },
+        {
+          "id": "E4",
+          "name": "NLP en lote (imagen de NLP)",
+          "status": "OK",
+          "detail": "50000 filas, 0 sin NLP, versiones ['robertuito-sentiment@a2cc0f67ebd7+robertuito-emotion@bcd6835f4d1a'], ~4.08 filas/s en 35.3 min",
+          "data": {
+            "nlp": {
+              "files": 27,
+              "pending_files": 0,
+              "pending": [],
+              "rows": 50000,
+              "nlp_missing": 0,
+              "versions": {
+                "robertuito-sentiment@a2cc0f67ebd7+robertuito-emotion@bcd6835f4d1a": 50000
+              },
+              "engines": [
+                "beam"
+              ],
+              "rows_per_s_median": 4.08
+            },
+            "minutes": 35.3
+          }
+        },
+        {
+          "id": "E5",
+          "name": "write",
+          "status": "OK",
+          "detail": "evidencia: evidencia/historical_write.json",
+          "data": {}
+        },
+        {
+          "id": "E6",
+          "name": "Verificación",
+          "status": "AVISO",
+          "detail": "H7 sprite: cambio +0.033 vs esperado -0.021",
+          "data": {
+            "status": "AVISO",
+            "summary": {
+              "rows": 50000,
+              "files": 12102,
+              "rows_per_source": {
+                "facebook": 16667,
+                "instagram": 16666,
+                "reddit": 16667
+              },
+              "digest": "939248b34361f5e0c82ff1faf0c7a19093cfeb3d8a2131eb73971a373d9b175b",
+              "as_of": "2026-10-24T00:00:00.000Z",
+              "start": "2026-04-27T00:00:00.000Z"
+            }
+          }
+        },
+        {
+          "id": "E7",
+          "name": "Reproducible (digest)",
+          "status": "OK",
+          "detail": "digest: 939248b34361f5e0c82ff1faf0c7a19093cfeb3d8a2131eb73971a373d9b175b (igual al de generate.json)",
+          "data": {}
+        }
+      ],
+      "minutes": 53.7
+    },
+    "F": {
+      "status": "AVISO",
+      "at": "2026-10-24T19:28:10Z",
+      "steps": [
+        {
+          "id": "F1",
+          "name": "Outputs de AWS",
+          "status": "OK",
+          "detail": "s3://ta-dev-648617469176-lake · arn:aws:iam::648617469176:role/ta-historical-loader",
+          "data": {}
+        },
+        {
+          "id": "F2",
+          "name": "Subida a S3",
+          "status": "AVISO",
+          "detail": "12102 subidos, 0 ya estaban, 0 sobrantes de la semilla, 164.7 s · con la cuenta raíz (es la cuenta raíz: AWS no le deja asumir roles, así que F sube con el perfil (--no-role) y prueba el rol con iam simulate-principal-policy. Recomendado: un usuario IAM o SSO para el día a día)",
+          "data": {
+            "bucket": "ta-dev-648617469176-lake",
+            "prefix": "raw/origin=historical/",
+            "seed": 3101,
+            "digest": "939248b34361f5e0c82ff1faf0c7a19093cfeb3d8a2131eb73971a373d9b175b",
+            "files": 12102,
+            "to_upload": 12102,
+            "uploaded": 12102,
+            "skipped_same_size": 0,
+            "errors": [],
+            "n_errors": 0,
+            "stale_same_seed": [],
+            "n_stale": 0,
+            "other_objects": 0,
+            "kms_key_arn": "arn:aws:kms:us-east-1:648617469176:key/ff8fece2-53f6-44b4-ad64-983d8755fdff",
+            "dry_run": false,
+            "who": {
+              "account": "648617469176",
+              "arn": "arn:aws:iam::648617469176:root"
+            },
+            "bytes": 130868781,
+            "uploaded_at": "2026-10-24T19:25:36.766Z",
+            "seconds": 164.7
+          }
+        },
+        {
+          "id": "F3",
+          "name": "Mínimo privilegio del rol",
+          "status": "OK",
+          "detail": "política del rol: 6 casos como se esperaba (simulada; la cuenta raíz no asume roles)",
+          "data": {
+            "simulation": {
+              "put raw/origin=historical/": {
+                "got": "PERMITIDO",
+                "expected": "PERMITIDO"
+              },
+              "put raw/origin=stream/": {
+                "got": "DENEGADO",
+                "expected": "DENEGADO"
+              },
+              "get raw/origin=historical/": {
+                "got": "DENEGADO",
+                "expected": "DENEGADO"
+              },
+              "delete raw/origin=historical/": {
+                "got": "DENEGADO",
+                "expected": "DENEGADO"
+              },
+              "list raw/origin=historical/": {
+                "got": "PERMITIDO",
+                "expected": "PERMITIDO"
+              },
+              "list trusted/": {
+                "got": "DENEGADO",
+                "expected": "DENEGADO"
+              }
+            },
+            "live_probe": {}
+          }
+        },
+        {
+          "id": "F4",
+          "name": "Verificación",
+          "status": "OK",
+          "detail": "H1, H2, H3, H4, H5, H6, H7, H8, H9, H10, H11, H12, H14 OK (50000 filas, 12102 archivos)",
+          "data": {
+            "status": "OK",
+            "summary": {
+              "rows": 50000,
+              "files": 12102,
+              "rows_per_source": {
+                "facebook": 16667,
+                "instagram": 16666,
+                "reddit": 16667
+              },
+              "digest": "939248b34361f5e0c82ff1faf0c7a19093cfeb3d8a2131eb73971a373d9b175b",
+              "as_of": "2026-10-24T00:00:00.000Z",
+              "start": "2026-04-27T00:00:00.000Z"
+            }
+          }
+        },
+        {
+          "id": "F5",
+          "name": "Segunda subida idempotente",
+          "status": "OK",
+          "detail": "0 subidos, 12102 omitidos de 12102",
+          "data": {
+            "files": 12102,
+            "to_upload": 0,
+            "uploaded": 0,
+            "skipped_same_size": 12102,
+            "n_errors": 0,
+            "n_stale": 0
+          }
+        }
+      ],
+      "minutes": 5.6
+    }
+  }
+}

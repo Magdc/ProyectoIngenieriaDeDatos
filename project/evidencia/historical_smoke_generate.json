@@ -1,0 +1,175 @@
+{
+  "tool": "historical-loader@1.0",
+  "lote": "3.1",
+  "plan": {
+    "seed": 3199,
+    "n": 600,
+    "days": 60,
+    "as_of": "2026-10-24T00:00:00.000Z",
+    "start": "2026-08-25T00:00:00.000Z",
+    "sources": {
+      "reddit": 200,
+      "facebook": 200,
+      "instagram": 200
+    },
+    "chunk_size": 2000,
+    "config_sha256": "ad15249b6ed21771e8eb127eb9d2f98654bf06e61dd270a3da18f775e2213193",
+    "events": [
+      {
+        "name": "campana_sprite",
+        "brand": "sprite",
+        "start": "2026-06-26T00:00:00.000Z",
+        "end": "2026-07-06T00:00:00.000Z",
+        "volume": 1.8,
+        "sentiment": {
+          "positive": 1.5
+        }
+      },
+      {
+        "name": "crisis_postobon",
+        "brand": "postobon",
+        "start": "2026-09-14T00:00:00.000Z",
+        "end": "2026-09-20T00:00:00.000Z",
+        "volume": 1.5,
+        "sentiment": {
+          "negative": 3.0,
+          "positive": 0.6
+        }
+      }
+    ],
+    "brands": {
+      "postobon": -0.1,
+      "pepsi": 0.35,
+      "sprite": 0.0
+    }
+  },
+  "digest": "7aa506da76e3388f1fc3aa78763312393468482a178df5e32291bd88a6cb461e",
+  "sources": {
+    "reddit": {
+      "target": 200,
+      "candidates": 270,
+      "forced": 0,
+      "last_seq": 269,
+      "accepted": 200,
+      "acceptance": 0.7407,
+      "brands": {
+        "postobon": 94,
+        "pepsi": 87,
+        "sprite": 19
+      },
+      "labels": {
+        "null": 65,
+        "positive": 54,
+        "negative": 46,
+        "neutral": 35
+      },
+      "kinds": {
+        "comment": 137,
+        "post": 63
+      },
+      "first_event_time": "2026-08-25T12:15:44.305Z",
+      "last_event_time": "2026-10-23T23:03:54.969Z",
+      "users": 107,
+      "user_id_min": "u_000009",
+      "user_id_max": "u_001998"
+    },
+    "facebook": {
+      "target": 200,
+      "candidates": 263,
+      "forced": 0,
+      "last_seq": 262,
+      "accepted": 200,
+      "acceptance": 0.7605,
+      "brands": {
+        "postobon": 96,
+        "pepsi": 84,
+        "sprite": 20
+      },
+      "labels": {
+        "null": 59,
+        "negative": 58,
+        "positive": 53,
+        "neutral": 30
+      },
+      "kinds": {
+        "comment": 169,
+        "post": 31
+      },
+      "first_event_time": "2026-08-25T03:14:53.282Z",
+      "last_event_time": "2026-10-23T22:51:11.504Z",
+      "users": 102,
+      "user_id_min": "u_002031",
+      "user_id_max": "u_003973"
+    },
+    "instagram": {
+      "target": 200,
+      "candidates": 273,
+      "forced": 0,
+      "last_seq": 272,
+      "accepted": 200,
+      "acceptance": 0.7326,
+      "brands": {
+        "postobon": 90,
+        "pepsi": 89,
+        "sprite": 21
+      },
+      "labels": {
+        "null": 57,
+        "positive": 55,
+        "negative": 45,
+        "neutral": 43
+      },
+      "kinds": {
+        "comment": 200
+      },
+      "first_event_time": "2026-08-25T02:51:46.554Z",
+      "last_event_time": "2026-10-23T21:07:30.888Z",
+      "users": 99,
+      "user_id_min": "u_004002",
+      "user_id_max": "u_005983"
+    }
+  },
+  "rows": 600,
+  "invalid_examples": [],
+  "invalid": 0,
+  "envelopes": {
+    "how": "EventFactory(...)",
+    "make": "simulator.factory.EventFactory.make(source: 'str', seq: 'int', now: 'datetime', scenario: 'Optional[Scenario]' = None) -> 'Emission'",
+    "now_as_epoch": false,
+    "native_origin": "historical"
+  },
+  "seconds": 1.1,
+  "users": {
+    "distinct_user_ids": 308,
+    "distinct_user_hashes": 308,
+    "user_ids_with_several_hashes": 0,
+    "hashes_with_several_user_ids": 0
+  },
+  "key": {
+    "source": "local_dev",
+    "detail": "common.hmac_key.load_hmac_key(local_dev)",
+    "fingerprint": "2a16578149ff63ef",
+    "check": "none",
+    "table": null
+  },
+  "process_time": "2026-10-24T14:22:51.776Z",
+  "stage1": [
+    {
+      "file": "reddit-0000.jsonl.gz",
+      "rows": 200,
+      "sha256": "0b0f8bc7d6e4a69c4f8b1a08e3c12bcdc69a1cbcae42d526ccb5f23ebb83baeb"
+    },
+    {
+      "file": "facebook-0000.jsonl.gz",
+      "rows": 200,
+      "sha256": "6fdb4f466077bb3d332b44d60653be5ec992b376e3afd08b613bbde4f6d186ea"
+    },
+    {
+      "file": "instagram-0000.jsonl.gz",
+      "rows": 200,
+      "sha256": "6591dcbc13844110dbf58bb80cf2b61ced0b91e0959ee2679d00ffa5a7ff6e37"
+    }
+  ],
+  "generated_at": "2026-10-24T14:22:52.929Z",
+  "validation": "yes"
+}

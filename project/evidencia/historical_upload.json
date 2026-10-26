@@ -1,0 +1,24 @@
+{
+  "bucket": "ta-dev-648617469176-lake",
+  "prefix": "raw/origin=historical/",
+  "seed": 3101,
+  "digest": "939248b34361f5e0c82ff1faf0c7a19093cfeb3d8a2131eb73971a373d9b175b",
+  "files": 12102,
+  "to_upload": 12102,
+  "uploaded": 12102,
+  "skipped_same_size": 0,
+  "errors": [],
+  "n_errors": 0,
+  "stale_same_seed": [],
+  "n_stale": 0,
+  "other_objects": 0,
+  "kms_key_arn": "arn:aws:kms:us-east-1:648617469176:key/ff8fece2-53f6-44b4-ad64-983d8755fdff",
+  "dry_run": false,
+  "who": {
+    "account": "648617469176",
+    "arn": "arn:aws:iam::648617469176:root"
+  },
+  "bytes": 130868781,
+  "uploaded_at": "2026-10-24T19:25:36.766Z",
+  "seconds": 164.7
+}

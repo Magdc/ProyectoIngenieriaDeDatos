@@ -466,7 +466,7 @@ Es idempotente: **sobrescribe las particiones `dt`** en lugar de añadir.
 
 **Qué es:** eliminar registros repetidos.
 
-**Rol en TrendAnalyzer:** se hace dos veces: en Dataflow (por `event_id`, usando el `id_label` de Pub/Sub) y de nuevo en Glue al construir Trusted. Necesaria porque Pub/Sub entrega *al menos una vez* y porque el caos del simulador inyecta duplicados.
+**Rol en TrendAnalyzer:** se hace dos veces: en Dataflow (por `event_id`, usando el `id_label` de Pub/Sub) y de nuevo en Glue al construir Trusted. Necesaria porque Pub/Sub entrega *al menos una vez* y porque el caos del simulador inyecta duplicados. Desde v2.35 el job `ta-job-raw-to-trusted` (Lote 4.2) se queda con la copia de menor `process_time` (`ARCHITECTURE.md` §3.21 y §5.7).
 
 ### Dead-letter queue (DLQ)
 
@@ -645,7 +645,7 @@ Es idempotente: **sobrescribe las particiones `dt`** en lugar de añadir.
 **Rol en TrendAnalyzer:**
 
 - **Raw:** tal cual llega (ya anonimizado).
-- **Trusted:** limpio, deduplicado y validado; une stream e histórico y añade `text_clean`.
+- **Trusted:** limpio, deduplicado y validado; une stream e histórico y añade `text_clean` (el texto en minúsculas, sin emojis, URLs, menciones ni hashtags: regla `text-clean@1` de `ARCHITECTURE.md` §5.7). Lo escribe el job `ta-job-raw-to-trusted` desde v2.35 (§3.21).
 - **Curated:** modelado para análisis.
 
 ### Modelo estrella (`fact_posts`, `dim_*`)

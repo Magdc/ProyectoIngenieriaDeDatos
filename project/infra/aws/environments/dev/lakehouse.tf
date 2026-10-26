@@ -6,7 +6,8 @@
 # el workgroup de Athena ta-analytics, los roles ta-glue-role y ta-quicksight-role, el workflow
 # ta-wf-raw-to-curated con sus dos jobs (marcadores de posición hasta los lotes 4.2 y 4.3), el
 # horario de EventBridge Scheduler (DESHABILITADO: estado de ahorro) y la regla que guarda los
-# fallos de los jobs en CloudWatch Logs.
+# fallos de los jobs en CloudWatch Logs. Lote 4.2 (§3.21): ta-job-raw-to-trusted es el job real y
+# corre con 1 DPU.
 
 locals {
   lakehouse_databases = {
@@ -19,14 +20,17 @@ locals {
   lakehouse_results_path  = "athena-results/"
   lakehouse_layer_folders = ["trusted/", "curated/", "quality/"]
 
-  # Jobs en orden de ejecución. Los ajustes de var.glue_job_settings reemplazan los valores por
-  # defecto del módulo (pythonshell 3.9, 0.0625 DPU, 30 min); los nulos no cuentan.
+  # Jobs en orden de ejecución. Los ajustes de var.glue_job_settings reemplazan los valores de aquí
+  # y los por defecto del módulo (pythonshell 3.9, 0.0625 DPU, 30 min); los nulos no cuentan.
   lakehouse_job_base = [
     {
       key         = "raw_to_trusted"
       name        = "ta-job-raw-to-trusted"
-      description = "Raw → Trusted (HU-026, Lote 4.2). En el 4.1, marcador de posición."
+      description = "Raw → Trusted (HU-026, Lote 4.2): unión, deduplicación por event_id, tipos y text_clean."
       script_path = "${local.lakehouse_src}/glue_jobs/raw_to_trusted.py"
+      # Lote 4.2 (§3.21, ADR-25): 1 DPU (16 GB). Pico medido en local con Python 3.9 y pyarrow 7:
+      # ~0,6 GB con el Raw de hoy; 1 GB (0,0625 DPU) no deja margen. glue_job_settings lo cambia.
+      max_capacity = 1
       arguments = {
         "--ta_input_prefix"  = "raw/"
         "--ta_output_prefix" = "trusted/"

@@ -1,0 +1,456 @@
+{
+  "lote": "4.2",
+  "hu": [
+    "HU-026"
+  ],
+  "parts": {
+    "A": {
+      "title": "Preflight del código y de lo encendido",
+      "status": "OK",
+      "started_at": "2026-10-26T19:01:54.688411+00:00",
+      "finished_at": "2026-10-26T19:02:05.496475+00:00",
+      "steps": [
+        {
+          "id": "A1",
+          "title": "Python y dependencias",
+          "status": "OK",
+          "detail": "Python 3.11.17; boto3, botocore y pyarrow",
+          "data": {}
+        },
+        {
+          "id": "A2",
+          "title": "los 7 archivos del lote",
+          "status": "OK",
+          "detail": "7 presentes",
+          "data": {}
+        },
+        {
+          "id": "A3",
+          "title": "archivos de lotes anteriores que usa",
+          "status": "OK",
+          "detail": "13 presentes",
+          "data": {}
+        },
+        {
+          "id": "A4",
+          "title": "tables.json al día con contracts/athena/",
+          "status": "OK",
+          "detail": "ta_trusted.posts y las demás tablas = las DDL",
+          "data": {}
+        },
+        {
+          "id": "A5",
+          "title": "herramientas",
+          "status": "OK",
+          "detail": "terraform, aws, bash",
+          "data": {}
+        },
+        {
+          "id": "A6",
+          "title": "AWS: horario, corridas y job runs",
+          "status": "OK",
+          "detail": "horario ta-wf-raw-to-curated-cada-hora: DISABLED; ninguna corrida en curso; ningún job run en curso",
+          "data": {
+            "schedule": "DISABLED",
+            "running": [],
+            "job_runs": {}
+          }
+        },
+        {
+          "id": "A7",
+          "title": "GCP y local (services.status)",
+          "status": "OK",
+          "detail": "local: Docker no responde\nGCP simulador: apagado · terraform.tfvars simulator_running = False\nGCP Dataflow: ningún job activo",
+          "data": {}
+        },
+        {
+          "id": "A8",
+          "title": "caché local de Raw del 5.1 (para la parte L)",
+          "status": "OK",
+          "detail": "/root/.cache/trendanalyzer/quality/s3/ta-dev-648617469176-lake/raw/ presente",
+          "data": {}
+        }
+      ]
+    },
+    "B": {
+      "title": "Pruebas",
+      "status": "OK",
+      "started_at": "2026-10-26T19:02:05.731296+00:00",
+      "finished_at": "2026-10-26T19:02:18.879910+00:00",
+      "steps": [
+        {
+          "id": "B1",
+          "title": "pytest src/lakehouse",
+          "status": "OK",
+          "detail": "90 passed, 0 skipped, 0 failed (esperado 90 passed, 0 skipped)",
+          "data": {
+            "passed": 90,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B2",
+          "title": "pytest test_ops_validate42.py",
+          "status": "OK",
+          "detail": "30 passed, 0 skipped, 0 failed (esperado 30 passed, 0 skipped)",
+          "data": {
+            "passed": 30,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B3",
+          "title": "pytest contracts/tests",
+          "status": "OK",
+          "detail": "18 passed, 0 skipped, 0 failed (esperado 18 passed, 0 skipped)",
+          "data": {
+            "passed": 18,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B4",
+          "title": "regresión: test_ops_validate41.py (piezas reutilizadas)",
+          "status": "OK",
+          "detail": "48 passed, 0 skipped, 0 failed (esperado 48 passed, 0 skipped)",
+          "data": {
+            "passed": 48,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B5",
+          "title": "test_ops_validate24.py (prueba inestable arreglada)",
+          "status": "OK",
+          "detail": "52 passed, 0 skipped, 0 failed (esperado 52 passed, 0 skipped)",
+          "data": {
+            "passed": 52,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        }
+      ]
+    },
+    "status": {
+      "title": "Estado del lakehouse y de Trusted (solo lectura)",
+      "status": "OK",
+      "started_at": "2026-10-26T18:58:31.106166+00:00",
+      "finished_at": "2026-10-26T18:58:39.557661+00:00",
+      "steps": [
+        {
+          "id": "S1",
+          "title": "horario ta-wf-raw-to-curated-cada-hora",
+          "status": "OK",
+          "detail": "DISABLED",
+          "data": {}
+        },
+        {
+          "id": "S2",
+          "title": "corridas y job runs en curso",
+          "status": "OK",
+          "detail": "ninguna corrida; ningún job run",
+          "data": {}
+        },
+        {
+          "id": "S3",
+          "title": "Trusted y su último reporte",
+          "status": "OK",
+          "detail": "trusted/posts/: 0 objetos · sin reporte en quality/_latest/raw_to_trusted.json (el job todavía no corrió)",
+          "data": {}
+        },
+        {
+          "id": "S4",
+          "title": "horarios de prueba del 4.1",
+          "status": "OK",
+          "detail": "ninguno",
+          "data": {}
+        }
+      ]
+    },
+    "C": {
+      "title": "Terraform (script y capacidad de ta-job-raw-to-trusted)",
+      "status": "AVISO",
+      "started_at": "2026-10-26T19:07:25.600825+00:00",
+      "finished_at": "2026-10-26T19:08:42.886668+00:00",
+      "steps": [
+        {
+          "id": "C0",
+          "title": "identidad de AWS",
+          "status": "AVISO",
+          "detail": "arn:aws:iam::648617469176:root (cuenta raíz: sirve para aplicar; el job corre con ta-glue-role)",
+          "data": {}
+        },
+        {
+          "id": "C0b",
+          "title": "backend.hcl y terraform.tfvars de infra/aws",
+          "status": "OK",
+          "detail": "presentes (no se versionan)",
+          "data": {}
+        },
+        {
+          "id": "C1",
+          "title": "bash infra/validate.sh",
+          "status": "OK",
+          "detail": "\u001b[32m\u001b[1mSuccess!\u001b[0m The configuration is valid.\n\u001b[0m\n== validate: aws/environments/dev ==\n\u001b[32m\u001b[1mSuccess!\u001b[0m The configuration is valid.\n\u001b[0m\nOK",
+          "data": {}
+        },
+        {
+          "id": "C2a",
+          "title": "terraform init",
+          "status": "OK",
+          "detail": "If you ever set or change modules or backend configuration for Terraform,\nrerun this command to reinitialize your working directory. If you forget, other\ncommands will detect it and remind you to do so if necessary.\u001b[0m",
+          "data": {}
+        },
+        {
+          "id": "C2",
+          "title": "plan (-target=module.glue_workflow)",
+          "status": "OK",
+          "detail": "0 a crear, 2 a cambiar, 0 a destruir, 0 a reemplazar (esperado: el script y el job de raw_to_trusted)\nmodule.glue_workflow.aws_glue_job.this[\"raw_to_trusted\"]:\n  description: 'Raw → Trusted (HU-026, Lote 4.2). En el 4.1, marcador de posición.' → 'Raw → Trusted (HU-026, Lote 4.2): unión, deduplicación por event_id, tipos y text_clean.'\n  max_capacity: 0.0625 → 1\nmodule.glue_workflow.aws_s3_object.script[\"raw_to_trusted\"]:\n  source_hash: '2b7b4d19039f7feea5691ddd58f9f063' → '7f2ff8ce3af851ea7982f1e9e2e12ebb'\n  version_id: '' → (se sabrá al aplicar)",
+          "data": {
+            "create": [],
+            "update": [
+              "module.glue_workflow.aws_glue_job.this[\"raw_to_trusted\"]",
+              "module.glue_workflow.aws_s3_object.script[\"raw_to_trusted\"]"
+            ],
+            "delete": [],
+            "replace": [],
+            "diffs": {
+              "module.glue_workflow.aws_glue_job.this[\"raw_to_trusted\"]": [
+                "description: 'Raw → Trusted (HU-026, Lote 4.2). En el 4.1, marcador de posición.' → 'Raw → Trusted (HU-026, Lote 4.2): unión, deduplicación por event_id, tipos y text_clean.'",
+                "max_capacity: 0.0625 → 1"
+              ],
+              "module.glue_workflow.aws_s3_object.script[\"raw_to_trusted\"]": [
+                "source_hash: '2b7b4d19039f7feea5691ddd58f9f063' → '7f2ff8ce3af851ea7982f1e9e2e12ebb'",
+                "version_id: '' → (se sabrá al aplicar)"
+              ]
+            }
+          }
+        },
+        {
+          "id": "C3",
+          "title": "apply",
+          "status": "AVISO",
+          "detail": "sin --apply: no se aplicó (repita con --apply)",
+          "data": {}
+        },
+        {
+          "id": "C3b",
+          "title": "plan tras aplicar (sin deriva)",
+          "status": "OMITIDO",
+          "detail": "pendiente del apply",
+          "data": {}
+        }
+      ]
+    },
+    "L": {
+      "title": "El job en local contra la caché de Raw (sin nube)",
+      "status": "OK",
+      "started_at": "2026-10-26T19:02:19.081246+00:00",
+      "finished_at": "2026-10-26T19:07:25.397723+00:00",
+      "steps": [
+        {
+          "id": "L0",
+          "title": "caché local de Raw",
+          "status": "OK",
+          "detail": "lee /root/.cache/trendanalyzer/quality/s3/ta-dev-648617469176-lake/raw/ · escribe en /root/.cache/trendanalyzer/quality/raw_to_trusted_local (fuera del repo)",
+          "data": {}
+        },
+        {
+          "id": "L1",
+          "title": "corrida local (conteos)",
+          "status": "OK",
+          "detail": "leídas 221637 · centinelas 6 · duplicadas 2 · sin NLP 65263 · escritas 221629 en 543 particiones · 26.7 s · pico 811.1 MB",
+          "data": {
+            "done": {
+              "bytes_written": 65292328,
+              "conciliation_ok": true,
+              "dry_run": false,
+              "dt_max": "2026-10-24",
+              "dt_min": "2026-04-27",
+              "duplicate_groups_with_other_differences": 1,
+              "duplicates_removed": 2,
+              "duration_s": 26.7,
+              "environment": {
+                "boto3": "1.43.118",
+                "botocore": "1.43.118",
+                "pyarrow": "25.0.1",
+                "python": "3.11.17"
+              },
+              "event": "glue_job_done",
+              "input_by_origin": {
+                "historical": {
+                  "bytes": 130868781,
+                  "objects": 12102,
+                  "rows": 50000
+                },
+                "stream": {
+                  "bytes": 51865466,
+                  "objects": 1155,
+                  "rows": 171637
+                }
+              },
+              "input_objects": 13257,
+              "job": "ta-job-raw-to-trusted",
+              "lote": "4.2",
+              "nlp_missing": 65263,
+              "nlp_missing_since_nlp_since": 0,
+              "objects_deleted": 0,
+              "partitions": 543,
+              "partitions_changed": 0,
+              "peak_rss_mb": 811.1,
+              "read_seconds": 9.7,
+              "rejected": 0,
+              "report": "quality/2026-10-26/raw_to_trusted/manual-20261026T190219Z-935c7f97.json",
+              "rows_read": 221637,
+              "rows_written": 221629,
+              "rows_written_by_origin": {
+                "historical": 50000,
+                "stream": 171629
+              },
+              "run_id": "manual-20261026T190219Z-935c7f97",
+              "sentinels": 6,
+              "skipped_objects": 0,
+              "text_clean_empty": 0,
+              "time": "2026-10-26T19:02:45.942Z",
+              "transform_seconds": 13.6,
+              "version": "raw-to-trusted@1.0",
+              "workflow_run_id": null
+            }
+          }
+        },
+        {
+          "id": "L2",
+          "title": "segunda corrida local (idempotencia)",
+          "status": "OK",
+          "detail": "particiones cambiadas 0 · borradas 0 · escritas 221629",
+          "data": {
+            "done": {
+              "bytes_written": 65292328,
+              "conciliation_ok": true,
+              "dry_run": false,
+              "dt_max": "2026-10-24",
+              "dt_min": "2026-04-27",
+              "duplicate_groups_with_other_differences": 1,
+              "duplicates_removed": 2,
+              "duration_s": 24.8,
+              "environment": {
+                "boto3": "1.43.118",
+                "botocore": "1.43.118",
+                "pyarrow": "25.0.1",
+                "python": "3.11.17"
+              },
+              "event": "glue_job_done",
+              "input_by_origin": {
+                "historical": {
+                  "bytes": 130868781,
+                  "objects": 12102,
+                  "rows": 50000
+                },
+                "stream": {
+                  "bytes": 51865466,
+                  "objects": 1155,
+                  "rows": 171637
+                }
+              },
+              "input_objects": 13257,
+              "job": "ta-job-raw-to-trusted",
+              "lote": "4.2",
+              "nlp_missing": 65263,
+              "nlp_missing_since_nlp_since": 0,
+              "objects_deleted": 0,
+              "partitions": 543,
+              "partitions_changed": 0,
+              "peak_rss_mb": 779.7,
+              "read_seconds": 10.5,
+              "rejected": 0,
+              "report": "quality/2026-10-26/raw_to_trusted/manual-20261026T190246Z-449904d9.json",
+              "rows_read": 221637,
+              "rows_written": 221629,
+              "rows_written_by_origin": {
+                "historical": 50000,
+                "stream": 171629
+              },
+              "run_id": "manual-20261026T190246Z-449904d9",
+              "sentinels": 6,
+              "skipped_objects": 0,
+              "text_clean_empty": 0,
+              "time": "2026-10-26T19:03:10.879Z",
+              "transform_seconds": 13.6,
+              "version": "raw-to-trusted@1.0",
+              "workflow_run_id": null
+            }
+          }
+        },
+        {
+          "id": "L3",
+          "title": "profiling del Trusted local (5.1)",
+          "status": "OK",
+          "detail": "reglas {'cumple': 54} · anomalías {'error': 0, 'warning': 1, 'info': 14}",
+          "data": {
+            "summary": {
+              "rows": {
+                "*/*": 221629,
+                "*/facebook": 73890,
+                "*/instagram": 73946,
+                "*/reddit": 73793,
+                "historical/*": 50000,
+                "historical/facebook": 16667,
+                "historical/instagram": 16666,
+                "historical/reddit": 16667,
+                "stream/*": 171629,
+                "stream/facebook": 57223,
+                "stream/instagram": 57280,
+                "stream/reddit": 57126
+              },
+              "files": 543,
+              "bytes": 65292328,
+              "kpi": {
+                "*": {
+                  "completitud": 1.0,
+                  "unicidad": 1.0,
+                  "duplicados": 0.0,
+                  "anonimizacion": 1.0
+                },
+                "historical": {
+                  "completitud": 1.0,
+                  "unicidad": 1.0,
+                  "duplicados": 0.0,
+                  "anonimizacion": 1.0
+                },
+                "stream": {
+                  "completitud": 1.0,
+                  "unicidad": 1.0,
+                  "duplicados": 0.0,
+                  "anonimizacion": 1.0
+                }
+              },
+              "anomalies": {
+                "error": 0,
+                "warning": 1,
+                "info": 14
+              },
+              "rules": {
+                "cumple": 54
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "updated_at": "2026-10-26T19:08:42.886785+00:00"
+}

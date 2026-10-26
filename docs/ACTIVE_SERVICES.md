@@ -71,7 +71,8 @@ El primero va por la mañana; el segundo, al terminar el día. Al cerrar la sema
 | AWS | Rol `ta-gcp-exporter-role` y objetos de `raw/origin=stream/` (Lote 3.2) | Rol gratis; objetos, centavos | **Nunca** |
 | GCP | Cloud Build (imagen `gcs-to-s3`, Lote 3.2) | Centavos por construcción | Termina solo |
 | AWS | Catálogo de Glue (`ta_raw`, `ta_trusted`, `ta_curated`), workgroup `ta-analytics`, roles, regla de fallos y grupos de logs (Lote 4.1) | Prácticamente 0 (el catálogo entra en el millón gratuito de Glue; logs, centavos) | **Nunca** |
-| AWS | Horario `ta-wf-raw-to-curated-cada-hora` (EventBridge Scheduler) y el workflow de Glue que arranca (Lote 4.1) | **Deshabilitado (por defecto): 0.** Encendido con los marcadores de posición del 4.1: ≈ 0,0009 USD por corrida, **≈ 0,022 USD/día** (2 jobs Python shell de 0,0625 DPU, mínimo 1 min cada uno); con los jobs reales de 4.2/4.3, más | Se apaga con `validate_4_1.py off` (2.8). Encenderlo lo decide el equipo |
+| AWS | Horario `ta-wf-raw-to-curated-cada-hora` (EventBridge Scheduler) y el workflow de Glue que arranca (Lote 4.1) | **Deshabilitado (por defecto): 0.** Encendido con los marcadores de posición del 4.1: ≈ 0,0009 USD por corrida, **≈ 0,022 USD/día** (2 jobs Python shell de 0,0625 DPU, mínimo 1 min cada uno); con los jobs reales de 4.2/4.3, más (fila siguiente) | Se apaga con `validate_4_1.py off` o `validate_4_2.py off` (2.8). Encenderlo lo decide el equipo |
+| AWS | Job `ta-job-raw-to-trusted` (Lote 4.2, 1 DPU): cada corrida reconstruye `trusted/posts/` | Solo cuando corre: Glue 0,44 USD/DPU-h por segundo, mínimo 1 min (≥ 0,0073 USD) + S3 ≈ 0,008 USD (13.257 GET y ~545 PUT; KMS con *bucket key*, despreciable) → **≈ 0,015–0,023 USD por corrida** (*estimado*; `validate_4_2.py rerun` F8 lo mide). Con el horario encendido cada hora, **≈ 0,4–0,55 USD/día (≈ 11–17 USD/mes)**. La validación del 4.2 corre el job dos veces (≈ 0,05 USD con Athena y los conteos de S3). Trusted guardado: ~67 MB, centavos al mes | Termina solo (~1–3 min). Si quedó corriendo: `validate_4_2.py off` |
 | AWS | Consultas de Athena en `ta-analytics` | 5 USD/TB escaneado, mínimo 10 MB por consulta (≈ 0,00005 USD); límite de 1 GiB por consulta | Termina sola |
 | AWS → local | Profiling de calidad (Lote 5.1): `profile_data.py sync` copia `raw/` del lake a `~/.cache/trendanalyzer/quality` (solo lectura) | Primera vez: ~13.300 GET y unos LIST (≈ 0,01 USD con las llamadas a KMS) y ~0,18 GB de salida de AWS (dentro de los 100 GB gratuitos al mes; sin comprobar en la factura). Después solo LIST. No deja nada encendido | No hace falta; `python project/scripts/validate_5_1.py clean` borra la caché local (~0,25 GB) |
 
@@ -335,7 +336,7 @@ Sin el stream encendido no hay nada nuevo en `enriched/`: con el Scheduler encen
 
 ### 2.8 Lakehouse de AWS: horario del workflow de Glue (Lote 4.1)
 
-El horario `ta-wf-raw-to-curated-cada-hora` (EventBridge Scheduler, `rate(1 hour)`) arranca el workflow `ta-wf-raw-to-curated` (Raw → Trusted → Curated). Se crea **deshabilitado** y Terraform no toca ese estado. Mientras los jobs sean los marcadores de posición del 4.1 no producen Trusted ni Curated: encenderlo solo sirve para probar. Desde la raíz del repo, en WSL con el perfil de AWS:
+El horario `ta-wf-raw-to-curated-cada-hora` (EventBridge Scheduler, `rate(1 hour)`) arranca el workflow `ta-wf-raw-to-curated` (Raw → Trusted → Curated). Se crea **deshabilitado** y Terraform no toca ese estado. Mientras los jobs sean los marcadores de posición del 4.1 no producen Trusted ni Curated: encenderlo solo sirve para probar. *(Lote 4.2)* El primer job ya es real: cada corrida reconstruye Trusted entero con 1 DPU y cuesta ≈ 0,015–0,023 USD (≈ 11–17 USD/mes con el horario cada hora; ver §0): no lo encienda sin que el equipo lo decida. Una corrida suelta del job, sin el workflow: `aws glue start-job-run --job-name ta-job-raw-to-trusted --region us-east-1`; el estado de Trusted y su último reporte: `python project/scripts/validate_4_2.py status`. Desde la raíz del repo, en WSL con el perfil de AWS:
 
 ```
 python project/scripts/validate_4_1.py status
@@ -355,7 +356,7 @@ Una sola corrida a mano, sin encender el horario:
 aws glue start-workflow-run --name ta-wf-raw-to-curated --region us-east-1
 ```
 
-Apagar y confirmar (deshabilita el horario, detiene corridas y job runs, borra los horarios de prueba y las marcas `_ta_placeholder/`):
+Apagar y confirmar (deshabilita el horario, detiene corridas y job runs, borra los horarios de prueba y las marcas `_ta_placeholder/`; `validate_4_2.py off` hace lo mismo):
 
 ```
 python project/scripts/validate_4_1.py off

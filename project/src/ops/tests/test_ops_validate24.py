@@ -520,7 +520,9 @@ def test_part_template(tmp_path):
 
 def test_default_run_muestra_la_salida_en_vivo(tmp_path):
     lines = []
-    proc = v.default_run([sys.executable, "-c", "print('uno'); import sys; print('dos', file=sys.stderr)"],
+    # -u: sin búfer en el hijo. Con stdout a una tubería, Python guarda «uno» hasta salir y «dos» (stderr,
+    # con búfer de línea) llegaba antes: la prueba fallaba con ['dos', 'uno'] según el entorno (v2.35).
+    proc = v.default_run([sys.executable, "-u", "-c", "print('uno'); import sys; print('dos', file=sys.stderr)"],
                          cwd=tmp_path, timeout=30, stream=lines.append)
     assert proc.returncode == 0 and lines == ["uno", "dos"] and proc.stdout == "uno\ndos\n"
 

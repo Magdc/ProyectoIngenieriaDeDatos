@@ -1,2 +1,4 @@
 script.py
 .local-s3/
+__pycache__/
+*.pyc

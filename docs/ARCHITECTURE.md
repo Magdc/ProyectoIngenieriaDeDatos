@@ -1,6 +1,6 @@
 # TrendAnalyzer · ARCHITECTURE
 
-> Documento maestro de arquitectura y contratos. **Versión vigente: 2.33.**
+> Documento maestro de arquitectura y contratos. **Versión vigente: 2.34.**
 > Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md) · Plan por fases, trazabilidad HU y estado: [`PLAN.md`](PLAN.md) · Historias de usuario: `HU.md` · Visión general: `README.md`.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 
@@ -76,7 +76,7 @@ El README menciona **Firestore, Cloud SQL, Neptune y Dataplex**, que **no están
 
 ### 1.4 Historial de cambios
 
-Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.33), la más reciente primero. Este documento describe siempre la versión vigente (2.33).
+Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.34), la más reciente primero. Este documento describe siempre la versión vigente (2.34).
 
 ---
 
@@ -1155,7 +1155,7 @@ Cada parte reemplaza su entrada y conserva las demás. `canaries` es el registro
 
 ### 3.19 Lakehouse de AWS: catálogo, Athena, workflow de Glue y horario (Lote 4.1)
 
-> Entregado en **v2.32** (HU-007, HU-029); validación en `docs/validation/validation-4-1.md` (automática con `scripts/validate_4_1.py`, partes A–F, `status`, `off` y `on`). Rutas relativas a `project/`. Amplía lo adelantado por el Lote 3.1 (bucket, llave y `ta-historical-loader`, §3.17) sin modificar `lake.tf` ni `exporter.tf`. `contracts/` solo cambia un comentario de `athena/posts.sql`; `schema_version` sigue en `"1.0"`. ADR-23.
+> Entregado en **v2.32** y **cerrado en v2.34** ✅ (HU-007, HU-029): validado por el maestro el 26-oct-2026 con `validate_4_1.py`: A OK; B 50 + 48 + 18 + 27 sin omitidas; C 40 creados y sin deriva; D 9 OK; E 7 OK (histórico 50.000, stream 171.637 conciliado con S3, 12,7 MB y 72 s de motor); F 11 OK (jobs de 16 y 11 s en orden, fallo provocado registrado en `/aws/events/ta-glue-job-fallos`, horario de prueba del Scheduler); `off` y `status` OK, horario `DISABLED`. Validación en `docs/validation/validation-4-1.md` (automática con `scripts/validate_4_1.py`, partes A–F, `status`, `off` y `on`). Rutas relativas a `project/`. Amplía lo adelantado por el Lote 3.1 (bucket, llave y `ta-historical-loader`, §3.17) sin modificar `lake.tf` ni `exporter.tf`. `contracts/` solo cambia un comentario de `athena/posts.sql`; `schema_version` sigue en `"1.0"`. ADR-23.
 
 **Flujo.**
 
@@ -1359,7 +1359,7 @@ Opciones globales: `--yes` (no pide confirmación), `--aws-profile`, `--project`
 
 ### 3.20 Profiling de Raw y Trusted (Lote 5.1)
 
-> Entregado en **v2.33** (HU-031, equivale a US-14), **🟨**: Raw perfilado con datos reales; el profiling real de Trusted queda pendiente del Lote 4.2 (Trusted todavía no existe). Validación en `docs/validation/validation-5-1.md` (automática con `scripts/validate_5_1.py`, partes A–D). Rutas relativas a `project/`. No toca `contracts/` ni `schema_version` y **no escribe en la nube**: solo lee S3 con el perfil de AWS. ADR-24. *(§3.19 es del Lote 4.1.)*
+> Entregado en **v2.33** (HU-031, equivale a US-14) y validado en v2.34 sobre `main` (`validate_5_1.py all`, código 0; D1 en AVISO hasta que exista Trusted), **🟨**: Raw perfilado con datos reales; el profiling real de Trusted queda pendiente del Lote 4.2 (Trusted todavía no existe). Validación en `docs/validation/validation-5-1.md` (automática con `scripts/validate_5_1.py`, partes A–D). Rutas relativas a `project/`. No toca `contracts/` ni `schema_version` y **no escribe en la nube**: solo lee S3 con el perfil de AWS. ADR-24. *(§3.19 es del Lote 4.1.)*
 
 **Flujo.**
 
@@ -2345,7 +2345,7 @@ infra/
 │
 ├── docs/
 │   ├── ARCHITECTURE.md                    <- este archivo: arquitectura y contratos (versión vigente)
-│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.33)
+│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.34)
 │   ├── PLAN.md                            <- fases y lotes, matriz HU y estado del proyecto
 │   ├── HU.md                              <- historias de usuario (HU-001 a HU-048)
 │   ├── ACTIVE_SERVICES.md                 <- encender, comprobar y apagar lo que cobra (on.py, off.py, status.py)

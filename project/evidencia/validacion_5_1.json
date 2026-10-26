@@ -7,8 +7,8 @@
     "A": {
       "title": "Preflight del código",
       "status": "OK",
-      "started_at": "2026-10-26T15:39:56.390922+00:00",
-      "finished_at": "2026-10-26T15:40:02.966917+00:00",
+      "started_at": "2026-10-26T16:09:24.610049+00:00",
+      "finished_at": "2026-10-26T16:09:30.200148+00:00",
       "steps": [
         {
           "id": "A1",
@@ -58,11 +58,11 @@
           "id": "A7",
           "title": "servicios que cobran (ops.services.status)",
           "status": "OK",
-          "detail": "local: Docker no responde\nGCP simulador: apagado · terraform.tfvars simulator_running = None\nGCP Dataflow: ningún job activo",
+          "detail": "local: Docker no responde\nGCP simulador: apagado · terraform.tfvars simulator_running = False\nGCP Dataflow: ningún job activo",
           "data": {
             "lines": [
               "local: Docker no responde",
-              "GCP simulador: apagado · terraform.tfvars simulator_running = None",
+              "GCP simulador: apagado · terraform.tfvars simulator_running = False",
               "GCP Dataflow: ningún job activo"
             ]
           }
@@ -72,8 +72,8 @@
     "B": {
       "title": "Pruebas",
       "status": "OK",
-      "started_at": "2026-10-26T15:40:02.970710+00:00",
-      "finished_at": "2026-10-26T15:40:12.496703+00:00",
+      "started_at": "2026-10-26T16:09:30.368688+00:00",
+      "finished_at": "2026-10-26T16:09:39.187007+00:00",
       "steps": [
         {
           "id": "B1",
@@ -297,5 +297,5 @@
       ]
     }
   },
-  "updated_at": "2026-10-26T15:47:38.651182+00:00"
+  "updated_at": "2026-10-26T16:09:39.187082+00:00"
 }

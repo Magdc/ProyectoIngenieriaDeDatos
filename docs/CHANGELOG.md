@@ -1,10 +1,24 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.33**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.34**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.34 · desde v2.33
+
+**Lote que lo motiva:** Lote 4.1 (HU-007, HU-029) · cierre; Lote 5.1 (HU-031) · validación de Raw
+
+| Área | Cambio |
+|---|---|
+| Trabajo en paralelo | Los Lotes 4.1 y 5.1 se hicieron a la vez: el 4.1 en `main` (entrega v2.32) y el 5.1 en la rama `lote-5.1` (entrega v2.33, §3.20 y ADR-24), fusionada en `main`. Por eso el cierre del 4.1, que v2.32 anunciaba como v2.33, es esta v2.34. Los choques de texto (cabeceras, §0, §5.1, §5.7, §5.11, §5.12, §6, §9 y este archivo) se resolvieron conservando lo de los dos lotes. |
+| Cierre del Lote 4.1 | Validado con `docs/validation/validation-4-1.md`: A OK; B 50 + 48 + 18 + 27 sin omitidas; C en AVISO solo por la cuenta raíz (40 creados, 0 cambiados, 0 destruidos, sin deriva, outputs de §5.9); D 9 OK; E 7 OK; F 11 OK; `off` y `status` OK. Correcciones durante la validación (detalle en v2.32): D6 era el simulador de IAM, F6 la liberación tardía del cupo del workflow, y el disparador `ON_DEMAND` corría el workflow al crearse. |
+| Cifras del 4.1 | Athena: histórico 50.000 filas (16.667 / 16.666 / 16.667) y stream 171.637, igual a los pies de los 1.155 Parquet; E1 escanea 12,7 MB en 72,4 s de motor (la proyección enumera ~43.000 particiones). Glue: jobs de marcador de 16–19 s y 11 s; ≈ 0,00092 USD por corrida, ≈ 0,022 USD/día con el horario encendido. Queda en estado de ahorro: horario `DISABLED`. |
+| Validación del Lote 5.1 | `validate_5_1.py all` con código 0 en la rama (A 7 OK; B 165 + 24 + 18 + 23; C 9 OK, 221.637 filas en 177 s; D en AVISO solo por D1, sin Trusted) y A y B en OK sobre `main` tras la fusión. Sigue 🟨: el profiling real de Trusted espera al 4.2. |
+| Fase 4 | Sigue 🟨: faltan 4.2, 4.3 y 4.4. El "Listo cuando" (`SELECT` sobre `ta_curated.fact_posts`) es del 4.3. |
+| Documento | §3.19 y §3.20 con la nota de validación; PLAN.md §3 (4.1 ✅, Fase 4 🟨, 5.1 🟨 validado en Raw, Fase 5 🟨); HU.md (HU-007 y HU-029 ✅, estado de HU-031); tablas de cierre en las dos guías; cabeceras a 2.34. |
+| Abierto, sin bloquear | **A confirmar por el equipo:** el límite de 1 GiB de `ta-analytics` y cuándo encender el horario (hoy con marcadores de posición). **Para el 4.2:** qué hacer con las 65.264 filas sin NLP y los 6 centinelas `ta-verify@2.1` (§3.19.1 y §3.20). **Para el 5.2:** correr por primera vez en Athena los predicados SQL de las reglas de Raw de §5.10. `ta-quicksight-role` frente a QuickSight real (Lote 6.1). **Repositorio:** `project/evidencia/tfplan_*` está versionado (las guías dicen que no) y los planes de GCP llevan un correo personal; `project/.local-lake/` está versionado (§3.13 dice que no); `project/project/src/streaming/` tiene copias idénticas de `nlp.py` y `test_nlp_local.py`. `tfplan_4_1` no se versionó. **Prueba inestable (de antes de estos lotes):** `src/ops/tests/test_ops_validate24.py::test_default_run_muestra_la_salida_en_vivo` falla a veces por el orden de dos líneas (`['dos', 'uno']`). |
 
 ## v2.33 · desde v2.32
 

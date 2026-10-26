@@ -252,9 +252,21 @@ existan 4.2 y 4.3): `python project/scripts/validate_4_1.py on` (pide confirmaci
 
 ## Cierre
 
-*Pendiente de validar.* Al terminar, anotar aquí por parte el resultado y las cifras reales (tiempo y bytes
-de E1, filas de E2–E3, duraciones de los jobs en F4 y F8, costo de F11) y llevarlas a `CHANGELOG.md`
-(v2.33) y `ARCHITECTURE.md` §3.19.
+**Cerrado en v2.34** (26-oct-2026, WSL, perfil `default` de la cuenta 648617469176). Lo corrió el maestro
+del lote; las correcciones de D6 y F6 están en `CHANGELOG.md` v2.32.
+
+| Parte | Resultado |
+|---|---|
+| A · Preflight | OK (8 OK); A6 «NO_EXISTE» antes del apply |
+| B · Pruebas | OK: B1 50 sin omitidas, B2 48, B3 18, B4 27 |
+| C · Terraform | AVISO solo por C0 (cuenta raíz): C2 40 a crear, 0 a cambiar, 0 a destruir; C3 «Apply complete! Resources: 40 added»; C3b sin deriva; C4 los outputs de §5.9 |
+| D · Catálogo e IAM | OK (9 OK): 11 tablas = DDL, workgroup forzado con 1 GiB, D6 20/20, D7 13/13, D8 3/3, roles de 3.1 y 3.2 intactos |
+| E · Athena | OK (7 OK): histórico 50.000 (16.667 / 16.666 / 16.667); stream 171.637 = pies de los 1.155 Parquet; 12,7 MB escaneados y 72,4 s de motor en E1; las otras 10 tablas en 0 filas |
+| F · Workflow | OK (11 OK): F4 en orden (16 s y 11 s); F6 fallo provocado al intento 2 y el segundo job no corrió; F7 evento `FAILED` en `/aws/events/ta-glue-job-fallos`; F8 corrida creada por el horario de prueba; F11 ≈ 0,00092 USD por corrida |
+| `off` / `status` | OK: horario `DISABLED`, nada en curso, sin marcas ni horarios de prueba |
+
+Nota: el primer `apply` corrió una vez el workflow (disparador `ON_DEMAND` con `enabled = true`); se
+corrigió en el módulo `glue_workflow` sin cambios en el plan. Cifras también en `ARCHITECTURE.md` §3.19.
 
 ## Problemas frecuentes
 

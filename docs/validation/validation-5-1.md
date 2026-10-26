@@ -227,7 +227,11 @@ corrida sobre un commit de `main`.
 | D · Trusted | AVISO solo por D1 (Trusted no existe): Trusted simulado de 543 archivos y 221.635 filas, contrato y DQ-58 OK; los 4 defectos detectados |
 | Apagado | Nada que apagar |
 
-Cifras y hallazgos en `ARCHITECTURE.md` §3.20 y `CHANGELOG.md` (v2.33).
+**Validación del maestro (v2.34):** `validate_5_1.py all` con código 0 en la rama del lote (A 7 OK, B 165 +
+24 + 18 + 23, C 9 OK con 221.637 filas en 177 s, D en AVISO solo por D1) y, tras fusionar en `main`, A y B
+de nuevo en OK. Sigue 🟨 hasta el profiling real de Trusted (pasos de arriba, tras el Lote 4.2).
+
+Cifras y hallazgos en `ARCHITECTURE.md` §3.20 y `CHANGELOG.md` (v2.33 y v2.34).
 
 ## Problemas frecuentes
 

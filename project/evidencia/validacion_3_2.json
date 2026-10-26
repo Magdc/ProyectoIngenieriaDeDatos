@@ -175,10 +175,10 @@
           "id": "C0c",
           "title": "sa-exporter y enlace con AWS",
           "status": "OK",
-          "detail": "uniqueId 101053368441381590999 → infra/aws/environments/dev/gcp_exporter.auto.tfvars; cuenta de gcloud: franklinalejo1042005@gmail.com",
+          "detail": "uniqueId 101053368441381590999 → infra/aws/environments/dev/gcp_exporter.auto.tfvars; cuenta de gcloud: <correo-del-desarrollador>",
           "data": {
             "unique_id": "101053368441381590999",
-            "account": "franklinalejo1042005@gmail.com"
+            "account": "<correo-del-desarrollador>"
           }
         },
         {
@@ -235,7 +235,7 @@
           "id": "C4b",
           "title": "valores de AWS para el job",
           "status": "OK",
-          "detail": "infra/gcp/environments/dev/aws_exporter.auto.tfvars con el rol, el bucket, la llave y exporter_oidc_token_creators = user:franklinalejo1042005@gmail.com",
+          "detail": "infra/gcp/environments/dev/aws_exporter.auto.tfvars con el rol, el bucket, la llave y exporter_oidc_token_creators = user:<correo-del-desarrollador>",
           "data": {}
         },
         {
@@ -266,7 +266,7 @@
           "detail": "2 a crear, 0 a cambiar, 1 a destruir, 0 a reemplazar\nesperado: crear exporter_lake_enriched y el permiso de token; destruir exporter_lake_read",
           "data": {
             "create": [
-              "google_service_account_iam_member.exporter_oidc_token_creator[\"user:franklinalejo1042005@gmail.com\"]",
+              "google_service_account_iam_member.exporter_oidc_token_creator[\"user:<correo-del-desarrollador>\"]",
               "google_storage_bucket_iam_member.exporter_lake_enriched"
             ],
             "update": [],

@@ -1,0 +1,52 @@
+{
+  "status": "OK",
+  "gcs_enriched": 1155,
+  "s3_stream": 20,
+  "cursor": "2026-10-21T22:35:39.094000+00:00",
+  "s3_by_source": {
+    "facebook": {
+      "objects": 7
+    },
+    "instagram": {
+      "objects": 6
+    },
+    "reddit": {
+      "objects": 7
+    }
+  },
+  "checks": [
+    {
+      "id": "V1",
+      "what": "lo exportado según el watermark está en S3",
+      "status": "OK",
+      "detail": "20 de 20 con el mismo tamaño",
+      "expected": 20,
+      "missing": [],
+      "size_mismatch": []
+    },
+    {
+      "id": "V2",
+      "what": "objetos posteriores al cursor",
+      "status": "OK",
+      "detail": "1135 en GCS después del cursor (0 ya en S3); salen en la próxima corrida",
+      "after_cursor": 1135
+    },
+    {
+      "id": "V3",
+      "what": "S3 solo tiene claves de enriched/ con su formato",
+      "status": "OK",
+      "detail": "20 objetos en raw/origin=stream/; sin par en GCS: 0; formato distinto: 0",
+      "extra": [],
+      "bad_format": []
+    },
+    {
+      "id": "V4",
+      "what": "SSE-KMS y CRC32C (muestra)",
+      "status": "OK",
+      "detail": "20 de 20 con SSE-KMS, llave del lake y CRC32C igual a GCS",
+      "problems": [],
+      "sample": 20
+    }
+  ],
+  "state_key": "export-state/_validation/watermark-d.json"
+}

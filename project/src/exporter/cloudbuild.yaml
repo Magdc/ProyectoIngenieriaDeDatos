@@ -1,0 +1,17 @@
+# Lote 3.2: pruebas y publicación de la imagen del exportador (gcs-to-s3).
+# La lanza scripts/build_exporter_image.sh con su contexto temporal:
+#   gcloud builds submit <ctx> --config <ctx>/cloudbuild.yaml --substitutions _IMAGE=…,_TAG=…
+steps:
+  - id: pruebas
+    name: gcr.io/cloud-builders/docker
+    args: ["build", "--target", "test", "-t", "gcs-to-s3-test", "."]
+  - id: imagen
+    name: gcr.io/cloud-builders/docker
+    args: ["build", "--target", "runtime", "-t", "${_IMAGE}:${_TAG}", "-t", "${_IMAGE}:latest", "."]
+images:
+  - "${_IMAGE}:${_TAG}"
+  - "${_IMAGE}:latest"
+substitutions:
+  _IMAGE: ""
+  _TAG: ""
+timeout: 900s

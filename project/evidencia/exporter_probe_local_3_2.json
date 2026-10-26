@@ -1,0 +1,84 @@
+{
+  "ok": true,
+  "passed": 7,
+  "total": 7,
+  "results": [
+    {
+      "id": "A1",
+      "what": "AssumeRoleWithWebIdentity",
+      "expect": "permitido",
+      "got": "permitido",
+      "ok": true,
+      "detail": "arn:aws:sts::648617469176:assumed-role/ta-gcp-exporter-role/ta-gcs-to-s3-20261024T233706Z-f849a698"
+    },
+    {
+      "id": "A2",
+      "what": "ListBucket raw/origin=stream/",
+      "expect": "permitido",
+      "got": "permitido",
+      "ok": true,
+      "detail": "0"
+    },
+    {
+      "id": "A3",
+      "what": "ListBucket raw/origin=historical/",
+      "expect": "denegado",
+      "got": "denegado",
+      "ok": true,
+      "detail": "AccessDenied: An error occurred (AccessDenied) when calling the ListObjectsV2 operation: User: arn:aws:sts::648617469176:assumed-role/ta-gcp-exporter-role/ta-gcs-to-s3-20261024T233706Z-f849a698 is not authorized to perform: s3:ListBucket on resource: \"arn:aws:s3:::ta-dev-648617469176-lake\" because no identity-bas"
+    },
+    {
+      "id": "A4",
+      "what": "ListBucket trusted/",
+      "expect": "denegado",
+      "got": "denegado",
+      "ok": true,
+      "detail": "AccessDenied: An error occurred (AccessDenied) when calling the ListObjectsV2 operation: User: arn:aws:sts::648617469176:assumed-role/ta-gcp-exporter-role/ta-gcs-to-s3-20261024T233706Z-f849a698 is not authorized to perform: s3:ListBucket on resource: \"arn:aws:s3:::ta-dev-648617469176-lake\" because no identity-bas"
+    },
+    {
+      "id": "A5",
+      "what": "PutObject raw/origin=historical/",
+      "expect": "denegado",
+      "got": "denegado",
+      "ok": true,
+      "detail": "AccessDenied: An error occurred (AccessDenied) when calling the PutObject operation: User: arn:aws:sts::648617469176:assumed-role/ta-gcp-exporter-role/ta-gcs-to-s3-20261024T233706Z-f849a698 is not authorized to perform: s3:PutObject on resource: \"arn:aws:s3:::ta-dev-648617469176-lake/raw/origin=historical/_probe/"
+    },
+    {
+      "id": "A6",
+      "what": "GetObject de un objeto de raw/origin=stream/",
+      "expect": "denegado",
+      "got": "sin objetos",
+      "ok": true,
+      "detail": "raw/origin=stream/ todavía está vacío: no se pudo probar la lectura en vivo (la cubre C5b); una clave inexistente respondió error NoSuchKey"
+    },
+    {
+      "id": "A7",
+      "what": "DeleteObject raw/origin=stream/",
+      "expect": "denegado",
+      "got": "denegado",
+      "ok": true,
+      "detail": "AccessDenied: An error occurred (AccessDenied) when calling the DeleteObject operation: User: arn:aws:sts::648617469176:assumed-role/ta-gcp-exporter-role/ta-gcs-to-s3-20261024T233706Z-f849a698 is not authorized to perform: s3:DeleteObject on resource: \"arn:aws:s3:::ta-dev-648617469176-lake/raw/origin=stream/_prob"
+    }
+  ],
+  "run_id": "20261024T233706Z-f849a698",
+  "aws": {
+    "mode": "role",
+    "token_source": "impersonate",
+    "claims": {
+      "iss": "https://accounts.google.com",
+      "aud": "ta-gcp-exporter-role",
+      "azp": "101053368441381590999",
+      "sub": "101053368441381590999",
+      "email": "sa-exporter@project-0568d9ba-848f-413c-88b.iam.gserviceaccount.com",
+      "email_verified": true,
+      "iat": 1792885027,
+      "exp": 1792888627
+    },
+    "assumed_arn": "arn:aws:sts::648617469176:assumed-role/ta-gcp-exporter-role/ta-gcs-to-s3-20261024T233706Z-f849a698",
+    "expiration": "2026-10-25T00:37:08+00:00",
+    "subject": "101053368441381590999",
+    "audience": "101053368441381590999",
+    "provider": "accounts.google.com"
+  },
+  "exporter": "gcs-to-s3@1.0"
+}

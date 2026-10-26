@@ -1,6 +1,6 @@
 # TrendAnalyzer · ARCHITECTURE
 
-> Documento maestro de arquitectura y contratos. **Versión vigente: 2.29.**
+> Documento maestro de arquitectura y contratos. **Versión vigente: 2.31.**
 > Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md) · Plan por fases, trazabilidad HU y estado: [`PLAN.md`](PLAN.md) · Historias de usuario: `HU.md` · Visión general: `README.md`.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 
@@ -26,8 +26,9 @@ Este archivo está pensado para que **baste con leerlo (o pegármelo) para const
 | Sentimiento y emoción (RoBERTuito), imagen `dataflow-nlp` y NLP en local | **§3.15** y `docs/validation/validation-2-3.md` |
 | Ventanas de tendencias (`trend_windows`), `dlq_events`, `dq_results` y la plantilla Flex de Dataflow | **§3.16**, `src/streaming/TRENDS.md` y `docs/validation/validation-2-4.md` |
 | Generar y cargar el histórico (loader, NLP en lote, bucket S3 del lake, KMS y rol `ta-historical-loader`) | **§3.17**, `src/historical/HISTORICAL.md` y `docs/validation/validation-3-1.md` |
+| Exportar `enriched/` a S3 (federación OIDC GCP → AWS, job `ta-gcs-to-s3`, Scheduler en pausa) | **§3.18** (interfaces: CLI, logs, API, Terraform y validador en **§3.18.1**), §5.6, `src/exporter/EXPORTER.md` y `docs/validation/validation-3-2.md` |
 | Comprobar qué está encendido antes de validar un lote | **§8** (preflight) |
-| Encender, comprobar y apagar lo que cobra; validar un lote con un solo comando | `docs/ACTIVE_SERVICES.md` (`scripts/on.py`, `off.py`, `status.py`), `scripts/validate_2_3.py` (§3.15), `scripts/validate_2_4.py` (§3.16) y `scripts/validate_3_1.py` (§3.17) |
+| Encender, comprobar y apagar lo que cobra; validar un lote con un solo comando | `docs/ACTIVE_SERVICES.md` (`scripts/on.py`, `off.py`, `status.py`), `scripts/validate_2_3.py` (§3.15), `scripts/validate_2_4.py` (§3.16), `scripts/validate_3_1.py` (§3.17) y `scripts/validate_3_2.py` (§3.18; con `status` y `off` del exportador) |
 | Saber qué construir y en qué orden | `PLAN.md` §1 (fases y lotes) |
 | Saber qué historias de usuario cubre cada fase o lote | **`PLAN.md` §1 y §2** (detalle en `HU.md`) |
 | Saber en qué estado está cada fase y lote | **`PLAN.md` §3** |
@@ -57,7 +58,7 @@ Todo lo que viene después de Pub/Sub (Dataflow, GCS, BigQuery, S3, Glue, Athena
 | Secret Manager (credenciales de APIs) | Ya no guarda tokens de Mastodon/Reddit. Guarda la **llave HMAC de anonimización**. |
 | Datasets históricos → S3 | Se mantiene. Se precisa: `src/historical/` (`scripts/load_historical.py`, Lote 3.1, §3.17) genera los registros con el **mismo simulador y generador**, el mismo envelope (§5.2), la misma anonimización y el mismo NLP, y los sube a `s3://…/raw/origin=historical/`. |
 | *(no existe)* Datasets de emociones en GCS | Ya no se usan (v2.2). El bucket `…-ta-datasets` solo guarda el estado del simulador y snapshots opcionales del generador (§5.4). |
-| *(no existe)* GCS → S3 | **Falta en el diagrama.** Se agrega el exportador `gcs-to-s3` (§5.6). Hoy el único camino GCP→AWS dibujado es BigQuery→QuickSight. |
+| *(no existe)* GCS → S3 | **Falta en el diagrama.** Se agrega el exportador `gcs-to-s3` (§5.6), implementado en el Lote 3.2 (v2.30, §3.18). Hoy el único camino GCP→AWS dibujado es BigQuery→QuickSight. |
 | Flecha huérfana `? → EventBridge` | Sin origen. Se resuelve: EventBridge es un **schedule** que dispara el workflow de Glue (§5.7). |
 | BigQuery → QuickSight "Carga batch" | **Verificar** si el conector de QuickSight a BigQuery está disponible para la cuenta. Camino principal recomendado: Parquet en S3 → Athena → QuickSight. BigQuery queda para analítica caliente en GCP. |
 
@@ -73,7 +74,7 @@ El README menciona **Firestore, Cloud SQL, Neptune y Dataplex**, que **no están
 
 ### 1.4 Historial de cambios
 
-Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.29), la más reciente primero. Este documento describe siempre la versión vigente (2.29).
+Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.31), la más reciente primero. Este documento describe siempre la versión vigente (2.31).
 
 ---
 
@@ -598,7 +599,7 @@ El detalle es `ruta: mensaje` del primer error de `jsonschema` (máximo 2.000 ca
 > Antes de entregar (v2.20) el pipeline ya había corrido con el DirectRunner contra un servidor Pub/Sub de prueba y en *dry run* de `DataflowRunner`; ninguna de las dos pruebas podía mostrar la retención de la marca de agua.
 
 **Observaciones (no bloquean):**
-- `sa-exporter` tiene `storage.objectViewer` en todo `…-ta-lake` (§5.8), así que puede leer `raw/`. HU-025 ya exige que el exportador lea solo `enriched/`: el Lote 3.2 debe limitar ese rol con una condición de IAM a ese prefijo. Hoy el exportador no existe, así que solo `sa-dataflow` y los dueños del proyecto acceden a `raw/`.
+- `sa-exporter` tiene `storage.objectViewer` en todo `…-ta-lake` (§5.8), así que puede leer `raw/`. HU-025 ya exige que el exportador lea solo `enriched/`: el Lote 3.2 debe limitar ese rol con una condición de IAM a ese prefijo. Hoy el exportador no existe, así que solo `sa-dataflow` y los dueños del proyecto acceden a `raw/`. *(v2.30: hecho en el Lote 3.2, §3.18.)*
 - El bucket `…-ta-lake` tiene *soft delete* (7 días): los temporales que Dataflow borra en `_dataflow/temp` siguen cobrando esos días (pocos MB). Recomendado en Terraform: desactivarlo en ese bucket o mover los temporales a un bucket propio sin *soft delete*.
 - `dataflow_job.sh status` puede no listar contadores en los primeros minutos (las métricas de usuario tardan en publicarse); la consola de Dataflow los muestra igual.
 - La validación local se hizo con la deduplicación de v2.20 (timer). La de v2.21 está cubierta por las pruebas con `TestStream` y por la corrida en GCP; repetir `local_dataflow.sh check` es opcional.
@@ -931,6 +932,225 @@ Plan con `-target` de los tres módulos: **10 a crear, 0 a cambiar, 0 a destruir
 - Que `nlp_from_options()` acepte unas opciones de un pipeline batch con `BundleBasedDirectRunner` y devuelva el PTransform (D3).
 - La velocidad del NLP en la máquina del equipo (D5): de ella sale el tiempo de E4.
 
+### 3.18 Exportador GCS → S3 y federación OIDC GCP → AWS (Lote 3.2)
+
+> Entregado en **v2.30** y cerrado en **v2.31** (HU-006, HU-025); validación en `docs/validation/validation-3-2.md` (automática con `scripts/validate_3_2.py`, partes A–F). Rutas relativas a `project/`; guía del módulo en `src/exporter/EXPORTER.md`. No toca `contracts/` ni `schema_version`. Cierra un pendiente del Lote 2.1: `sa-exporter` deja de leer todo el lake (solo `enriched/`). ADR-22.
+
+**Flujo.**
+
+```
+Cloud Scheduler ta-gcs-to-s3-cada-15-min (*/15 UTC, creado EN PAUSA) ─► Cloud Run Job ta-gcs-to-s3 (identidad sa-exporter)
+   ─► ID token de sa-exporter (servidor de metadatos, aud = ta-gcp-exporter-role)
+   ─► STS AssumeRoleWithWebIdentity (sin firmar) ─► ta-gcp-exporter-role (sesión de 1 h)
+   ─► GCS enriched/source=…/dt=…/hr=…/part-*.parquet  (desde la partición de cursor − solape − margen)
+   ─► S3 raw/origin=stream/source=…/dt=…/hr=…/{mismo nombre}.parquet  (PUT con SSE-KMS, bucket key y CRC32C de GCS)
+   ─► export-state/watermark.json  (solo si todo subió; con precondición de generación)
+```
+
+| Ruta | Contenido |
+|---|---|
+| `src/exporter/config.py`, `keys.py`, `watermark.py`, `core.py` | Configuración desde el entorno, mapeo de claves `enriched/` → `raw/origin=stream/`, watermark y la corrida (`run_export`): listar, decidir con el listado de S3, subir en paralelo y mover el cursor. Lógica pura con puertos `GcsPort` y `S3Port`. |
+| `src/exporter/gcs_io.py`, `s3_io.py` | Adaptadores reales: `google-cloud-storage` (listado con `start_offset` y campos mínimos, descarga por generación, watermark con `ifGenerationMatch`) y boto3 (`ListObjectsV2` por partición, `PutObject` de una parte con SSE-KMS y `ChecksumCRC32C`). |
+| `src/exporter/identity.py` | ID token (metadatos en Cloud Run; impersonación con `generateIdToken` o `gcloud` fuera), claims sin verificar para diagnosticar, comparación con la confianza del rol y `AssumeRoleWithWebIdentity`. |
+| `src/exporter/probe.py`, `verify.py`, `lake_check.py` | Sondas de permisos (G1–G6 en GCS, A1–A7 en AWS), verificador GCS ↔ S3 (V1–V4) y ambos orígenes en S3 con el esquema de un Parquet de cada uno (parte F). |
+| `src/exporter/cli.py`, `scripts/export_gcs_to_s3.py` | CLI: `run`, `plan`, `probe`, `token`, `doctor`, `verify`, `status`, `lake-report`. |
+| `src/exporter/{Dockerfile,cloudbuild.yaml,requirements.txt}`, `scripts/build_exporter_image.sh` | Imagen `gcs-to-s3` (etapas `deps`, `runtime` y `test`) construida en Cloud Build con un contexto temporal propio. |
+| `infra/aws/modules/gcp_exporter_role/`, `infra/aws/environments/dev/{exporter,variables_exporter,outputs_exporter}.tf` | Rol `ta-gcp-exporter-role` y su política. Se suman a los archivos de los lotes 1.0 y 3.1 sin modificarlos. |
+| `infra/gcp/modules/cloud_run_exporter/`, `infra/gcp/environments/dev/{exporter,variables_exporter,outputs_exporter}.tf` | Job, `run.invoker` de `sa-exporter` sobre el job, Scheduler y los permisos de `sa-exporter`. **Único cambio a un archivo anterior:** se quita de `platform.tf` (Lote 1.3) `exporter_lake_read`, el `objectViewer` sin condición. |
+| `infra/*/environments/dev/*_exporter.auto.tfvars.example` | Formato del enlace entre nubes que escribe el validador (los `*.auto.tfvars` no se versionan). |
+| `scripts/validate_3_2.py`, `src/ops/validate32.py` | Validación automática (partes A a F, `status` y `off`). |
+
+**Identidad (HU-006).** AWS trae a Google como proveedor OIDC **integrado** (`accounts.google.com`): no se crea un `aws_iam_openid_connect_provider` (no hace falta, y el criterio de HU-006 se cumple con el integrado). La confianza del rol fija `accounts.google.com:aud` ∈ {uniqueId de `sa-exporter`, su correo, la audiencia}, `accounts.google.com:oaud` = la audiencia (`ta-gcp-exporter-role`) y `accounts.google.com:sub` = el uniqueId. AWS compara `accounts.google.com:aud` con el claim **`azp`** del token cuando existe (y con `aud` si no), y `oaud` con `aud`, según su documentación de claves de condición; los tokens de una service account traen `azp` (el uniqueId o el correo según cómo se emitan), por eso se aceptan los dos y la identidad la fija `sub`. El uniqueId lo lee el validador (`gcloud iam service-accounts describe`) y lo escribe en `gcp_exporter.auto.tfvars`: si `sa-exporter` se recrea, cambia y hay que volver a aplicar. En Cloud Run el token sale del servidor de metadatos; para validar desde la máquina del equipo (parte D), la cuenta del desarrollador tiene `roles/iam.serviceAccountOpenIdTokenCreator` **solo sobre `sa-exporter`** (`exporter_oidc_token_creators`) y el token sale de `generateIdToken`. `AssumeRoleWithWebIdentity` no necesita credenciales de AWS: por eso la cuenta raíz del equipo no estorba aquí (en el 3.1 impedía asumir el rol). `export_gcs_to_s3.py token` muestra los claims reales y si la confianza los acepta antes de cualquier corrida.
+
+**Permisos (§5.8).**
+- *GCP:* `sa-exporter` tiene `roles/storage.objectViewer` con la condición `resource.type == "storage.googleapis.com/Bucket" || (resource.type == "storage.googleapis.com/Object" && resource.name.startsWith("projects/_/buckets/{lake}/objects/enriched/"))`: `storage.objects.list` se evalúa sobre el bucket, así que puede listar nombres de todo el lake pero solo leer objetos de `enriched/` (HU-025). La escritura en `export-state/` sigue siendo la del Lote 1.3 (`objectUser` con condición; incluye borrar, que sobrescribir el watermark necesita). `roles/run.invoker` sobre el job: el Scheduler lo dispara con la identidad de `sa-exporter`.
+- *AWS:* `s3:PutObject` en `raw/origin=stream/*`, `s3:ListBucket` con `s3:prefix` = `raw/origin=stream/*` y `kms:GenerateDataKey` en la llave del lake con `kms:ViaService = s3.us-east-1.amazonaws.com`. Sin lectura ni borrado. **Contrato tocado:** §5.8 y HU-006 pedían `s3:HeadObject`, que no es una acción de IAM (un HEAD exige `s3:GetObject`); la idempotencia se hace listando la partición, como `ta-historical-loader`.
+
+**Exportación (HU-025).** Cada corrida lista `enriched/source={s}/` desde la partición de `cursor − solape − margen` (1 h + 2 h; el margen cubre los paneles tardíos, que se escriben en la partición de su ventana) y toma como candidatos los objetos con `timeCreated > cursor − solape`: lo creado en la última hora se vuelve a mirar, así que un objeto que se hizo visible tarde no se pierde. Las claves que no son `enriched/source=…/dt=…/hr=…/part-*.parquet` no se exportan (`unrecognized`). Por cada partición candidata lista S3 una vez; con el mismo nombre y tamaño omite, sin el objeto sube y con otro tamaño sobrescribe (log `export_object_overwritten`). Sube con 8 hilos y un `PutObject` de una parte (los Parquet pesan KB; el *multipart* pediría además `kms:Decrypt`) con `ServerSideEncryption = aws:kms`, la llave del lake, `BucketKeyEnabled` y `ChecksumCRC32C` = el CRC32C que GCS guarda del objeto (el mismo formato), así que S3 rechaza bytes distintos; además guarda `gcs-generation`, `gcs-crc32c` y `gcs-md5` como metadatos. Si S3 responde otro cifrado u otra llave, el objeto cuenta como fallido. Corta en 5.000 objetos por corrida (`TA_EXPORT_MAX_OBJECTS`); el resto sale en la siguiente. Hasta 10 subidas en paralelo (el tamaño de los pools HTTP de los dos clientes). Un error inesperado (p. ej. una carrera al leer el watermark) queda como log `export_error` y la corrida sale con 1.
+
+**Watermark** (`export-state/watermark.json`, formato en §5.6). Se escribe solo si ningún objeto falló, con `ifGenerationMatch` (si otra corrida escribió en medio, se queda con el cursor mayor y reintenta). `cursor_time_created` nunca retrocede; con un corte por `max_objects` queda justo antes del primer pendiente. Con una falla la corrida sale con 1 y Cloud Run la reintenta una vez; lo ya subido se omite en la siguiente por tamaño.
+
+**Estado de ahorro.** El Scheduler se crea con `paused = true` y Terraform ignora ese campo (`ignore_changes`), así que pausarlo o reanudarlo con `gcloud` no deja deriva para `on.py`/`off.py`. El job no cobra mientras no corre. Encenderlo de forma permanente lo deciden los compañeros; `validate_3_2.py off` lo pausa, cancela ejecuciones y lo confirma, y `validate_3_2.py status` lo muestra (`status.py` todavía no conoce el exportador: queda para el Lote 7.3).
+
+**Terraform.** Enlace entre nubes sin `terraform_remote_state` ni credenciales cruzadas: el validador escribe `infra/aws/environments/dev/gcp_exporter.auto.tfvars` (uniqueId y correo de `sa-exporter`) y `infra/gcp/environments/dev/aws_exporter.auto.tfvars` (outputs de `infra/aws`, la cuenta para el token y la imagen), ambos fuera de git (`*.auto.tfvars` en `infra/.gitignore`) y formateados con `terraform fmt`. El rol solo se crea con el uniqueId; el job y el Scheduler, solo con imagen y valores de AWS. La llave y el bucket del lake se toman por nombre (`data.aws_kms_alias`), sin depender de los nombres de los outputs de los módulos del 3.1. Planes esperados con `-target`: AWS **2 a crear** (rol y política); GCP base **2 a crear y 1 a destruir** (`exporter_lake_enriched`, el permiso de token y `exporter_lake_read`); GCP job **3 a crear**. Los outputs del lote dependen de recursos (lección del 2.4).
+
+**Imagen.** `{región}-docker.pkg.dev/{proyecto}/ta-images/gcs-to-s3:{commit o fecha}-{huella de src/exporter}` y `:latest`: la huella cambia con el código aunque no haya *commit*, y Terraform ve la imagen nueva. Python 3.11 slim, `google-cloud-storage 3.17.1` (la del stream) y `boto3 1.43.100`; corre como uid 10001; la etapa `test` corre las pruebas sin red y falla si alguna falla o se omite. El paquete no importa código de otros lotes (solo copia bytes); `lake_check` carga `common.enriched_row` y pyarrow al usarse.
+
+**Verificación.**
+- `probe` (como el exportador): G1 listar `enriched/`, G2 leer `enriched/`, G3 leer `raw/` (debe fallar), G4 escribir en `enriched/` (debe fallar), G5–G6 escribir y borrar en `export-state/_probe/`; A1 rol asumido, A2 listar `raw/origin=stream/`, A3–A7 denegados (listar el histórico y `trusted/`, escribir en el histórico, leer y borrar en el stream). No deja objetos.
+- `verify` (credenciales del desarrollador): V1 todo lo anterior al cursor está en S3 con el mismo tamaño, V2 lo posterior, V3 S3 solo tiene claves de `enriched/` con su formato, V4 en una muestra, SSE-KMS con la llave del lake, *bucket key* y CRC32C igual a GCS.
+- `lake-report`: objetos de `raw/origin=historical/` y `raw/origin=stream/` por fuente y un Parquet de cada origen con las 24 columnas de `posts_enriched`, su `origin`, sin `user_id`/`handle` y `user_hash` hex de 64.
+- Logs JSON: `export_start`, `export_assumed_role`, `export_plan`, `export_object_failed`, `export_object_overwritten`, `export_watermark_updated`, `export_done` y `probe_result`. Nunca el token ni las credenciales.
+
+**Pruebas** (sin red, Docker ni nube): 120 en `src/exporter/tests/` (claves y configuración, watermark, la corrida con dobles —primera, repetida, objeto nuevo, solape, panel tardío, fallas, cifrado inesperado, sobrescritura, corte por `max_objects`, conflicto de watermark—, identidad y confianza con tokens hechos a mano, adaptadores reales con `Stubber` de botocore y un cliente de GCS falso, sondas, verificador, CLI, `lake_check` con pyarrow, imagen, Terraform y, en `test_exp_repo.py`, `common.enriched_row` real) y 68 en `src/ops/tests/test_ops_validate32.py` con un ejecutor falso. En la imagen corren 96 (las marcadas `repo` y `pyarrow` se deseleccionan).
+
+> **Estado de la verificación (v2.30, antes de entregar):** en un entorno aislado con Python 3.11.17. Con un repositorio simulado (el `platform.tf` real del 1.3 con el cambio del lote; las raíces de Terraform, `common/enriched_row.py` y los scripts de operación con la forma que describen §3.14, §5.14 y §5.15) y OpenTofu 1.8.5 como `terraform`: **B1 118 passed, 0 omitidas; B2 62 passed** (120 tras la corrección de la sonda A6). Terraform: `fmt -check` en verde; **no** se pudo correr `validate` ni `plan` (sin acceso al registro de proveedores), así que los nombres de argumentos de los recursos de `google` 6.x y `aws` 5.x se revisaron contra su documentación y los comprueban C1 y C2/C6 en su máquina. Con moto (S3, KMS y STS simulados) se comprobó el `PutObject` con SSE-KMS y *bucket key* y `AssumeRoleWithWebIdentity` sin firmar; moto no valida el CRC32C, así que el rechazo de bytes distintos solo está probado con el doble. La etapa de pruebas de la imagen se reprodujo en un entorno con solo `requirements.txt` y pytest (94 passed, 0 omitidas; 96 tras la corrección de A6); la imagen no se construyó (sin Docker). **No** se corrió contra GCP ni AWS: los claims reales del token, la condición de listado de GCS, la asunción real, los tiempos y el Scheduler los miden D y E.
+
+> **Cierre (v2.31).** Validado por A (asignado a M) con `validate_3_2.py`; evidencia en `evidencia/validacion_3_2.json`. A en AVISO solo porque el simulador estaba encendido (este lote no lo usa); B OK con el código final (B1 120 sin omitidas, B2 68, B3 18, B4 11); C en AVISO solo por la cuenta raíz (2 recursos en AWS; en GCP 2 creados y `exporter_lake_read` destruido; política simulada 8/8; IAM real C8 OK); D OK (claims reales `azp = sub` = uniqueId de `sa-exporter` y `aud = ta-gcp-exporter-role`; asunción real; 20 objetos subidos con SSE-KMS y el CRC32C de GCS; luego 1.155 → 1.135 por subir); E OK en la tercera corrida, 16/16 (la primera paró en E3 porque Terraform no pudo guardar el estado; la segunda, en E2, por el `retry_config` del Scheduler: CHANGELOG v2.30); F OK; `off` y `status` OK. **Cifras:** sonda 13/13 desde Cloud Run (`raw/` de GCS y un objeto real de `raw/origin=stream/` denegados); primera ejecución 1.135 objetos (51 MB) en 107 s, 0 fallidos; verificador 1.155 de 1.155 con el mismo tamaño y 50 de 50 con SSE-KMS, la llave del lake y el CRC32C de GCS; segunda ejecución 0 subidos; canario 1 subido y borrado de los dos lados; un disparo real del Scheduler creó una ejecución de `sa-exporter` que terminó bien y el Scheduler volvió a `PAUSED`; 0 errores en los logs. En S3: 12.102 objetos del histórico (130,9 MB) y 1.155 del stream (51,9 MB; 385 por fuente), con las mismas 24 columnas de `posts_enriched` (**"Listo cuando" de la Fase 3**). Costo medido: ≈ 0,16 USD/día con el Scheduler encendido; queda en `PAUSED`.
+
+**Costo.** Cloud Run Jobs cobra la instancia con un mínimo de 1 minuto por ejecución (us-central1: 0,000018 USD por vCPU-s y 0,000002 por GiB-s): con 1 vCPU y 512 MiB. *(v2.31, medido en E12)* Las ejecuciones duraron 36–118 s (se cobra el máximo entre la duración y 60 s): ≈ 0,0016 USD por ejecución y **≈ 0,16 USD/día** con el Scheduler encendido (96 ejecuciones; la estimación de v2.30, ~0,1, suponía ejecuciones de 1 min), más centavos de S3 (PUT y LIST) y de salida de red. Pausado, 0 de Cloud Run; el Scheduler pausado cuenta como job (0,10 USD/mes por encima de los 3 gratuitos de la cuenta de facturación). E12 lo recalcula con las duraciones medidas.
+
+**Puntos a confirmar al validar (pueden pedir un ajuste pequeño):**
+- Los claims reales del token de `sa-exporter` (`azp` = uniqueId o correo) frente a la confianza: D1 lo muestra antes de asumir.
+- Que la condición con `resource.type == "storage.googleapis.com/Bucket"` permita listar el lake a `sa-exporter` (E5, G1) y que leer `raw/` quede denegado (G3; si `raw/` está vacío, C8 lo cubre con la política real).
+- Que `kms:GenerateDataKey` con `kms:ViaService` baste para el PUT con *bucket key* (D4; la documentación de S3 lo indica para un PUT de una parte).
+- El formato de salida de `gcloud run jobs execute --wait --format=json` (nombre y tiempos de la ejecución; si no viene, el validador lo saca del texto y de `executions describe`).
+- La forma real de `common.enriched_row.POSTS_ENRICHED_COLUMNS` (`test_exp_repo.py` y `doctor` X5).
+
+#### 3.18.1 Interfaces del lote (cómo usar cada pieza sin leer el código)
+
+*(v2.30)* Todo lo de esta subsección es interfaz: otro lote puede depender de ello, y si cambia se cambia aquí primero (§0, regla de oro).
+
+**Cómo se ejecuta el job.** La imagen tiene `ENTRYPOINT ["python", "-m", "exporter.cli"]` y `CMD ["run"]`; Terraform le pone `args = ["run"]` y las variables de entorno de §5.1. Desde fuera se usa así:
+
+| Qué | Comando |
+|---|---|
+| Una corrida a mano | `gcloud run jobs execute ta-gcs-to-s3 --region us-central1 --wait` |
+| La sonda de permisos, como `sa-exporter` | `gcloud run jobs execute ta-gcs-to-s3 --region us-central1 --args=probe --wait` |
+| Encender o apagar el disparo cada 15 min | `gcloud scheduler jobs resume\|pause ta-gcs-to-s3-cada-15-min --location us-central1` |
+| Disparar ya con la identidad del Scheduler | `gcloud scheduler jobs run ta-gcs-to-s3-cada-15-min --location us-central1` |
+| Estado (ahorro = `PAUSED`) | `gcloud scheduler jobs describe ta-gcs-to-s3-cada-15-min --location us-central1 --format="value(state)"` o `validate_3_2.py status` |
+| Leer el resultado de una ejecución | `gcloud logging read 'resource.type="cloud_run_job" AND resource.labels.job_name="ta-gcs-to-s3" AND labels."run.googleapis.com/execution_name"="<ejecución>" AND jsonPayload.event="export_done"'` |
+
+Una ejecución termina con 0 si todo subió (o no había nada). Termina con 1 si falló algún objeto o hubo un error inesperado, y con 2 si falta configuración o falló la identidad. Con cualquier código distinto de 0, Cloud Run la reintenta una vez; cada intento dura como máximo 840 s. El Scheduler no reintenta: no declara `retry_config`, cuyo valor por defecto es 0 reintentos (con `retry_count = 0` explícito la API no devuelve el bloque y cada plan proponía añadirlo).
+
+**CLI `scripts/export_gcs_to_s3.py <subcomando>`** (lo mismo que `python -m exporter.cli` desde `src/`). Toma la configuración de las variables de §5.1 y responde 0 si todo salió bien, 1 si una comprobación falló y 2 por un error de uso, configuración o identidad. Nunca imprime el token ni las credenciales.
+
+| Subcomando | Qué hace | Credenciales | Opciones propias | `--json-out` guarda |
+|---|---|---|---|---|
+| `run` | Exporta (lo que corre el job) | GCS: la del proceso. AWS: el rol asumido | `--max-objects N`, `--workers N` (1–10), `--dry-run` | El reporte de la corrida (abajo) |
+| `plan` | Lo mismo sin escribir en S3 ni el watermark | Igual que `run` | Las de `run` | El reporte con `dry_run = true` y `planned_keys` |
+| `probe` | Sondas G1–G6 (GCS) y A1–A7 (AWS). A6 lee un objeto **existente** de `raw/origin=stream/source=` (lo busca listando, `MaxKeys = 1`) y espera `AccessDenied`; si el prefijo está vacío da OK con `got = sin objetos`, porque a una clave inexistente S3 responde `NoSuchKey` (el rol tiene `s3:ListBucket`) y eso no prueba nada | Las de `sa-exporter` (en Cloud Run) o el rol con un token impersonado | `--no-gcs`, `--no-aws` | `{ok, passed, total, run_id, aws, results: [{id, what, expect, got, ok, detail}]}` (`expect` y `got` valen `permitido` o `denegado`) |
+| `token` | Claims del ID token y si la confianza del rol los acepta | Para impersonar: `serviceAccountOpenIdTokenCreator` | `--unique-id ID`, `--trust-json ARCHIVO` (la confianza o la salida de `aws iam get-role`), `--trust-from-aws` (la lee con el perfil) | `{token_source, claims: {iss, aud, azp, sub, email, email_verified, iat, exp}, problems, trust_source, trust_problems, ok}` |
+| `doctor` | Comprueba Python, las dependencias, la configuración y `common.enriched_row` (X1–X5); con red, también GCS y el watermark (X6–X7) | Con red: lectura de GCS | `--offline` | `{status, checks: [{id, what, status, detail}]}` |
+| `verify` | Compara GCS `enriched/` con S3 `raw/origin=stream/` (V1–V4) | GCS y **el perfil de AWS** (necesita `HeadObject`) | `--sample N` (50), `--keys-from ARCHIVO` (verifica las `uploaded_keys` de un `run`), `--cursor TS` | `{status, gcs_enriched, s3_stream, cursor, s3_by_source, state_key, checks: [{id, what, status, detail, …}]}` |
+| `status` | Muestra el watermark | Lectura de GCS | — | `{state_key, generation, exists, schema, cursor_time_created, updated_at, run_id, exporter, last_run}` |
+| `lake-report` | Ambos orígenes en S3 y el esquema de un Parquet de cada uno | **El perfil de AWS** (`GetObject` y `kms:Decrypt`) | — | `{status, problems, columns_source, expected_columns, origins: {historical\|stream: {objects, bytes, by_source, sample: {key, rows, columns, problems}}}}` |
+
+Opciones que tienen todos los subcomandos:
+
+| Opción | Valores | Por defecto |
+|---|---|---|
+| `--token-source` | `auto` (metadatos si existe `CLOUD_RUN_JOB` o `K_SERVICE`; si no, impersonación y luego `gcloud`), `metadata`, `impersonate`, `gcloud` | `auto` |
+| `--aws-auth` | `role` (asume `TA_EXPORTER_ROLE_ARN` con el token) o `profile` (el perfil de AWS CLI) | `role`; en `verify` y `lake-report`, `profile` |
+| `--aws-profile` | Nombre del perfil, si `--aws-auth profile` | `AWS_PROFILE` o el perfil por defecto |
+| `--state-key` | Otro watermark, siempre bajo `export-state/` (para pruebas) | `TA_EXPORT_STATE_KEY` |
+| `--json-out` | Ruta del JSON de resultado | — |
+
+**Reporte de una corrida** (`run`/`plan --json-out`; los mismos campos llegan al log `export_done`):
+
+| Campo | Significado |
+|---|---|
+| `run_id`, `exporter`, `dry_run`, `ok`, `started_at`, `finished_at`, `duration_s` | La corrida (`ok` = ningún objeto falló) |
+| `listed`, `unrecognized`, `unrecognized_names` | Objetos listados en `enriched/` y los que no son `part-*.parquet` de una partición válida (hasta 20 nombres) |
+| `candidates`, `partitions_checked` | Creados después de `cursor − solape`, y cuántas particiones de S3 se listaron |
+| `to_upload`, `uploaded`, `overwritten`, `skipped_same_size` | Lo planeado, lo subido nuevo, lo sobrescrito (otro tamaño) y lo omitido (mismo tamaño) |
+| `pending`, `truncated` | Lo que quedó para la próxima corrida por `TA_EXPORT_MAX_OBJECTS` |
+| `bytes_uploaded`, `failed` (hasta 50 `{name, error}`), `failed_count` | Volumen y fallas |
+| `uploaded_keys`, `planned_keys` | Claves de S3, hasta 200 de cada una |
+| `watermark_before`, `watermark_after`, `watermark_written`, `watermark_conflicts` | El cursor antes y después; `watermark_written = false` si algo falló o con `plan` |
+| `by_source` | `{reddit\|facebook\|instagram: {listed, candidates, uploaded}}` |
+| `aws`, `config` | Solo en el JSON: cómo se autenticó (`mode`, `token_source`, `claims`, `assumed_arn`, `expiration`) y la configuración pública (§5.1) |
+
+**Logs** (una línea JSON por evento en stdout; en Cloud Logging, `jsonPayload` con `severity`, `event`, `message` y `time`):
+
+| `event` | Severidad | Campos |
+|---|---|---|
+| `export_start` | INFO | `run_id`, `dry_run`, `config` |
+| `export_assumed_role` | INFO | `run_id`, `mode`, `token_source`, `claims` (sin el token), `assumed_arn`, `expiration`, `subject`, `audience`, `provider` |
+| `export_plan` | INFO | `run_id`, `listed`, `candidates`, `partitions`, `to_upload`, `skipped_same_size`, `truncated`, `unrecognized` |
+| `export_object_failed` | ERROR | `run_id`, `name`, `error` |
+| `export_object_overwritten` | WARNING | `run_id`, `key`, `s3_size`, `gcs_size` |
+| `export_watermark_conflict` | WARNING | `run_id`, `generation` |
+| `export_watermark_updated` | INFO | `run_id`, `cursor`, `conflicts` |
+| `export_done` | INFO, o ERROR si algo falló | `run_id`, `ok`, `dry_run`, `listed`, `candidates`, `to_upload`, `uploaded`, `overwritten`, `skipped_same_size`, `pending`, `failed`, `bytes_uploaded`, `duration_s`, `watermark_before`, `watermark_after`, `by_source` |
+| `export_watermark_invalid` | ERROR | `run_id`, `detail` (el watermark no tiene el formato de §5.6; la corrida no sube nada) |
+| `export_error` | ERROR | `command`, `error` (configuración, identidad o un error inesperado; no hay `export_done`) |
+| `probe_result` | INFO, o ERROR si falla una sonda | Lo mismo que `probe --json-out` |
+
+**API de Python** (para otro lote que quiera reutilizar el exportador sin el CLI; `src/` en el `PYTHONPATH`):
+
+| Llamada | Contrato |
+|---|---|
+| `exporter.config.load_config(env=None, *, require_upload=True) -> ExporterConfig` | Lee las variables de §5.1. Lanza `ConfigError` si falta algo (con `require_upload`, también `TA_LAKE_KMS_KEY_ARN`). `ExporterConfig.public()` devuelve la configuración sin secretos |
+| `exporter.core.run_export(cfg, gcs, s3, *, dry_run=False, log=…, now=…, run_id=None) -> ExportReport` | La corrida completa; `report.ok` y `report.to_json()` (campos de arriba). Lanza `WatermarkError` si el watermark es inválido |
+| Puerto `GcsPort` | `list_objects(prefix, start_offset=None) -> Iterable[GcsObject(name, size, generation, time_created, crc32c, md5)]`, `download(obj) -> bytes`, `read_state(key) -> (dict\|None, generación; 0 si no existe)`, `write_state(key, data, if_generation_match) -> generación` (lanza `StateConflict`). Implementación: `exporter.gcs_io.GcsLake(bucket, project=None)` |
+| Puerto `S3Port` | `list_prefix(prefix) -> {clave: tamaño}`, `put_object(key, body, *, crc32c, md5, metadata) -> {sse, kms_key_id, bucket_key, checksum_crc32c, etag}`. Implementación: `exporter.s3_io.S3Lake(bucket, kms_key_arn, client)`, con `s3_client(session, region)` |
+| `exporter.identity.get_token(mode, audience, sa_email) -> (token, camino)` | `mode` es uno de los valores de `--token-source`; lanza `IdentityError` |
+| `exporter.identity.assume_role(token, role_arn, *, run_id, region, duration) -> AssumedRole` | STS sin firmar. `AssumedRole.boto3_session(region)` y `.public()` (sin secretos) |
+| `exporter.identity.decode_claims(token)`, `compare_with_trust(claims, trust_policy) -> [problemas]` | Diagnóstico: AWS es quien verifica la firma |
+| `exporter.keys.to_s3_key(gcs_key)`, `parse_gcs_key`, `parse_s3_key` | Mapeo `enriched/…` → `raw/origin=stream/…` (§5.6). Una clave no reconocida da `None` o `ValueError` |
+| `exporter.verify.verify_export(...)`, `exporter.lake_check.lake_report(...)` | Lo que hay detrás de `verify` y `lake-report` |
+
+**Script de la imagen** `bash scripts/build_exporter_image.sh [cloudbuild|docker] [--tag ETIQUETA] [--dry-run]` (desde `project/` o la raíz):
+- **Lee:** `GCP_PROJECT` (si no está, `gcloud config get-value project`), `GCP_REGION` (`us-central1`) y `TA_ARTIFACT_REPOSITORY` (`ta-images`).
+- **Publica:** `{región}-docker.pkg.dev/{proyecto}/{repo}/gcs-to-s3:{etiqueta}` y `:latest`. La etiqueta por defecto es `{commit corto o fecha UTC}-{huella de 8 hex del contenido de src/exporter}`.
+- **Al final imprime** `export TA_EXPORTER_IMAGE=…` y la línea `exporter_image = "…"`, que es la que lee `validate_3_2.py`.
+- **Salida:** 2 por un error de uso; si no, la del build.
+
+**Terraform: variables de entrada** (todas con valor por defecto; los planes de otros lotes no cambian):
+
+| Raíz | Variable (por defecto) | Uso |
+|---|---|---|
+| `aws/environments/dev` | `gcp_exporter_sa_unique_id` (`""`) | uniqueId de `sa-exporter`. Vacío = no se crea el rol |
+| `aws/environments/dev` | `gcp_exporter_sa_email` (`""`), `gcp_exporter_audience` (`ta-gcp-exporter-role`) | La confianza del rol |
+| `gcp/environments/dev` | `exporter_image` (`""`), `exporter_role_arn` (`""`), `exporter_s3_bucket` (`""`), `exporter_kms_key_arn` (`""`) | Con los cuatro llenos se crean el job y el Scheduler |
+| `gcp/environments/dev` | `exporter_audience` (`ta-gcp-exporter-role`), `exporter_aws_region` (`us-east-1`) | Variables de entorno del job |
+| `gcp/environments/dev` | `exporter_oidc_token_creators` (`[]`, miembros `user:`/`group:`/`serviceAccount:`) | Quién puede emitir ID tokens de `sa-exporter` |
+| `gcp/environments/dev` | `exporter_schedule` (`*/15 * * * *`), `exporter_cpu` (`1`), `exporter_memory` (`512Mi`), `exporter_task_timeout_seconds` (`840`), `exporter_workers` (`8`, de 1 a 10), `exporter_max_objects` (`5000`) | Operación (§5.12) |
+
+**Enlace entre nubes (`*.auto.tfvars`, no se versionan).** Los escribe `validate_3_2.py terraform`, alineados con `terraform fmt`. Si se escriben a mano, el formato es el de los `*.example`.
+
+| Archivo | Claves | Quién lo escribe y de dónde |
+|---|---|---|
+| `infra/aws/environments/dev/gcp_exporter.auto.tfvars` | `gcp_exporter_sa_unique_id`, `gcp_exporter_sa_email`, `gcp_exporter_audience` | C0c, de `gcloud iam service-accounts describe sa-exporter@…` |
+| `infra/gcp/environments/dev/aws_exporter.auto.tfvars` | `exporter_role_arn`, `exporter_s3_bucket`, `exporter_kms_key_arn`, `exporter_audience`, `exporter_aws_region`, `exporter_oidc_token_creators`, `exporter_image` | C4b, de `terraform output` de `infra/aws` y la cuenta de `gcloud config get-value account`. E2 agrega `exporter_image` y conserva el resto |
+
+**Terraform: módulos.**
+
+| Módulo | Entradas (por defecto) | Outputs |
+|---|---|---|
+| `aws/modules/gcp_exporter_role` | `role_name` (`ta-gcp-exporter-role`), `bucket_name`, `kms_key_arn`, `aws_region`, `object_prefix` (`raw/origin=stream/`), `gcp_sa_unique_id`, `gcp_sa_email`, `audience`, `max_session_seconds` (`3600`) | `role_arn`, `role_name`, `audience` |
+| `gcp/modules/cloud_run_exporter` | `project_id`, `region`, `job_name` (`ta-gcs-to-s3`), `scheduler_name` (`ta-gcs-to-s3-cada-15-min`), `image`, `service_account_email`, `env_vars` (map), `labels`, `schedule` (`*/15 * * * *`), `time_zone` (`Etc/UTC`), `cpu` (`1`), `memory` (`512Mi`), `task_timeout_seconds` (`840`), `max_retries` (`1`) | `job_name`, `scheduler_name`, `image` |
+
+**Terraform: direcciones de los recursos.** Las usan los `-target` del validador; si se renombran, `validate_3_2.py` deja de encontrarlos.
+
+| Raíz | Dirección | Qué es |
+|---|---|---|
+| AWS | `module.gcp_exporter_role[0].aws_iam_role.this`, `module.gcp_exporter_role[0].aws_iam_role_policy.s3` | El rol y su política en línea `ta-gcp-exporter-role-s3` |
+| AWS | `data.aws_kms_alias.exporter_lake[0]` | La llave del lake leída por su alias `alias/ta-{env}-lake` |
+| GCP | `google_storage_bucket_iam_member.exporter_lake_enriched` | `objectViewer` con condición de `sa-exporter` |
+| GCP | `google_service_account_iam_member.exporter_oidc_token_creator["<miembro>"]` | Permiso de token sobre `sa-exporter` |
+| GCP | `module.exporter_job[0].google_cloud_run_v2_job.this`, `…google_cloud_run_v2_job_iam_member.scheduler_invoker`, `…google_cloud_scheduler_job.this` | El job, `run.invoker` y el Scheduler |
+| GCP | `data.google_service_account.exporter` | `sa-exporter`, para el output `exporter_sa_unique_id` |
+| GCP | *(eliminado en v2.30)* `google_storage_bucket_iam_member.exporter_lake_read` | El `objectViewer` sin condición del Lote 1.3 |
+
+**Validador `python project/scripts/validate_3_2.py <parte> [opciones]`.** Se corre desde la raíz. Sale con 0 si ningún paso dio FALLA y con 1 si alguno la dio. Los pasos de cada parte y lo esperado están en `docs/validation/validation-3-2.md`.
+
+| Parte | Opciones | Escribe en el repo | Evidencia en `project/evidencia/` |
+|---|---|---|---|
+| `preflight` (A) | — | — | `validacion_3_2.json` |
+| `tests` (B) | — | — | ídem |
+| `terraform` (C) | `--apply` (pide confirmación por raíz), `--only aws\|gcp` | Los dos `*.auto.tfvars` | ídem, `tfplan_3_2_aws`, `tfplan_3_2_gcp` (no se versionan) |
+| `federation` (D) | `--limit N` (20) | — (en GCS, `export-state/_validation/`, que borra) | ídem, `exporter_token_3_2.json`, `exporter_probe_local_3_2.json`, `exporter_plan_d_3_2.json`, `exporter_run_d_3_2.json`, `exporter_verify_d_3_2.json` |
+| `job` (E) | `--skip-build`, `--image IMG`, `--no-canary`, `--wait-tick` | `exporter_image` en `aws_exporter.auto.tfvars` | ídem, `tfplan_3_2_job`, `exporter_verify_3_2.json` |
+| `lake` (F) | — | — | ídem, `lake_report_3_2.json` |
+| `status` | — | — | ídem |
+| `off` | — | — | ídem |
+
+Con Terraform, el validador: (1) no planea si la raíz tiene un `errored.tfstate` (un `apply` que creó recursos y no pudo guardar el estado; el detalle dice cómo subirlo con `state push`), porque un plan sin ese estado volvería a crear lo que ya existe; (2) si un plan o un `apply` falla, el detalle es el bloque `Error:` de Terraform sin colores; (3) si un plan cambia algo fuera de lo esperado, no aplica y el detalle y `data.diffs` muestran cada atributo que cambia (`ruta: antes → después`; los valores sensibles no se muestran). En `off`, O5 da AVISO si `status.py` muestra algo `ENCENDIDO` (por ejemplo, el simulador) y dice cómo apagarlo.
+
+Opciones globales: `--yes` (no pide confirmación), `--project`, `--region` y `--aws-profile`. `validacion_3_2.json` tiene esta forma:
+
+```json
+{"lote": "3.2", "hu": ["HU-006", "HU-025"], "updated_at": "…",
+ "parts": {"A": {"title": "…", "status": "OK|AVISO|FALLA", "started_at": "…", "finished_at": "…",
+                 "steps": [{"id": "A1", "title": "…", "status": "…", "detail": "…", "data": {}}]}},
+ "canaries": [{"gcs": "enriched/…-p999.parquet", "s3": "raw/origin=stream/…-p999.parquet", "cleaned": true}]}
+```
+
+Cada parte reemplaza su entrada y conserva las demás. `canaries` es el registro que usa `off` para borrar los canarios de E9 que no se hayan limpiado.
+
 ---
 
 ## 4. Flujo extremo a extremo
@@ -944,7 +1164,7 @@ Plan con `-target` de los tres módulos: **10 a crear, 0 a cambiar, 0 a destruir
 | 5 | NLP | Dataflow (`RunInference`) | `text` | `sentiment_*`, `emotion_*` | segundos |
 | 6 | Escritura | Dataflow | Evento enriquecido | BigQuery `posts_enriched` + GCS `raw/` y `enriched/` | < 1 min |
 | 7 | Tendencias | Dataflow (ventanas, §3.16) | Eventos enriquecidos | BigQuery `trend_windows` (versión vigente en `trend_windows_latest`) | **< 5 min** (KPI) |
-| 8 | Exportación | `gcs-to-s3` | GCS `enriched/` | S3 `raw/origin=stream/` | cada 15 min |
+| 8 | Exportación | `gcs-to-s3` (Cloud Run Job + Cloud Scheduler, federación OIDC; §3.18) | GCS `enriched/` | S3 `raw/origin=stream/` | cada 15 min (Scheduler en pausa por defecto) |
 | 9 | Carga histórica | `src/historical` (`load_historical.py`: mismo simulador, anonimización y NLP, en lote; §3.17) | Comentarios generados con semilla propia (`HIST_SEED`) | S3 `raw/origin=historical/` | one-shot (reejecutable sin duplicar) |
 | 10 | Raw → Trusted | Glue | S3 `raw/` | S3 `trusted/posts/` | horario |
 | 11 | Trusted → Curated | Glue/dbt | `trusted/` | S3 `curated/*` | horario |
@@ -981,7 +1201,11 @@ Plan con `-target` de los tres módulos: **10 a crear, 0 a cambiar, 0 a destruir
 | `HIST_N` | `50000` | loader histórico: total de registros |
 | `TA_HIST_ROOT` | `project/.local-s3` | loader histórico: espejo local del bucket (no se versiona) |
 | `TA_LAKE_BUCKET`, `TA_LAKE_KMS_KEY_ARN`, `TA_HIST_LOADER_ROLE_ARN` | outputs `lake_bucket`, `kms_key_arn`, `historical_loader_role_arn` de `infra/aws` (§5.9) | `load_historical.py upload` y `verify --s3` (el validador los toma de `terraform output`) |
-| `AWS_PROFILE` | perfil de AWS CLI del desarrollador | Terraform de AWS, `load_historical.py upload` (asume `ta-historical-loader`) |
+| `AWS_PROFILE` | perfil de AWS CLI del desarrollador | Terraform de AWS, `load_historical.py upload` (asume `ta-historical-loader`), `export_gcs_to_s3.py verify` y `lake-report` |
+| `TA_GCS_LAKE_BUCKET` | `{GCP_PROJECT}-ta-lake` | exportador (§3.18): lake de GCS que lee (solo `enriched/`) |
+| `TA_EXPORTER_ROLE_ARN`, `TA_EXPORTER_AUDIENCE` | outputs `exporter_role_arn` y `exporter_oidc_audience` de `infra/aws` (`ta-gcp-exporter-role`) | exportador: rol que asume y audiencia del ID token de `sa-exporter`. Usa además `TA_LAKE_BUCKET` y `TA_LAKE_KMS_KEY_ARN` |
+| `TA_EXPORTER_SA` | `sa-exporter@{GCP_PROJECT}.iam.gserviceaccount.com` | exportador fuera de Cloud Run: cuenta a impersonar para el token |
+| `TA_EXPORT_STATE_KEY`, `TA_EXPORT_SOURCES`, `TA_EXPORT_WORKERS`, `TA_EXPORT_MAX_OBJECTS`, `TA_EXPORT_OVERLAP_SECONDS`, `TA_EXPORT_MARGIN_SECONDS`, `TA_EXPORTER_SESSION_SECONDS` | `export-state/watermark.json`, las tres fuentes, `8`, `5000`, `3600`, `7200`, `3600` | exportador: watermark, paralelismo, corte por corrida, solape, margen del listado y duración de la sesión asumida (§5.6, §5.12) |
 
 **Variables propias del simulador** (Lote 1.2, §3.10). Solo las lee `ta-stream-simulator`; ningún otro componente depende de ellas.
 
@@ -1170,7 +1394,8 @@ gs://{GCP_PROJECT}-ta-lake/
   raw/source={s}/dt={YYYY-MM-DD}/hr={HH}/part-*.jsonl.gz     # envelope tal cual llegó (auditoría/replay)
   enriched/source={s}/dt={YYYY-MM-DD}/hr={HH}/part-*.parquet # envelope enriquecido, anonimizado
   dlq/dt={YYYY-MM-DD}/part-*.jsonl.gz
-  export-state/watermark.json
+  export-state/watermark.json                                # watermark del exportador gcs-to-s3 (formato en §5.6, v2.30)
+  export-state/_validation/, export-state/_probe/            # solo validación (validate_3_2.py y probe; se borran)
 ```
 
 Particiones por **fecha/hora de proceso**. El Parquet de `enriched/` usa el **esquema plano** de `posts_enriched` (§5.5): `author.user_hash` → `user_hash`, `author.followers` → `followers`, `sim.label_sentiment` → `label_sentiment`, `brands[0]` → `brand_primary`, `payload` como JSON en string. `raw/` conserva el handle simulado (dato sintético, solo para auditoría y replay; acceso restringido). **Solo `enriched/` sale hacia AWS.**
@@ -1238,12 +1463,14 @@ Dataset: `ta_stream` (ubicación = región de GCP). Desde v2.22 lo crea Terrafor
 
 ### 5.6 Puente GCP → AWS (exportador)
 
-- **Componente:** Cloud Run Job `ta-gcs-to-s3`, disparado por Cloud Scheduler cada 15 min.
-- **Lee:** `gs://…-ta-lake/enriched/` con watermark en `export-state/watermark.json`.
+- **Componente:** Cloud Run Job `ta-gcs-to-s3` (identidad `sa-exporter`, 1 vCPU, 512 MiB, 840 s máximo, 1 reintento), disparado por Cloud Scheduler `ta-gcs-to-s3-cada-15-min` (`*/15 * * * *`, UTC) con la identidad de `sa-exporter`. *(v2.30)* El Scheduler se crea **en pausa** (estado de ahorro); Terraform ignora `paused`.
+- **Lee:** `gs://…-ta-lake/enriched/` con watermark en `export-state/watermark.json`. *(v2.30)* Solo claves `enriched/source={s}/dt={AAAA-MM-DD}/hr={HH}/part-*.parquet`; candidatos: `timeCreated > cursor − 1 h` (solape), listando desde la partición de `cursor − 3 h`.
 - **Escribe:** `s3://{lake_bucket}/raw/origin=stream/source={s}/dt={YYYY-MM-DD}/hr={HH}/{mismo nombre}.parquet`.
-- **Idempotente:** si el objeto ya existe en S3 con el mismo tamaño, lo omite. Actualiza el watermark solo tras subir con éxito.
-- **Autenticación recomendada:** el ID token OIDC de `sa-exporter` asume el rol AWS `ta-gcp-exporter-role` vía `AssumeRoleWithWebIdentity` (requiere un OIDC identity provider de Google en IAM). Evita llaves estáticas. *Plan B:* usuario IAM con llaves guardadas en Secret Manager (menos seguro).
-- **Transporte:** HTTPS/TLS; objetos cifrados con SSE-KMS en destino.
+- **Idempotente:** si el objeto ya existe en S3 con el mismo tamaño, lo omite. Actualiza el watermark solo tras subir con éxito. *(v2.30)* La existencia y el tamaño salen de `ListObjectsV2` por partición (no de `HeadObject`, que exigiría `s3:GetObject`); con otro tamaño, sobrescribe y lo registra.
+- **Autenticación:** el ID token OIDC de `sa-exporter` asume el rol AWS `ta-gcp-exporter-role` vía `AssumeRoleWithWebIdentity`. Evita llaves estáticas. *Plan B:* usuario IAM con llaves guardadas en Secret Manager (menos seguro). *(v2.30)* Google es un proveedor OIDC **integrado** en AWS (`accounts.google.com`): no se crea un *identity provider*. Audiencia del token: `ta-gcp-exporter-role`. Confianza: `accounts.google.com:aud` ∈ {uniqueId de `sa-exporter`, su correo, la audiencia} (AWS la compara con el claim `azp`), `accounts.google.com:oaud` = audiencia, `accounts.google.com:sub` = uniqueId.
+- **Transporte:** HTTPS/TLS; objetos cifrados con SSE-KMS en destino. *(v2.30)* `PutObject` de una parte con `ServerSideEncryption = aws:kms`, la llave del lake, `BucketKeyEnabled` y `ChecksumCRC32C` = el CRC32C de GCS (S3 rechaza bytes distintos). Metadatos `gcs-generation`, `gcs-crc32c`, `gcs-md5`, `exporter` y `export-run-id`.
+- **Watermark** *(v2.30)*: JSON `{"schema": "ta-export-watermark@1", "cursor_time_created": "<UTC ms Z>", "updated_at": "…", "run_id": "…", "exporter": "gcs-to-s3@1.0", "last_run": {…}}`. `cursor_time_created` = mayor `timeCreated` de GCS ya exportado; nunca retrocede; se escribe con `ifGenerationMatch`. Lo lee y escribe solo el exportador (y `validate_3_2.py status`).
+- **Logs** *(v2.30)*: JSON a stdout (`export_start`, `export_assumed_role`, `export_plan`, `export_object_failed`, `export_object_overwritten`, `export_watermark_updated`, `export_done`, `probe_result`); sin tokens ni credenciales.
 
 ### 5.7 AWS: S3, Glue, Athena, QuickSight
 
@@ -1263,6 +1490,7 @@ Formato: **Parquet + Snappy**. Particiones registradas con **partition projectio
 - **Raw** (`ta_raw.posts_raw`): rutas `raw/origin=…/source=…/dt=…/hr=…/`; también el histórico escribe `hr`. Claves de partición `part_origin`, `part_source`, `part_dt`, `part_hr` (las columnas `origin` y `source` ya viajan dentro del Parquet). Columnas = las de BigQuery `posts_enriched`.
 - **Raw histórico** *(v2.28, §3.17, ADR-21)*: `raw/origin=historical/source={s}/dt={AAAA-MM-DD}/hr={HH}/part-historical-s{seed}-{AAAAMMDD}T{HH}.parquet`. `dt`/`hr` son la fecha y hora UTC de `event_time` (en el stream, las del proceso en GCS). Un archivo por fuente y hora, filas ordenadas por `event_id`, mismo Parquet que `enriched/` (§5.4), SSE-KMS con la llave del lake. Solo lo escribe `ta-historical-loader`; reejecutar reescribe las mismas claves.
 - **Existe desde el Lote 3.1** *(v2.28)*: el bucket `ta-dev-648617469176-lake`, la llave `alias/ta-dev-lake` y el rol `ta-historical-loader`, adelantados del Lote 4.1 (§3.17). Glue, Athena, EventBridge y los demás roles llegan con la Fase 4.
+- **Raw stream** *(v2.30, §3.18)*: `raw/origin=stream/source={s}/dt={AAAA-MM-DD}/hr={HH}/part-{AAAAMMDD}T{hhmmss}Z-p{panel:03d}.parquet`, copia byte a byte de `enriched/` (mismo Parquet de §5.4, mismo nombre), con `dt`/`hr` de la **hora de proceso** en GCS. Lo escribe solo `ta-gcp-exporter-role` (el job `ta-gcs-to-s3`), con SSE-KMS de la llave del lake y los metadatos de §5.6; un objeto puede sobrescribirse si cambió su tamaño en GCS. Trusted deduplica por `event_id` (§5.7).
 - **Trusted** (`ta_trusted.posts`): `trusted/posts/source=…/dt=…/`, con `dt = DATE(event_time)` UTC; añade `text_clean`; `source` es partición, no columna.
 - DDL en `project/contracts/athena/`, copia verificada de esta sección (§5.13). Las columnas de Curated están definidas abajo.
 
@@ -1304,13 +1532,13 @@ Solo `fact_posts` está particionada (por `dt`, con partition projection). Las d
 |---|---|---|
 | `sa-simulator` | GCP | `pubsub.publisher` en `ta-raw-*`; `storage.objectUser` en `…-ta-datasets` |
 | `sa-dataflow` | GCP | `pubsub.subscriber` (y en `ta-dlq-df`, v2.26); `pubsub.viewer` en `ta-raw-{source}-df` y `ta-dlq-df` *(v2.26)*; `pubsub.publisher` en `ta-dlq` *(v2.16: los inválidos van a `ta-dlq`, HU-018)*; `artifactregistry.reader` en `ta-images` *(v2.23, imágenes `dataflow-nlp` y, desde v2.26, `dataflow-launcher`)*; `bigquery.dataEditor` en `ta_stream`; `storage.objectAdmin` en `…-ta-lake`; `secretmanager.secretAccessor` en `ta-hmac-key`; `dataflow.worker` |
-| `sa-exporter` | GCP | `storage.objectViewer` en `…-ta-lake`; objeto escritura en `export-state/`; puede emitir OIDC |
-| `ta-gcp-exporter-role` | AWS | `s3:PutObject`, `s3:HeadObject`, `kms:GenerateDataKey` solo sobre `raw/origin=stream/` |
+| `sa-exporter` | GCP | `storage.objectViewer` en `…-ta-lake` **con condición** *(v2.30)*: listar el bucket y leer solo objetos de `enriched/`; `storage.objectUser` con condición en `export-state/`; `run.invoker` sobre el job `ta-gcs-to-s3` (identidad del Scheduler); emite su ID token desde el servidor de metadatos del job. Quien valida desde su máquina tiene `iam.serviceAccountOpenIdTokenCreator` solo sobre `sa-exporter` (`exporter_oidc_token_creators`) |
+| `ta-gcp-exporter-role` | AWS | *(v2.30)* Confianza: `accounts.google.com` (proveedor integrado) con `aud`/`oaud`/`sub` de `sa-exporter` (§5.6). `s3:PutObject` en `raw/origin=stream/*`; `s3:ListBucket` solo con `s3:prefix` = `raw/origin=stream/*` (idempotencia: `s3:HeadObject` no es una acción de IAM y un HEAD exigiría `s3:GetObject`); `kms:GenerateDataKey` en la llave del lake con `kms:ViaService` = S3. Sin lectura ni borrado |
 | `ta-glue-role` | AWS | R/W en `raw/ trusted/ curated/ quality/`; Glue Catalog; logs |
 | `ta-historical-loader` | AWS | Rol que asumen los desarrolladores de la cuenta con su perfil *(v2.28)*: `s3:PutObject` en `raw/origin=historical/*`; `s3:ListBucket` solo con `s3:prefix` = `raw/origin=historical/*` (subida idempotente); `kms:GenerateDataKey` en la llave del lake. Sin lectura ni borrado |
 | `ta-quicksight-role` | AWS | `athena:*` en workgroup `ta-analytics`; lectura `curated/` |
 
-**Estado tras el Lote 1.3:** las tres identidades de GCP existen (§5.15). `sa-simulator` y `sa-exporter` tienen todos sus permisos. **Desde el Lote 2.2 (v2.22)** `sa-dataflow` también tiene `bigquery.dataEditor` en el dataset `ta_stream` y `secretmanager.secretAccessor` en `ta-hmac-key` (solo en ese secreto); nadie más tiene acceso de lectura al secreto (el loader histórico usará las credenciales del desarrollador). **Desde el Lote 2.3 (v2.23)**, además, `artifactregistry.reader` en el repositorio `ta-images`, para descargar la imagen `dataflow-nlp`. **Desde el Lote 2.4 (v2.26)**, `roles/pubsub.viewer` en las cuatro suscripciones que lee (quita el aviso `GETTING_PUBSUB_SUBSCRIPTION_FAILED`) y `roles/pubsub.subscriber` en `ta-dlq-df`, a nivel de suscripción. El lanzador de la plantilla Flex corre con `sa-dataflow`: no necesita más permisos. La escritura de `sa-exporter` en `export-state/` se limita con una condición de IAM sobre el prefijo; la emisión del token OIDC se configura en el Lote 3.2. Las identidades de AWS llegan con las Fases 3 y 4; **desde el Lote 3.1 (v2.28)** existe `ta-historical-loader` (`infra/aws/modules/historical_loader_role`). El loader lee `ta-hmac-key` con las credenciales del desarrollador, no con una service account. Terraform sigue operando con las credenciales de Alejandro (§5.1).
+**Estado tras el Lote 1.3:** las tres identidades de GCP existen (§5.15). `sa-simulator` y `sa-exporter` tienen todos sus permisos. **Desde el Lote 2.2 (v2.22)** `sa-dataflow` también tiene `bigquery.dataEditor` en el dataset `ta_stream` y `secretmanager.secretAccessor` en `ta-hmac-key` (solo en ese secreto); nadie más tiene acceso de lectura al secreto (el loader histórico usará las credenciales del desarrollador). **Desde el Lote 2.3 (v2.23)**, además, `artifactregistry.reader` en el repositorio `ta-images`, para descargar la imagen `dataflow-nlp`. **Desde el Lote 2.4 (v2.26)**, `roles/pubsub.viewer` en las cuatro suscripciones que lee (quita el aviso `GETTING_PUBSUB_SUBSCRIPTION_FAILED`) y `roles/pubsub.subscriber` en `ta-dlq-df`, a nivel de suscripción. El lanzador de la plantilla Flex corre con `sa-dataflow`: no necesita más permisos. La escritura de `sa-exporter` en `export-state/` se limita con una condición de IAM sobre el prefijo; la emisión del token OIDC se configura en el Lote 3.2. **Desde el Lote 3.2 (v2.30)** la lectura de `sa-exporter` está limitada a `enriched/` (se quitó el `objectViewer` sin condición de `platform.tf`), tiene `run.invoker` sobre su job y existe `ta-gcp-exporter-role` (`infra/aws/modules/gcp_exporter_role`), que solo asume `sa-exporter`. Las identidades de AWS llegan con las Fases 3 y 4; **desde el Lote 3.1 (v2.28)** existe `ta-historical-loader` (`infra/aws/modules/historical_loader_role`). El loader lee `ta-hmac-key` con las credenciales del desarrollador, no con una service account. Terraform sigue operando con las credenciales de Alejandro (§5.1).
 
 ### 5.9 Salidas de Terraform (outputs que consumen los demás)
 
@@ -1324,9 +1552,9 @@ Solo `fact_posts` está particionada (por `dt`, con partition projection). Las d
 | Raíz | Outputs |
 |---|---|
 | `infra/gcp/bootstrap` | `tfstate_bucket`, `enabled_services`, `budget_name` |
-| `infra/gcp/environments/dev` | `project_id`, `region`, `labels`; desde el Lote 1.3, además: `topic_names`, `subscription_names`, `dlq_topic`, `alerts_topic`, `datasets_bucket`, `lake_bucket`, `artifact_registry_url`, `simulator_url` (`null` si no está desplegado; Terraform no guarda outputs nulos, así que `terraform output simulator_url` responde *not found*) y `service_accounts` (§5.15); desde el Lote 2.2: `bq_dataset`, `posts_enriched_table` (`proyecto:ta_stream.posts_enriched`) y `hmac_secret_id`; desde el Lote 2.4: `trend_windows_table`, `dlq_events_table`, `dq_results_table` (`proyecto:ta_stream.…`), `trend_windows_latest_view` (`proyecto.ta_stream.trend_windows_latest`), `dlq_df_subscription`, `dataflow_template_spec` y `dataflow_launcher_image` (los usa `scripts/dataflow_template.py`) |
+| `infra/gcp/environments/dev` | `project_id`, `region`, `labels`; desde el Lote 1.3, además: `topic_names`, `subscription_names`, `dlq_topic`, `alerts_topic`, `datasets_bucket`, `lake_bucket`, `artifact_registry_url`, `simulator_url` (`null` si no está desplegado; Terraform no guarda outputs nulos, así que `terraform output simulator_url` responde *not found*) y `service_accounts` (§5.15); desde el Lote 2.2: `bq_dataset`, `posts_enriched_table` (`proyecto:ta_stream.posts_enriched`) y `hmac_secret_id`; desde el Lote 2.4: `trend_windows_table`, `dlq_events_table`, `dq_results_table` (`proyecto:ta_stream.…`), `trend_windows_latest_view` (`proyecto.ta_stream.trend_windows_latest`), `dlq_df_subscription`, `dataflow_template_spec` y `dataflow_launcher_image` (los usa `scripts/dataflow_template.py`); desde el Lote 3.2: `exporter_sa_unique_id`, `exporter_job_name`, `exporter_scheduler_name` y `exporter_image` (los tres últimos `null` sin imagen) |
 | `infra/aws/bootstrap` | `tfstate_bucket`, `tflock_table`, `budget_name` |
-| `infra/aws/environments/dev` | `aws_region`; desde el Lote 3.1 (v2.28): `lake_bucket`, `lake_bucket_arn`, `kms_key_arn`, `kms_key_alias` y `historical_loader_role_arn` (los usan `load_historical.py upload` y, desde el 4.1, Glue y Athena) |
+| `infra/aws/environments/dev` | `aws_region`; desde el Lote 3.1 (v2.28): `lake_bucket`, `lake_bucket_arn`, `kms_key_arn`, `kms_key_alias` y `historical_loader_role_arn` (los usan `load_historical.py upload` y, desde el 4.1, Glue y Athena); desde el Lote 3.2 (v2.30): `exporter_role_arn`, `exporter_role_name` y `exporter_oidc_audience` (`null` hasta que existe el uniqueId de `sa-exporter`) |
 
 **Valores reales aplicados (Lote 1.0):**
 
@@ -1368,7 +1596,7 @@ Resultados en BigQuery `dq_results` (columnas en §5.5) y `s3://…/quality/`. E
 | NLP (modelos, imagen `dataflow-nlp`, `RunInference`) | §3.15, §5.2, §5.8 y `docs/validation/validation-2-3.md` | Salida de `build_nlp_image.sh` (la prueba de humo), JSON de `verify_enriched.py --expect-nlp`, `evidencia/validacion_2_3.json` y los logs `nlp_config` / `nlp_inference_failed` |
 | Tendencias, `dlq_events`, `dq_results` o la plantilla Flex | §3.16, §5.3, §5.5, §5.8, §5.12, `src/streaming/TRENDS.md` y `docs/validation/validation-2-4.md` | JSON de `verify_trends.py`, `evidencia/validacion_2_4.json`, la línea `trends_config` del lanzamiento y los logs `trend_bq_insert_failed` / `trend_row_unrecognized` |
 | Encender, apagar o comprobar servicios; validar un lote de punta a punta | `docs/ACTIVE_SERVICES.md`, §8 y la guía de validación del lote | Salida de `python project/scripts/status.py` y el resumen del validador |
-| Exportador | §5.4, §5.6, §5.8 | ARN del rol AWS, bucket S3 |
+| Exportador | §3.18 (y §3.18.1: interfaces), §5.4, §5.6, §5.8, `src/exporter/EXPORTER.md` y `docs/validation/validation-3-2.md` | `evidencia/validacion_3_2.json`, los JSON de `export_gcs_to_s3.py token`/`probe`/`verify` y el `export_done` del job |
 | Loader histórico | §3.17, §3.2, §3.8, §3.10, §5.2, §5.7, §5.8, `src/historical/HISTORICAL.md` y `docs/validation/validation-3-1.md` | Salida de `load_historical.py doctor`, `evidencia/validacion_3_1.json`, los JSON de `verify` y `terraform output` de `infra/aws` |
 | Jobs de Glue / dbt | §5.2, §5.7, §5.10 | Esquema real de Athena (`SHOW CREATE TABLE`) si ya existe algo |
 | Calidad | §5.5, §5.7, §5.10 | — |
@@ -1409,6 +1637,7 @@ Valores por defecto que evitan decidir en cada lote. Se ajustan aquí primero.
 | Plantilla Flex | *(v2.26)* Imagen `dataflow-launcher:{commit}` (o fecha UTC) y `:latest`; especificación `ta-stream-{etiqueta}.json` y `ta-stream.json` en `_dataflow/templates/`; parámetros solo desde `terraform output`. | HU-005 |
 | Canal de alertas | Correo. Un suscriptor de `ta-alerts` escribe un log estructurado (`severity=WARNING`, `alert=trend`) y una alerta basada en logs de Cloud Monitoring envía el correo mediante un canal de notificación de tipo email. Las direcciones van en `terraform.tfvars` (`alert_emails`, que no se versiona); por ahora el único destinatario es el correo de Alejandro. Sin SMTP ni secretos. | HU-039 |
 | Carga histórica | *(v2.28, §3.17)* `HIST_SEED = 3101`, 50.000 filas repartidas por igual entre las tres fuentes, 180 días hasta `as_of` (hoy 00:00 UTC, guardado en `generate.json`). Estacionalidad semanal y horaria en hora local (UTC−5), +30 % de crecimiento, ruido diario σ = 0,10, Pepsi +35 % y Postobón −10 % de punta a punta, `campana_sprite` (hace 120 días) y `crisis_postobon` (hace 40 días). NLP en lotes de 16 con la espera del pipeline (5 s), siempre con el `BundleBasedDirectRunner` y en procesos paralelos (`--workers`). Archivos por `source/dt/hr` de `event_time`. Constantes en `src/historical/config/historical.yaml`. | HU-024 |
+| Exportador GCS → S3 | *(v2.30, §3.18)* Cada 15 min (UTC) con el Scheduler **en pausa por defecto**; solape de 1 h, margen de listado de 2 h, 8 subidas en paralelo, máximo 5.000 objetos por corrida, 840 s por ejecución y 1 reintento; watermark solo tras subir todo. Imagen `gcs-to-s3:{commit o fecha}-{huella}`. | HU-025 |
 | Prueba de humo E2E | `scripts/smoke_e2e.py` sigue un evento centinela (`event_id` conocido) desde el simulador hasta `ta_curated.fact_posts` y reporta latencia por etapa. | HU-048 |
 | Retención del estado de Terraform | GCS: se conservan las 10 versiones no vigentes más recientes. S3: las versiones no vigentes expiran a los 90 días y los *uploads* multiparte incompletos a los 7. | HU-046 |
 | Presupuestos | Solo avisan por correo; no cortan el gasto. GCP: 50 %, 90 % y 100 % del gasto real y 100 % del pronóstico. AWS: 50 %, 80 % y 100 % del gasto real y 100 % del pronóstico. Montos aplicados: 400000 COP (GCP) y 50 USD (AWS) (§9 #10). | HU-046, HU-043 |
@@ -1523,7 +1752,7 @@ infra/
 - Service accounts, topics, suscripciones, buckets `…-ta-datasets` y `…-ta-lake`, Artifact Registry y Cloud Run: **Lote 1.3** (§5.15). Roles de AWS: Fases 3 y 4.
 - BigQuery (`ta_stream`): `posts_enriched` desde el Lote 2.2; `trend_windows`, `dlq_events`, `dq_results` y la vista `trend_windows_latest` desde el Lote 2.4 (§3.16).
 - Secreto `ta-hmac-key`: Lote 2.2 (§3.14).
-- Glue, Athena y EventBridge: Fase 4. El bucket S3 del lake, su llave KMS y el rol `ta-historical-loader` existen desde el Lote 3.1 (v2.28, ADR-21). Federación OIDC GCP → AWS: Lote 3.2.
+- Glue, Athena y EventBridge: Fase 4. El bucket S3 del lake, su llave KMS y el rol `ta-historical-loader` existen desde el Lote 3.1 (v2.28, ADR-21). La federación OIDC GCP → AWS (`ta-gcp-exporter-role`) existe desde el Lote 3.2 (v2.30, §3.18).
 - Acceso de Miguel y Camila al proyecto GCP: diferido (§9, Fase 0).
 
 **Observaciones para lotes futuros:**
@@ -1617,7 +1846,7 @@ infra/
 │
 ├── docs/
 │   ├── ARCHITECTURE.md                    <- este archivo: arquitectura y contratos (versión vigente)
-│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.29)
+│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.30)
 │   ├── PLAN.md                            <- fases y lotes, matriz HU y estado del proyecto
 │   ├── HU.md                              <- historias de usuario (HU-001 a HU-048)
 │   ├── ACTIVE_SERVICES.md                 <- encender, comprobar y apagar lo que cobra (on.py, off.py, status.py)
@@ -1625,7 +1854,8 @@ infra/
 │   │   ├── validation-2-2.md              <- Lote 2.2: validación paso a paso
 │   │   ├── validation-2-3.md              <- Lote 2.3: validación paso a paso (automática con validate_2_3.py)
 │   │   ├── validation-2-4.md              <- Lote 2.4: validación paso a paso (automática con validate_2_4.py)
-│   │   └── validation-3-1.md              <- Lote 3.1: validación paso a paso (automática con validate_3_1.py)
+│   │   ├── validation-3-1.md              <- Lote 3.1: validación paso a paso (automática con validate_3_1.py)
+│   │   └── validation-3-2.md              <- Lote 3.2: validación paso a paso (automática con validate_3_2.py)
 │   ├── GLOSSARY.md                        <- glosario del proyecto
 │   ├── NOTAS.md                           <- notas de trabajo
 │   ├── trend_analyzer_multicloud.drawio   <- diagrama editable (v2.5)
@@ -1660,12 +1890,14 @@ infra/
     │   │   ├── modules/{pubsub,gcs_bucket,service_account,artifact_registry,cloud_run_simulator}/   <- Lote 1.3
     │   │   ├── modules/{bigquery_stream,hmac_secret}/   <- Lote 2.2 (bigquery_stream/schemas/posts_enriched.json)
     │   │   ├── modules/bigquery_stream_tables/   <- Lote 2.4: trend_windows, dlq_events, dq_results y la vista (schemas/)
-    │   │   └── environments/dev/          <- estado remoto (GCS); Lote 1.3: platform.tf, variables_platform.tf, outputs_platform.tf; Lote 2.2: streaming.tf, variables_streaming.tf, outputs_streaming.tf; Lote 2.3: nlp.tf; Lote 2.4: trends.tf, variables_trends.tf, outputs_trends.tf
+    │   │   ├── modules/cloud_run_exporter/   <- Lote 3.2: job ta-gcs-to-s3, run.invoker y Scheduler (en pausa)
+    │   │   └── environments/dev/          <- estado remoto (GCS); Lote 1.3: platform.tf, variables_platform.tf, outputs_platform.tf; Lote 2.2: streaming.tf, variables_streaming.tf, outputs_streaming.tf; Lote 2.3: nlp.tf; Lote 2.4: trends.tf, variables_trends.tf, outputs_trends.tf; Lote 3.2: exporter.tf, variables_exporter.tf, outputs_exporter.tf, aws_exporter.auto.tfvars.example
     │   └── aws/
     │       ├── bootstrap/                 <- estado local: bucket de estado, tabla de bloqueo, presupuesto
     │       ├── modules/{tfstate_backend,budget}/
     │       ├── modules/{kms_key,s3_lake,historical_loader_role}/   <- Lote 3.1: llave y bucket del lake, rol del loader (ADR-21)
-    │       └── environments/dev/          <- estado remoto (S3); Lote 3.1: lake.tf, variables_lake.tf, outputs_lake.tf
+    │       ├── modules/gcp_exporter_role/ <- Lote 3.2: ta-gcp-exporter-role (federación OIDC de sa-exporter)
+    │       └── environments/dev/          <- estado remoto (S3); Lote 3.1: lake.tf, variables_lake.tf, outputs_lake.tf; Lote 3.2: exporter.tf, variables_exporter.tf, outputs_exporter.tf, gcp_exporter.auto.tfvars.example
     ├── pytest.ini                         <- Lote 1.1: pythonpath = src, testpaths = src
     ├── scripts/
     │   ├── generate_comments.py           <- Lote 1.1: CLI del generador, snapshots CSV / histórico (§3.2.2)
@@ -1689,6 +1921,9 @@ infra/
     │   ├── load_historical.py             <- Lote 3.1: loader histórico (plan, doctor, generate, nlp, write, verify, upload, status)
     │   ├── historical_nlp.sh              <- Lote 3.1: etapa de NLP del histórico en la imagen ta-dataflow-nlp-local
     │   ├── validate_3_1.py                <- Lote 3.1: validación automática (partes A a F de docs/validation/validation-3-1.md)
+    │   ├── export_gcs_to_s3.py            <- Lote 3.2: CLI del exportador (run, plan, probe, token, doctor, verify, status, lake-report)
+    │   ├── build_exporter_image.sh        <- Lote 3.2: construye, prueba y publica la imagen gcs-to-s3
+    │   ├── validate_3_2.py                <- Lote 3.2: validación automática (partes A a F, status y off de docs/validation/validation-3-2.md)
     │   ├── on.py  off.py  status.py       <- operación: encender, apagar y ver lo que cobra (ACTIVE_SERVICES.md)
     │   └── smoke_e2e.py                   <- prueba de humo extremo a extremo (HU-048)
     └── src/
@@ -1724,11 +1959,12 @@ infra/
         │                                     Lote 2.3: nlp, nlp_testing, nlp_image/ (Dockerfile, fetch_models, image_smoke, cloudbuild), tests/test_nlp* (§3.15).
         │                                     Lote 2.4: trends, trends_core, bq_sink, dlq_bq, trends_check, trends_bq, trends_cli, template_tools,
         │                                     flex_main, flex_template/ (Dockerfile, metadata.json), TRENDS.md, tests/test_trends_*, test_flex_template (§3.16)
-        ├── ops/                           <- operación y validación: services (on/off/status), validate23 (validate_2_3.py), validate24 (validate_2_4.py), validate31 (validate_3_1.py), tests/
+        ├── ops/                           <- operación y validación: services (on/off/status), validate23 (validate_2_3.py), validate24 (validate_2_4.py), validate31 (validate_3_1.py), validate32 (validate_3_2.py), tests/
         ├── historical/                    <- Lote 3.1: full load con el mismo simulador, anonimización y NLP (§3.17)
         │                                     plan, adapters, generate, nlp_batch, writer, verify, bq, s3io, doctor, cli, schema, work, testing,
         │                                     config/historical.yaml, requirements.txt, HISTORICAL.md, tests/test_hist_*
-        ├── exporter/                      <- gcs-to-s3
+        ├── exporter/                      <- Lote 3.2: gcs-to-s3 (§3.18): config, keys, watermark, core, gcs_io, s3_io, identity, probe, verify,
+        │                                     lake_check, cli, jsonlog, testing, Dockerfile, cloudbuild.yaml, requirements.txt, EXPORTER.md, tests/test_exp_*
         ├── lakehouse/{glue_jobs,dbt}/
         ├── quality/                       <- Great Expectations
         └── collectors/                    <- LEGADO: conectores reales Mastodon/Reddit/RSS (no se despliega)
@@ -1816,6 +2052,7 @@ Estado actual: <salida de `bash scripts/preflight.sh` (nube) o `bash scripts/loc
 | ADR-18 | Rama enriched (Lote 2.2): llave HMAC leída en el worker (`DoFn.setup`) desde Secret Manager por REST con `google-auth`; valor cargado fuera de Terraform (`hmac_key.sh`); fila y Parquet en `src/common/` para que el loader histórico use el mismo código; *streaming inserts* a `posts_enriched`; dataset, tabla, secreto y permisos de `sa-dataflow` adelantados del Lote 2.4 | Llave como opción del pipeline (quedaría en el grafo del job); `random_password` en Terraform (quedaría en el estado); `google-cloud-secret-manager` como dependencia nueva; Storage Write API (exige el servicio de expansión de Java en el launcher y en local); esperar al Lote 2.4 (el 2.2 no tendría dónde escribir) |
 | ADR-19 | NLP (Lote 2.3): `ModelHandler` propio por tarea con `RunInference` y modelo compartido por VM; modelos y commit horneados en una imagen `dataflow-nlp` construida con un contexto propio; solo el preprocesado de pysentimiento, cargado desde su archivo; la etapa se engancha desde `attach_enriched()` y fija `sdk_container_image` en las opciones del pipeline, sin cambiar archivos del Lote 2.1; un lote fallido sigue sin NLP. **v2.25:** el modelo se comparte entre procesos solo en Dataflow; en local (DirectRunner) se carga una vez por proceso (§3.15, "NLP en local") | `HuggingFacePipelineModelHandler` de Beam (menos control del preprocesado y de la versión); descargar los modelos al arrancar el worker (depende de Hugging Face en ejecución); pysentimiento completo (`datasets`, `spacy`); NLP en Cloud Run con Pub/Sub intermedio (plan B de ADR-05, más piezas); descartar las filas que fallan; compartir el modelo también en local (con `MultiProcessShared` el `BundleBasedDirectRunner` se bloquea) |
 | ADR-20 | Tendencias y DLQ en BigQuery (Lote 2.4): ventanas deslizantes en tiempo del evento con `AfterWatermark`, paneles tardíos acumulativos y una fila por panel (vista `trend_windows_latest` con la de mayor `n_posts`); baseline y alertas en un DoFn con estado por marca × fuente; `dlq_events` desde una suscripción `ta-dlq-df` en el mismo job; `pubsub.viewer` por suscripción; plantilla **Flex** con imagen de lanzador propia y parámetros desde `terraform output`; la rama se engancha con `attach_trends()` sin cambiar `dataflow_job.sh` | Agregador propio por tiempo de proceso (más código y sin marca de agua); `MERGE`/actualizar filas en BigQuery (no se puede con *streaming inserts*); esperar 30 min a cerrar cada ventana (incumple el KPI de < 5 min); `--dlq_table` del 2.1 (pide cambiar el lanzamiento); `pubsub.viewer` a nivel de proyecto; plantilla clásica (en Python no admite bien parámetros en tiempo de ejecución para streaming) |
+| ADR-22 | Exportador y federación (Lote 3.2): Cloud Run Job + Scheduler **creado en pausa** (`ignore_changes = [paused]`) con la identidad de `sa-exporter`; ID token de Google → `AssumeRoleWithWebIdentity` contra el proveedor **integrado** `accounts.google.com`, con `aud` (claim `azp`) ∈ {uniqueId, correo, audiencia}, `oaud` = audiencia y `sub` = uniqueId; idempotencia con `ListObjectsV2` por partición y `s3:prefix` (sin `GetObject`); `PutObject` de una parte con SSE-KMS, *bucket key* y el CRC32C de GCS; watermark por `timeCreated` con solape de 1 h y precondición de generación; lectura de `sa-exporter` limitada a `enriched/` con una condición de IAM (`resource.type` de bucket para listar); enlace entre nubes con `*.auto.tfvars` que escribe el validador; exportador sin dependencias de otros lotes | `aws_iam_openid_connect_provider` propio para Google (AWS ya lo trae integrado); llaves de IAM en Secret Manager (plan B de HU-006); `HeadObject` por objeto (pide `s3:GetObject`); Storage Transfer Service (ADR-07); `terraform_remote_state` entre nubes (credenciales cruzadas en cada plan); watermark por nombre de archivo (los paneles tardíos llegan a particiones anteriores); Scheduler encendido por defecto (cobra sin que nadie lo decida) |
 | ADR-21 | Histórico (Lote 3.1): reutilizar `EventFactory` del simulador con otra semilla y elegir los eventos por **aceptación** según un plan de tendencias (sin tocar el simulador); etapas reanudables con el NLP del pipeline (`nlp_from_options`) en lote dentro de la imagen de NLP local; Parquet por `source/dt/hr` de `event_time`; adelantar del Lote 4.1 el bucket del lake, su llave KMS y el rol `ta-historical-loader` (solo `PutObject`/`ListBucket` bajo `raw/origin=historical/` y `GenerateDataKey`) | `scripts/generate_comments.py` + usuarios y payloads propios (no sería el mismo pool ni los mismos payloads); forzar marca y sentimiento con escenarios (marcaría `sim.scenario`); NLP en Dataflow batch (cuesta y suma una plantilla); particiones por hora de carga (reejecutar en otro momento duplicaría Raw); esperar al 4.1 o escribir con las credenciales de administrador |
 
 ### Riesgos
@@ -1825,7 +2062,7 @@ Estado actual: <salida de `bash scripts/preflight.sh` (nube) o `bash scripts/loc
 | **Tiempo** (dos entregas: Sprint 2 y Sprint Final) | Paralelizar fases 1–3; NLP en Dataflow es lo más arriesgado → fallback: modelo ligero o NLP en Cloud Run con Pub/Sub intermedio |
 | **Costo** (Dataflow 24/7 + Cloud Run always-on) | `maxNumWorkers=1–2`, apagar fuera de demos, alertas de presupuesto (Lote 7.3). **v2.26:** el Lote 2.4 no suma VMs: las tendencias y la DLQ corren en el mismo worker; la plantilla añade ~0,10 USD por build |
 | Dataflow + modelos HF (imagen pesada, memoria; RoBERTuito requiere `pysentimiento` y su `preprocess_tweet`) | Contenedor personalizado, probar local con `DirectRunner` primero; si la memoria no alcanza, correr solo el modelo de sentimiento y dejar la emoción como mejora. **v2.25:** validado en local y en Dataflow con los dos modelos en un `e2-standard-2`; el riesgo baja a "mitigado" (falta anotar el pico de memoria) |
-| Federación OIDC GCP→AWS no funciona a tiempo | Plan B con llaves en Secret Manager (documentar como deuda) |
+| Federación OIDC GCP→AWS no funciona a tiempo | Plan B con llaves en Secret Manager (documentar como deuda). **v2.30:** implementada sin llaves (§3.18); el riesgo baja a "por confirmar" hasta las partes D y E de `validation-3-2.md` (claims reales del token y asunción real) |
 | Licencias de modelos NLP | Uso académico; verificar la licencia de cada modelo en su *model card* (los de pysentimiento se entrenaron con corpus TASS) y citarlos en el informe. **v2.25:** las *model cards* no declaran licencia; pysentimiento advierte que los modelos quedan sujetos a las licencias de sus datos (TASS 2020, EmoEvent), muchas no comerciales. Compatible con el uso académico del proyecto; citas en §3.15 |
 | Modelos entrenados en tweets vs. comentarios con jerga y emojis de Reddit/Facebook/Instagram | Medir contra `label_sentiment`; declarar la limitación en el informe |
 | Generador por plantillas: baja variedad léxica y texto repetido | Ampliar plantillas (§3.2 cambio #5); medir duplicados por `event_id` y **no** por texto; reportar la diversidad léxica en el profiling. **v2.13:** plantillas ampliadas en el Lote 1.1 (5 categorías, 40 informativas y 18 comparativas); medido, 99,995 % de textos únicos en 20.000 comentarios |

@@ -1,6 +1,6 @@
 # TrendAnalyzer · Historias de Usuario (HU)
 
-> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.29** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
+> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.31** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
 > Cada HU tiene un ID **HU-000**, su fase/lote de `ARCHITECTURE.md` §7, responsable, sprint y criterios de aceptación verificables.
 
 ---
@@ -55,7 +55,7 @@ Criterios de aceptación: lista verificable.
 | **E1 · Infraestructura como código** | | | | | | |
 | HU-004 | Infraestructura GCP base | 1 · 1.3 | M | Must | 2 | ✅ |
 | HU-005 | Recursos de streaming (BigQuery, secreto HMAC) | 2 · 2.4 | M + C | Must | 2 | ✅ |
-| HU-006 | Federación OIDC GCP → AWS | 3 · 3.2 | M | Must | 2 | ⬜ |
+| HU-006 | Federación OIDC GCP → AWS | 3 · 3.2 | M | Must | 2 | ✅ |
 | HU-007 | Infraestructura AWS del lakehouse | 4 · 4.1 | M | Must | 2 | ⬜ |
 | HU-046 | Bootstrap de Terraform y entornos | 1 · 1.0 | M | Must | 2 | ✅ |
 | **E2 · Simulación de fuentes** | | | | | | |
@@ -79,7 +79,7 @@ Criterios de aceptación: lista verificable.
 | HU-023 | Detección de tendencias en ventanas | 2 · 2.4 | C | Must | 2 | ✅ |
 | **E4 · Histórico y puente a AWS** | | | | | | |
 | HU-024 | Carga histórica (full load) | 3 · 3.1 | A | Must | 2 | ✅ |
-| HU-025 | Exportación GCS → S3 | 3 · 3.2 | M | Must | 2 | ⬜ |
+| HU-025 | Exportación GCS → S3 | 3 · 3.2 | M | Must | 2 | ✅ |
 | **E5 · Lakehouse en AWS** | | | | | | |
 | HU-026 | Capa Trusted | 4 · 4.2 | C | Must | 2 | ⬜ |
 | HU-027 | Capa Curated (modelo estrella) | 4 · 4.3 | C | Must | 2 | ⬜ |
@@ -200,10 +200,12 @@ Criterios de aceptación: lista verificable.
 **Como** líder técnico **quiero** que GCP asuma un rol de AWS sin llaves estáticas **para** transferir datos entre nubes de forma segura.
 
 **Criterios de aceptación**
-- Existe un OIDC identity provider de Google en IAM de AWS.
+- Existe un OIDC identity provider de Google en IAM de AWS. *(v2.30: es el proveedor integrado de AWS, `accounts.google.com`; no se crea un recurso. La confianza del rol fija la audiencia y el uniqueId de `sa-exporter`.)*
 - `sa-exporter` asume `ta-gcp-exporter-role` mediante `AssumeRoleWithWebIdentity`.
-- El rol solo permite `s3:PutObject`, `s3:HeadObject` y `kms:GenerateDataKey` sobre `raw/origin=stream/`.
+- El rol solo permite `s3:PutObject`, `s3:HeadObject` y `kms:GenerateDataKey` sobre `raw/origin=stream/`. *(v2.30: `s3:HeadObject` no es una acción de IAM —un HEAD exige `s3:GetObject`—; el rol tiene `s3:PutObject` en `raw/origin=stream/*`, `s3:ListBucket` solo con `s3:prefix` = `raw/origin=stream/*` para la idempotencia y `kms:GenerateDataKey` vía S3. Sin lectura ni borrado.)*
 - Si la federación no funciona a tiempo, se activa el plan B (llaves en Secret Manager) y se registra como deuda técnica.
+
+*Cerrada en v2.31* (entregada en v2.30; `ARCHITECTURE.md` §3.18; `docs/validation/validation-3-2.md`, partes C, D y E): token real de `sa-exporter` (`azp = sub` = su uniqueId, `aud = ta-gcp-exporter-role`) aceptado por la confianza y rol asumido desde la máquina del equipo y desde Cloud Run; sondas reales: solo lista y escribe en `raw/origin=stream/`, sin leer ni borrar, y no toca `raw/origin=historical/` ni `trusted/`; política simulada 8/8. Rol `ta-gcp-exporter-role` (`infra/aws/modules/gcp_exporter_role`) con confianza en `accounts.google.com` para `sa-exporter` (`aud`/`oaud`/`sub`); el job toma el ID token del servidor de metadatos y asume el rol sin credenciales de AWS. La parte D lo prueba desde la máquina del equipo con el token real de `sa-exporter` (impersonación) y la E desde Cloud Run.
 
 ### HU-007 · Infraestructura AWS del lakehouse
 
@@ -429,7 +431,7 @@ Criterios de aceptación: lista verificable.
 **Criterios de aceptación**
 - Se escriben `raw/source={s}/dt={YYYY-MM-DD}/hr={HH}/part-*.jsonl.gz` en `…-ta-lake`.
 - Las particiones usan fecha/hora de proceso.
-- El acceso a `raw/` está restringido (contiene el handle simulado). *(Hoy solo `sa-dataflow` y los dueños del proyecto lo usan; `sa-exporter` tiene lectura en todo el bucket y el Lote 3.2 la limita a `enriched/`, criterio de HU-025.)*
+- El acceso a `raw/` está restringido (contiene el handle simulado). *(Hoy solo `sa-dataflow` y los dueños del proyecto lo usan; `sa-exporter` tenía lectura en todo el bucket y desde el Lote 3.2 (v2.30) solo puede leer `enriched/`, criterio de HU-025.)*
 
 ### HU-020 · Anonimización de usuarios
 
@@ -534,11 +536,13 @@ Criterios de aceptación: lista verificable.
 **Como** ingeniero de datos **quiero** copiar periódicamente los datos enriquecidos de GCP a AWS **para** alimentar el lakehouse sin mover datos personales.
 
 **Criterios de aceptación**
-- Cloud Run Job `ta-gcs-to-s3` lanzado por Cloud Scheduler cada 15 min.
+- Cloud Run Job `ta-gcs-to-s3` lanzado por Cloud Scheduler cada 15 min. *(v2.30: el Scheduler se crea en pausa —estado de ahorro— y se reanuda con `gcloud scheduler jobs resume`; E10 prueba un disparo real.)*
 - Lee solo `enriched/` y usa `export-state/watermark.json`; actualiza el watermark únicamente tras subir con éxito.
 - Escribe en `raw/origin=stream/source={s}/dt=…/hr=…/*.parquet` con SSE-KMS.
 - Es idempotente: omite objetos ya existentes con el mismo tamaño.
 - Los datos de stream e histórico aparecen en `s3://…/raw/`.
+
+*Cerrada en v2.31* (entregada en v2.30; `ARCHITECTURE.md` §3.18; `docs/validation/validation-3-2.md`, partes C, E y F): 1.155 objetos de `enriched/` exportados a `raw/origin=stream/` (1.155 de 1.155 con el mismo tamaño; muestra de 50 con SSE-KMS, la llave del lake y el CRC32C de GCS); la segunda ejecución no sube nada; un disparo real del Scheduler terminó bien; en S3, 12.102 objetos del histórico y 1.155 del stream con las mismas 24 columnas; ≈ 0,16 USD/día con el Scheduler encendido (queda en pausa). `src/exporter/` lista solo `enriched/` y `sa-exporter` solo puede leer ese prefijo (condición de IAM); watermark por `timeCreated` con solape de 1 h y precondición de generación, escrito solo si todo subió; PUT con SSE-KMS, la llave del lake y el CRC32C de GCS; omite lo que ya está con el mismo tamaño. F cuenta ambos orígenes en `raw/` y lee un Parquet de cada uno.
 
 ---
 

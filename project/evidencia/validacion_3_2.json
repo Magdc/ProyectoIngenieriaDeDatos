@@ -1,0 +1,701 @@
+{
+  "lote": "3.2",
+  "hu": [
+    "HU-006",
+    "HU-025"
+  ],
+  "parts": {
+    "A": {
+      "title": "Preflight del código",
+      "status": "AVISO",
+      "started_at": "2026-10-24T21:55:54.351127+00:00",
+      "finished_at": "2026-10-24T21:56:11.734049+00:00",
+      "steps": [
+        {
+          "id": "A1",
+          "title": "Python y dependencias",
+          "status": "OK",
+          "detail": "Python 3.11.17; boto3 1.43.118, botocore 1.43.118, google.cloud.storage 3.17.1, google.auth 2.62.0; pyarrow OK",
+          "data": {}
+        },
+        {
+          "id": "A2",
+          "title": "los 32 archivos del lote",
+          "status": "OK",
+          "detail": "32 presentes",
+          "data": {}
+        },
+        {
+          "id": "A3",
+          "title": "archivos de lotes anteriores que usa el lote",
+          "status": "OK",
+          "detail": "10 presentes",
+          "data": {}
+        },
+        {
+          "id": "A4",
+          "title": "platform.tf sin el objectViewer amplio de sa-exporter",
+          "status": "OK",
+          "detail": "lectura de sa-exporter limitada a enriched/",
+          "data": {}
+        },
+        {
+          "id": "A5",
+          "title": "herramientas",
+          "status": "OK",
+          "detail": "gcloud, terraform 1.16.6, aws, bash, docker",
+          "data": {}
+        },
+        {
+          "id": "A6",
+          "title": "export_gcs_to_s3.py doctor --offline",
+          "status": "OK",
+          "detail": "X1  OK    Python: 3.11.17\nX2  OK    dependencias del exportador: boto3 1.43.118, botocore 1.43.118, google-cloud-storage 3.17.1, google-auth 2.62.0\nX3  AVISO configuración: faltan variables: TA_LAKE_BUCKET\nX4  OK    pyarrow (parte F): pyarrow 25.0.1\nX5  OK    columnas de posts_enriched (common.enriched_row): 24 columnas desde common.enriched_row.POSTS_ENRICHED_COLUMNS",
+          "data": {}
+        },
+        {
+          "id": "A7",
+          "title": "*.auto.tfvars fuera de git",
+          "status": "OK",
+          "detail": "infra/.gitignore los excluye",
+          "data": {}
+        },
+        {
+          "id": "A8",
+          "title": "contenedores encendidos",
+          "status": "OK",
+          "detail": "ninguno del entorno local del stream ni de NLP",
+          "data": {}
+        },
+        {
+          "id": "A9",
+          "title": "status.py (qué cobra)",
+          "status": "OK",
+          "detail": "local: nada encendido\nGCP simulador: ENCENDIDO (cobra) · https://ta-stream-simulator-kyu3kofmtq-uc.a.run.app · terraform.tfvars simulator_running = True\nGCP Dataflow: ningún job activo",
+          "data": {}
+        },
+        {
+          "id": "A10",
+          "title": "nube encendida",
+          "status": "AVISO",
+          "detail": "encendido: ta-stream-simulator (cobra; este lote no lo necesita: python project/scripts/off.py)\nScheduler del exportador: NO_EXISTE",
+          "data": {
+            "running": [
+              "ta-stream-simulator"
+            ],
+            "scheduler": "NO_EXISTE",
+            "unknown": []
+          }
+        }
+      ]
+    },
+    "B": {
+      "title": "Pruebas",
+      "status": "OK",
+      "started_at": "2026-10-25T03:29:12.033448+00:00",
+      "finished_at": "2026-10-25T03:29:26.961735+00:00",
+      "steps": [
+        {
+          "id": "B1",
+          "title": "pytest src/exporter",
+          "status": "OK",
+          "detail": "120 passed, 0 skipped, 0 failed (esperado 120 passed, 0 skipped)",
+          "data": {
+            "passed": 120,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B2",
+          "title": "pytest test_ops_validate32.py",
+          "status": "OK",
+          "detail": "68 passed, 0 failed (esperado 68)",
+          "data": {
+            "passed": 68,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B3",
+          "title": "pytest contracts/tests",
+          "status": "OK",
+          "detail": "18 passed (esperado 18)",
+          "data": {
+            "passed": 18,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B4",
+          "title": "regresión Terraform AWS del 3.1 (test_hist_infra.py)",
+          "status": "OK",
+          "detail": "11 passed, 0 failed",
+          "data": {
+            "passed": 11,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        }
+      ]
+    },
+    "C": {
+      "title": "Terraform (AWS y GCP)",
+      "status": "AVISO",
+      "started_at": "2026-10-24T22:16:49.483868+00:00",
+      "finished_at": "2026-10-24T22:23:13.446038+00:00",
+      "steps": [
+        {
+          "id": "C0",
+          "title": "identidad de AWS",
+          "status": "AVISO",
+          "detail": "arn:aws:iam::648617469176:root (cuenta raíz: sirve para aplicar y verificar; el rol lo asume sa-exporter con su token, no este perfil)",
+          "data": {
+            "account": "648617469176"
+          }
+        },
+        {
+          "id": "C0b",
+          "title": "backend.hcl y terraform.tfvars de las dos raíces",
+          "status": "OK",
+          "detail": "presentes (no se versionan)",
+          "data": {}
+        },
+        {
+          "id": "C0c",
+          "title": "sa-exporter y enlace con AWS",
+          "status": "OK",
+          "detail": "uniqueId 101053368441381590999 → infra/aws/environments/dev/gcp_exporter.auto.tfvars; cuenta de gcloud: franklinalejo1042005@gmail.com",
+          "data": {
+            "unique_id": "101053368441381590999",
+            "account": "franklinalejo1042005@gmail.com"
+          }
+        },
+        {
+          "id": "C1",
+          "title": "bash infra/validate.sh",
+          "status": "OK",
+          "detail": "\u001b[32m\u001b[1mSuccess!\u001b[0m The configuration is valid.\n\u001b[0m\n== validate: aws/environments/dev ==\n\u001b[32m\u001b[1mSuccess!\u001b[0m The configuration is valid.\n\u001b[0m\nOK",
+          "data": {}
+        },
+        {
+          "id": "C2a",
+          "title": "terraform init (AWS, instala gcp_exporter_role)",
+          "status": "OK",
+          "detail": "should now work.\nIf you ever set or change modules or backend configuration for Terraform,\nrerun this command to reinitialize your working directory. If you forget, other\ncommands will detect it and remind you to do so if necessary.\u001b[0m",
+          "data": {}
+        },
+        {
+          "id": "C2",
+          "title": "plan AWS",
+          "status": "OK",
+          "detail": "2 a crear, 0 a cambiar, 0 a destruir, 0 a reemplazar",
+          "data": {
+            "create": [
+              "module.gcp_exporter_role[0].aws_iam_role.this",
+              "module.gcp_exporter_role[0].aws_iam_role_policy.s3"
+            ],
+            "update": [],
+            "delete": [],
+            "replace": []
+          }
+        },
+        {
+          "id": "C3",
+          "title": "apply AWS",
+          "status": "OK",
+          "detail": "kms_key_alias = \"alias/ta-dev-lake\"\nkms_key_arn = \"arn:aws:kms:us-east-1:648617469176:key/ff8fece2-53f6-44b4-ad64-983d8755fdff\"\nlake_bucket = \"ta-dev-648617469176-lake\"\nlake_bucket_arn = \"arn:aws:s3:::ta-dev-648617469176-lake\"",
+          "data": {}
+        },
+        {
+          "id": "C4",
+          "title": "outputs de infra/aws",
+          "status": "OK",
+          "detail": "arn:aws:iam::648617469176:role/ta-gcp-exporter-role · ta-dev-648617469176-lake · audiencia ta-gcp-exporter-role",
+          "data": {
+            "outputs": {
+              "lake_bucket": "ta-dev-648617469176-lake",
+              "kms_key_arn": "arn:aws:kms:us-east-1:648617469176:key/ff8fece2-53f6-44b4-ad64-983d8755fdff",
+              "exporter_role_arn": "arn:aws:iam::648617469176:role/ta-gcp-exporter-role",
+              "exporter_oidc_audience": "ta-gcp-exporter-role"
+            }
+          }
+        },
+        {
+          "id": "C4b",
+          "title": "valores de AWS para el job",
+          "status": "OK",
+          "detail": "infra/gcp/environments/dev/aws_exporter.auto.tfvars con el rol, el bucket, la llave y exporter_oidc_token_creators = user:franklinalejo1042005@gmail.com",
+          "data": {}
+        },
+        {
+          "id": "C5",
+          "title": "confianza y política del rol (iam get-role)",
+          "status": "OK",
+          "detail": "Federated accounts.google.com; aud/oaud/sub de sa-exporter; PutObject y ListBucket solo en raw/origin=stream/, GenerateDataKey vía S3",
+          "data": {}
+        },
+        {
+          "id": "C5b",
+          "title": "política simulada (8 casos)",
+          "status": "OK",
+          "detail": "8 de 8 como se espera (3 permitidos, 5 denegados)",
+          "data": {}
+        },
+        {
+          "id": "C6a",
+          "title": "terraform init (GCP, instala cloud_run_exporter)",
+          "status": "OK",
+          "detail": "should now work.\nIf you ever set or change modules or backend configuration for Terraform,\nrerun this command to reinitialize your working directory. If you forget, other\ncommands will detect it and remind you to do so if necessary.\u001b[0m",
+          "data": {}
+        },
+        {
+          "id": "C6",
+          "title": "plan GCP (permisos de sa-exporter)",
+          "status": "OK",
+          "detail": "2 a crear, 0 a cambiar, 1 a destruir, 0 a reemplazar\nesperado: crear exporter_lake_enriched y el permiso de token; destruir exporter_lake_read",
+          "data": {
+            "create": [
+              "google_service_account_iam_member.exporter_oidc_token_creator[\"user:franklinalejo1042005@gmail.com\"]",
+              "google_storage_bucket_iam_member.exporter_lake_enriched"
+            ],
+            "update": [],
+            "delete": [
+              "google_storage_bucket_iam_member.exporter_lake_read"
+            ],
+            "replace": []
+          }
+        },
+        {
+          "id": "C7",
+          "title": "apply GCP",
+          "status": "OK",
+          "detail": "  \"reddit\" = \"ta-raw-reddit\"\n}\ntrend_windows_latest_view = \"project-0568d9ba-848f-413c-88b.ta_stream.trend_windows_latest\"\ntrend_windows_table = \"project-0568d9ba-848f-413c-88b:ta_stream.trend_windows\"",
+          "data": {}
+        },
+        {
+          "id": "C8",
+          "title": "IAM real del lake y de sa-exporter",
+          "status": "OK",
+          "detail": "sa-exporter: lee solo enriched/ y escribe solo export-state/; token OIDC para su cuenta",
+          "data": {}
+        }
+      ]
+    },
+    "D": {
+      "title": "Federación real desde su máquina (sin Cloud Run)",
+      "status": "OK",
+      "started_at": "2026-10-24T23:36:48.663390+00:00",
+      "finished_at": "2026-10-24T23:38:14.777936+00:00",
+      "steps": [
+        {
+          "id": "D0",
+          "title": "configuración del exportador",
+          "status": "OK",
+          "detail": "rol arn:aws:iam::648617469176:role/ta-gcp-exporter-role · bucket ta-dev-648617469176-lake",
+          "data": {}
+        },
+        {
+          "id": "D1",
+          "title": "ID token de sa-exporter frente a la confianza del rol",
+          "status": "OK",
+          "detail": "azp=101053368441381590999 sub=101053368441381590999 aud=ta-gcp-exporter-role email=sa-exporter@project-0568d9ba-848f-413c-88b.iam.gserviceaccount.com",
+          "data": {
+            "claims": {
+              "iss": "https://accounts.google.com",
+              "aud": "ta-gcp-exporter-role",
+              "azp": "101053368441381590999",
+              "sub": "101053368441381590999",
+              "email": "sa-exporter@project-0568d9ba-848f-413c-88b.iam.gserviceaccount.com",
+              "email_verified": true,
+              "iat": 1792885025,
+              "exp": 1792888625
+            },
+            "problems": []
+          }
+        },
+        {
+          "id": "D2",
+          "title": "AssumeRoleWithWebIdentity real y sondas A1–A7",
+          "status": "OK",
+          "detail": "arn:aws:sts::648617469176:assumed-role/ta-gcp-exporter-role/ta-gcs-to-s3-20261024T233706Z-f849a698",
+          "data": {
+            "passed": 7,
+            "total": 7
+          }
+        },
+        {
+          "id": "D3",
+          "title": "plan (sin escribir): lo que hay para exportar",
+          "status": "OK",
+          "detail": "1155 objetos en enriched/, 1155 candidatos, 1155 por subir en 15.123 s",
+          "data": {
+            "listed": 1155,
+            "to_upload": 1155,
+            "duration_s": 15.123
+          }
+        },
+        {
+          "id": "D4",
+          "title": "run limitado a 20 objetos con el rol asumido",
+          "status": "OK",
+          "detail": "20 subidos, 0 fallidos, 835055 bytes en 15.146 s (esperado 20)",
+          "data": {
+            "uploaded": 20,
+            "duration_s": 15.146,
+            "keys": [
+              "raw/origin=stream/source=facebook/dt=2026-10-21/hr=22/part-20261021T220000Z-p000.parquet",
+              "raw/origin=stream/source=facebook/dt=2026-10-21/hr=22/part-20261021T220500Z-p000.parquet",
+              "raw/origin=stream/source=facebook/dt=2026-10-21/hr=22/part-20261021T221000Z-p000.parquet",
+              "raw/origin=stream/source=facebook/dt=2026-10-21/hr=22/part-20261021T221500Z-p000.parquet",
+              "raw/origin=stream/source=facebook/dt=2026-10-21/hr=22/part-20261021T222000Z-p000.parquet",
+              "raw/origin=stream/source=facebook/dt=2026-10-21/hr=22/part-20261021T222500Z-p000.parquet",
+              "raw/origin=stream/source=facebook/dt=2026-10-21/hr=22/part-20261021T223000Z-p000.parquet",
+              "raw/origin=stream/source=instagram/dt=2026-10-21/hr=22/part-20261021T220000Z-p000.parquet",
+              "raw/origin=stream/source=instagram/dt=2026-10-21/hr=22/part-20261021T220500Z-p000.parquet",
+              "raw/origin=stream/source=instagram/dt=2026-10-21/hr=22/part-20261021T221000Z-p000.parquet",
+              "raw/origin=stream/source=instagram/dt=2026-10-21/hr=22/part-20261021T221500Z-p000.parquet",
+              "raw/origin=stream/source=instagram/dt=2026-10-21/hr=22/part-20261021T222000Z-p000.parquet",
+              "raw/origin=stream/source=instagram/dt=2026-10-21/hr=22/part-20261021T222500Z-p000.parquet",
+              "raw/origin=stream/source=reddit/dt=2026-10-21/hr=22/part-20261021T220000Z-p000.parquet",
+              "raw/origin=stream/source=reddit/dt=2026-10-21/hr=22/part-20261021T220500Z-p000.parquet",
+              "raw/origin=stream/source=reddit/dt=2026-10-21/hr=22/part-20261021T221000Z-p000.parquet",
+              "raw/origin=stream/source=reddit/dt=2026-10-21/hr=22/part-20261021T221500Z-p000.parquet",
+              "raw/origin=stream/source=reddit/dt=2026-10-21/hr=22/part-20261021T222000Z-p000.parquet",
+              "raw/origin=stream/source=reddit/dt=2026-10-21/hr=22/part-20261021T222500Z-p000.parquet",
+              "raw/origin=stream/source=reddit/dt=2026-10-21/hr=22/part-20261021T223000Z-p000.parquet"
+            ]
+          }
+        },
+        {
+          "id": "D5",
+          "title": "en S3 con SSE-KMS, llave del lake y el CRC32C de GCS",
+          "status": "OK",
+          "detail": "V1 OK: 20 de 20 con el mismo tamaño\nV4 OK: 20 de 20 con SSE-KMS, llave del lake y CRC32C igual a GCS",
+          "data": {}
+        },
+        {
+          "id": "D6",
+          "title": "idempotencia: lo subido en D4 ya no está por subir",
+          "status": "OK",
+          "detail": "por subir 1155 → 1135; omitidos por mismo tamaño: 20",
+          "data": {}
+        },
+        {
+          "id": "D7",
+          "title": "borrar el watermark de prueba",
+          "status": "OK",
+          "detail": "gs://project-0568d9ba-848f-413c-88b-ta-lake/export-state/_validation/watermark-d.json",
+          "data": {}
+        }
+      ]
+    },
+    "E": {
+      "title": "Cloud Run Job y Cloud Scheduler",
+      "status": "OK",
+      "started_at": "2026-10-25T03:02:03.681855+00:00",
+      "finished_at": "2026-10-25T03:12:13.331760+00:00",
+      "steps": [
+        {
+          "id": "E0",
+          "title": "valores de AWS",
+          "status": "OK",
+          "detail": "infra/gcp/environments/dev/aws_exporter.auto.tfvars: arn:aws:iam::648617469176:role/ta-gcp-exporter-role",
+          "data": {}
+        },
+        {
+          "id": "E1",
+          "title": "imagen",
+          "status": "OK",
+          "detail": "us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/gcs-to-s3:20261025-0055-edf73dca",
+          "data": {}
+        },
+        {
+          "id": "E2",
+          "title": "plan del job y el Scheduler",
+          "status": "OK",
+          "detail": "0 a crear, 0 a cambiar, 0 a destruir, 0 a reemplazar (ya aplicado con esta imagen)",
+          "data": {
+            "create": [],
+            "update": [],
+            "delete": [],
+            "replace": [],
+            "diffs": {}
+          }
+        },
+        {
+          "id": "E3",
+          "title": "apply",
+          "status": "OK",
+          "detail": "nada que aplicar",
+          "data": {}
+        },
+        {
+          "id": "E4",
+          "title": "estado de ahorro y el job desplegado",
+          "status": "OK",
+          "detail": "Scheduler PAUSED (*/15 * * * * Etc/UTC); job con sa-exporter@project-0568d9ba-848f-413c-88b.iam.gserviceaccount.com e imagen correcta",
+          "data": {
+            "scheduler": "PAUSED"
+          }
+        },
+        {
+          "id": "E5",
+          "title": "sonda como sa-exporter en Cloud Run (G1–G6, A1–A7)",
+          "status": "OK",
+          "detail": "13/13 · ta-gcs-to-s3-5ksz5",
+          "data": {
+            "execution": "ta-gcs-to-s3-5ksz5"
+          }
+        },
+        {
+          "id": "E6",
+          "title": "primera ejecución (el atraso de enriched/)",
+          "status": "OK",
+          "detail": "1135 subidos, 20 omitidos, 0 fallidos, 51030411 bytes; ejecución 106.611642 s (ta-gcs-to-s3-xrcpz) · watermark 2026-10-24T03:11:54.183Z",
+          "data": {
+            "execution": "ta-gcs-to-s3-xrcpz",
+            "duration_s": 106.611642,
+            "uploaded": 1135,
+            "skipped_same_size": 20,
+            "failed": 0,
+            "bytes_uploaded": 51030411,
+            "candidates": 1155,
+            "listed": 1155,
+            "watermark_after": "2026-10-24T03:11:54.183Z"
+          }
+        },
+        {
+          "id": "E7",
+          "title": "verify: GCS enriched/ frente a S3 raw/origin=stream/",
+          "status": "OK",
+          "detail": "V1 OK: 1155 de 1155 con el mismo tamaño\nV2 OK: 0 en GCS después del cursor (0 ya en S3); salen en la próxima corrida\nV3 OK: 1155 objetos en raw/origin=stream/; sin par en GCS: 0; formato distinto: 0\nV4 OK: 50 de 50 con SSE-KMS, llave del lake y CRC32C igual a GCS",
+          "data": {
+            "gcs_enriched": 1155,
+            "s3_stream": 1155
+          }
+        },
+        {
+          "id": "E8",
+          "title": "segunda ejecución (no vuelve a subir lo exportado)",
+          "status": "OK",
+          "detail": "0 subidos, 39 omitidos, 0 fallidos, 0 bytes; ejecución 117.734565 s (ta-gcs-to-s3-pmqrj) · idempotente",
+          "data": {
+            "execution": "ta-gcs-to-s3-pmqrj",
+            "duration_s": 117.734565,
+            "uploaded": 0,
+            "skipped_same_size": 39,
+            "failed": 0,
+            "bytes_uploaded": 0,
+            "candidates": 39,
+            "listed": 117,
+            "watermark_after": "2026-10-24T03:11:54.183Z"
+          }
+        },
+        {
+          "id": "E9",
+          "title": "canario: un archivo nuevo en enriched/ sale en la siguiente ejecución",
+          "status": "OK",
+          "detail": "1 subidos, 39 omitidos, 0 fallidos, 37449 bytes; ejecución 57.871239 s (ta-gcs-to-s3-wcq5f) · canario part-20261025T030901Z-p999.parquet",
+          "data": {
+            "execution": "ta-gcs-to-s3-wcq5f",
+            "duration_s": 57.871239,
+            "uploaded": 1,
+            "skipped_same_size": 39,
+            "failed": 0,
+            "bytes_uploaded": 37449,
+            "candidates": 40,
+            "listed": 118,
+            "watermark_after": "2026-10-25T03:09:04.546Z"
+          }
+        },
+        {
+          "id": "E9b",
+          "title": "el canario en S3",
+          "status": "OK",
+          "detail": "s3://ta-dev-648617469176-lake/raw/origin=stream/source=reddit/dt=2026-10-25/hr=03/part-20261025T030901Z-p999.parquet: aws:kms arn:aws:kms:us-east-1:648617469176:key/ff8fece2-53f6-44b4-ad64-983d8755fdff",
+          "data": {}
+        },
+        {
+          "id": "E9c",
+          "title": "limpiar el canario (GCS y S3)",
+          "status": "OK",
+          "detail": "borrado de los dos lados",
+          "data": {}
+        },
+        {
+          "id": "E10",
+          "title": "disparo del Scheduler → ejecución con sa-exporter",
+          "status": "OK",
+          "detail": "ta-gcs-to-s3-m8fx2: terminó bien; creada por sa-exporter (Scheduler) 03:11:01 UTC",
+          "data": {
+            "execution": "ta-gcs-to-s3-m8fx2"
+          }
+        },
+        {
+          "id": "E10b",
+          "title": "el Scheduler vuelve a la pausa",
+          "status": "OK",
+          "detail": "estado PAUSED",
+          "data": {}
+        },
+        {
+          "id": "E11",
+          "title": "logs del job con severidad ERROR desde el inicio de E",
+          "status": "OK",
+          "detail": "0 entradas",
+          "data": {}
+        },
+        {
+          "id": "E12",
+          "title": "costo estimado con el Scheduler encendido",
+          "status": "OK",
+          "detail": "ejecuciones medidas: 107 s, 118 s, 58 s, 36 s → se cobra ≥ 60 s cada una; ≈ 0.00164 USD por ejecución, ≈ 0.16 USD/día (96 al día; sin nivel gratuito)",
+          "data": {
+            "durations": [
+              106.611642,
+              117.734565,
+              57.871239,
+              35.908217
+            ],
+            "usd_per_run": 0.001636,
+            "usd_per_day": 0.1571
+          }
+        }
+      ]
+    },
+    "F": {
+      "title": "Ambos orígenes en S3 (Listo cuando de la Fase 3)",
+      "status": "OK",
+      "started_at": "2026-10-25T03:22:30.584581+00:00",
+      "finished_at": "2026-10-25T03:22:54.619442+00:00",
+      "steps": [
+        {
+          "id": "F1",
+          "title": "raw/origin=historical/",
+          "status": "OK",
+          "detail": "12102 objetos (130.9 MB; esperado 12102 del 3.1) · reddit 4041, facebook 4030, instagram 4031",
+          "data": {}
+        },
+        {
+          "id": "F2",
+          "title": "raw/origin=stream/",
+          "status": "OK",
+          "detail": "1155 objetos (51.9 MB) · reddit 385, facebook 385, instagram 385 · en GCS enriched/ al verificar (E7): 1155",
+          "data": {}
+        },
+        {
+          "id": "F3",
+          "title": "esquema de un Parquet de cada origen",
+          "status": "OK",
+          "detail": "historical: 8 filas, 24 columnas; stream: 115 filas, 24 columnas (frente a common.enriched_row.POSTS_ENRICHED_COLUMNS)",
+          "data": {}
+        },
+        {
+          "id": "F4",
+          "title": "Fase 3 · Listo cuando: datos de ambos orígenes en s3://…/raw/",
+          "status": "OK",
+          "detail": "historical y stream con las mismas columnas de posts_enriched",
+          "data": {}
+        },
+        {
+          "id": "F5",
+          "title": "costo del exportador (de E12)",
+          "status": "OK",
+          "detail": "≈ 0.1571 USD/día con el Scheduler encendido; pausado: 0 USD de Cloud Run (el Scheduler pausado cuenta como job: 0,10 USD/mes si pasa de los 3 gratuitos de la cuenta)",
+          "data": {}
+        }
+      ]
+    },
+    "off": {
+      "title": "Apagado (estado de ahorro)",
+      "status": "AVISO",
+      "started_at": "2026-10-25T03:30:47.172247+00:00",
+      "finished_at": "2026-10-25T03:31:01.053301+00:00",
+      "steps": [
+        {
+          "id": "O1",
+          "title": "pausar el Scheduler",
+          "status": "OK",
+          "detail": "estado PAUSED",
+          "data": {}
+        },
+        {
+          "id": "O2",
+          "title": "ejecuciones del job",
+          "status": "OK",
+          "detail": "ninguna en curso",
+          "data": {}
+        },
+        {
+          "id": "O3",
+          "title": "canarios de E9",
+          "status": "OK",
+          "detail": "ninguno pendiente",
+          "data": {}
+        },
+        {
+          "id": "O4",
+          "title": "watermark de prueba (D)",
+          "status": "OK",
+          "detail": "no quedaba nada",
+          "data": {}
+        },
+        {
+          "id": "O5",
+          "title": "status.py (lo demás que cobra)",
+          "status": "AVISO",
+          "detail": "local: nada encendido\nGCP simulador: ENCENDIDO (cobra) · https://ta-stream-simulator-kyu3kofmtq-uc.a.run.app · terraform.tfvars simulator_running = False\nGCP Dataflow: ningún job activo\n(status.py no conoce el exportador: O1–O2 lo confirman aquí)\nsigue cobrando: GCP simulador: ENCENDIDO (cobra) · https://ta-stream-simulator-kyu3kofmtq-uc.a.run.app · terraform.tfvars simulator_running = False. Si ningún lote lo necesita: python project/scripts/off.py (pide confirmación; --keep-simulator deja el simulador)",
+          "data": {}
+        }
+      ]
+    },
+    "status": {
+      "title": "Estado del exportador (solo lectura)",
+      "status": "OK",
+      "started_at": "2026-10-25T03:23:17.221542+00:00",
+      "finished_at": "2026-10-25T03:23:23.594110+00:00",
+      "steps": [
+        {
+          "id": "S1",
+          "title": "Scheduler",
+          "status": "OK",
+          "detail": "PAUSED",
+          "data": {}
+        },
+        {
+          "id": "S2",
+          "title": "ejecuciones",
+          "status": "OK",
+          "detail": "ninguna en curso; últimas: ta-gcs-to-s3-m8fx2 OK, ta-gcs-to-s3-wcq5f OK, ta-gcs-to-s3-pmqrj OK",
+          "data": {}
+        },
+        {
+          "id": "S3",
+          "title": "watermark",
+          "status": "OK",
+          "detail": "cursor 2026-10-25T03:09:04.546Z · actualizado 2026-10-25T03:11:57.780Z · última corrida 0 subidos",
+          "data": {}
+        }
+      ]
+    }
+  },
+  "updated_at": "2026-10-25T03:31:01.053393+00:00",
+  "canaries": [
+    {
+      "gcs": "enriched/source=reddit/dt=2026-10-25/hr=03/part-20261025T030901Z-p999.parquet",
+      "s3": "raw/origin=stream/source=reddit/dt=2026-10-25/hr=03/part-20261025T030901Z-p999.parquet",
+      "cleaned": true
+    }
+  ]
+}

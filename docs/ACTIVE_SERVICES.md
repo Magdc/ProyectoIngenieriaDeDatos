@@ -41,6 +41,8 @@ Cómo se protege la nube:
 - Los recursos de cada lote nuevo se aplican a mano, como en 2.3.
 - Nunca borran topics, buckets, BigQuery, el secreto ni imágenes.
 
+**El exportador del Lote 3.2 no está en estos tres comandos todavía** (queda para el Lote 7.3): su Scheduler se crea en pausa y se ve, enciende y apaga con `validate_3_2.py status` / `off` (sección 2.7).
+
 Un día típico:
 
 ```
@@ -63,6 +65,9 @@ El primero va por la mañana; el segundo, al terminar el día. Al cerrar la sema
 | GCP | Cloud Build (imagen de NLP, Lote 2.3) | ~0,10 USD por construcción | Termina solo |
 | Local | Contenedor `ta-hist-nlp` (NLP del histórico, Lote 3.1) | 0 | Termina solo (40–60 min con 50.000 filas); `bash scripts/historical_nlp.sh stop` lo detiene |
 | AWS | Bucket del lake, llave KMS `alias/ta-dev-lake` y rol `ta-historical-loader` (Lote 3.1) | ~1 USD/mes por la llave; el bucket, centavos (~110 MB) | **Nunca**: no se encienden ni se apagan |
+| GCP | Exportador `ta-gcs-to-s3` (Cloud Run Job) con su Cloud Scheduler cada 15 min (Lote 3.2) | **Pausado (por defecto): 0** de Cloud Run; el Scheduler pausado cuenta como job (0,10 USD/mes si pasa de los 3 gratuitos de la cuenta). **Encendido: ≈ 0,16 USD/día** (medido en v2.31: 96 ejecuciones de 36–118 s, mínimo 60 s cobrados) más centavos de S3 | Se pausa con `validate_3_2.py off` (2.7). Encenderlo de forma permanente lo decide el equipo |
+| AWS | Rol `ta-gcp-exporter-role` y objetos de `raw/origin=stream/` (Lote 3.2) | Rol gratis; objetos, centavos | **Nunca** |
+| GCP | Cloud Build (imagen `gcs-to-s3`, Lote 3.2) | Centavos por construcción | Termina solo |
 
 Con el presupuesto mensual de 400.000 COP, dejar el simulador una semana y Dataflow solo en jornadas de trabajo cabe sin problema. Las alertas del presupuesto (Lote 1.0) avisan por correo si algo se queda encendido.
 
@@ -292,6 +297,36 @@ Antes de `start`, exporta `TA_NLP_IMAGE` o `TA_NLP_ENABLED=false` (2.5).
 
 `-auto-approve` aplica sin preguntar. Úsalo solo si ya revisaste ese `plan` antes y no copiaste archivos `.tf` nuevos desde entonces.
 
+### 2.7 Exportador GCS → S3 (Lote 3.2)
+
+El job `ta-gcs-to-s3` copia `enriched/` a `s3://ta-dev-648617469176-lake/raw/origin=stream/`. Solo cobra mientras corre; lo dispara el Scheduler `ta-gcs-to-s3-cada-15-min`, que se crea **en pausa**. Terraform no toca ese estado, así que pausar o reanudar no cambia los planes de `on.py`/`off.py`. Desde la raíz del repo:
+
+```
+python project/scripts/validate_3_2.py status
+```
+
+Muestra el estado del Scheduler (`PAUSED` = ahorro), las ejecuciones en curso y el watermark.
+
+Encender (exportar cada 15 min):
+
+```
+gcloud scheduler jobs resume ta-gcs-to-s3-cada-15-min --location us-central1
+```
+
+Una sola corrida a mano, sin encender el Scheduler:
+
+```
+gcloud run jobs execute ta-gcs-to-s3 --region us-central1 --wait
+```
+
+Apagar y confirmar (pausa el Scheduler, cancela ejecuciones en curso y lo comprueba):
+
+```
+python project/scripts/validate_3_2.py off
+```
+
+Sin el stream encendido no hay nada nuevo en `enriched/`: con el Scheduler encendido, cada ejecución lista, no sube nada y cobra igual (medido: 36–118 s por ejecución, ≈ 0,0016 USD cada una).
+
 ---
 
 ## 3. Apagar la nube (para no gastar)
@@ -355,9 +390,10 @@ gcloud dataflow jobs list --region us-central1 --status=active
 gcloud run services list --region us-central1 --format="value(name)"
 gcloud builds list --region us-central1 --ongoing
 docker ps --filter name=ta-hist-nlp --format "{{.Names}}"
+gcloud scheduler jobs describe ta-gcs-to-s3-cada-15-min --location us-central1 --format="value(state)"
 ```
 
-Esperado: las cuatro salidas vacías, o sin `ta-stream-simulator` en la segunda. Lo que queda creado (topics, buckets, BigQuery, secreto, imagen) cuesta centavos al mes y **no** se borra: perder el secreto cambiaría todos los `user_hash`.
+Esperado: las cuatro primeras salidas vacías (o sin `ta-stream-simulator` en la segunda) y `PAUSED` en la quinta (o `NOT_FOUND` si el job del Lote 3.2 todavía no se creó). Lo que queda creado (topics, buckets, BigQuery, secreto, imagen) cuesta centavos al mes y **no** se borra: perder el secreto cambiaría todos los `user_hash`.
 
 ---
 
@@ -389,3 +425,6 @@ Si en el paso 6 falla algo, se aísla el lote culpable sin rehacer la sesión. P
 | `validate.sh` marca `terraform.tfvars` | Espacios desalineados al editar | `terraform fmt infra/gcp/environments/dev/terraform.tfvars` |
 | Local: `find` no encuentra archivos | Ruta con `project/` repetido (ya estás dentro de `project/`) | Usar `.local-lake/…` |
 | Local: no llegan datos tras reiniciar el portátil | Docker Desktop cerrado o los contenedores se detuvieron | Abrir Docker Desktop y `bash scripts/local_dataflow.sh up` |
+| El Scheduler del exportador quedó `ENABLED` sin querer | Se reanudó para una prueba | `python project/scripts/validate_3_2.py off` (2.7) |
+| `on.py`/`off.py` se niegan por cambios del exportador en el plan de GCP | Hay archivos del Lote 3.2 o una imagen nueva sin aplicar | Terminar la parte C/E de `validation-3-2.md` y repetir |
+| `off.py` dice "simulador: sin cambios" pero `status.py` lo sigue mostrando `ENCENDIDO` | El servicio existe en GCP pero no en el estado de Terraform (`terraform -chdir=infra/gcp/environments/dev state list \| grep module.simulator` no muestra nada), así que con `simulator_running = false` no hay nada que borrar (visto en v2.31) | Con `simulator_running = false`: `gcloud run services delete ta-stream-simulator --region us-central1 --quiet`. Terraform queda alineado y `on.py` lo vuelve a crear; el cursor sigue en GCS |

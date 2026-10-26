@@ -1,0 +1,56 @@
+{
+  "origins": {
+    "historical": {
+      "objects": 12102,
+      "bytes": 130868781,
+      "by_source": {
+        "reddit": {
+          "objects": 4041,
+          "bytes": 42397993
+        },
+        "facebook": {
+          "objects": 4030,
+          "bytes": 45580344
+        },
+        "instagram": {
+          "objects": 4031,
+          "bytes": 42890444
+        }
+      },
+      "sample": {
+        "key": "raw/origin=historical/source=facebook/dt=2026-04-27/hr=00/part-historical-s3101-20260427T00.parquet",
+        "rows": 8,
+        "columns": 24,
+        "problems": []
+      }
+    },
+    "stream": {
+      "objects": 1155,
+      "bytes": 51865466,
+      "by_source": {
+        "reddit": {
+          "objects": 385,
+          "bytes": 17398509
+        },
+        "facebook": {
+          "objects": 385,
+          "bytes": 17860434
+        },
+        "instagram": {
+          "objects": 385,
+          "bytes": 16606523
+        }
+      },
+      "sample": {
+        "key": "raw/origin=stream/source=facebook/dt=2026-10-21/hr=22/part-20261021T220000Z-p000.parquet",
+        "rows": 115,
+        "columns": 24,
+        "problems": []
+      }
+    }
+  },
+  "columns_source": "common.enriched_row.POSTS_ENRICHED_COLUMNS",
+  "expected_columns": 24,
+  "problems": [],
+  "status": "OK"
+}

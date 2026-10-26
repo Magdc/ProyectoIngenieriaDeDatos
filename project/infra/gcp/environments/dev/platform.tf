@@ -124,13 +124,9 @@ resource "google_storage_bucket_iam_member" "dataflow_lake" {
   member = module.sa_dataflow.member
 }
 
-# sa-exporter: leer el lake y escribir solo bajo export-state/ (watermark, §5.6).
-resource "google_storage_bucket_iam_member" "exporter_lake_read" {
-  bucket = module.lake_bucket.name
-  role   = "roles/storage.objectViewer"
-  member = module.sa_exporter.member
-}
-
+# sa-exporter: escribir solo bajo export-state/ (watermark, §5.6). Desde el Lote 3.2 (v2.30)
+# la lectura del lake está limitada a enriched/: el objectViewer sin condición que había aquí
+# (exporter_lake_read) se reemplazó por exporter_lake_enriched, con condición, en exporter.tf.
 resource "google_storage_bucket_iam_member" "exporter_watermark" {
   bucket = module.lake_bucket.name
   role   = "roles/storage.objectUser"

@@ -1,0 +1,12 @@
+# Lote 3.2: valores de AWS para el job ta-gcs-to-s3 y quién puede emitir ID tokens de
+# sa-exporter para validar desde su máquina. Lo escribe `python project/scripts/validate_3_2.py
+# terraform` (paso C4b, desde `terraform output` de infra/aws) como aws_exporter.auto.tfvars,
+# que no se versiona. La parte E agrega exporter_image. Sin imagen no se crean el job ni el
+# Scheduler.
+exporter_role_arn            = "arn:aws:iam::648617469176:role/ta-gcp-exporter-role"
+exporter_s3_bucket           = "ta-dev-648617469176-lake"
+exporter_kms_key_arn         = "arn:aws:kms:us-east-1:648617469176:key/00000000-0000-0000-0000-000000000000"
+exporter_audience            = "ta-gcp-exporter-role"
+exporter_aws_region          = "us-east-1"
+exporter_oidc_token_creators = ["user:su-correo@example.com"]
+exporter_image               = ""

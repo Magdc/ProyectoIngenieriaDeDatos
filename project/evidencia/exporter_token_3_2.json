@@ -1,0 +1,17 @@
+{
+  "token_source": "impersonate",
+  "claims": {
+    "iss": "https://accounts.google.com",
+    "aud": "ta-gcp-exporter-role",
+    "azp": "101053368441381590999",
+    "sub": "101053368441381590999",
+    "email": "sa-exporter@project-0568d9ba-848f-413c-88b.iam.gserviceaccount.com",
+    "email_verified": true,
+    "iat": 1792885025,
+    "exp": 1792888625
+  },
+  "problems": [],
+  "trust_source": "iam get-role ta-gcp-exporter-role",
+  "trust_problems": [],
+  "ok": true
+}

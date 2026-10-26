@@ -1,0 +1,4 @@
+# Imagen del exportador gcs-to-s3 (Lote 3.2). Versiones exactas; google-cloud-storage es la
+# misma del simulador y del stream (constraints del Lote 1.3).
+google-cloud-storage==3.17.1
+boto3==1.43.100

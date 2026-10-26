@@ -1,0 +1,8 @@
+# Lote 3.2: datos de sa-exporter para la confianza de ta-gcp-exporter-role.
+# Lo escribe `python project/scripts/validate_3_2.py terraform` (paso C0c) como
+# gcp_exporter.auto.tfvars, que no se versiona (*.auto.tfvars en infra/.gitignore).
+# A mano: copie este archivo sin ".example" y ponga el uniqueId que da
+#   gcloud iam service-accounts describe sa-exporter@project-0568d9ba-848f-413c-88b.iam.gserviceaccount.com --format="value(uniqueId)"
+gcp_exporter_sa_unique_id = "000000000000000000000"
+gcp_exporter_sa_email     = "sa-exporter@project-0568d9ba-848f-413c-88b.iam.gserviceaccount.com"
+gcp_exporter_audience     = "ta-gcp-exporter-role"

@@ -1,0 +1,1127 @@
+{
+  "lote": "4.1",
+  "hu": [
+    "HU-007",
+    "HU-029"
+  ],
+  "parts": {
+    "A": {
+      "title": "Preflight del código y de lo encendido",
+      "status": "OK",
+      "started_at": "2026-10-26T14:55:34.515733+00:00",
+      "finished_at": "2026-10-26T14:55:41.977319+00:00",
+      "steps": [
+        {
+          "id": "A1",
+          "title": "Python y dependencias",
+          "status": "OK",
+          "detail": "Python 3.11.17; boto3, botocore y pyarrow",
+          "data": {}
+        },
+        {
+          "id": "A2",
+          "title": "los 25 archivos del lote",
+          "status": "OK",
+          "detail": "25 presentes",
+          "data": {}
+        },
+        {
+          "id": "A3",
+          "title": "archivos de lotes anteriores que usa",
+          "status": "OK",
+          "detail": "13 presentes",
+          "data": {}
+        },
+        {
+          "id": "A4",
+          "title": "tables.json al día con contracts/athena/",
+          "status": "OK",
+          "detail": "11 tablas = las DDL de contracts/athena/",
+          "data": {}
+        },
+        {
+          "id": "A5",
+          "title": "herramientas",
+          "status": "OK",
+          "detail": "terraform 1.16.6, aws, bash, gcloud",
+          "data": {}
+        },
+        {
+          "id": "A6",
+          "title": "AWS: lo que cobra por disparo (horario y corridas)",
+          "status": "OK",
+          "detail": "horario ta-wf-raw-to-curated-cada-hora: NO_EXISTE; workflow todavía no existe",
+          "data": {
+            "schedule": "NO_EXISTE",
+            "running": []
+          }
+        },
+        {
+          "id": "A7",
+          "title": "GCP y local (services.status)",
+          "status": "OK",
+          "detail": "local: Docker no responde\nGCP simulador: apagado · terraform.tfvars simulator_running = False\nGCP Dataflow: ningún job activo",
+          "data": {}
+        },
+        {
+          "id": "A8",
+          "title": "gcp_exporter.auto.tfvars (Lote 3.2)",
+          "status": "OK",
+          "detail": "presente: un plan completo de infra/aws no toca ta-gcp-exporter-role",
+          "data": {}
+        }
+      ]
+    },
+    "B": {
+      "title": "Pruebas",
+      "status": "OK",
+      "started_at": "2026-10-26T15:47:31.276905+00:00",
+      "finished_at": "2026-10-26T15:47:38.894225+00:00",
+      "steps": [
+        {
+          "id": "B1",
+          "title": "pytest src/lakehouse",
+          "status": "OK",
+          "detail": "50 passed, 0 skipped, 0 failed (esperado 50 passed, 0 skipped)",
+          "data": {
+            "passed": 50,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B2",
+          "title": "pytest test_ops_validate41.py",
+          "status": "OK",
+          "detail": "48 passed, 0 failed (esperado 48)",
+          "data": {
+            "passed": 48,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B3",
+          "title": "pytest contracts/tests",
+          "status": "OK",
+          "detail": "18 passed (esperado 18)",
+          "data": {
+            "passed": 18,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B4",
+          "title": "regresión Terraform AWS de 3.1 y 3.2",
+          "status": "OK",
+          "detail": "27 passed, 0 failed (test_hist_infra.py, test_exp_infra.py)",
+          "data": {
+            "passed": 27,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        }
+      ]
+    },
+    "C": {
+      "title": "Terraform (infra/aws)",
+      "status": "AVISO",
+      "started_at": "2026-10-26T15:30:08.411003+00:00",
+      "finished_at": "2026-10-26T15:32:15.271431+00:00",
+      "steps": [
+        {
+          "id": "C0",
+          "title": "identidad de AWS",
+          "status": "AVISO",
+          "detail": "arn:aws:iam::648617469176:root (cuenta raíz: sirve para aplicar y validar; los roles del lote los asumen servicios, no este perfil)",
+          "data": {
+            "account": "648617469176"
+          }
+        },
+        {
+          "id": "C0b",
+          "title": "backend.hcl y terraform.tfvars de infra/aws",
+          "status": "OK",
+          "detail": "presentes (no se versionan)",
+          "data": {}
+        },
+        {
+          "id": "C1",
+          "title": "bash infra/validate.sh",
+          "status": "OK",
+          "detail": "\u001b[32m\u001b[1mSuccess!\u001b[0m The configuration is valid.\n\u001b[0m\n== validate: aws/environments/dev ==\n\u001b[32m\u001b[1mSuccess!\u001b[0m The configuration is valid.\n\u001b[0m\nOK",
+          "data": {}
+        },
+        {
+          "id": "C2a",
+          "title": "terraform init (instala los 7 módulos del lote)",
+          "status": "OK",
+          "detail": "should now work.\nIf you ever set or change modules or backend configuration for Terraform,\nrerun this command to reinitialize your working directory. If you forget, other\ncommands will detect it and remind you to do so if necessary.\u001b[0m",
+          "data": {}
+        },
+        {
+          "id": "C2",
+          "title": "plan (-target de los módulos del lote)",
+          "status": "OK",
+          "detail": "0 a crear, 0 a cambiar, 0 a destruir, 0 a reemplazar (esperado 40 a crear) (ya aplicado)",
+          "data": {
+            "create": [],
+            "update": [],
+            "delete": [],
+            "replace": [],
+            "diffs": {}
+          }
+        },
+        {
+          "id": "C3",
+          "title": "apply",
+          "status": "OK",
+          "detail": "nada que aplicar",
+          "data": {}
+        },
+        {
+          "id": "C3b",
+          "title": "plan tras aplicar (sin deriva)",
+          "status": "OK",
+          "detail": "No changes",
+          "data": {
+            "create": [],
+            "update": [],
+            "delete": [],
+            "replace": [],
+            "diffs": {}
+          }
+        },
+        {
+          "id": "C4",
+          "title": "outputs de infra/aws (§5.9)",
+          "status": "OK",
+          "detail": "glue_db_names {'curated': 'ta_curated', 'raw': 'ta_raw', 'trusted': 'ta_trusted'} · ta-analytics · arn:aws:iam::648617469176:role/ta-glue-role · límite 1073741824 B · ta-wf-raw-to-curated",
+          "data": {
+            "outputs": {
+              "lake_bucket": "ta-dev-648617469176-lake",
+              "kms_key_arn": "arn:aws:kms:us-east-1:648617469176:key/ff8fece2-53f6-44b4-ad64-983d8755fdff",
+              "glue_db_names": {
+                "curated": "ta_curated",
+                "raw": "ta_raw",
+                "trusted": "ta_trusted"
+              },
+              "athena_workgroup": "ta-analytics",
+              "athena_results_location": "s3://ta-dev-648617469176-lake/athena-results/",
+              "athena_bytes_scanned_cutoff": 1073741824,
+              "glue_role_arn": "arn:aws:iam::648617469176:role/ta-glue-role",
+              "quicksight_role_arn": "arn:aws:iam::648617469176:role/ta-quicksight-role",
+              "glue_workflow_name": "ta-wf-raw-to-curated",
+              "glue_job_names": {
+                "raw_to_trusted": "ta-job-raw-to-trusted",
+                "trusted_to_curated": "ta-job-trusted-to-curated"
+              },
+              "lakehouse_schedule_name": "ta-wf-raw-to-curated-cada-hora",
+              "lakehouse_scheduler_role_arn": "arn:aws:iam::648617469176:role/ta-lakehouse-scheduler-role",
+              "glue_failures_log_group": "/aws/events/ta-glue-job-fallos",
+              "exporter_role_arn": "arn:aws:iam::648617469176:role/ta-gcp-exporter-role"
+            }
+          }
+        }
+      ]
+    },
+    "D": {
+      "title": "Catálogo de Glue, workgroup, carpetas del lake e IAM",
+      "status": "OK",
+      "started_at": "2026-10-26T15:32:15.482184+00:00",
+      "finished_at": "2026-10-26T15:33:30.073650+00:00",
+      "steps": [
+        {
+          "id": "D1",
+          "title": "bases de Glue",
+          "status": "OK",
+          "detail": "ta_raw, ta_trusted, ta_curated",
+          "data": {}
+        },
+        {
+          "id": "D2",
+          "title": "tablas = contracts/athena/ (columnas, particiones, ubicación, proyección)",
+          "status": "OK",
+          "detail": "11 tablas iguales a las DDL; partition projection en ta_raw.posts_raw, ta_trusted.posts, ta_curated.fact_posts",
+          "data": {
+            "tables": [
+              "ta_curated.agg_emotion_by_brand_hour",
+              "ta_curated.agg_trend_daily",
+              "ta_curated.dim_brand",
+              "ta_curated.dim_date",
+              "ta_curated.dim_source",
+              "ta_curated.dim_user",
+              "ta_curated.edges_hashtag_cooccurrence",
+              "ta_curated.edges_user_brand",
+              "ta_curated.fact_posts",
+              "ta_raw.posts_raw",
+              "ta_trusted.posts"
+            ]
+          }
+        },
+        {
+          "id": "D3",
+          "title": "workgroup ta-analytics",
+          "status": "OK",
+          "detail": "límite 1073741824 B (1.00 GiB) forzado; resultados en athena-results/ con SSE-KMS de la llave del lake; Athena engine version 3; consultas guardadas: ta-raw-conteo-por-origen, ta-raw-sentimiento-7-dias",
+          "data": {}
+        },
+        {
+          "id": "D4",
+          "title": "carpetas del lake y cifrado (HU-007)",
+          "status": "OK",
+          "detail": "raw/, trusted/, curated/ y quality/ existen; athena-results/ aparece con E1; cifrado por defecto aws:kms con la llave del lake",
+          "data": {}
+        },
+        {
+          "id": "D5",
+          "title": "roles ta-glue-role, ta-quicksight-role y del Scheduler",
+          "status": "OK",
+          "detail": "confianza solo del servicio (glue, quicksight, scheduler) y exactamente las acciones de §5.8",
+          "data": {
+            "arns": {
+              "glue": "arn:aws:iam::648617469176:role/ta-glue-role",
+              "quicksight": "arn:aws:iam::648617469176:role/ta-quicksight-role",
+              "scheduler": "arn:aws:iam::648617469176:role/ta-lakehouse-scheduler-role"
+            }
+          }
+        },
+        {
+          "id": "D6",
+          "title": "política simulada de ta-glue-role (20 casos)",
+          "status": "OK",
+          "detail": "20 de 20 como se espera (11 permitidos, 9 denegados)",
+          "data": {
+            "role_arn": "arn:aws:iam::648617469176:role/ta-glue-role",
+            "cases": [
+              {
+                "case": "get raw/origin=historical/",
+                "action": "s3:GetObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/raw/origin=historical/source=reddit/dt=2026-05-01/hr=03/part-historical-s3101-20260501T03.parquet",
+                "context": {},
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-glue-role_ta-glue-role-lake"
+                ],
+                "ok": true
+              },
+              {
+                "case": "list raw/",
+                "action": "s3:ListBucket",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake",
+                "context": {
+                  "s3:prefix": "raw/origin=stream/"
+                },
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-glue-role_ta-glue-role-lake"
+                ],
+                "ok": true
+              },
+              {
+                "case": "put trusted/posts/",
+                "action": "s3:PutObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/trusted/posts/source=reddit/dt=2026-10-22/part-0.parquet",
+                "context": {},
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-glue-role_ta-glue-role-lake"
+                ],
+                "ok": true
+              },
+              {
+                "case": "delete curated/fact_posts/",
+                "action": "s3:DeleteObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/curated/fact_posts/dt=2026-10-22/part-0.parquet",
+                "context": {},
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-glue-role_ta-glue-role-lake"
+                ],
+                "ok": true
+              },
+              {
+                "case": "put quality/",
+                "action": "s3:PutObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/quality/2026-10-26/ge.json",
+                "context": {},
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-glue-role_ta-glue-role-lake"
+                ],
+                "ok": true
+              },
+              {
+                "case": "get _glue/scripts/",
+                "action": "s3:GetObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/_glue/scripts/ta-job-raw-to-trusted.py",
+                "context": {},
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-glue-role_ta-glue-role-lake"
+                ],
+                "ok": true
+              },
+              {
+                "case": "kms:Decrypt vía S3",
+                "action": "kms:Decrypt",
+                "resource": "arn:aws:kms:us-east-1:648617469176:key/ff8fece2-53f6-44b4-ad64-983d8755fdff",
+                "context": {
+                  "kms:ViaService": "s3.us-east-1.amazonaws.com"
+                },
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-glue-role_ta-glue-role-lake"
+                ],
+                "ok": true
+              },
+              {
+                "case": "kms:GenerateDataKey vía S3",
+                "action": "kms:GenerateDataKey",
+                "resource": "arn:aws:kms:us-east-1:648617469176:key/ff8fece2-53f6-44b4-ad64-983d8755fdff",
+                "context": {
+                  "kms:ViaService": "s3.us-east-1.amazonaws.com"
+                },
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-glue-role_ta-glue-role-lake"
+                ],
+                "ok": true
+              },
+              {
+                "case": "glue:GetTable ta_raw.posts_raw",
+                "action": "glue:GetTable",
+                "resource": "arn:aws:glue:us-east-1:648617469176:table/ta_raw/posts_raw",
+                "context": {},
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-glue-role_ta-glue-role-lake"
+                ],
+                "ok": true
+              },
+              {
+                "case": "glue:GetWorkflowRunProperties",
+                "action": "glue:GetWorkflowRunProperties",
+                "resource": "arn:aws:glue:us-east-1:648617469176:workflow/ta-wf-raw-to-curated",
+                "context": {},
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-glue-role_ta-glue-role-lake"
+                ],
+                "ok": true
+              },
+              {
+                "case": "logs:PutLogEvents en /aws-glue/",
+                "action": "logs:PutLogEvents",
+                "resource": "arn:aws:logs:us-east-1:648617469176:log-group:/aws-glue/python-jobs/output",
+                "context": {},
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-glue-role_ta-glue-role-lake"
+                ],
+                "ok": true
+              },
+              {
+                "case": "put raw/origin=stream/",
+                "action": "s3:PutObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/raw/origin=stream/source=reddit/dt=2026-10-22/hr=10/part-20261022T100000Z-p000.parquet",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "case": "delete raw/origin=historical/",
+                "action": "s3:DeleteObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/raw/origin=historical/source=reddit/dt=2026-05-01/hr=03/part-historical-s3101-20260501T03.parquet",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "case": "put athena-results/",
+                "action": "s3:PutObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/athena-results/x.csv",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "case": "list export-state/",
+                "action": "s3:ListBucket",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake",
+                "context": {
+                  "s3:prefix": "export-state/"
+                },
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "case": "kms:Decrypt sin S3",
+                "action": "kms:Decrypt",
+                "resource": "arn:aws:kms:us-east-1:648617469176:key/ff8fece2-53f6-44b4-ad64-983d8755fdff",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "case": "glue:CreateTable en ta_curated",
+                "action": "glue:CreateTable",
+                "resource": "arn:aws:glue:us-east-1:648617469176:database/ta_curated",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "case": "glue:DeleteTable ta_raw.posts_raw",
+                "action": "glue:DeleteTable",
+                "resource": "arn:aws:glue:us-east-1:648617469176:table/ta_raw/posts_raw",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "case": "glue:StartWorkflowRun",
+                "action": "glue:StartWorkflowRun",
+                "resource": "arn:aws:glue:us-east-1:648617469176:workflow/ta-wf-raw-to-curated",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "case": "logs:PutLogEvents fuera de /aws-glue/",
+                "action": "logs:PutLogEvents",
+                "resource": "arn:aws:logs:us-east-1:648617469176:log-group:/aws/events/ta-glue-job-fallos",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "D7",
+          "title": "política simulada de ta-quicksight-role (13 casos)",
+          "status": "OK",
+          "detail": "13 de 13 como se espera (7 permitidos, 6 denegados)",
+          "data": {
+            "role_arn": "arn:aws:iam::648617469176:role/ta-quicksight-role",
+            "cases": [
+              {
+                "case": "athena:StartQueryExecution en ta-analytics",
+                "action": "athena:StartQueryExecution",
+                "resource": "arn:aws:athena:us-east-1:648617469176:workgroup/ta-analytics",
+                "context": {},
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-quicksight-role_ta-quicksight-role-athena"
+                ],
+                "ok": true
+              },
+              {
+                "case": "athena:GetQueryResults en ta-analytics",
+                "action": "athena:GetQueryResults",
+                "resource": "arn:aws:athena:us-east-1:648617469176:workgroup/ta-analytics",
+                "context": {},
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-quicksight-role_ta-quicksight-role-athena"
+                ],
+                "ok": true
+              },
+              {
+                "case": "glue:GetTable ta_curated.fact_posts",
+                "action": "glue:GetTable",
+                "resource": "arn:aws:glue:us-east-1:648617469176:table/ta_curated/fact_posts",
+                "context": {},
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-quicksight-role_ta-quicksight-role-athena"
+                ],
+                "ok": true
+              },
+              {
+                "case": "get curated/",
+                "action": "s3:GetObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/curated/fact_posts/dt=2026-10-22/part-0.parquet",
+                "context": {},
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-quicksight-role_ta-quicksight-role-athena"
+                ],
+                "ok": true
+              },
+              {
+                "case": "put athena-results/",
+                "action": "s3:PutObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/athena-results/x.csv",
+                "context": {},
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-quicksight-role_ta-quicksight-role-athena"
+                ],
+                "ok": true
+              },
+              {
+                "case": "list curated/",
+                "action": "s3:ListBucket",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake",
+                "context": {
+                  "s3:prefix": "curated/fact_posts/"
+                },
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-quicksight-role_ta-quicksight-role-athena"
+                ],
+                "ok": true
+              },
+              {
+                "case": "kms:Decrypt vía S3",
+                "action": "kms:Decrypt",
+                "resource": "arn:aws:kms:us-east-1:648617469176:key/ff8fece2-53f6-44b4-ad64-983d8755fdff",
+                "context": {
+                  "kms:ViaService": "s3.us-east-1.amazonaws.com"
+                },
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-quicksight-role_ta-quicksight-role-athena"
+                ],
+                "ok": true
+              },
+              {
+                "case": "athena:StartQueryExecution en primary",
+                "action": "athena:StartQueryExecution",
+                "resource": "arn:aws:athena:us-east-1:648617469176:workgroup/primary",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "case": "athena:DeleteWorkGroup ta-analytics",
+                "action": "athena:DeleteWorkGroup",
+                "resource": "arn:aws:athena:us-east-1:648617469176:workgroup/ta-analytics",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "case": "glue:GetTable ta_raw.posts_raw",
+                "action": "glue:GetTable",
+                "resource": "arn:aws:glue:us-east-1:648617469176:table/ta_raw/posts_raw",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "case": "get raw/",
+                "action": "s3:GetObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/raw/origin=stream/source=reddit/dt=2026-10-22/hr=10/part-20261022T100000Z-p000.parquet",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "case": "get trusted/",
+                "action": "s3:GetObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/trusted/posts/source=reddit/dt=2026-10-22/part-0.parquet",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "case": "put curated/",
+                "action": "s3:PutObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/curated/fact_posts/dt=2026-10-22/part-0.parquet",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "D8",
+          "title": "política simulada de ta-lakehouse-scheduler-role (3 casos)",
+          "status": "OK",
+          "detail": "3 de 3 como se espera (1 permitidos, 2 denegados)",
+          "data": {
+            "role_arn": "arn:aws:iam::648617469176:role/ta-lakehouse-scheduler-role",
+            "cases": [
+              {
+                "case": "glue:StartWorkflowRun ta-wf-raw-to-curated",
+                "action": "glue:StartWorkflowRun",
+                "resource": "arn:aws:glue:us-east-1:648617469176:workflow/ta-wf-raw-to-curated",
+                "context": {},
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-lakehouse-scheduler-role_ta-lakehouse-scheduler-role-glue"
+                ],
+                "ok": true
+              },
+              {
+                "case": "glue:StartWorkflowRun otro workflow",
+                "action": "glue:StartWorkflowRun",
+                "resource": "arn:aws:glue:us-east-1:648617469176:workflow/otro",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "case": "glue:StartJobRun",
+                "action": "glue:StartJobRun",
+                "resource": "arn:aws:glue:us-east-1:648617469176:job/ta-job-raw-to-trusted",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "D9",
+          "title": "roles de 3.1 y 3.2 intactos",
+          "status": "OK",
+          "detail": "ta-historical-loader y ta-gcp-exporter-role siguen con PutObject, ListBucket y GenerateDataKey",
+          "data": {}
+        }
+      ]
+    },
+    "E": {
+      "title": "Athena: SELECT sobre ta_raw.posts_raw con los dos orígenes",
+      "status": "OK",
+      "started_at": "2026-10-26T15:13:06.260808+00:00",
+      "finished_at": "2026-10-26T15:15:40.381435+00:00",
+      "steps": [
+        {
+          "id": "E1",
+          "title": "SELECT de demostración (ta-raw-conteo-por-origen)",
+          "status": "OK",
+          "detail": "historical/facebook: 16667; historical/instagram: 16666; historical/reddit: 16667; stream/facebook: 57224; stream/instagram: 57281; stream/reddit: 57132\nhistórico 50000 · stream 171637 · 72.4 s de motor",
+          "data": {
+            "query": {
+              "id": "f48c2174-0553-4dce-906a-c783ac8c1d26",
+              "state": "SUCCEEDED",
+              "reason": "",
+              "scanned_bytes": 12701584,
+              "engine_ms": 72416,
+              "total_ms": 72630,
+              "output_location": "s3://ta-dev-648617469176-lake/athena-results/f48c2174-0553-4dce-906a-c783ac8c1d26.csv",
+              "columns": [
+                "origin",
+                "source",
+                "filas",
+                "event_ids",
+                "desde",
+                "hasta"
+              ]
+            },
+            "rows": [
+              {
+                "origin": "historical",
+                "source": "facebook",
+                "filas": "16667",
+                "event_ids": "16667",
+                "desde": "2026-04-27 00:03:59.361",
+                "hasta": "2026-10-23 23:47:25.584"
+              },
+              {
+                "origin": "historical",
+                "source": "instagram",
+                "filas": "16666",
+                "event_ids": "16666",
+                "desde": "2026-04-27 00:01:32.345",
+                "hasta": "2026-10-23 23:52:30.630"
+              },
+              {
+                "origin": "historical",
+                "source": "reddit",
+                "filas": "16667",
+                "event_ids": "16667",
+                "desde": "2026-04-27 00:06:54.933",
+                "hasta": "2026-10-23 23:51:45.177"
+              },
+              {
+                "origin": "stream",
+                "source": "facebook",
+                "filas": "57224",
+                "event_ids": "57223",
+                "desde": "2026-10-21 22:00:52.466",
+                "hasta": "2026-10-24 03:11:34.908"
+              },
+              {
+                "origin": "stream",
+                "source": "instagram",
+                "filas": "57281",
+                "event_ids": "57280",
+                "desde": "2026-10-21 22:00:53.939",
+                "hasta": "2026-10-24 03:11:33.098"
+              },
+              {
+                "origin": "stream",
+                "source": "reddit",
+                "filas": "57132",
+                "event_ids": "57132",
+                "desde": "2026-10-21 22:00:54.377",
+                "hasta": "2026-10-24 03:11:35.606"
+              }
+            ]
+          }
+        },
+        {
+          "id": "E2",
+          "title": "histórico = 50.000 filas",
+          "status": "OK",
+          "detail": "50000 filas (esperado 50000, §3.17) · 50000 event_id distintos · facebook 16667, instagram 16666, reddit 16667",
+          "data": {
+            "athena": 50000
+          }
+        },
+        {
+          "id": "E3",
+          "title": "stream conciliado contra S3",
+          "status": "OK",
+          "detail": "Athena 171637 filas · S3 1155 objetos y 171637 filas en los pies (12.0 s) · por fuente {'facebook': 57224, 'instagram': 57281, 'reddit': 57132} · 171635 event_id distintos (Raw no deduplica: lo hace Trusted)",
+          "data": {
+            "s3": {
+              "prefix": "raw/origin=stream/",
+              "objects": 1155,
+              "bytes": 51865466,
+              "rows": 171637,
+              "by_source": {
+                "facebook": {
+                  "objects": 385,
+                  "rows": 57224
+                },
+                "instagram": {
+                  "objects": 385,
+                  "rows": 57281
+                },
+                "reddit": {
+                  "objects": 385,
+                  "rows": 57132
+                }
+              },
+              "errors": [],
+              "error_count": 0,
+              "seconds": 12.0
+            },
+            "athena": {
+              "facebook": 57224,
+              "instagram": 57281,
+              "reddit": 57132
+            }
+          }
+        },
+        {
+          "id": "E4",
+          "title": "bytes escaneados ≤ límite del workgroup",
+          "status": "OK",
+          "detail": "12.7 MB de 1074 MB (1.2 %; ≈ 0.00006 USD a 5 USD/TB; Athena cobra mínimo 10 MB por consulta)",
+          "data": {
+            "scanned_bytes": 12701584,
+            "cutoff": 1073741824
+          }
+        },
+        {
+          "id": "E5",
+          "title": "resultado en athena-results/ con la llave del lake",
+          "status": "OK",
+          "detail": "s3://ta-dev-648617469176-lake/athena-results/f48c2174-0553-4dce-906a-c783ac8c1d26.csv · aws:kms · llave del lake (expira a los 7 días, §5.12)",
+          "data": {}
+        },
+        {
+          "id": "E6",
+          "title": "las otras 10 tablas se consultan (vacías hasta 4.2/4.3)",
+          "status": "OK",
+          "detail": "10 consultas OK; todas en 0 filas; 0.0 MB en total",
+          "data": {
+            "counts": {
+              "ta_trusted.posts": 0,
+              "ta_curated.fact_posts": 0,
+              "ta_curated.dim_date": 0,
+              "ta_curated.dim_source": 0,
+              "ta_curated.dim_brand": 0,
+              "ta_curated.dim_user": 0,
+              "ta_curated.agg_emotion_by_brand_hour": 0,
+              "ta_curated.agg_trend_daily": 0,
+              "ta_curated.edges_user_brand": 0,
+              "ta_curated.edges_hashtag_cooccurrence": 0
+            }
+          }
+        },
+        {
+          "id": "E7",
+          "title": "consulta guardada ta-raw-sentimiento-7-dias (poda por part_dt)",
+          "status": "OK",
+          "detail": "21 grupos, 173116 filas de los últimos 7 días, 0.3 MB escaneados",
+          "data": {}
+        }
+      ]
+    },
+    "F": {
+      "title": "Workflow de Glue, fallos en CloudWatch y horario",
+      "status": "OK",
+      "started_at": "2026-10-26T15:47:39.142019+00:00",
+      "finished_at": "2026-10-26T15:57:07.819891+00:00",
+      "steps": [
+        {
+          "id": "F1",
+          "title": "workflow, disparadores y jobs (scripts de S3 = repo)",
+          "status": "OK",
+          "detail": "ta-wf-raw-to-curated-inicio (ON_DEMAND) → ta-job-raw-to-trusted → ta-wf-raw-to-curated-trusted-to-curated (SUCCEEDED) → ta-job-trusted-to-curated; pythonshell 3.9 con ta-glue-role; scripts de S3 idénticos al repo",
+          "data": {}
+        },
+        {
+          "id": "F2",
+          "title": "horario ta-wf-raw-to-curated-cada-hora",
+          "status": "OK",
+          "detail": "DISABLED · rate(1 hour) UTC → glue:StartWorkflowRun(ta-wf-raw-to-curated) con ta-lakehouse-scheduler-role; sin reintentos",
+          "data": {
+            "state": "DISABLED"
+          }
+        },
+        {
+          "id": "F3",
+          "title": "regla ta-glue-job-fallos → /aws/events/ta-glue-job-fallos",
+          "status": "OK",
+          "detail": "FAILED/TIMEOUT/STOPPED/ERROR de ta-job-* → CloudWatch Logs (retención 30 días)",
+          "data": {}
+        },
+        {
+          "id": "F4",
+          "title": "corrida del workflow (Raw → Trusted → Curated)",
+          "status": "OK",
+          "detail": "wr_fc4596e847c8e7b8ecc6b15362df7b0c24ba0a7e111c3c31415129ccf188fc25: COMPLETED · ta-job-raw-to-trusted SUCCEEDED (16 s) → ta-job-trusted-to-curated SUCCEEDED (11 s) · en orden · {'TotalActions': 2, 'TimeoutActions': 0, 'FailedActions': 0, 'StoppedActions': 0, 'SucceededActions': 2, 'RunningActions': 0, 'ErroredActions': 0, 'WaitingActions': 0}",
+          "data": {
+            "run_id": "wr_fc4596e847c8e7b8ecc6b15362df7b0c24ba0a7e111c3c31415129ccf188fc25",
+            "job_runs": {
+              "ta-job-raw-to-trusted": "jr_cc4f26d71957e49a71e045e9ab2fac30ce02968e0aa11f2ce204a2c859a79f37",
+              "ta-job-trusted-to-curated": "jr_849054357e9b28689bf2c354147ae4f0989b3a3321d47dc70a23da3b99e1ce7b"
+            },
+            "durations": [
+              16,
+              11
+            ],
+            "start_attempts": 1
+          }
+        },
+        {
+          "id": "F5",
+          "title": "logs en CloudWatch y marcas en S3",
+          "status": "OK",
+          "detail": "ta-job-raw-to-trusted: 13257 objetos bajo raw/, lectura PAR1\nta-job-trusted-to-curated: 0 objetos bajo trusted/, lectura sin objetos Parquet, marca del anterior leída\nlogs en /aws-glue/python-jobs/output: 2 de 2 · marcas en S3: 2 de 2",
+          "data": {}
+        },
+        {
+          "id": "F6",
+          "title": "corrida con fallo provocado (el segundo job no corre)",
+          "status": "OK",
+          "detail": "wr_ce38f5bb12bc5541fe7e794ca098f206472f7b80970ea283175e9a9457bc928b: COMPLETED · ta-job-raw-to-trusted FAILED (ErrorMessage: RuntimeError: ta_force_fail: fallo provocado por la validación (ta-job-raw-to-trusted)) · ta-job-trusted-to-curated no corrió · {'TotalActions': 2, 'TimeoutActions': 0, 'FailedActions': 1, 'StoppedActions': 0, 'SucceededActions': 0, 'RunningActions': 0, 'ErroredActions': 0, 'WaitingActions': 0} · arrancó al intento 2 (ConcurrentRunsExceededException)",
+          "data": {
+            "run_id": "wr_ce38f5bb12bc5541fe7e794ca098f206472f7b80970ea283175e9a9457bc928b",
+            "job_run": "jr_6b53f1a55de6089a0c06b14bb1af437d560c1e3af6a5e42ca200d15ab9dfeffe",
+            "error_message": "RuntimeError: ta_force_fail: fallo provocado por la validación (ta-job-raw-to-trusted)",
+            "start_attempts": 2
+          }
+        },
+        {
+          "id": "F7",
+          "title": "el fallo queda en CloudWatch",
+          "status": "OK",
+          "detail": "/aws/events/ta-glue-job-fallos: evento FAILED de jr_6b53f1a55de6089a0c06b14bb1af437d560c1e3af6a5e42ca200d15ab9dfeffe · logs del job: el fallo provocado aparece (/aws-glue/python-jobs/error o /aws-glue/python-jobs/output)",
+          "data": {}
+        },
+        {
+          "id": "F8",
+          "title": "horario de prueba (EventBridge Scheduler → workflow)",
+          "status": "OK",
+          "detail": "at(2026-10-26T15:55:00): corrida wr_472f542d865f161bfc3ab66510c5e497a1d49d0092b0121c45d00e6d56ff87fd creada por el Scheduler con ta-lakehouse-scheduler-role · jobs SUCCEEDED · horario de prueba borrado solo",
+          "data": {
+            "run_id": "wr_472f542d865f161bfc3ab66510c5e497a1d49d0092b0121c45d00e6d56ff87fd"
+          }
+        },
+        {
+          "id": "F9",
+          "title": "marcas de los marcadores de posición borradas",
+          "status": "OK",
+          "detail": "4 objetos borrados de trusted/_ta_placeholder/ y curated/_ta_placeholder/",
+          "data": {}
+        },
+        {
+          "id": "F10",
+          "title": "el horario sigue como estaba",
+          "status": "OK",
+          "detail": "DISABLED",
+          "data": {}
+        },
+        {
+          "id": "F11",
+          "title": "costo con lo medido",
+          "status": "OK",
+          "detail": "jobs de 16, 11 s (se cobra ≥ 60 s × 0.0625 DPU × 0.44 USD/DPU-h) → ≈ 0.00092 USD por corrida y ≈ 0.022 USD/día con el horario encendido (≈ 0.66 USD/mes; con los jobs reales de 4.2/4.3, más)",
+          "data": {
+            "usd_per_run": 0.000917,
+            "usd_per_day": 0.022,
+            "durations": [
+              16,
+              11
+            ]
+          }
+        }
+      ]
+    },
+    "off": {
+      "title": "Apagado (estado de ahorro del lakehouse)",
+      "status": "OK",
+      "started_at": "2026-10-26T15:57:07.987009+00:00",
+      "finished_at": "2026-10-26T15:57:23.876087+00:00",
+      "steps": [
+        {
+          "id": "O1",
+          "title": "deshabilitar el horario",
+          "status": "OK",
+          "detail": "estado DISABLED",
+          "data": {}
+        },
+        {
+          "id": "O2",
+          "title": "corridas y job runs",
+          "status": "OK",
+          "detail": "nada en curso",
+          "data": {}
+        },
+        {
+          "id": "O3",
+          "title": "horarios de prueba de F8",
+          "status": "OK",
+          "detail": "ninguno",
+          "data": {}
+        },
+        {
+          "id": "O4",
+          "title": "marcas de los marcadores de posición",
+          "status": "OK",
+          "detail": "0 borradas",
+          "data": {}
+        },
+        {
+          "id": "O5",
+          "title": "status.py (lo demás que cobra)",
+          "status": "OK",
+          "detail": "local: Docker no responde\nGCP simulador: apagado · terraform.tfvars simulator_running = False\nGCP Dataflow: ningún job activo",
+          "data": {}
+        }
+      ]
+    },
+    "status": {
+      "title": "Estado del lakehouse (solo lectura)",
+      "status": "OK",
+      "started_at": "2026-10-26T15:57:24.045816+00:00",
+      "finished_at": "2026-10-26T15:57:28.493160+00:00",
+      "steps": [
+        {
+          "id": "S1",
+          "title": "horario ta-wf-raw-to-curated-cada-hora",
+          "status": "OK",
+          "detail": "DISABLED",
+          "data": {}
+        },
+        {
+          "id": "S2",
+          "title": "corridas del workflow",
+          "status": "OK",
+          "detail": "ninguna en curso; últimas: wr_472f542d865f161bfc3ab66510c5e497a1d49d0092b0121c45d00e6d56ff87fd COMPLETED 2026-10-26T10:55:06; wr_ce38f5bb12bc5541fe7e794ca098f206472f7b80970ea283175e9a9457bc928b COMPLETED 2026-10-26T10:50:23; wr_fc4596e847c8e7b8ecc6b15362df7b0c24ba0a7e111c3c31415129ccf188fc25 COMPLETED 2026-10-26T10:48:02",
+          "data": {}
+        },
+        {
+          "id": "S3",
+          "title": "job runs en curso",
+          "status": "OK",
+          "detail": "ninguno",
+          "data": {}
+        },
+        {
+          "id": "S4",
+          "title": "horarios de prueba de F8",
+          "status": "OK",
+          "detail": "ninguno",
+          "data": {}
+        }
+      ]
+    }
+  },
+  "updated_at": "2026-10-26T15:57:28.493226+00:00",
+  "temp_schedules": [
+    {
+      "name": "ta-wf-raw-to-curated-validacion-20261026153616",
+      "at": "2026-10-26T15:38:00+00:00",
+      "cleaned": true
+    },
+    {
+      "name": "ta-wf-raw-to-curated-validacion-20261026155234",
+      "at": "2026-10-26T15:55:00+00:00",
+      "cleaned": true
+    }
+  ]
+}

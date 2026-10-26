@@ -1,6 +1,6 @@
 # TrendAnalyzer · ARCHITECTURE
 
-> Documento maestro de arquitectura y contratos. **Versión vigente: 2.31.**
+> Documento maestro de arquitectura y contratos. **Versión vigente: 2.32.**
 > Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md) · Plan por fases, trazabilidad HU y estado: [`PLAN.md`](PLAN.md) · Historias de usuario: `HU.md` · Visión general: `README.md`.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 
@@ -27,8 +27,9 @@ Este archivo está pensado para que **baste con leerlo (o pegármelo) para const
 | Ventanas de tendencias (`trend_windows`), `dlq_events`, `dq_results` y la plantilla Flex de Dataflow | **§3.16**, `src/streaming/TRENDS.md` y `docs/validation/validation-2-4.md` |
 | Generar y cargar el histórico (loader, NLP en lote, bucket S3 del lake, KMS y rol `ta-historical-loader`) | **§3.17**, `src/historical/HISTORICAL.md` y `docs/validation/validation-3-1.md` |
 | Exportar `enriched/` a S3 (federación OIDC GCP → AWS, job `ta-gcs-to-s3`, Scheduler en pausa) | **§3.18** (interfaces: CLI, logs, API, Terraform y validador en **§3.18.1**), §5.6, `src/exporter/EXPORTER.md` y `docs/validation/validation-3-2.md` |
+| Consultar el lake con Athena, el catálogo de Glue, el workflow `ta-wf-raw-to-curated` y su horario; escribir un job de Glue (4.2/4.3) | **§3.19** (interfaces: contrato de un job, cómo reemplazarlo, API, Terraform, operación y validador en **§3.19.1**), §5.7, §5.8 y `docs/validation/validation-4-1.md` |
 | Comprobar qué está encendido antes de validar un lote | **§8** (preflight) |
-| Encender, comprobar y apagar lo que cobra; validar un lote con un solo comando | `docs/ACTIVE_SERVICES.md` (`scripts/on.py`, `off.py`, `status.py`), `scripts/validate_2_3.py` (§3.15), `scripts/validate_2_4.py` (§3.16), `scripts/validate_3_1.py` (§3.17) y `scripts/validate_3_2.py` (§3.18; con `status` y `off` del exportador) |
+| Encender, comprobar y apagar lo que cobra; validar un lote con un solo comando | `docs/ACTIVE_SERVICES.md` (`scripts/on.py`, `off.py`, `status.py`), `scripts/validate_2_3.py` (§3.15), `scripts/validate_2_4.py` (§3.16), `scripts/validate_3_1.py` (§3.17), `scripts/validate_3_2.py` (§3.18; con `status` y `off` del exportador) y `scripts/validate_4_1.py` (§3.19; con `status`, `off` y `on` del horario del lakehouse) |
 | Saber qué construir y en qué orden | `PLAN.md` §1 (fases y lotes) |
 | Saber qué historias de usuario cubre cada fase o lote | **`PLAN.md` §1 y §2** (detalle en `HU.md`) |
 | Saber en qué estado está cada fase y lote | **`PLAN.md` §3** |
@@ -59,7 +60,7 @@ Todo lo que viene después de Pub/Sub (Dataflow, GCS, BigQuery, S3, Glue, Athena
 | Datasets históricos → S3 | Se mantiene. Se precisa: `src/historical/` (`scripts/load_historical.py`, Lote 3.1, §3.17) genera los registros con el **mismo simulador y generador**, el mismo envelope (§5.2), la misma anonimización y el mismo NLP, y los sube a `s3://…/raw/origin=historical/`. |
 | *(no existe)* Datasets de emociones en GCS | Ya no se usan (v2.2). El bucket `…-ta-datasets` solo guarda el estado del simulador y snapshots opcionales del generador (§5.4). |
 | *(no existe)* GCS → S3 | **Falta en el diagrama.** Se agrega el exportador `gcs-to-s3` (§5.6), implementado en el Lote 3.2 (v2.30, §3.18). Hoy el único camino GCP→AWS dibujado es BigQuery→QuickSight. |
-| Flecha huérfana `? → EventBridge` | Sin origen. Se resuelve: EventBridge es un **schedule** que dispara el workflow de Glue (§5.7). |
+| Flecha huérfana `? → EventBridge` | Sin origen. Se resuelve: EventBridge es un **schedule** que dispara el workflow de Glue (§5.7). *(v2.32)* Es un horario de **EventBridge Scheduler** (`rate(1 hour)` → `glue:StartWorkflowRun`), creado deshabilitado (§3.19, ADR-23). |
 | BigQuery → QuickSight "Carga batch" | **Verificar** si el conector de QuickSight a BigQuery está disponible para la cuenta. Camino principal recomendado: Parquet en S3 → Athena → QuickSight. BigQuery queda para analítica caliente en GCP. |
 
 ### 1.3 Discrepancias README ↔ diagrama FINAL (resueltas)
@@ -74,7 +75,7 @@ El README menciona **Firestore, Cloud SQL, Neptune y Dataplex**, que **no están
 
 ### 1.4 Historial de cambios
 
-Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.31), la más reciente primero. Este documento describe siempre la versión vigente (2.31).
+Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.32), la más reciente primero. Este documento describe siempre la versión vigente (2.32).
 
 ---
 
@@ -1151,6 +1152,210 @@ Opciones globales: `--yes` (no pide confirmación), `--project`, `--region` y `-
 
 Cada parte reemplaza su entrada y conserva las demás. `canaries` es el registro que usa `off` para borrar los canarios de E9 que no se hayan limpiado.
 
+### 3.19 Lakehouse de AWS: catálogo, Athena, workflow de Glue y horario (Lote 4.1)
+
+> Entregado en **v2.32** (HU-007, HU-029); validación en `docs/validation/validation-4-1.md` (automática con `scripts/validate_4_1.py`, partes A–F, `status`, `off` y `on`). Rutas relativas a `project/`. Amplía lo adelantado por el Lote 3.1 (bucket, llave y `ta-historical-loader`, §3.17) sin modificar `lake.tf` ni `exporter.tf`. `contracts/` solo cambia un comentario de `athena/posts.sql`; `schema_version` sigue en `"1.0"`. ADR-23.
+
+**Flujo.**
+
+```
+EventBridge Scheduler ta-wf-raw-to-curated-cada-hora (rate(1 hour), UTC, creado DESHABILITADO)
+   ─► glue:StartWorkflowRun (destino universal, rol ta-lakehouse-scheduler-role)
+   ─► Glue Workflow ta-wf-raw-to-curated (máximo 1 corrida a la vez)
+        ta-wf-raw-to-curated-inicio (ON_DEMAND) ─► ta-job-raw-to-trusted
+        ta-wf-raw-to-curated-trusted-to-curated (CONDITIONAL: SUCCEEDED del anterior) ─► ta-job-trusted-to-curated
+   ─► fallos: "Glue Job State Change" FAILED/TIMEOUT/STOPPED/ERROR de ta-job-* ─► regla ta-glue-job-fallos ─► /aws/events/ta-glue-job-fallos
+Athena (workgroup ta-analytics, límite por consulta, resultados SSE-KMS en athena-results/)
+   ─► Glue Data Catalog ta_raw / ta_trusted / ta_curated (tablas de contracts/athena/, partition projection) ─► s3://ta-dev-648617469176-lake/
+```
+
+| Ruta | Contenido |
+|---|---|
+| `infra/aws/modules/glue_catalog/` (`main.tf`, `tables.json`) | Bases `ta_raw`, `ta_trusted`, `ta_curated` y las 11 tablas. `tables.json` se **genera** desde `contracts/athena/*.sql` (abajo) |
+| `infra/aws/modules/athena_workgroup/` | Workgroup `ta-analytics` y sus consultas guardadas |
+| `infra/aws/modules/glue_role/`, `quicksight_role/` | `ta-glue-role` y `ta-quicksight-role` (§5.8) |
+| `infra/aws/modules/glue_workflow/` | Scripts subidos a S3, los dos jobs, el workflow, sus dos disparadores y los grupos de logs de Glue |
+| `infra/aws/modules/lakehouse_schedule/` | Horario de EventBridge Scheduler y su rol `ta-lakehouse-scheduler-role` |
+| `infra/aws/modules/glue_failure_events/` | Regla de EventBridge de fallos, su grupo de CloudWatch Logs y la política de recursos que deja escribir a EventBridge |
+| `infra/aws/environments/dev/{lakehouse,variables_lakehouse,outputs_lakehouse}.tf` | La raíz del lote (se suma a los archivos de 1.0, 3.1 y 3.2 sin modificarlos) |
+| `src/lakehouse/catalog_spec.py` | Parser de las DDL de `contracts/athena/` → `tables.json`, comparación con Glue y CLI `--check/--write/--print` |
+| `src/lakehouse/s3_parquet.py` | Filas de los Parquet de un prefijo de S3 leyendo solo su pie (conciliación de E3) |
+| `src/lakehouse/glue_jobs/{raw_to_trusted,trusted_to_curated}.py` | Scripts de los dos jobs. **En el 4.1 son marcadores de posición** (ADR-23); 4.2 y 4.3 los reemplazan |
+| `src/lakehouse/queries/{raw_conteo_por_origen,raw_sentimiento_7_dias}.sql` | Consultas de ejemplo: las sube Terraform como consultas guardadas y las corre el validador |
+| `src/lakehouse/tests/test_lake_*.py` | 50 pruebas (catálogo, jobs con S3/Glue falsos, pies de Parquet, reglas del Terraform) |
+| `scripts/validate_4_1.py`, `src/ops/validate41.py`, `src/ops/tests/test_ops_validate41.py` | Validación automática (48 pruebas con un AWS y un Terraform falsos) |
+
+**Catálogo (HU-007).** Tres bases con `location_uri` = `s3://{lake}/{raw|trusted|curated}/` y las 11 tablas de §5.7, todas `EXTERNAL_TABLE` Parquet (`MapredParquetInputFormat`, `ParquetHiveSerDe`) con las columnas, tipos, particiones, `LOCATION` y `TBLPROPERTIES` exactos de `contracts/athena/` (más `EXTERNAL = TRUE` y `classification = parquet`). Las descripciones de tabla son los comentarios que preceden a cada `CREATE` y los comentarios de columna (`-- …`) pasan a `Comment` en Glue (base para HU-034). Partition projection en `ta_raw.posts_raw` (`part_origin` ∈ {stream, historical}, `part_source` ∈ las tres fuentes, `part_dt` de `2026-01-01` a `NOW`, `part_hr` 00–23), `ta_trusted.posts` (`source`, `dt`) y `ta_curated.fact_posts` (`dt`); las demás de Curated no tienen particiones. Sin crawlers ni particiones registradas (ADR-08). Lake Formation de la cuenta está en modo IAM (`IAM_ALLOWED_PRINCIPALS`): los permisos son los de IAM.
+
+**Athena.** Workgroup `ta-analytics`, motor v3, **configuración forzada** (`EnforceWorkGroupConfiguration`): todas las consultas dejan su resultado en `s3://{lake}/athena-results/` cifrado con SSE-KMS y la llave del lake (el bucket lo borra a los 7 días, §5.12) y Athena **cancela** la consulta que pase de `athena_bytes_scanned_cutoff_per_query` (1 GiB por defecto, §5.12). Publica métricas de CloudWatch. Dos consultas guardadas: `ta-raw-conteo-por-origen` (la demostración del lote) y `ta-raw-sentimiento-7-dias` (filtra por `part_dt`, así que Athena solo lee esas particiones).
+
+**Carpetas (HU-007).** `raw/` ya existe (3.1 y 3.2). Terraform crea los objetos vacíos `trusted/`, `curated/` y `quality/` (cifrados con la llave del lake) para que las capas existan antes de tener datos; están fuera de la `LOCATION` de cualquier tabla. `athena-results/` aparece con la primera consulta y no se crea con un objeto porque el ciclo de vida lo borraría a los 7 días y Terraform lo recrearía.
+
+**Workflow y jobs (HU-029).** `ta-wf-raw-to-curated` corre `ta-job-raw-to-trusted` y, solo si terminó en `SUCCEEDED`, `ta-job-trusted-to-curated`. *(v2.32, corrección)* El disparador de inicio `ON_DEMAND` se declara con **`enabled = false`** e `ignore_changes = [enabled]`: con `enabled = true` (el valor por defecto) el proveedor llama `StartTrigger` al crearlo y eso **ejecuta el workflow**, que es lo que pasó en el `apply` del 4.1 (CloudTrail: `StartTrigger` de la cuenta raíz 1 s después de `CreateTrigger`; corrida `wr_0ab6…` con propiedades vacías y los dos jobs `SUCCEEDED`). Un `ON_DEMAND` queda en estado `CREATED` igual y `StartWorkflowRun` lo dispara (lo prueba F4). Jobs Glue **Python shell 3.9** de 0,0625 DPU (1 GB de memoria) con `library-set = analytics` (pandas, pyarrow y awswrangler precargados; versiones *a verificar* en el 4.2), 30 min de tiempo máximo, 0 reintentos y 1 corrida a la vez. El rol es `ta-glue-role`. Los scripts salen de `src/lakehouse/glue_jobs/` y Terraform los sube a `s3://{lake}/_glue/scripts/{job}.py` (`source_hash = filemd5(...)`: con SSE-KMS el ETag no es el MD5 y `etag` daría un cambio en cada plan); cambiar el archivo y aplicar actualiza el objeto sin tocar el job. Los logs van a `/aws-glue/python-jobs/output` y `/aws-glue/python-jobs/error` (Terraform crea los dos grupos con retención de 30 días; un flujo por job run, con el id `jr_…` como nombre: *comprobado* en la corrida del `apply`).
+
+**Marcadores de posición (ADR-23).** Hasta 4.2 y 4.3, cada script: (1) lee sus argumentos y las propiedades de corrida del workflow; (2) falla a propósito si `ta_force_fail` (propiedad de corrida o argumento) nombra su clave, su nombre o `all`; (3) cuenta los objetos de su prefijo de entrada (`raw/` por origen; `trusted/`) y lee 4 bytes de un Parquet (`PAR1`: prueba `GetObject` y `kms:Decrypt`); (4) el segundo lee la marca que dejó el primero en la misma corrida (prueba el orden y la lectura de `trusted/`); (5) escribe su marca `{trusted|curated}/_ta_placeholder/{job}/{WORKFLOW_RUN_ID o manual-…}.json` (prueba `PutObject` con la llave) y (6) imprime la línea JSON `glue_placeholder_done`. No tocan datos ni el catálogo. `validate_4_1.py workflow` y `off` borran las marcas.
+
+**Horario (estado de ahorro).** EventBridge **Scheduler** `ta-wf-raw-to-curated-cada-hora`: `rate(1 hour)` en UTC, ventana flexible apagada, destino universal `arn:aws:scheduler:::aws-sdk:glue:startWorkflowRun` con `Input = {"Name": "ta-wf-raw-to-curated"}` y **0 reintentos** (si una corrida sigue en curso, `StartWorkflowRun` falla por concurrencia y esa hora se pierde; la siguiente corre). Se crea **`DISABLED`** y Terraform ignora `state` (`ignore_changes`), como el Scheduler del 3.2 (ADR-22): `validate_4_1.py on` / `off` lo cambian sin dejar deriva. El rol `ta-lakehouse-scheduler-role` solo puede `glue:StartWorkflowRun` sobre el workflow y lo asume `scheduler.amazonaws.com` con `aws:SourceAccount` = la cuenta.
+
+**Fallos en CloudWatch (HU-029).** La regla `ta-glue-job-fallos` (bus `default`, `ENABLED`) toma `Glue Job State Change` con `jobName` que empieza por `ta-job-` y `state` ∈ {FAILED, TIMEOUT, STOPPED, ERROR} y guarda el evento completo en `/aws/events/ta-glue-job-fallos` (retención 30 días). Hace falta la política de recursos de CloudWatch Logs `ta-glue-job-fallos-events` (la consola la crea sola; Terraform, no). Además, el traceback del job queda en `/aws-glue/python-jobs/error`. Los fallos del propio horario (p. ej. permisos) aparecen en la métrica `TargetErrorCount` de `AWS/Scheduler`.
+
+**Terraform.** Plan esperado: **40 a crear, 0 a cambiar, 0 a destruir** (3 bases, 11 tablas, 3 carpetas, workgroup y 2 consultas, 3 roles con su política, el horario, 2 scripts, 2 jobs, el workflow, 2 disparadores, 2 grupos de logs de Glue y los 4 recursos de fallos), igual con `-target` de los módulos del lote que sin él (con `gcp_exporter.auto.tfvars` presente; sin ese archivo un plan **sin** `-target` propone destruir `ta-gcp-exporter-role`, por eso el validador usa `-target`). El lote no lee `data.aws_kms_alias` ni nombres del 3.2: usa `module.lake_bucket.bucket` y `module.lake_kms.key_arn` de `lake.tf`. Los outputs dependen de recursos (lección del 2.4).
+
+**Costo.** Sin corridas, prácticamente 0: el catálogo (11 tablas) y sus lecturas entran en el millón gratuito de Glue; el workgroup, los roles, el horario deshabilitado y la regla de fallos no cobran. Por uso: Athena 5 USD/TB con mínimo de 10 MB por consulta (≈ 0,00005 USD); Glue Python shell 0,44 USD/DPU-hora por segundo con mínimo de 1 min, así que cada job de 0,0625 DPU cuesta ≥ 0,00046 USD y cada corrida del workflow ≥ 0,0009; **con el horario encendido y los marcadores de posición, ≈ 0,022 USD/día (≈ 0,66 USD/mes)**, más con los jobs reales de 4.2/4.3 (F11 lo recalcula con lo medido). Precios de us-east-1 consultados en oct-2026, *a confirmar con la factura*.
+
+> **Estado de la verificación (v2.32, antes de entregar):** en WSL con Python 3.11.17 y Terraform 1.16.6 (proveedor `aws` 5.100.0 del lock). `pytest src/lakehouse`: **50 passed, 0 omitidas**; `test_ops_validate41.py`: **44 passed**; `contracts/tests`: 18; regresión `test_hist_infra.py` + `test_exp_infra.py`: 27. `terraform fmt -check` y `validate` en verde (también `infra/validate.sh`); `init` con el backend real y **`plan` completo y con `-target`: 40 a crear, 0 a cambiar, 0 a destruir** contra el estado remoto. `validate_4_1.py preflight` OK, `tests` OK y `terraform` sin `--apply` en AVISO (cuenta raíz y sin aplicar). Lecturas de AWS: no existen bases de Glue, workgroups propios, grupos `/aws-glue/*`, políticas de recursos de CloudWatch Logs, reglas ni horarios; QuickSight no está suscrito en la cuenta. `s3_parquet.count_parquet_rows` contra el lake real (objetos SSE-KMS, perfil del desarrollador): `raw/origin=stream/` **1.155 objetos y 171.637 filas** (facebook 57.224, instagram 57.281, reddit 57.132) en 10 s; `raw/origin=historical/` **12.102 objetos y 50.000 filas** (16.667 / 16.666 / 16.667) en 84 s: son los valores que E2–E3 deben ver en Athena. **No** se aplicó: falta comprobar en D–F que Glue acepta los jobs Python shell sin `GlueVersion`, que el disparador condicional queda `ACTIVATED`, los nombres reales de los flujos de logs de Python shell, que el horario de prueba arranca el workflow con el destino universal, la duración de la consulta de E1 sobre ~43.000 particiones proyectadas y si `aws_glue_catalog_table` deja deriva tras aplicar (C3b).
+
+> **Primera validación (v2.32).** A, B, C y E OK. C: 40 creados, C3b sin cambios, C4 OK. E: 50.000 filas del histórico y 171.637 del stream conciliadas con 1.155 objetos; E1 escaneó **12,7 MB** con **72,4 s de motor** (la proyección de ~43.000 particiones pesa más que los datos). **D6 dio FALLA** en `logs:PutLogEvents en /aws-glue/` y no era la política: el simulador de IAM responde `implicitDeny` para `logs:PutLogEvents` sobre el ARN de un **flujo** (`…:log-group:/aws-glue/python-jobs/output:log-stream:jr_…`) incluso con una política de prueba `"Resource": "*"` (`simulate-custom-policy`), mientras que sobre el ARN del **grupo** la política del rol da `allowed`. La escritura real sí funciona: el `apply` había corrido el workflow (abajo) y `/aws-glue/python-jobs/output` tiene los flujos `jr_…` de sus dos job runs con eventos. Corrección: D6 simula los logs con el ARN del grupo y suma un caso denegado (`/aws/events/ta-glue-job-fallos`): 20 casos; D6–D8 guardan en `data.cases` el recurso, el contexto, lo esperado y la decisión de cada caso. **Hallazgo de la misma validación:** el `apply` arrancó una corrida del workflow (disparador `ON_DEMAND` con `enabled = true`, arriba); corregido con `enabled = false` + `ignore_changes` (el plan sigue sin cambios) y las dos marcas que dejó las borra F9 u `off`. Confirmado al aplicar: Glue acepta los jobs Python shell sin `GlueVersion` (17 s y 11 s de ejecución), el disparador condicional queda `ACTIVATED` y los flujos de logs se llaman como el job run.
+
+**Puntos que quedaban por confirmar:**
+- *(Confirmado en la validación de v2.32)* El workflow arranca con `StartWorkflowRun` con el disparador `ON_DEMAND` en `CREATED` (F4: jobs de 19 s y 11 s, corrida de ≈ 1 min 50 s de punta a punta; el resto es arranque de cada job y disparo del condicional) y desde el horario de prueba (F8). El fallo provocado llega a `/aws/events/ta-glue-job-fallos` como evento `FAILED` (F7). F6 arrancó al segundo intento (cupo de concurrencia, abajo). Costo medido: ≈ 0,00092 USD por corrida.
+- *(Confirmado)* Athena v3 lee las marcas de tiempo `timestamp[ms, tz=UTC]` (INT64 `TIMESTAMP_MILLIS`) de los Parquet de Raw como `timestamp` (E1).
+- *(Sigue abierto)* Los permisos de `ta-quicksight-role` frente a QuickSight real: hoy solo se simulan (D7); QuickSight no está suscrito (Lote 6.1).
+
+#### 3.19.1 Interfaces del lote (cómo usar cada pieza sin leer el código)
+
+*(v2.32)* Todo lo de esta subsección es interfaz: el 4.2, el 4.3 y el 6.1 dependen de ello, y si cambia se cambia aquí primero (§0, regla de oro).
+
+**Cómo reemplazar un job (4.2 y 4.3).**
+1. Reemplazar `src/lakehouse/glue_jobs/raw_to_trusted.py` (4.2) o `trusted_to_curated.py` (4.3). El nombre del archivo, el job, el script en S3 y los disparadores no cambian.
+2. Si hace falta otro tipo o tamaño, `glue_job_settings` en `terraform.tfvars` (abajo): p. ej. `{ raw_to_trusted = { max_capacity = 1 } }` (16 GB) o Spark con `command = "glueetl"`, `glue_version`, `worker_type` y `number_of_workers` (crea además `/aws-glue/jobs/*`).
+3. Aplicar: `terraform -chdir=infra/aws/environments/dev plan -target=module.glue_workflow -out=…` y `apply` (o el `terraform --apply` del validador del lote nuevo). El plan debe dar **1 a cambiar** (`aws_s3_object.script[...]`) por cada script cambiado.
+4. Probar a mano: `aws glue start-job-run --job-name ta-job-raw-to-trusted` (argumentos propios con `--arguments '{"--x":"y"}'`) o el workflow entero con `aws glue start-workflow-run --name ta-wf-raw-to-curated`.
+
+**Contrato de un job del workflow.**
+
+| Qué | Valor |
+|---|---|
+| Lenguaje y entorno | Python 3.9 (Glue Python shell; sin `match` ni `X \| Y` en tiempo de ejecución), boto3 y el *analytics library set*. Un solo archivo: otros módulos irían por `--extra-py-files` (no configurado) |
+| Argumentos que recibe (`sys.argv`, pares `--clave valor`) | Comunes: `--lake_bucket` (`ta-dev-648617469176-lake`), `--ta_region` (`us-east-1`), `--ta_env` (`dev`), `--ta_db_raw`, `--ta_db_trusted`, `--ta_db_curated`. Propios: `--ta_job` (nombre), `--ta_job_key` (`raw_to_trusted`/`trusted_to_curated`), `--ta_input_prefix` (`raw/` / `trusted/`), `--ta_output_prefix` (`trusted/` / `curated/`). De Glue: `--job-language`, `--TempDir` (`s3://{lake}/_glue/temp/`), `--job-bookmark-option` y, dentro del workflow, `--WORKFLOW_NAME` y `--WORKFLOW_RUN_ID` |
+| Propiedades de corrida | `glue.get_workflow_run_properties(Name, RunId)`; el job puede escribir con `put_workflow_run_properties` (p. ej. el 4.2 dejar las particiones `dt` que cambió para el 4.3). La validación usa `ta_validacion` y `ta_force_fail` |
+| Puede | Leer y listar `raw/`, `trusted/`, `curated/`, `quality/` y `_glue/`; escribir, sobrescribir y **borrar** en `trusted/`, `curated/`, `quality/` y `_glue/temp/` (multipart incluido); usar la llave del lake vía S3; leer el catálogo de las tres bases; escribir logs en `/aws-glue/*` y métricas en `Glue` |
+| No puede | Escribir ni borrar en `raw/` (es de los productores: compactar Raw pediría cambiar §5.8); crear, cambiar o borrar tablas o particiones del catálogo (las crea Terraform: con awswrangler, **no** pasar `database=`/`table=` a `to_parquet`); usar Athena (no tiene permisos de Athena: leer Raw directamente de S3); arrancar jobs o workflows |
+| Salida | Trusted: Parquet + Snappy en `trusted/posts/source={s}/dt={AAAA-MM-DD}/`, con las columnas de `ta_trusted.posts` en el orden de `contracts/athena/posts.sql` (`catalog_spec.table("ta_trusted.posts").column_names`) **sin** `source` ni `dt` dentro del Parquet; sobrescribir la partición `dt` completa (§5.12). Curated: `curated/{tabla}/` (`fact_posts` por `dt`). Marcas de tiempo en UTC |
+| Éxito y fallo | Termina sin excepción = `SUCCEEDED` (no hace falta `sys.exit`); una excepción sin capturar = `FAILED`, con el traceback en `/aws-glue/python-jobs/error` y el evento en `/aws/events/ta-glue-job-fallos` |
+| Logs | Una línea JSON por evento en stdout (`/aws-glue/python-jobs/output`), como los marcadores (`glue_job_start`, `glue_placeholder_done`) |
+| Límites | 0,0625 DPU (1 GB) y 30 min por defecto; 1 corrida a la vez por job y por workflow; 0 reintentos |
+
+**CLI `python -m lakehouse.catalog_spec`** (desde `project/src`): `--check` sale con 0 si `tables.json` coincide con las DDL y con 1 mostrando qué tabla difiere; `--write` lo regenera (LF, UTF-8); `--print` resume las tablas. Opciones `--contracts-dir` y `--tables-json`. **Cambiar una tabla de §5.7:** §5.7 → `contracts/athena/*.sql` → `--write` → `terraform plan` (cambia esa tabla) → `apply`, en el mismo commit (§5.13).
+
+**API de Python** (`src/` en el `PYTHONPATH`):
+
+| Llamada | Contrato |
+|---|---|
+| `lakehouse.catalog_spec.load_contract_tables(contracts_dir=…) -> list[TableSpec]` | Las 11 tablas de las DDL. Lanza `DdlError` si una DDL no tiene la forma esperada (columnas `nombre tipo`, `PARTITIONED BY (…)`, `STORED AS PARQUET`, `LOCATION '…'`, `TBLPROPERTIES ('k' = 'v', …)`); tolera CRLF |
+| `TableSpec` | `database`, `name`, `full_name`, `description`, `location` (con `{{lake_bucket}}`), `columns`/`partition_keys` (`Column(name, type, comment)`), `parameters`, `column_names`, `partition_names`, `projected` |
+| `catalog_spec.table("ta_trusted.posts")`, `load_tables_json()`, `check()`, `resolve(spec, bucket)` | Una tabla; las de `tables.json`; diferencias JSON ↔ DDL; la tabla con el bucket sustituido |
+| `catalog_spec.glue_table_problems(spec, glue_table, bucket) -> [str]` | Compara la salida de `aws glue get-table(s)` con la DDL (columnas y tipos en orden, particiones, ubicación, formato Parquet, cada `projection.*`) |
+| `lakehouse.s3_parquet.count_parquet_rows(client, bucket, prefix, workers=16) -> dict` | `{prefix, objects, bytes, rows, by_source: {fuente: {objects, rows}}, errors, error_count, seconds}` leyendo el pie de cada `*.parquet` (un GET de los últimos 256 KB; el objeto entero si el pie no cabe). Necesita `ListBucket`, `GetObject`, `kms:Decrypt` y pyarrow |
+| `s3_parquet.parse_raw_key(key)`, `rows_from_tail(bytes)` | `{origin, source, dt, hr}` de una clave de Raw; `num_rows` del final de un Parquet |
+| `ops.validate41.athena_query(ctx, sql, database)`, `start_run` (`-> (run_id, error, intentos)`, con espera y reintento por concurrencia), `wait_idle`, `wait_run`, `find_log_lines`, `get_schedule`, `set_schedule_state`, `simulate` (`-> (fallos, casos)`) | Piezas del validador reutilizables por `validate42.py`/`validate43.py` (con su `Ctx`) |
+
+**Terraform: variables de entrada** (`infra/aws/environments/dev/variables_lakehouse.tf`, todas con valor por defecto):
+
+| Variable (por defecto) | Uso |
+|---|---|
+| `athena_bytes_scanned_cutoff_per_query` (`1073741824`) | Límite por consulta de `ta-analytics` (≥ 10 MB) |
+| `lakehouse_schedule_name` (`ta-wf-raw-to-curated-cada-hora`), `lakehouse_schedule_expression` (`rate(1 hour)`) | El horario |
+| `lakehouse_log_retention_days` (`30`) | Retención de `/aws-glue/python-jobs/*` y `/aws/events/ta-glue-job-fallos` |
+| `glue_job_settings` (`{}`) | Mapa `raw_to_trusted`/`trusted_to_curated` → `{command, python_version, max_capacity, glue_version, worker_type, number_of_workers, timeout_minutes, arguments}`, todos opcionales; lo omitido usa pythonshell, `3.9`, `0.0625`, (`5.0`, `G.1X`, `2` si es `glueetl`), `30`; `arguments` se suma a los del job |
+
+**Terraform: módulos.**
+
+| Módulo | Entradas (por defecto) | Outputs |
+|---|---|---|
+| `aws/modules/glue_catalog` | `bucket_name`, `databases` (`{raw = "ta_raw", trusted = "ta_trusted", curated = "ta_curated"}`), `tables_file` (`""` = `tables.json` del módulo) | `database_names`, `table_names`, `table_locations` |
+| `aws/modules/athena_workgroup` | `name` (`ta-analytics`), `description`, `bucket_name`, `results_prefix` (`athena-results/`), `kms_key_arn`, `bytes_scanned_cutoff_per_query`, `engine_version` (`Athena engine version 3`), `named_queries` (mapa nombre → `{database, description, query}`) | `name`, `arn`, `output_location`, `bytes_scanned_cutoff_per_query`, `named_query_ids` |
+| `aws/modules/glue_role` | `role_name` (`ta-glue-role`), `bucket_name`, `kms_key_arn`, `aws_region`, `aws_account_id`, `read_prefixes` (`raw/ trusted/ curated/ quality/ _glue/`), `write_prefixes` (`trusted/ curated/ quality/ _glue/temp/`; rechaza `raw/`), `database_names`, `workflow_name` | `role_arn`, `role_name`, `policy_name` |
+| `aws/modules/quicksight_role` | `role_name` (`ta-quicksight-role`), `bucket_name`, `kms_key_arn`, `aws_region`, `aws_account_id`, `workgroup_name`, `results_prefix` (`athena-results/`), `database_names`, `read_prefixes` (`curated/`) | `role_arn`, `role_name`, `policy_name` |
+| `aws/modules/glue_workflow` | `workflow_name` (`ta-wf-raw-to-curated`), `description`, `role_arn`, `bucket_name`, `kms_key_arn`, `scripts_prefix` (`_glue/scripts/`), `temp_prefix` (`_glue/temp/`), `jobs` (lista ordenada de `{key, name, description, script_path, command, python_version, max_capacity, glue_version, worker_type, number_of_workers, timeout_minutes, arguments}`), `common_arguments`, `max_concurrent_runs` (`1`), `log_retention_days` (`30`) | `workflow_name`, `workflow_arn`, `job_names`, `job_arns`, `script_locations`, `trigger_names`, `log_group_names` |
+| `aws/modules/lakehouse_schedule` | `schedule_name`, `role_name` (`ta-lakehouse-scheduler-role`), `aws_account_id`, `workflow_name`, `workflow_arn`, `schedule_expression` (`rate(1 hour)`), `schedule_timezone` (`UTC`), `initial_state` (`DISABLED`) | `schedule_name`, `schedule_arn`, `role_arn`, `target_arn` |
+| `aws/modules/glue_failure_events` | `rule_name` (`ta-glue-job-fallos`), `log_group_name` (`/aws/events/ta-glue-job-fallos`), `job_name_prefix` (`ta-job-`), `states` (`FAILED TIMEOUT STOPPED ERROR`), `retention_days` (`30`) | `rule_name`, `rule_arn`, `log_group_name` |
+
+**Terraform: direcciones de los recursos** (las usa el `-target` y la lista de C2 del validador; si se renombran, `validate_4_1.py` deja de encontrarlos):
+
+| Dirección | Qué es |
+|---|---|
+| `module.glue_catalog.aws_glue_catalog_database.this["raw\|trusted\|curated"]`, `module.glue_catalog.aws_glue_catalog_table.this["<base>.<tabla>"]` | Bases y tablas |
+| `aws_s3_object.lake_layer["trusted/"\|"curated/"\|"quality/"]` | Carpetas de las capas |
+| `module.athena.aws_athena_workgroup.this`, `module.athena.aws_athena_named_query.this["ta-raw-conteo-por-origen"\|"ta-raw-sentimiento-7-dias"]` | Workgroup y consultas guardadas |
+| `module.glue_role.*`, `module.quicksight_role.*`, `module.lakehouse_schedule.*` → `aws_iam_role.this`, `aws_iam_role_policy.this` | Roles y sus políticas en línea `ta-glue-role-lake`, `ta-quicksight-role-athena`, `ta-lakehouse-scheduler-role-glue` |
+| `module.lakehouse_schedule.aws_scheduler_schedule.this` | El horario |
+| `module.glue_workflow.aws_s3_object.script["<clave>"]`, `…aws_glue_job.this["<clave>"]`, `…aws_glue_workflow.this`, `…aws_glue_trigger.start`, `…aws_glue_trigger.next["trusted_to_curated"]`, `…aws_cloudwatch_log_group.glue["/aws-glue/python-jobs/output"\|"…/error"]` | Scripts, jobs, workflow, disparadores (`ta-wf-raw-to-curated-inicio`, `ON_DEMAND` con `enabled = false`; `ta-wf-raw-to-curated-trusted-to-curated`) y logs |
+| `module.glue_failure_events.{aws_cloudwatch_log_group,aws_cloudwatch_event_rule,aws_cloudwatch_event_target,aws_cloudwatch_log_resource_policy}.this` | Fallos en CloudWatch |
+
+**Operación a mano** (perfil de AWS del desarrollador; `--region us-east-1`):
+
+| Qué | Comando |
+|---|---|
+| Estado del horario (ahorro = `DISABLED`) | `aws scheduler get-schedule --name ta-wf-raw-to-curated-cada-hora --query State` o `validate_4_1.py status` |
+| Encender o apagar el horario | `python project/scripts/validate_4_1.py on` / `off` (la API exige reenviar la definición completa: no hay un `enable` de una línea; en la consola, *Enable/Disable* del horario) |
+| Una corrida a mano | `aws glue start-workflow-run --name ta-wf-raw-to-curated [--run-properties k=v]` |
+| Seguir una corrida | `aws glue get-workflow-run --name ta-wf-raw-to-curated --run-id <wr_…> --include-graph` (`Status`, `Statistics`, `Graph.Nodes[].JobDetails.JobRuns`) |
+| Detener | `aws glue stop-workflow-run --name ta-wf-raw-to-curated --run-id <wr_…>`; `aws glue batch-stop-job-run --job-name <job> --job-run-ids <jr_…>` |
+| Ver los fallos | `aws logs filter-log-events --log-group-name /aws/events/ta-glue-job-fallos --start-time <ms>` |
+| Consultar | `aws athena start-query-execution --work-group ta-analytics --query-string "…" --query-execution-context Database=ta_raw` |
+
+**Validador `python project/scripts/validate_4_1.py <parte> [opciones]`.** Se corre desde la raíz en WSL. Sale con 0 si ningún paso dio FALLA, con 1 si alguno la dio y con 2 fuera de WSL. Los pasos y lo esperado están en `docs/validation/validation-4-1.md`.
+
+| Parte | Opciones | Cambia la nube | Evidencia en `project/evidencia/` |
+|---|---|---|---|
+| `preflight` (A) | — | — | `validacion_4_1.json` |
+| `tests` (B) | — | — | ídem |
+| `terraform` (C) | `--apply` (pide confirmación) | El `apply` | ídem, `tfplan_4_1`, `tfplan_4_1_check` (no se versionan) |
+| `catalog` (D) | — | — | ídem |
+| `athena` (E) | `--reconcile-historical` | ~13 consultas de Athena (resultados en `athena-results/`) | ídem |
+| `workflow` (F) | `--no-tick` | 3 corridas del workflow, un horario de prueba que se borra solo, marcas que borra F9 (pide confirmación) | ídem; `temp_schedules` |
+| `status` | — | — | ídem |
+| `off` | — | Deshabilita el horario, detiene corridas, borra horarios de prueba y marcas | ídem |
+| `on` | — | Habilita el horario (pide confirmación) | ídem |
+
+Opciones globales: `--yes` (no pide confirmación), `--aws-profile`, `--project` (GCP, solo para el estado de `status.py`). Reutiliza de `ops/validate32.py` el ejecutor (`Runner`, `Result`), los pasos (`Part`), `tf_plan`/`tf_apply` (plan leído con `show -json`, diferencias antes → después, `errored.tfstate`), `policy_actions` y `pytest_counts`, y de `ops/services.py` el estado de lo que cobra (`services.status`, lo mismo que `status.py`). `validacion_4_1.json` tiene la forma de la del 3.2 (`lote`, `hu`, `updated_at`, `parts`) más `temp_schedules: [{name, at, cleaned}]`, que usa `off` para borrar un horario de prueba que no se haya borrado solo.
+
+**Trampas conocidas.**
+- `contracts/athena/*.sql` puede estar con CRLF en la copia de trabajo (en el índice es LF): el parser lo tolera y `--write` siempre escribe LF.
+- `update-schedule` reemplaza la definición entera: un cambio de estado a mano que omita `Target.RetryPolicy` vuelve a los 185 reintentos por defecto y deja deriva. Use `on`/`off`.
+- Con `EnforceWorkGroupConfiguration`, el `--result-configuration` de un cliente se ignora: los resultados siempre van a `athena-results/` con la llave del lake (quien consulta necesita `s3:PutObject` ahí y `kms:GenerateDataKey`).
+- Athena cobra al menos 10 MB por consulta aunque lea menos, y una consulta sobre `posts_raw` sin filtro enumera las ~43.000 particiones proyectadas (2026-01-01 → hoy × 24 h × 3 fuentes × 2 orígenes): filtre por `part_dt` cuando pueda.
+- Un disparador de Glue `ON_DEMAND` con `enabled = true` en Terraform se **ejecuta** al crearse (el proveedor llama `StartTrigger`): declararlo con `enabled = false` (v2.32).
+- Glue libera el cupo de `MaxConcurrentRuns = 1` unos segundos **después** de marcar una corrida `COMPLETED`: un `StartWorkflowRun` 9 s después del `CompletedOn` de la anterior dio `ConcurrentRunsExceededException` (validación de v2.32). `validate41.start_run` espera a que no haya corridas `RUNNING`/`STOPPING` (`wait_idle`) y reintenta cada 20 s hasta 9 veces. El horario real no reintenta (0 reintentos): una corrida a mano que termine justo antes de la hora hace perder ese disparo.
+- `iam simulate-principal-policy` no sirve para `logs:PutLogEvents` sobre el ARN de un flujo de logs (da `implicitDeny` aunque la política permita `*`): simular con el ARN del grupo y probar la escritura real con un job run (D6, F5).
+- Las claves de partición de Raw se llaman `part_origin`, `part_source`, `part_dt`, `part_hr` (las columnas `origin` y `source` viajan dentro del Parquet); `part_hr` tiene 2 dígitos.
+- Si se activa Lake Formation en la cuenta, IAM deja de bastar y los roles necesitan permisos de Lake Formation.
+- Los objetos `trusted/`, `curated/`, `quality/` (carpetas) y `{trusted,curated}/_ta_placeholder/` no son datos: el 4.2/4.3 no debe borrar `trusted/` entero (solo particiones de `trusted/posts/`).
+
+**Para el Lote 4.2 (Raw → Trusted): lo que hay en Raw y cómo escribir Trusted.**
+
+*Datos medidos el 26-oct-2026 (≈ 16:00 UTC)* leyendo todos los Parquet de Raw con el perfil del desarrollador (boto3 + pyarrow, solo lecturas; con el exportador en pausa Raw no cambia):
+
+| | `raw/origin=stream/` | `raw/origin=historical/` |
+|---|---|---|
+| Objetos · filas | 1.155 · **171.637** (facebook 57.224, instagram 57.281, reddit 57.132) | 12.102 · **50.000** (16.667 / 16.666 / 16.667) |
+| `event_id` distintos | **171.635**: 2 `event_id` repetidos una vez cada uno, en archivos distintos (p. ej. `58a0b9fe-640d-5d8d-8ec6-8710469f72f9`, procesado a las 01:39:53Z y 03:21:36Z del 23-oct), **idénticos salvo `process_time`** (mismo NLP). Probablemente una re-emisión que cae fuera de la ventana de deduplicación de 1 h de Dataflow (§3.13; causa sin comprobar) | 50.000 (sin repetidos) |
+| `event_id` compartidos entre orígenes | 0 (la fórmula de §3.6 incluye el origen) | |
+| `event_time` | 2026-10-21T22:00:52Z → 2026-10-24T03:11:35Z (4 días UTC) | 2026-04-27T00:01:32Z → 2026-10-23T23:52:30Z (180 días UTC) |
+| `process_time` | De la hora de proceso en Dataflow; `process_time − event_time`: p50 2,9 s, p99 495 s, máximo **11,3 h**; 505 filas con más de 30 min | **El mismo para las 50.000 filas** (2026-10-24T14:57:48.401Z, el momento de la carga): no sirve para ordenar |
+| Partición `dt`/`hr` de Raw | La de la ventana de proceso de Dataflow: 376 filas tienen su `process_time` en otra hora (ventanas que cruzan la hora). No reconstruir la partición desde `process_time` | La hora UTC de `event_time` (0 diferencias) |
+| Sin NLP (`sentiment_label`, `emotion_label` y `nlp_model_version` nulos a la vez) | **65.264 filas (38 %)**, todas con `process_time` entre **2026-10-21T22:00:57Z y 2026-10-22T22:44:11Z** (el job sin NLP del Lote 2.2, antes de la imagen `dataflow-nlp`); la primera fila con NLP es de 2026-10-22T22:52:46Z y **ninguna** posterior viene sin NLP. Repartidas por igual entre fuentes | 0 |
+| `nlp_model_version` | Una sola: `robertuito-sentiment@a2cc0f67ebd7+robertuito-emotion@bcd6835f4d1a` (106.373 filas) | La misma (50.000) |
+| `generator` | `comment-gen@1.0` 171.631 y **`ta-verify@2.1` 6**: los centinelas de `verify_streaming.py check` (§3.13; semilla 990001), todos `source = reddit`, con `event_id` `ff0240b7-b87b-5ce1-a0f2-0bfd9122682d` (2026-10-21T22:28Z, sin NLP), `22231e26-0216-5fa9-92a0-2630ce690166` (10-22T23:01Z), `89d2dfb9-ede6-50bd-aef7-9c6ea5040faf` (10-23T03:56Z), `27d5d085-3cc3-5c1a-9151-b84c69a84e45` (10-23T15:04Z), `05e47264-9722-5f93-a505-ed0d1628ba7f` (10-23T16:03Z) y `4cbf4e17-f394-548e-8d9f-f3b20fd17dcb` (10-23T23:34Z) | Solo `comment-gen@1.0` |
+| Calidad básica | 0 nulos en `event_id`, `event_time`, `source`, `text`, `user_hash`; `text` nunca vacío ni con saltos de línea o tabuladores; `user_hash` siempre hex de 64; `lang` siempre `es`; `source` del Parquet = la de la ruta | Igual |
+| Tipos del Parquet | `timestamp[ms, tz=UTC]` (`event_time`, `ingest_time`, `process_time`), `int64` (`followers`, `likes`, `shares`, `comments`), `double` (scores), `list<element: string>` (`brands`, `hashtags`), `string` (el resto, `payload` incluido) | Igual |
+| Lectura (desde WSL, 48 hilos, objetos enteros) | 4,8 s | 39,5 s (muchos archivos de ~10 KB): leer en paralelo |
+
+*Decisiones que son del 4.2 (no las toma este lote; propuesta entre paréntesis, a confirmar):*
+- **Duplicados por `event_id`:** quedarse con una fila por `event_id` (las dos copias de hoy son iguales salvo `process_time`; propuesta: la de menor `process_time`, que es la primera emisión). Con los datos de hoy, Trusted tendría **221.635** filas si no se descarta nada más.
+- **Centinelas `ta-verify@2.1`:** son eventos de prueba del verificador, no comentarios simulados (propuesta: descartarlos con `generator` que empiece por `ta-verify@` y contarlos en el reporte de calidad; quedarían 221.629).
+- **Filas sin NLP:** las 65.264 son válidas salvo por el NLP; las columnas de NLP de `ta_trusted.posts` admiten nulos y los campos del KPI de completitud (§5.10: `event_id`, `event_time`, `source`, `text`, `user_hash`) están completos. Opciones: conservarlas con NLP nulo y marcarlas (p. ej. contarlas en `dq_results`), descartarlas, o recalcular su NLP (necesitaría la imagen de NLP; Glue Python shell no la tiene). Cualquiera cambia los conteos de Curated (4.3) y la precisión del NLP (HU-033): decidir con el equipo.
+
+*Cómo escribir Trusted con lo que da este lote:*
+- **Leer Raw:** directo de S3 (el rol no tiene Athena): listar `raw/origin={stream,historical}/` y leer los `*.parquet` en paralelo (awswrangler `s3.read_parquet(..., use_threads=True)` o un pool de hilos con boto3/pyarrow; *a verificar* el tiempo desde Glue, en la misma región debería ser menor que desde WSL). El cifrado SSE-KMS es transparente (`GetObject` + `kms:Decrypt` vía S3).
+- **Memoria:** con 0,0625 DPU el job tiene 1 GB. Raw entero son 221.637 filas y 183 MB de Parquet comprimido; con pandas probablemente no quepa en 1 GB (*estimado, sin medir*): `glue_job_settings = { raw_to_trusted = { max_capacity = 1 } }` da 16 GB (cobra 16 veces más por segundo: ≈ 0,0073 USD por minuto, mínimo 1 min).
+- **Particiones de salida:** `trusted/posts/source={reddit|facebook|instagram}/dt={AAAA-MM-DD}/` con `dt = DATE(event_time)` UTC; con los datos de hoy, 181 días (180 del histórico más 2026-10-24). Con la proyección **no hay que registrar particiones**: Athena ve una partición apenas existe su prefijo, siempre que `source` sea uno de los tres valores y `dt` esté entre 2026-01-01 y hoy (lo que quede fuera es invisible para Athena).
+- **Recalcular una partición `dt`:** reunir **todas** las filas de Raw con ese `DATE(event_time)` (en el stream pueden venir de particiones de Raw de hasta el día siguiente: hay eventos procesados 11 h tarde), borrar el prefijo de esa partición en `trusted/posts/` y escribirla de nuevo (el rol puede listar y borrar en `trusted/`). Con este volumen, reconstruir Trusted entero en cada corrida es lo más simple; con awswrangler, `s3.to_parquet(dataset=True, partition_cols=["source", "dt"], mode="overwrite_partitions")` **sin** `database`/`table`.
+- **Formato:** Parquet + Snappy, las 24 columnas de `ta_trusted.posts` en el orden de `contracts/athena/posts.sql` (`source` y `dt` solo en la ruta) con los mismos tipos que Raw (arriba): Athena ya lee bien `timestamp[ms, UTC]`; no escribir nanosegundos ni INT96. `text_clean` es `string` (la regla de limpieza la define el 4.2 y va a §5.7). El cifrado lo pone el bucket (no hace falta pasar cabeceras SSE).
+- **Columnas:** el job no puede importar `src/lakehouse` (un solo archivo): las 24 columnas van escritas en el script, y una prueba del 4.2 puede compararlas con `catalog_spec.table("ta_trusted.posts").column_names`.
+- **Validar:** `count_parquet_rows(client, bucket, "trusted/posts/")` (§3.19.1, API) y `SELECT … FROM ta_trusted.posts` en `ta-analytics` (hoy da 0 filas, E6); el 4.2 debe dejar `trusted/_ta_placeholder/` sin escrituras nuevas (el marcador desaparece al reemplazar el script; `validate_4_1.py off` borra los restos). El horario sigue `DISABLED` hasta que existan 4.2 y 4.3.
+
 ---
 
 ## 4. Flujo extremo a extremo
@@ -1166,8 +1371,8 @@ Cada parte reemplaza su entrada y conserva las demás. `canaries` es el registro
 | 7 | Tendencias | Dataflow (ventanas, §3.16) | Eventos enriquecidos | BigQuery `trend_windows` (versión vigente en `trend_windows_latest`) | **< 5 min** (KPI) |
 | 8 | Exportación | `gcs-to-s3` (Cloud Run Job + Cloud Scheduler, federación OIDC; §3.18) | GCS `enriched/` | S3 `raw/origin=stream/` | cada 15 min (Scheduler en pausa por defecto) |
 | 9 | Carga histórica | `src/historical` (`load_historical.py`: mismo simulador, anonimización y NLP, en lote; §3.17) | Comentarios generados con semilla propia (`HIST_SEED`) | S3 `raw/origin=historical/` | one-shot (reejecutable sin duplicar) |
-| 10 | Raw → Trusted | Glue | S3 `raw/` | S3 `trusted/posts/` | horario |
-| 11 | Trusted → Curated | Glue/dbt | `trusted/` | S3 `curated/*` | horario |
+| 10 | Raw → Trusted | Glue `ta-job-raw-to-trusted` (Lote 4.2; en el 4.1, marcador de posición, §3.19) | S3 `raw/` | S3 `trusted/posts/` | horario (EventBridge Scheduler → workflow `ta-wf-raw-to-curated`; deshabilitado por defecto) |
+| 11 | Trusted → Curated | Glue `ta-job-trusted-to-curated` (Lote 4.3, Glue o dbt) | `trusted/` | S3 `curated/*` | en la misma corrida, si el anterior terminó bien |
 | 12 | Consulta | Athena → QuickSight | `curated/` | Dashboards | **< 3 s** (KPI) |
 
 ---
@@ -1201,7 +1406,7 @@ Cada parte reemplaza su entrada y conserva las demás. `canaries` es el registro
 | `HIST_N` | `50000` | loader histórico: total de registros |
 | `TA_HIST_ROOT` | `project/.local-s3` | loader histórico: espejo local del bucket (no se versiona) |
 | `TA_LAKE_BUCKET`, `TA_LAKE_KMS_KEY_ARN`, `TA_HIST_LOADER_ROLE_ARN` | outputs `lake_bucket`, `kms_key_arn`, `historical_loader_role_arn` de `infra/aws` (§5.9) | `load_historical.py upload` y `verify --s3` (el validador los toma de `terraform output`) |
-| `AWS_PROFILE` | perfil de AWS CLI del desarrollador | Terraform de AWS, `load_historical.py upload` (asume `ta-historical-loader`), `export_gcs_to_s3.py verify` y `lake-report` |
+| `AWS_PROFILE` | perfil de AWS CLI del desarrollador | Terraform de AWS, `load_historical.py upload` (asume `ta-historical-loader`), `export_gcs_to_s3.py verify` y `lake-report`, `validate_4_1.py` (Athena, Glue, Scheduler y la conciliación con boto3; v2.32) |
 | `TA_GCS_LAKE_BUCKET` | `{GCP_PROJECT}-ta-lake` | exportador (§3.18): lake de GCS que lee (solo `enriched/`) |
 | `TA_EXPORTER_ROLE_ARN`, `TA_EXPORTER_AUDIENCE` | outputs `exporter_role_arn` y `exporter_oidc_audience` de `infra/aws` (`ta-gcp-exporter-role`) | exportador: rol que asume y audiencia del ID token de `sa-exporter`. Usa además `TA_LAKE_BUCKET` y `TA_LAKE_KMS_KEY_ARN` |
 | `TA_EXPORTER_SA` | `sa-exporter@{GCP_PROJECT}.iam.gserviceaccount.com` | exportador fuera de Cloud Run: cuenta a impersonar para el token |
@@ -1482,17 +1687,22 @@ s3://…-lake/
   trusted/posts/source={s}/dt={YYYY-MM-DD}/…parquet
   curated/{tabla}/…parquet
   quality/{run_date}/…                      # reportes de Great Expectations
-  athena-results/
+  athena-results/                           # resultados de Athena (SSE-KMS, 7 días)
+  _glue/scripts/{job}.py                    # (v2.32) scripts de los jobs, los sube Terraform
+  _glue/temp/                               # (v2.32) --TempDir de Glue
+  {trusted,curated}/_ta_placeholder/{job}/  # (v2.32) marcas de los marcadores de posición del 4.1 (se borran; desaparecen con 4.2/4.3)
 ```
+
+*(v2.32)* `trusted/`, `curated/` y `quality/` existen como objetos vacíos («carpetas», HU-007) creados por Terraform; no están dentro de la `LOCATION` de ninguna tabla.
 
 Formato: **Parquet + Snappy**. Particiones registradas con **partition projection** en Athena (sin crawlers, más simple y barato).
 
 - **Raw** (`ta_raw.posts_raw`): rutas `raw/origin=…/source=…/dt=…/hr=…/`; también el histórico escribe `hr`. Claves de partición `part_origin`, `part_source`, `part_dt`, `part_hr` (las columnas `origin` y `source` ya viajan dentro del Parquet). Columnas = las de BigQuery `posts_enriched`.
 - **Raw histórico** *(v2.28, §3.17, ADR-21)*: `raw/origin=historical/source={s}/dt={AAAA-MM-DD}/hr={HH}/part-historical-s{seed}-{AAAAMMDD}T{HH}.parquet`. `dt`/`hr` son la fecha y hora UTC de `event_time` (en el stream, las del proceso en GCS). Un archivo por fuente y hora, filas ordenadas por `event_id`, mismo Parquet que `enriched/` (§5.4), SSE-KMS con la llave del lake. Solo lo escribe `ta-historical-loader`; reejecutar reescribe las mismas claves.
-- **Existe desde el Lote 3.1** *(v2.28)*: el bucket `ta-dev-648617469176-lake`, la llave `alias/ta-dev-lake` y el rol `ta-historical-loader`, adelantados del Lote 4.1 (§3.17). Glue, Athena, EventBridge y los demás roles llegan con la Fase 4.
+- **Existe desde el Lote 3.1** *(v2.28)*: el bucket `ta-dev-648617469176-lake`, la llave `alias/ta-dev-lake` y el rol `ta-historical-loader`, adelantados del Lote 4.1 (§3.17). Glue, Athena, EventBridge y los demás roles llegan con la Fase 4. *(v2.32)* Desde el Lote 4.1 existen las tres bases con sus 11 tablas, el workgroup `ta-analytics`, el workflow con sus dos jobs (marcadores de posición hasta 4.2/4.3), el horario (deshabilitado), la regla de fallos y los roles `ta-glue-role`, `ta-quicksight-role` y `ta-lakehouse-scheduler-role` (§3.19).
 - **Raw stream** *(v2.30, §3.18)*: `raw/origin=stream/source={s}/dt={AAAA-MM-DD}/hr={HH}/part-{AAAAMMDD}T{hhmmss}Z-p{panel:03d}.parquet`, copia byte a byte de `enriched/` (mismo Parquet de §5.4, mismo nombre), con `dt`/`hr` de la **hora de proceso** en GCS. Lo escribe solo `ta-gcp-exporter-role` (el job `ta-gcs-to-s3`), con SSE-KMS de la llave del lake y los metadatos de §5.6; un objeto puede sobrescribirse si cambió su tamaño en GCS. Trusted deduplica por `event_id` (§5.7).
-- **Trusted** (`ta_trusted.posts`): `trusted/posts/source=…/dt=…/`, con `dt = DATE(event_time)` UTC; añade `text_clean`; `source` es partición, no columna.
-- DDL en `project/contracts/athena/`, copia verificada de esta sección (§5.13). Las columnas de Curated están definidas abajo.
+- **Trusted** (`ta_trusted.posts`): `trusted/posts/source=…/dt=…/`, con `dt = DATE(event_time)` UTC; añade `text_clean`; `source` es partición, no columna. *(v2.32)* Lo que hay hoy en Raw (duplicados, filas sin NLP, centinelas `ta-verify@2.1`) y cómo escribir y recalcular las particiones: §3.19.1, «Para el Lote 4.2».
+- DDL en `project/contracts/athena/`, copia verificada de esta sección (§5.13). Las columnas de Curated están definidas abajo. *(v2.32)* Terraform crea las tablas en Glue **desde esas DDL** (`infra/aws/modules/glue_catalog/tables.json`, generado con `python -m lakehouse.catalog_spec --write`; una prueba exige que estén al día, §3.19.1).
 
 | Capa | Glue DB | Contenido |
 |---|---|---|
@@ -1522,9 +1732,9 @@ Solo `fact_posts` está particionada (por `dt`, con partition projection). Las d
 | `edges_user_brand` | Arista usuario → marca: `user_hash`, `brand`, `weight` (nº de menciones). |
 | `edges_hashtag_cooccurrence` | Arista no dirigida: `hashtag_a`, `hashtag_b`, `weight`; siempre `hashtag_a < hashtag_b`. *(Cubre "análisis de relaciones" sin Neptune.)* |
 
-**Orquestación:** EventBridge `rate(1 hour)` → Glue Workflow `ta-wf-raw-to-curated` (jobs `ta-job-raw-to-trusted`, `ta-job-trusted-to-curated`).
-**Athena:** workgroup `ta-analytics`, resultados en `athena-results/`, límite de bytes escaneados por consulta.
-**QuickSight:** datasets sobre `ta_curated` vía Athena, **SPICE** para cumplir < 3 s. Acceso por roles (IAM).
+**Orquestación:** EventBridge `rate(1 hour)` → Glue Workflow `ta-wf-raw-to-curated` (jobs `ta-job-raw-to-trusted`, `ta-job-trusted-to-curated`). *(v2.32, §3.19)* Es el horario de EventBridge Scheduler `ta-wf-raw-to-curated-cada-hora` (UTC, sin reintentos, rol `ta-lakehouse-scheduler-role`), que llama `glue:StartWorkflowRun`; se crea **`DISABLED`** (estado de ahorro) y Terraform ignora su estado (`validate_4_1.py on`/`off`). El workflow arranca `ta-job-raw-to-trusted` con el disparador `ta-wf-raw-to-curated-inicio` (`ON_DEMAND`) y `ta-job-trusted-to-curated` con `ta-wf-raw-to-curated-trusted-to-curated` (`CONDITIONAL`, `SUCCEEDED`); máximo 1 corrida a la vez. Jobs Glue Python shell 3.9 (contrato en §3.19.1). Fallos (`FAILED`, `TIMEOUT`, `STOPPED`, `ERROR` de `ta-job-*`) → regla `ta-glue-job-fallos` → `/aws/events/ta-glue-job-fallos`; logs de los jobs en `/aws-glue/python-jobs/{output,error}` (30 días).
+**Athena:** workgroup `ta-analytics`, resultados en `athena-results/`, límite de bytes escaneados por consulta. *(v2.32)* Motor v3, configuración forzada, resultados con SSE-KMS de la llave del lake, límite de 1 GiB (§5.12) y consultas guardadas `ta-raw-conteo-por-origen` y `ta-raw-sentimiento-7-dias`.
+**QuickSight:** datasets sobre `ta_curated` vía Athena, **SPICE** para cumplir < 3 s. Acceso por roles (IAM). *(v2.32)* Rol de servicio `ta-quicksight-role` (§5.8), sin probar con QuickSight: la cuenta todavía no tiene QuickSight (Lote 6.1).
 
 ### 5.8 Identidades y permisos (mínimo privilegio)
 
@@ -1534,11 +1744,12 @@ Solo `fact_posts` está particionada (por `dt`, con partition projection). Las d
 | `sa-dataflow` | GCP | `pubsub.subscriber` (y en `ta-dlq-df`, v2.26); `pubsub.viewer` en `ta-raw-{source}-df` y `ta-dlq-df` *(v2.26)*; `pubsub.publisher` en `ta-dlq` *(v2.16: los inválidos van a `ta-dlq`, HU-018)*; `artifactregistry.reader` en `ta-images` *(v2.23, imágenes `dataflow-nlp` y, desde v2.26, `dataflow-launcher`)*; `bigquery.dataEditor` en `ta_stream`; `storage.objectAdmin` en `…-ta-lake`; `secretmanager.secretAccessor` en `ta-hmac-key`; `dataflow.worker` |
 | `sa-exporter` | GCP | `storage.objectViewer` en `…-ta-lake` **con condición** *(v2.30)*: listar el bucket y leer solo objetos de `enriched/`; `storage.objectUser` con condición en `export-state/`; `run.invoker` sobre el job `ta-gcs-to-s3` (identidad del Scheduler); emite su ID token desde el servidor de metadatos del job. Quien valida desde su máquina tiene `iam.serviceAccountOpenIdTokenCreator` solo sobre `sa-exporter` (`exporter_oidc_token_creators`) |
 | `ta-gcp-exporter-role` | AWS | *(v2.30)* Confianza: `accounts.google.com` (proveedor integrado) con `aud`/`oaud`/`sub` de `sa-exporter` (§5.6). `s3:PutObject` en `raw/origin=stream/*`; `s3:ListBucket` solo con `s3:prefix` = `raw/origin=stream/*` (idempotencia: `s3:HeadObject` no es una acción de IAM y un HEAD exigiría `s3:GetObject`); `kms:GenerateDataKey` en la llave del lake con `kms:ViaService` = S3. Sin lectura ni borrado |
-| `ta-glue-role` | AWS | R/W en `raw/ trusted/ curated/ quality/`; Glue Catalog; logs |
+| `ta-glue-role` | AWS | R/W en `raw/ trusted/ curated/ quality/`; Glue Catalog; logs. *(v2.32, más estricto)* Lo asume `glue.amazonaws.com`. **Lee** (y lista con `s3:prefix`) `raw/`, `trusted/`, `curated/`, `quality/` y `_glue/`; **escribe y borra** solo en `trusted/`, `curated/`, `quality/` y `_glue/temp/` (Raw es de sus productores); `kms:Decrypt` y `kms:GenerateDataKey` en la llave del lake con `kms:ViaService` = S3; **lee** el catálogo de `ta_raw`, `ta_trusted` y `ta_curated` (sin crear ni cambiar tablas); `glue:Get/PutWorkflowRunProperties` en `ta-wf-raw-to-curated`; logs en `/aws-glue/*` y `cloudwatch:PutMetricData` en el espacio `Glue`. Política en línea `ta-glue-role-lake` |
 | `ta-historical-loader` | AWS | Rol que asumen los desarrolladores de la cuenta con su perfil *(v2.28)*: `s3:PutObject` en `raw/origin=historical/*`; `s3:ListBucket` solo con `s3:prefix` = `raw/origin=historical/*` (subida idempotente); `kms:GenerateDataKey` en la llave del lake. Sin lectura ni borrado |
-| `ta-quicksight-role` | AWS | `athena:*` en workgroup `ta-analytics`; lectura `curated/` |
+| `ta-quicksight-role` | AWS | `athena:*` en workgroup `ta-analytics`; lectura `curated/`. *(v2.32, más estricto que `athena:*`)* Lo asume `quicksight.amazonaws.com`. En `ta-analytics`: `StartQueryExecution`, `StopQueryExecution`, `GetQueryExecution`, `GetQueryResults(Stream)`, `BatchGetQueryExecution`, `ListQueryExecutions`, `GetWorkGroup` (sin `Delete`/`UpdateWorkGroup`); lectura del catálogo `AwsDataCatalog` por Athena y de `ta_curated` en Glue; `athena:ListWorkGroups`/`ListDataCatalogs` (los pide la consola); `s3:GetObject` en `curated/`, lectura y escritura en `athena-results/`; la llave del lake vía S3. Política `ta-quicksight-role-athena` |
+| `ta-lakehouse-scheduler-role` | AWS | *(v2.32)* Lo asume `scheduler.amazonaws.com` con `aws:SourceAccount` = la cuenta. Solo `glue:StartWorkflowRun` sobre `ta-wf-raw-to-curated` (política `ta-lakehouse-scheduler-role-glue`) |
 
-**Estado tras el Lote 1.3:** las tres identidades de GCP existen (§5.15). `sa-simulator` y `sa-exporter` tienen todos sus permisos. **Desde el Lote 2.2 (v2.22)** `sa-dataflow` también tiene `bigquery.dataEditor` en el dataset `ta_stream` y `secretmanager.secretAccessor` en `ta-hmac-key` (solo en ese secreto); nadie más tiene acceso de lectura al secreto (el loader histórico usará las credenciales del desarrollador). **Desde el Lote 2.3 (v2.23)**, además, `artifactregistry.reader` en el repositorio `ta-images`, para descargar la imagen `dataflow-nlp`. **Desde el Lote 2.4 (v2.26)**, `roles/pubsub.viewer` en las cuatro suscripciones que lee (quita el aviso `GETTING_PUBSUB_SUBSCRIPTION_FAILED`) y `roles/pubsub.subscriber` en `ta-dlq-df`, a nivel de suscripción. El lanzador de la plantilla Flex corre con `sa-dataflow`: no necesita más permisos. La escritura de `sa-exporter` en `export-state/` se limita con una condición de IAM sobre el prefijo; la emisión del token OIDC se configura en el Lote 3.2. **Desde el Lote 3.2 (v2.30)** la lectura de `sa-exporter` está limitada a `enriched/` (se quitó el `objectViewer` sin condición de `platform.tf`), tiene `run.invoker` sobre su job y existe `ta-gcp-exporter-role` (`infra/aws/modules/gcp_exporter_role`), que solo asume `sa-exporter`. Las identidades de AWS llegan con las Fases 3 y 4; **desde el Lote 3.1 (v2.28)** existe `ta-historical-loader` (`infra/aws/modules/historical_loader_role`). El loader lee `ta-hmac-key` con las credenciales del desarrollador, no con una service account. Terraform sigue operando con las credenciales de Alejandro (§5.1).
+**Estado tras el Lote 1.3:** las tres identidades de GCP existen (§5.15). `sa-simulator` y `sa-exporter` tienen todos sus permisos. **Desde el Lote 2.2 (v2.22)** `sa-dataflow` también tiene `bigquery.dataEditor` en el dataset `ta_stream` y `secretmanager.secretAccessor` en `ta-hmac-key` (solo en ese secreto); nadie más tiene acceso de lectura al secreto (el loader histórico usará las credenciales del desarrollador). **Desde el Lote 2.3 (v2.23)**, además, `artifactregistry.reader` en el repositorio `ta-images`, para descargar la imagen `dataflow-nlp`. **Desde el Lote 2.4 (v2.26)**, `roles/pubsub.viewer` en las cuatro suscripciones que lee (quita el aviso `GETTING_PUBSUB_SUBSCRIPTION_FAILED`) y `roles/pubsub.subscriber` en `ta-dlq-df`, a nivel de suscripción. El lanzador de la plantilla Flex corre con `sa-dataflow`: no necesita más permisos. La escritura de `sa-exporter` en `export-state/` se limita con una condición de IAM sobre el prefijo; la emisión del token OIDC se configura en el Lote 3.2. **Desde el Lote 3.2 (v2.30)** la lectura de `sa-exporter` está limitada a `enriched/` (se quitó el `objectViewer` sin condición de `platform.tf`), tiene `run.invoker` sobre su job y existe `ta-gcp-exporter-role` (`infra/aws/modules/gcp_exporter_role`), que solo asume `sa-exporter`. Las identidades de AWS llegan con las Fases 3 y 4; **desde el Lote 3.1 (v2.28)** existe `ta-historical-loader` (`infra/aws/modules/historical_loader_role`). El loader lee `ta-hmac-key` con las credenciales del desarrollador, no con una service account. **Desde el Lote 4.1 (v2.32)** existen `ta-glue-role`, `ta-quicksight-role` y `ta-lakehouse-scheduler-role` (`infra/aws/modules/{glue_role,quicksight_role,lakehouse_schedule}`); la llave del lake mantiene su política por defecto y los permisos se dan con IAM; Lake Formation está en modo IAM (`IAM_ALLOWED_PRINCIPALS`). `ta-historical-loader` y `ta-gcp-exporter-role` no cambian. Terraform sigue operando con las credenciales de Alejandro (§5.1).
 
 ### 5.9 Salidas de Terraform (outputs que consumen los demás)
 
@@ -1554,7 +1765,7 @@ Solo `fact_posts` está particionada (por `dt`, con partition projection). Las d
 | `infra/gcp/bootstrap` | `tfstate_bucket`, `enabled_services`, `budget_name` |
 | `infra/gcp/environments/dev` | `project_id`, `region`, `labels`; desde el Lote 1.3, además: `topic_names`, `subscription_names`, `dlq_topic`, `alerts_topic`, `datasets_bucket`, `lake_bucket`, `artifact_registry_url`, `simulator_url` (`null` si no está desplegado; Terraform no guarda outputs nulos, así que `terraform output simulator_url` responde *not found*) y `service_accounts` (§5.15); desde el Lote 2.2: `bq_dataset`, `posts_enriched_table` (`proyecto:ta_stream.posts_enriched`) y `hmac_secret_id`; desde el Lote 2.4: `trend_windows_table`, `dlq_events_table`, `dq_results_table` (`proyecto:ta_stream.…`), `trend_windows_latest_view` (`proyecto.ta_stream.trend_windows_latest`), `dlq_df_subscription`, `dataflow_template_spec` y `dataflow_launcher_image` (los usa `scripts/dataflow_template.py`); desde el Lote 3.2: `exporter_sa_unique_id`, `exporter_job_name`, `exporter_scheduler_name` y `exporter_image` (los tres últimos `null` sin imagen) |
 | `infra/aws/bootstrap` | `tfstate_bucket`, `tflock_table`, `budget_name` |
-| `infra/aws/environments/dev` | `aws_region`; desde el Lote 3.1 (v2.28): `lake_bucket`, `lake_bucket_arn`, `kms_key_arn`, `kms_key_alias` y `historical_loader_role_arn` (los usan `load_historical.py upload` y, desde el 4.1, Glue y Athena); desde el Lote 3.2 (v2.30): `exporter_role_arn`, `exporter_role_name` y `exporter_oidc_audience` (`null` hasta que existe el uniqueId de `sa-exporter`) |
+| `infra/aws/environments/dev` | `aws_region`; desde el Lote 3.1 (v2.28): `lake_bucket`, `lake_bucket_arn`, `kms_key_arn`, `kms_key_alias` y `historical_loader_role_arn` (los usan `load_historical.py upload` y, desde el 4.1, Glue y Athena); desde el Lote 3.2 (v2.30): `exporter_role_arn`, `exporter_role_name` y `exporter_oidc_audience` (`null` hasta que existe el uniqueId de `sa-exporter`); desde el Lote 4.1 (v2.32): `glue_db_names` (`{raw = "ta_raw", trusted = "ta_trusted", curated = "ta_curated"}`), `glue_table_names`, `athena_workgroup` (`ta-analytics`), `athena_results_location`, `athena_bytes_scanned_cutoff`, `glue_role_arn`, `quicksight_role_arn`, `glue_workflow_name`, `glue_job_names` (clave → nombre), `glue_script_locations`, `lakehouse_schedule_name`, `lakehouse_scheduler_role_arn` y `glue_failures_log_group`. Con ellos están los seis de HU-007 (`lake_bucket`, `glue_db_names`, `athena_workgroup`, `exporter_role_arn`, `glue_role_arn`, `kms_key_arn`) |
 
 **Valores reales aplicados (Lote 1.0):**
 
@@ -1598,7 +1809,8 @@ Resultados en BigQuery `dq_results` (columnas en §5.5) y `s3://…/quality/`. E
 | Encender, apagar o comprobar servicios; validar un lote de punta a punta | `docs/ACTIVE_SERVICES.md`, §8 y la guía de validación del lote | Salida de `python project/scripts/status.py` y el resumen del validador |
 | Exportador | §3.18 (y §3.18.1: interfaces), §5.4, §5.6, §5.8, `src/exporter/EXPORTER.md` y `docs/validation/validation-3-2.md` | `evidencia/validacion_3_2.json`, los JSON de `export_gcs_to_s3.py token`/`probe`/`verify` y el `export_done` del job |
 | Loader histórico | §3.17, §3.2, §3.8, §3.10, §5.2, §5.7, §5.8, `src/historical/HISTORICAL.md` y `docs/validation/validation-3-1.md` | Salida de `load_historical.py doctor`, `evidencia/validacion_3_1.json`, los JSON de `verify` y `terraform output` de `infra/aws` |
-| Jobs de Glue / dbt | §5.2, §5.7, §5.10 | Esquema real de Athena (`SHOW CREATE TABLE`) si ya existe algo |
+| Jobs de Glue / dbt | §5.2, §5.7, §5.10; *(v2.32)* **§3.19.1** (contrato de un job, cómo reemplazar el script, permisos de `ta-glue-role`, API de `catalog_spec` y `s3_parquet`), §5.8 y §5.12 | Esquema real de Athena (`SHOW CREATE TABLE`) si ya existe algo; *(v2.32)* `evidencia/validacion_4_1.json`, `terraform output` de `infra/aws` y, si un job falló, su evento de `/aws/events/ta-glue-job-fallos` |
+| Catálogo de Glue, Athena, el workflow o su horario | *(v2.32)* §3.19 (y §3.19.1), §5.7, §5.8, §5.9, §5.12 y `docs/validation/validation-4-1.md` | `evidencia/validacion_4_1.json` y la salida de `validate_4_1.py status` |
 | Calidad | §5.5, §5.7, §5.10 | — |
 | Terraform | §5.1, §5.8, §5.9, §5.14 | Estado actual de `infra/` y `terraform.tfvars` (sin secretos) |
 | Desplegar, actualizar o apagar el simulador | §5.15 e `infra/DEPLOY_SIMULATOR.md` | Salida de `terraform plan` y, si falla, los logs de Cloud Run |
@@ -1638,6 +1850,8 @@ Valores por defecto que evitan decidir en cada lote. Se ajustan aquí primero.
 | Canal de alertas | Correo. Un suscriptor de `ta-alerts` escribe un log estructurado (`severity=WARNING`, `alert=trend`) y una alerta basada en logs de Cloud Monitoring envía el correo mediante un canal de notificación de tipo email. Las direcciones van en `terraform.tfvars` (`alert_emails`, que no se versiona); por ahora el único destinatario es el correo de Alejandro. Sin SMTP ni secretos. | HU-039 |
 | Carga histórica | *(v2.28, §3.17)* `HIST_SEED = 3101`, 50.000 filas repartidas por igual entre las tres fuentes, 180 días hasta `as_of` (hoy 00:00 UTC, guardado en `generate.json`). Estacionalidad semanal y horaria en hora local (UTC−5), +30 % de crecimiento, ruido diario σ = 0,10, Pepsi +35 % y Postobón −10 % de punta a punta, `campana_sprite` (hace 120 días) y `crisis_postobon` (hace 40 días). NLP en lotes de 16 con la espera del pipeline (5 s), siempre con el `BundleBasedDirectRunner` y en procesos paralelos (`--workers`). Archivos por `source/dt/hr` de `event_time`. Constantes en `src/historical/config/historical.yaml`. | HU-024 |
 | Exportador GCS → S3 | *(v2.30, §3.18)* Cada 15 min (UTC) con el Scheduler **en pausa por defecto**; solape de 1 h, margen de listado de 2 h, 8 subidas en paralelo, máximo 5.000 objetos por corrida, 840 s por ejecución y 1 reintento; watermark solo tras subir todo. Imagen `gcs-to-s3:{commit o fecha}-{huella}`. | HU-025 |
+| Límite de Athena | *(v2.32, §3.19; adoptado por defecto, a confirmar)* `ta-analytics` cancela la consulta que pase de **1 GiB** escaneado (`athena_bytes_scanned_cutoff_per_query = 1073741824`; ≈ 0,005 USD por consulta como máximo). Hoy todo Raw ocupa ~183 MB, así que el límite protege de errores, no de los datos actuales; si un CTAS de dbt (4.3) lo necesita, se sube aquí primero. | HU-007, HU-030 |
+| Orquestación del lakehouse | *(v2.32, §3.19)* EventBridge Scheduler `rate(1 hour)` UTC → `ta-wf-raw-to-curated`, **deshabilitado por defecto** (estado de ahorro; lo enciende el equipo con `validate_4_1.py on`), sin reintentos, 1 corrida a la vez. Jobs Glue Python shell 3.9, 0,0625 DPU, 30 min, 0 reintentos, `library-set = analytics` (ajustables por job con `glue_job_settings`). Logs de Glue y de fallos: 30 días. | HU-029 |
 | Prueba de humo E2E | `scripts/smoke_e2e.py` sigue un evento centinela (`event_id` conocido) desde el simulador hasta `ta_curated.fact_posts` y reporta latencia por etapa. | HU-048 |
 | Retención del estado de Terraform | GCS: se conservan las 10 versiones no vigentes más recientes. S3: las versiones no vigentes expiran a los 90 días y los *uploads* multiparte incompletos a los 7. | HU-046 |
 | Presupuestos | Solo avisan por correo; no cortan el gasto. GCP: 50 %, 90 % y 100 % del gasto real y 100 % del pronóstico. AWS: 50 %, 80 % y 100 % del gasto real y 100 % del pronóstico. Montos aplicados: 400000 COP (GCP) y 50 USD (AWS) (§9 #10). | HU-046, HU-043 |
@@ -1652,7 +1866,7 @@ Valores por defecto que evitan decidir en cada lote. Se ajustan aquí primero.
 | `payload.{reddit,facebook,instagram}.schema.json` | `payload` por fuente e invariantes por `kind` | §5.2 |
 | `pubsub.attributes.schema.json` | Atributos de `ta-raw-{source}` | §5.3 |
 | `bigquery/{posts_enriched,trend_windows,dlq_events,dq_results}.sql` | Las 4 tablas de `ta_stream` | §5.5 |
-| `athena/{posts_raw,posts,curated}.sql` | Raw, Trusted y las 9 tablas de Curated | §5.7 |
+| `athena/{posts_raw,posts,curated}.sql` | Raw, Trusted y las 9 tablas de Curated. *(v2.32)* Son también la fuente de las tablas que crea Terraform: `infra/aws/modules/glue_catalog/tables.json` se genera de ellas (`python -m lakehouse.catalog_spec --write`) y `src/lakehouse/tests/test_lake_catalog_spec.py` falla si no coinciden; `validate_4_1.py catalog` (D2) compara además lo que hay en Glue | §5.7 |
 | `examples/valid/` (14), `examples/invalid/` (31) | Casos que deben pasar y casos que deben fallar | – |
 | `tests/test_contracts.py` | 18 pruebas | – |
 
@@ -1667,7 +1881,7 @@ Valores por defecto que evitan decidir en cada lote. Se ajustan aquí primero.
 - *Fuera de `contracts/tests/`* (Lote 1.1): `src/common/tests/test_envelope_contract.py` valida un envelope armado con `build_envelope()` por cada fuente, y `src/simulator/tests/test_generator_contract.py` valida 1.000 eventos por fuente producidos con el generador. Ambas usan la fixture `envelope_validator` de `src/conftest.py` y se omiten si faltan `jsonschema`, `referencing` o los schemas.
 - Coherencia entre capas: las 4 tablas de BigQuery existen; `posts_raw` coincide columna a columna con `posts_enriched`; `posts` es Raw más `text_clean` con `source` como partición; la partition projection cubre cada clave de partición y los valores de Raw coinciden con los enums del envelope; las 9 tablas de Curated y sus llaves foráneas existen; las columnas de BigQuery se derivan del envelope enriquecido.
 
-**Qué no verifican:** que `contracts/` y este documento digan lo mismo. Hoy esa alineación depende de la revisión en el PR.
+**Qué no verifican:** que `contracts/` y este documento digan lo mismo. Hoy esa alineación depende de la revisión en el PR. *(v2.32)* La otra mitad sí se verifica para Athena: `contracts/athena/` ↔ Terraform (`tables.json`) con una prueba y ↔ Glue real con D2 de `validate_4_1.py`.
 
 **Pendiente (recomendado, Fase 5; no bloquea la Fase 0):** una prueba de sincronización que lea los nombres de columna de cada `.sql` y compruebe que aparecen en las tablas de §5.5 y §5.7, para que el CI falle si cambia un lado sin el otro.
 
@@ -1752,7 +1966,7 @@ infra/
 - Service accounts, topics, suscripciones, buckets `…-ta-datasets` y `…-ta-lake`, Artifact Registry y Cloud Run: **Lote 1.3** (§5.15). Roles de AWS: Fases 3 y 4.
 - BigQuery (`ta_stream`): `posts_enriched` desde el Lote 2.2; `trend_windows`, `dlq_events`, `dq_results` y la vista `trend_windows_latest` desde el Lote 2.4 (§3.16).
 - Secreto `ta-hmac-key`: Lote 2.2 (§3.14).
-- Glue, Athena y EventBridge: Fase 4. El bucket S3 del lake, su llave KMS y el rol `ta-historical-loader` existen desde el Lote 3.1 (v2.28, ADR-21). La federación OIDC GCP → AWS (`ta-gcp-exporter-role`) existe desde el Lote 3.2 (v2.30, §3.18).
+- Glue, Athena y EventBridge: Fase 4. El bucket S3 del lake, su llave KMS y el rol `ta-historical-loader` existen desde el Lote 3.1 (v2.28, ADR-21). La federación OIDC GCP → AWS (`ta-gcp-exporter-role`) existe desde el Lote 3.2 (v2.30, §3.18). *(v2.32)* El catálogo de Glue, el workgroup de Athena, el workflow, el horario de EventBridge Scheduler y la regla de fallos existen desde el Lote 4.1 (§3.19); la lógica real de los jobs llega con 4.2 y 4.3.
 - Acceso de Miguel y Camila al proyecto GCP: diferido (§9, Fase 0).
 
 **Observaciones para lotes futuros:**
@@ -1846,7 +2060,7 @@ infra/
 │
 ├── docs/
 │   ├── ARCHITECTURE.md                    <- este archivo: arquitectura y contratos (versión vigente)
-│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.30)
+│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.32)
 │   ├── PLAN.md                            <- fases y lotes, matriz HU y estado del proyecto
 │   ├── HU.md                              <- historias de usuario (HU-001 a HU-048)
 │   ├── ACTIVE_SERVICES.md                 <- encender, comprobar y apagar lo que cobra (on.py, off.py, status.py)
@@ -1855,7 +2069,8 @@ infra/
 │   │   ├── validation-2-3.md              <- Lote 2.3: validación paso a paso (automática con validate_2_3.py)
 │   │   ├── validation-2-4.md              <- Lote 2.4: validación paso a paso (automática con validate_2_4.py)
 │   │   ├── validation-3-1.md              <- Lote 3.1: validación paso a paso (automática con validate_3_1.py)
-│   │   └── validation-3-2.md              <- Lote 3.2: validación paso a paso (automática con validate_3_2.py)
+│   │   ├── validation-3-2.md              <- Lote 3.2: validación paso a paso (automática con validate_3_2.py)
+│   │   └── validation-4-1.md              <- Lote 4.1: validación paso a paso (automática con validate_4_1.py)
 │   ├── GLOSSARY.md                        <- glosario del proyecto
 │   ├── NOTAS.md                           <- notas de trabajo
 │   ├── trend_analyzer_multicloud.drawio   <- diagrama editable (v2.5)
@@ -1897,7 +2112,8 @@ infra/
     │       ├── modules/{tfstate_backend,budget}/
     │       ├── modules/{kms_key,s3_lake,historical_loader_role}/   <- Lote 3.1: llave y bucket del lake, rol del loader (ADR-21)
     │       ├── modules/gcp_exporter_role/ <- Lote 3.2: ta-gcp-exporter-role (federación OIDC de sa-exporter)
-    │       └── environments/dev/          <- estado remoto (S3); Lote 3.1: lake.tf, variables_lake.tf, outputs_lake.tf; Lote 3.2: exporter.tf, variables_exporter.tf, outputs_exporter.tf, gcp_exporter.auto.tfvars.example
+    │       ├── modules/{glue_catalog,athena_workgroup,glue_role,quicksight_role,glue_workflow,lakehouse_schedule,glue_failure_events}/   <- Lote 4.1 (§3.19); glue_catalog/tables.json se genera de contracts/athena/
+    │       └── environments/dev/          <- estado remoto (S3); Lote 3.1: lake.tf, variables_lake.tf, outputs_lake.tf; Lote 3.2: exporter.tf, variables_exporter.tf, outputs_exporter.tf, gcp_exporter.auto.tfvars.example; Lote 4.1: lakehouse.tf, variables_lakehouse.tf, outputs_lakehouse.tf
     ├── pytest.ini                         <- Lote 1.1: pythonpath = src, testpaths = src
     ├── scripts/
     │   ├── generate_comments.py           <- Lote 1.1: CLI del generador, snapshots CSV / histórico (§3.2.2)
@@ -1924,6 +2140,7 @@ infra/
     │   ├── export_gcs_to_s3.py            <- Lote 3.2: CLI del exportador (run, plan, probe, token, doctor, verify, status, lake-report)
     │   ├── build_exporter_image.sh        <- Lote 3.2: construye, prueba y publica la imagen gcs-to-s3
     │   ├── validate_3_2.py                <- Lote 3.2: validación automática (partes A a F, status y off de docs/validation/validation-3-2.md)
+    │   ├── validate_4_1.py                <- Lote 4.1: validación automática (partes A a F, status, off y on de docs/validation/validation-4-1.md)
     │   ├── on.py  off.py  status.py       <- operación: encender, apagar y ver lo que cobra (ACTIVE_SERVICES.md)
     │   └── smoke_e2e.py                   <- prueba de humo extremo a extremo (HU-048)
     └── src/
@@ -1959,13 +2176,15 @@ infra/
         │                                     Lote 2.3: nlp, nlp_testing, nlp_image/ (Dockerfile, fetch_models, image_smoke, cloudbuild), tests/test_nlp* (§3.15).
         │                                     Lote 2.4: trends, trends_core, bq_sink, dlq_bq, trends_check, trends_bq, trends_cli, template_tools,
         │                                     flex_main, flex_template/ (Dockerfile, metadata.json), TRENDS.md, tests/test_trends_*, test_flex_template (§3.16)
-        ├── ops/                           <- operación y validación: services (on/off/status), validate23 (validate_2_3.py), validate24 (validate_2_4.py), validate31 (validate_3_1.py), validate32 (validate_3_2.py), tests/
+        ├── ops/                           <- operación y validación: services (on/off/status), validate23 (validate_2_3.py), validate24 (validate_2_4.py), validate31 (validate_3_1.py), validate32 (validate_3_2.py), validate41 (validate_4_1.py; reutiliza piezas de validate32 y services), tests/
         ├── historical/                    <- Lote 3.1: full load con el mismo simulador, anonimización y NLP (§3.17)
         │                                     plan, adapters, generate, nlp_batch, writer, verify, bq, s3io, doctor, cli, schema, work, testing,
         │                                     config/historical.yaml, requirements.txt, HISTORICAL.md, tests/test_hist_*
         ├── exporter/                      <- Lote 3.2: gcs-to-s3 (§3.18): config, keys, watermark, core, gcs_io, s3_io, identity, probe, verify,
         │                                     lake_check, cli, jsonlog, testing, Dockerfile, cloudbuild.yaml, requirements.txt, EXPORTER.md, tests/test_exp_*
-        ├── lakehouse/{glue_jobs,dbt}/
+        ├── lakehouse/                     <- Lote 4.1 (§3.19): catalog_spec (DDL de contracts/athena → tables.json), s3_parquet (filas por pie de Parquet),
+        │                                     glue_jobs/{raw_to_trusted,trusted_to_curated}.py (marcadores de posición: los reemplazan 4.2 y 4.3),
+        │                                     queries/*.sql (consultas guardadas de Athena), tests/test_lake_*; dbt/ si el 4.3 lo elige
         ├── quality/                       <- Great Expectations
         └── collectors/                    <- LEGADO: conectores reales Mastodon/Reddit/RSS (no se despliega)
 ```
@@ -2054,6 +2273,7 @@ Estado actual: <salida de `bash scripts/preflight.sh` (nube) o `bash scripts/loc
 | ADR-20 | Tendencias y DLQ en BigQuery (Lote 2.4): ventanas deslizantes en tiempo del evento con `AfterWatermark`, paneles tardíos acumulativos y una fila por panel (vista `trend_windows_latest` con la de mayor `n_posts`); baseline y alertas en un DoFn con estado por marca × fuente; `dlq_events` desde una suscripción `ta-dlq-df` en el mismo job; `pubsub.viewer` por suscripción; plantilla **Flex** con imagen de lanzador propia y parámetros desde `terraform output`; la rama se engancha con `attach_trends()` sin cambiar `dataflow_job.sh` | Agregador propio por tiempo de proceso (más código y sin marca de agua); `MERGE`/actualizar filas en BigQuery (no se puede con *streaming inserts*); esperar 30 min a cerrar cada ventana (incumple el KPI de < 5 min); `--dlq_table` del 2.1 (pide cambiar el lanzamiento); `pubsub.viewer` a nivel de proyecto; plantilla clásica (en Python no admite bien parámetros en tiempo de ejecución para streaming) |
 | ADR-22 | Exportador y federación (Lote 3.2): Cloud Run Job + Scheduler **creado en pausa** (`ignore_changes = [paused]`) con la identidad de `sa-exporter`; ID token de Google → `AssumeRoleWithWebIdentity` contra el proveedor **integrado** `accounts.google.com`, con `aud` (claim `azp`) ∈ {uniqueId, correo, audiencia}, `oaud` = audiencia y `sub` = uniqueId; idempotencia con `ListObjectsV2` por partición y `s3:prefix` (sin `GetObject`); `PutObject` de una parte con SSE-KMS, *bucket key* y el CRC32C de GCS; watermark por `timeCreated` con solape de 1 h y precondición de generación; lectura de `sa-exporter` limitada a `enriched/` con una condición de IAM (`resource.type` de bucket para listar); enlace entre nubes con `*.auto.tfvars` que escribe el validador; exportador sin dependencias de otros lotes | `aws_iam_openid_connect_provider` propio para Google (AWS ya lo trae integrado); llaves de IAM en Secret Manager (plan B de HU-006); `HeadObject` por objeto (pide `s3:GetObject`); Storage Transfer Service (ADR-07); `terraform_remote_state` entre nubes (credenciales cruzadas en cada plan); watermark por nombre de archivo (los paneles tardíos llegan a particiones anteriores); Scheduler encendido por defecto (cobra sin que nadie lo decida) |
 | ADR-21 | Histórico (Lote 3.1): reutilizar `EventFactory` del simulador con otra semilla y elegir los eventos por **aceptación** según un plan de tendencias (sin tocar el simulador); etapas reanudables con el NLP del pipeline (`nlp_from_options`) en lote dentro de la imagen de NLP local; Parquet por `source/dt/hr` de `event_time`; adelantar del Lote 4.1 el bucket del lake, su llave KMS y el rol `ta-historical-loader` (solo `PutObject`/`ListBucket` bajo `raw/origin=historical/` y `GenerateDataKey`) | `scripts/generate_comments.py` + usuarios y payloads propios (no sería el mismo pool ni los mismos payloads); forzar marca y sentimiento con escenarios (marcaría `sim.scenario`); NLP en Dataflow batch (cuesta y suma una plantilla); particiones por hora de carga (reejecutar en otro momento duplicaría Raw); esperar al 4.1 o escribir con las credenciales de administrador |
+| ADR-23 | Lakehouse (Lote 4.1): tablas de Glue creadas por **Terraform desde `contracts/athena/`** (`tables.json` generado y una prueba de sincronía) con partition projection; workgroup `ta-analytics` con configuración forzada, SSE-KMS y límite de 1 GiB; orquestación con **EventBridge Scheduler** (`rate(1 hour)` → destino universal `glue:StartWorkflowRun`, **creado `DISABLED`** con `ignore_changes = [state]`, sin reintentos) y un workflow con disparador `ON_DEMAND` + `CONDITIONAL`; jobs **Glue Python shell 3.9 de 0,0625 DPU** cuyos scripts suben desde `src/lakehouse/glue_jobs/` (`source_hash`), que en el 4.1 son **marcadores de posición** que prueban permisos, orden y fallos sin tocar datos (4.2/4.3 solo reemplazan el archivo; tipo y tamaño ajustables con `glue_job_settings`); fallos de `ta-job-*` a CloudWatch Logs con una regla de EventBridge; roles más estrictos que §5.8 v2.31 (Glue sin escribir `raw/`, QuickSight sin `athena:*`) | Crawlers (ADR-08); DDL lanzadas por un script contra Athena (estado fuera de Terraform); tablas escritas a mano en HCL (dos copias de §5.7 sin prueba); regla de EventBridge + disparador `EVENT` con `glue:notifyEvent` (no admite propiedades de corrida para provocar un fallo, y arrancar a mano `StartWorkflowRun` con disparador `EVENT` está sin comprobar); disparador `SCHEDULED` de Glue (solo `cron`, no es EventBridge); horario encendido por defecto (cobra sin que nadie lo decida); jobs Spark (`glueetl`) como marcadores (mínimo 2 DPU: ≈ 0,015 USD por job y ≈ 0,7 USD/día con el horario encendido); jobs vacíos que solo terminan (no probarían permisos de S3/KMS ni el orden) |
 
 ### Riesgos
 
@@ -2068,6 +2288,9 @@ Estado actual: <salida de `bash scripts/preflight.sh` (nube) o `bash scripts/loc
 | Generador por plantillas: baja variedad léxica y texto repetido | Ampliar plantillas (§3.2 cambio #5); medir duplicados por `event_id` y **no** por texto; reportar la diversidad léxica en el profiling. **v2.13:** plantillas ampliadas en el Lote 1.1 (5 categorías, 40 informativas y 18 comparativas); medido, 99,995 % de textos únicos en 20.000 comentarios |
 | Infraestructura desde cero (nada aplicado): retrasa la Fase 1 | Lote 1.0 (HU-046) primero; el simulador se desarrolla en local con el emulador (HU-047) mientras se crea el proyecto. **v2.12:** Lote 1.0 aplicado y verificado (§5.14); el riesgo baja a "mitigado" |
 | Histórico en muchos Parquet pequeños (~12.000 de ~9 KB, uno por fuente y hora) | Lo exige la proyección por `hr` de `posts_raw`; Athena solo lee las particiones pedidas y Trusted (4.2) reparte por `DATE(event_time)`. Si molesta, el 4.2 puede compactar Raw histórico por día *(v2.28)* |
+| Horario del lakehouse encendido con los marcadores de posición *(v2.32)* | Cobra poco (≈ 0,022 USD/día) pero no produce Trusted ni Curated y deja una marca por hora en `trusted/` y `curated/_ta_placeholder/`: se crea `DISABLED`, `validate_4_1.py status` lo muestra y `off` lo apaga y borra las marcas. Encenderlo de forma permanente lo decide el equipo cuando existan 4.2 y 4.3 |
+| Consultas lentas o caras sobre Raw por la proyección amplia *(v2.32)* | `posts_raw` proyecta ~43.000 particiones (desde 2026-01-01); filtrar por `part_dt`/`part_origin` y el límite de 1 GiB por consulta del workgroup. Si E1 resulta lento, acotar el rango de `projection.part_dt.range` en §5.7 y `contracts/` |
+| Deriva de Terraform en tablas de Glue o en el horario *(v2.32)* | C3b del validador replanea tras aplicar y falla si queda algo por cambiar; el estado del horario se ignora a propósito (ADR-23) |
 | Falsas alertas al arrancar (z-score sin baseline) | `is_alert = false` hasta 60 ventanas y *cooldown* de 15 min (§5.12). **v2.26:** el baseline vive en el estado del job, así que cada job nuevo vuelve a arrancar en frío (1 h sin alertas); se puede sembrar con el histórico (§5.12) cuando exista el Lote 3.1 |
 | Cuotas de la cuenta de crédito de GCP (p. ej. límite de vCPU) pueden limitar Dataflow con modelos pesados | Verificar cuotas en el Lote 1.0; `maxNumWorkers=1–2`; plan B: NLP en Cloud Run |
 

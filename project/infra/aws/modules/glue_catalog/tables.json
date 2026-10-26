@@ -1,0 +1,721 @@
+{
+  "_generated_from": "project/contracts/athena/*.sql · python -m lakehouse.catalog_spec --write (ARCHITECTURE.md §3.19.1)",
+  "tables": [
+    {
+      "database": "ta_raw",
+      "name": "posts_raw",
+      "source": "contracts/athena/posts_raw.sql",
+      "description": "ta_raw.posts_raw · ARCHITECTURE.md §5.7 Capa Raw: Parquet+Snappy tal como llega a S3 (ya anonimizado), stream (exportador) e historico (loader). Placeholders de despliegue: {{lake_bucket}}. Los ${...} de abajo son variables de Athena (partition projection). Layout fisico de S3 (los dos productores deben respetarlo): s3://{{lake_bucket}}/raw/origin={stream|historical}/source={s}/dt={YYYY-MM-DD}/hr={HH}/*.parquet Las columnas `origin` y `source` tambien viajan DENTRO del Parquet, por eso las claves de particion se llaman part_* (Athena/Hive no admite una clave de particion con el nombre de una columna de datos). El esquema de columnas es el de BigQuery posts_enriched (envelope enriquecido aplanado); `payload` viaja como JSON en STRING. Debe coincidir columna a columna con bigquery/posts_enriched.sql.",
+      "location": "s3://{{lake_bucket}}/raw/",
+      "columns": [
+        {
+          "name": "event_id",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "origin",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "source",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "generator",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "event_time",
+          "type": "timestamp",
+          "comment": ""
+        },
+        {
+          "name": "ingest_time",
+          "type": "timestamp",
+          "comment": ""
+        },
+        {
+          "name": "process_time",
+          "type": "timestamp",
+          "comment": ""
+        },
+        {
+          "name": "user_hash",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "followers",
+          "type": "bigint",
+          "comment": ""
+        },
+        {
+          "name": "text",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "lang",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "brands",
+          "type": "array<string>",
+          "comment": ""
+        },
+        {
+          "name": "brand_primary",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "hashtags",
+          "type": "array<string>",
+          "comment": ""
+        },
+        {
+          "name": "likes",
+          "type": "bigint",
+          "comment": ""
+        },
+        {
+          "name": "shares",
+          "type": "bigint",
+          "comment": ""
+        },
+        {
+          "name": "comments",
+          "type": "bigint",
+          "comment": ""
+        },
+        {
+          "name": "sentiment_label",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "sentiment_score",
+          "type": "double",
+          "comment": ""
+        },
+        {
+          "name": "emotion_label",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "emotion_score",
+          "type": "double",
+          "comment": ""
+        },
+        {
+          "name": "label_sentiment",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "nlp_model_version",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "payload",
+          "type": "string",
+          "comment": ""
+        }
+      ],
+      "partition_keys": [
+        {
+          "name": "part_origin",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "part_source",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "part_dt",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "part_hr",
+          "type": "string",
+          "comment": ""
+        }
+      ],
+      "parameters": {
+        "parquet.compression": "SNAPPY",
+        "projection.enabled": "true",
+        "projection.part_origin.type": "enum",
+        "projection.part_origin.values": "stream,historical",
+        "projection.part_source.type": "enum",
+        "projection.part_source.values": "reddit,facebook,instagram",
+        "projection.part_dt.type": "date",
+        "projection.part_dt.format": "yyyy-MM-dd",
+        "projection.part_dt.range": "2026-01-01,NOW",
+        "projection.part_dt.interval": "1",
+        "projection.part_dt.interval.unit": "DAYS",
+        "projection.part_hr.type": "integer",
+        "projection.part_hr.range": "0,23",
+        "projection.part_hr.digits": "2",
+        "storage.location.template": "s3://{{lake_bucket}}/raw/origin=${part_origin}/source=${part_source}/dt=${part_dt}/hr=${part_hr}/"
+      }
+    },
+    {
+      "database": "ta_trusted",
+      "name": "posts",
+      "source": "contracts/athena/posts.sql",
+      "description": "ta_trusted.posts · ARCHITECTURE.md §5.7 Capa Trusted: union stream + historico, deduplicado por event_id, tipos correctos, texto limpio. Placeholders de despliegue: {{lake_bucket}}. Layout: s3://{{lake_bucket}}/trusted/posts/source={s}/dt={YYYY-MM-DD}/*.parquet Glue escribe con partitionBy(source, dt), asi que esas dos columnas NO estan dentro del Parquet. dt = DATE(event_time) en UTC (decision de este contrato; en Raw, dt es la fecha de proceso en el stream y la de event_time en el historico). Idempotencia: Glue sobrescribe la particion dt completa (§5.12). Respecto a posts_raw: sin `source` como columna (es particion) y con text_clean.",
+      "location": "s3://{{lake_bucket}}/trusted/posts/",
+      "columns": [
+        {
+          "name": "event_id",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "origin",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "generator",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "event_time",
+          "type": "timestamp",
+          "comment": ""
+        },
+        {
+          "name": "ingest_time",
+          "type": "timestamp",
+          "comment": ""
+        },
+        {
+          "name": "process_time",
+          "type": "timestamp",
+          "comment": ""
+        },
+        {
+          "name": "user_hash",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "followers",
+          "type": "bigint",
+          "comment": ""
+        },
+        {
+          "name": "text",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "text_clean",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "lang",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "brands",
+          "type": "array<string>",
+          "comment": ""
+        },
+        {
+          "name": "brand_primary",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "hashtags",
+          "type": "array<string>",
+          "comment": ""
+        },
+        {
+          "name": "likes",
+          "type": "bigint",
+          "comment": ""
+        },
+        {
+          "name": "shares",
+          "type": "bigint",
+          "comment": ""
+        },
+        {
+          "name": "comments",
+          "type": "bigint",
+          "comment": ""
+        },
+        {
+          "name": "sentiment_label",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "sentiment_score",
+          "type": "double",
+          "comment": ""
+        },
+        {
+          "name": "emotion_label",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "emotion_score",
+          "type": "double",
+          "comment": ""
+        },
+        {
+          "name": "label_sentiment",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "nlp_model_version",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "payload",
+          "type": "string",
+          "comment": ""
+        }
+      ],
+      "partition_keys": [
+        {
+          "name": "source",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "dt",
+          "type": "string",
+          "comment": ""
+        }
+      ],
+      "parameters": {
+        "parquet.compression": "SNAPPY",
+        "projection.enabled": "true",
+        "projection.source.type": "enum",
+        "projection.source.values": "reddit,facebook,instagram",
+        "projection.dt.type": "date",
+        "projection.dt.format": "yyyy-MM-dd",
+        "projection.dt.range": "2026-01-01,NOW",
+        "projection.dt.interval": "1",
+        "projection.dt.interval.unit": "DAYS",
+        "storage.location.template": "s3://{{lake_bucket}}/trusted/posts/source=${source}/dt=${dt}/"
+      }
+    },
+    {
+      "database": "ta_curated",
+      "name": "fact_posts",
+      "source": "contracts/athena/curated.sql",
+      "description": "Un registro por post. Grano = event_id.",
+      "location": "s3://{{lake_bucket}}/curated/fact_posts/",
+      "columns": [
+        {
+          "name": "event_id",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "date_key",
+          "type": "int",
+          "comment": ""
+        },
+        {
+          "name": "origin",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "source",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "brand_primary",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "brands",
+          "type": "array<string>",
+          "comment": ""
+        },
+        {
+          "name": "user_hash",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "event_time",
+          "type": "timestamp",
+          "comment": ""
+        },
+        {
+          "name": "likes",
+          "type": "bigint",
+          "comment": ""
+        },
+        {
+          "name": "shares",
+          "type": "bigint",
+          "comment": ""
+        },
+        {
+          "name": "comments",
+          "type": "bigint",
+          "comment": ""
+        },
+        {
+          "name": "sentiment_label",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "sentiment_score",
+          "type": "double",
+          "comment": ""
+        },
+        {
+          "name": "emotion_label",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "emotion_score",
+          "type": "double",
+          "comment": ""
+        },
+        {
+          "name": "label_sentiment",
+          "type": "string",
+          "comment": ""
+        }
+      ],
+      "partition_keys": [
+        {
+          "name": "dt",
+          "type": "string",
+          "comment": ""
+        }
+      ],
+      "parameters": {
+        "parquet.compression": "SNAPPY",
+        "projection.enabled": "true",
+        "projection.dt.type": "date",
+        "projection.dt.format": "yyyy-MM-dd",
+        "projection.dt.range": "2026-01-01,NOW",
+        "projection.dt.interval": "1",
+        "projection.dt.interval.unit": "DAYS",
+        "storage.location.template": "s3://{{lake_bucket}}/curated/fact_posts/dt=${dt}/"
+      }
+    },
+    {
+      "database": "ta_curated",
+      "name": "dim_date",
+      "source": "contracts/athena/curated.sql",
+      "description": "",
+      "location": "s3://{{lake_bucket}}/curated/dim_date/",
+      "columns": [
+        {
+          "name": "date_key",
+          "type": "int",
+          "comment": "yyyymmdd"
+        },
+        {
+          "name": "full_date",
+          "type": "date",
+          "comment": ""
+        },
+        {
+          "name": "year",
+          "type": "int",
+          "comment": ""
+        },
+        {
+          "name": "month",
+          "type": "int",
+          "comment": ""
+        },
+        {
+          "name": "day",
+          "type": "int",
+          "comment": ""
+        },
+        {
+          "name": "iso_week",
+          "type": "int",
+          "comment": ""
+        },
+        {
+          "name": "day_of_week",
+          "type": "int",
+          "comment": "1 = lunes ... 7 = domingo"
+        },
+        {
+          "name": "is_weekend",
+          "type": "boolean",
+          "comment": ""
+        }
+      ],
+      "partition_keys": [],
+      "parameters": {
+        "parquet.compression": "SNAPPY"
+      }
+    },
+    {
+      "database": "ta_curated",
+      "name": "dim_source",
+      "source": "contracts/athena/curated.sql",
+      "description": "",
+      "location": "s3://{{lake_bucket}}/curated/dim_source/",
+      "columns": [
+        {
+          "name": "source",
+          "type": "string",
+          "comment": "reddit | facebook | instagram"
+        },
+        {
+          "name": "display_name",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "kind_mix",
+          "type": "string",
+          "comment": "descripcion de la mezcla de kind (§3.3)"
+        }
+      ],
+      "partition_keys": [],
+      "parameters": {
+        "parquet.compression": "SNAPPY"
+      }
+    },
+    {
+      "database": "ta_curated",
+      "name": "dim_brand",
+      "source": "contracts/athena/curated.sql",
+      "description": "",
+      "location": "s3://{{lake_bucket}}/curated/dim_brand/",
+      "columns": [
+        {
+          "name": "brand",
+          "type": "string",
+          "comment": "clave canonica de brands.yaml (postobon, pepsi, sprite)"
+        },
+        {
+          "name": "display",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "role",
+          "type": "string",
+          "comment": "propia | competidor"
+        }
+      ],
+      "partition_keys": [],
+      "parameters": {
+        "parquet.compression": "SNAPPY"
+      }
+    },
+    {
+      "database": "ta_curated",
+      "name": "dim_user",
+      "source": "contracts/athena/curated.sql",
+      "description": "Solo user_hash: nunca handle ni user_id.",
+      "location": "s3://{{lake_bucket}}/curated/dim_user/",
+      "columns": [
+        {
+          "name": "user_hash",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "first_seen",
+          "type": "timestamp",
+          "comment": ""
+        },
+        {
+          "name": "last_seen",
+          "type": "timestamp",
+          "comment": ""
+        },
+        {
+          "name": "n_posts",
+          "type": "bigint",
+          "comment": ""
+        },
+        {
+          "name": "max_followers",
+          "type": "bigint",
+          "comment": ""
+        }
+      ],
+      "partition_keys": [],
+      "parameters": {
+        "parquet.compression": "SNAPPY"
+      }
+    },
+    {
+      "database": "ta_curated",
+      "name": "agg_emotion_by_brand_hour",
+      "source": "contracts/athena/curated.sql",
+      "description": "Conteos de emocion por marca / fuente / hora (formato largo).",
+      "location": "s3://{{lake_bucket}}/curated/agg_emotion_by_brand_hour/",
+      "columns": [
+        {
+          "name": "hour_start",
+          "type": "timestamp",
+          "comment": "UTC, truncado a la hora"
+        },
+        {
+          "name": "brand",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "source",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "emotion_label",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "n_posts",
+          "type": "bigint",
+          "comment": ""
+        }
+      ],
+      "partition_keys": [],
+      "parameters": {
+        "parquet.compression": "SNAPPY"
+      }
+    },
+    {
+      "database": "ta_curated",
+      "name": "agg_trend_daily",
+      "source": "contracts/athena/curated.sql",
+      "description": "Volumen y sentimiento diario por marca. avg_sentiment: misma definicion que BigQuery trend_windows (con signo en [-1, 1]). El dia es UTC; los dashboards convierten a America/Bogota (§5.12).",
+      "location": "s3://{{lake_bucket}}/curated/agg_trend_daily/",
+      "columns": [
+        {
+          "name": "full_date",
+          "type": "date",
+          "comment": ""
+        },
+        {
+          "name": "brand",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "n_posts",
+          "type": "bigint",
+          "comment": ""
+        },
+        {
+          "name": "n_negative",
+          "type": "bigint",
+          "comment": ""
+        },
+        {
+          "name": "n_neutral",
+          "type": "bigint",
+          "comment": ""
+        },
+        {
+          "name": "n_positive",
+          "type": "bigint",
+          "comment": ""
+        },
+        {
+          "name": "avg_sentiment",
+          "type": "double",
+          "comment": ""
+        }
+      ],
+      "partition_keys": [],
+      "parameters": {
+        "parquet.compression": "SNAPPY"
+      }
+    },
+    {
+      "database": "ta_curated",
+      "name": "edges_user_brand",
+      "source": "contracts/athena/curated.sql",
+      "description": "Arista usuario -> marca; weight = numero de menciones.",
+      "location": "s3://{{lake_bucket}}/curated/edges_user_brand/",
+      "columns": [
+        {
+          "name": "user_hash",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "brand",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "weight",
+          "type": "bigint",
+          "comment": ""
+        }
+      ],
+      "partition_keys": [],
+      "parameters": {
+        "parquet.compression": "SNAPPY"
+      }
+    },
+    {
+      "database": "ta_curated",
+      "name": "edges_hashtag_cooccurrence",
+      "source": "contracts/athena/curated.sql",
+      "description": "Co-ocurrencia de hashtags; arista no dirigida, siempre hashtag_a < hashtag_b.",
+      "location": "s3://{{lake_bucket}}/curated/edges_hashtag_cooccurrence/",
+      "columns": [
+        {
+          "name": "hashtag_a",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "hashtag_b",
+          "type": "string",
+          "comment": ""
+        },
+        {
+          "name": "weight",
+          "type": "bigint",
+          "comment": ""
+        }
+      ],
+      "partition_keys": [],
+      "parameters": {
+        "parquet.compression": "SNAPPY"
+      }
+    }
+  ]
+}

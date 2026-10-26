@@ -1,6 +1,6 @@
 # TrendAnalyzer · Historias de Usuario (HU)
 
-> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.31** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
+> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.32** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
 > Cada HU tiene un ID **HU-000**, su fase/lote de `ARCHITECTURE.md` §7, responsable, sprint y criterios de aceptación verificables.
 
 ---
@@ -56,7 +56,7 @@ Criterios de aceptación: lista verificable.
 | HU-004 | Infraestructura GCP base | 1 · 1.3 | M | Must | 2 | ✅ |
 | HU-005 | Recursos de streaming (BigQuery, secreto HMAC) | 2 · 2.4 | M + C | Must | 2 | ✅ |
 | HU-006 | Federación OIDC GCP → AWS | 3 · 3.2 | M | Must | 2 | ✅ |
-| HU-007 | Infraestructura AWS del lakehouse | 4 · 4.1 | M | Must | 2 | ⬜ |
+| HU-007 | Infraestructura AWS del lakehouse | 4 · 4.1 | M | Must | 2 | 🟨 |
 | HU-046 | Bootstrap de Terraform y entornos | 1 · 1.0 | M | Must | 2 | ✅ |
 | **E2 · Simulación de fuentes** | | | | | | |
 | HU-008 | Adaptación del generador de comentarios | 1 · 1.1 | A | Must | 2 | ✅ |
@@ -84,7 +84,7 @@ Criterios de aceptación: lista verificable.
 | HU-026 | Capa Trusted | 4 · 4.2 | C | Must | 2 | ⬜ |
 | HU-027 | Capa Curated (modelo estrella) | 4 · 4.3 | C | Must | 2 | ⬜ |
 | HU-028 | Tablas de aristas | 4 · 4.4 | C | Should | 2 | ⬜ |
-| HU-029 | Orquestación horaria | 4 · 4.1 | M | Must | 2 | ⬜ |
+| HU-029 | Orquestación horaria | 4 · 4.1 | M | Must | 2 | 🟨 |
 | HU-030 | Consulta SQL para analistas | 4 · 4.3 | C | Must | 2 | ⬜ |
 | **E6 · Calidad y gobernanza** | | | | | | |
 | HU-031 | Profiling de datos | 5 · 5.1 | A | Must | 2 | ⬜ |
@@ -221,6 +221,8 @@ Criterios de aceptación: lista verificable.
 - Workgroup `ta-analytics` con límite de bytes escaneados por consulta.
 - Roles `ta-glue-role`, `ta-historical-loader`, `ta-quicksight-role` con mínimo privilegio. *(El bucket con KMS, la llave y `ta-historical-loader` se adelantan en el Lote 3.1, v2.28.)*
 - Outputs definidos: `lake_bucket`, `glue_db_names`, `athena_workgroup`, `exporter_role_arn`, `glue_role_arn`, `kms_key_arn`.
+
+*Entregada en v2.32, sin validar* (`ARCHITECTURE.md` §3.19; `docs/validation/validation-4-1.md`, partes C, D y E). Carpetas: `raw/` ya existía y Terraform crea `trusted/`, `curated/` y `quality/`; `athena-results/` aparece con la primera consulta (no se crea con un objeto porque expira a los 7 días). Bases y las 11 tablas de `contracts/athena/` con partition projection en las particionadas, comparadas con las DDL en D2. Workgroup con límite de 1 GiB por consulta (a confirmar), forzado y con resultados SSE-KMS. Roles con mínimo privilegio (D5–D9: 36 casos simulados; `ta-historical-loader` del 3.1 sin cambios). Los seis outputs existen (C4). Demostración en E: `SELECT` en Athena sobre `ta_raw.posts_raw` con los dos orígenes, el stream conciliado contra S3 y los bytes bajo el límite.
 
 ### HU-046 · Bootstrap de Terraform y entornos
 
@@ -603,6 +605,8 @@ Criterios de aceptación: lista verificable.
 - El workflow ejecuta en orden `ta-job-raw-to-trusted` y `ta-job-trusted-to-curated`.
 - Los fallos quedan registrados en CloudWatch.
 
+*Entregada en v2.32, sin validar* (`ARCHITECTURE.md` §3.19; `docs/validation/validation-4-1.md`, parte F). El disparo `rate(1 hour)` es un horario de **EventBridge Scheduler** que llama `glue:StartWorkflowRun`; se crea **deshabilitado** (estado de ahorro) y lo enciende el equipo con `validate_4_1.py on` cuando existan los jobs reales (4.2 y 4.3; hasta entonces son marcadores de posición). F4 comprueba el orden de los dos jobs, F6–F7 que un fallo provocado detiene la corrida y queda en CloudWatch (`/aws/events/ta-glue-job-fallos` y `/aws-glue/python-jobs/error`) y F8 que un horario de prueba con el mismo rol arranca el workflow.
+
 ### HU-030 · Consulta SQL para analistas
 
 | Épica | Fase · Lote | Responsable | Prioridad | Sprint | Depende de |
@@ -615,6 +619,8 @@ Criterios de aceptación: lista verificable.
 - Workgroup `ta-analytics` operativo con límite de bytes escaneados.
 - Las particiones se resuelven con partition projection (sin crawlers).
 - Existe un conjunto de consultas de ejemplo documentado.
+
+*Adelantado en el Lote 4.1 (v2.32, sin validar):* el workgroup `ta-analytics` con límite de bytes, la proyección en las tablas particionadas y dos consultas guardadas sobre Raw (`ta-raw-conteo-por-origen`, `ta-raw-sentimiento-7-dias`; `ARCHITECTURE.md` §3.19). Faltan las consultas sobre Curated (Lote 4.3).
 
 ---
 

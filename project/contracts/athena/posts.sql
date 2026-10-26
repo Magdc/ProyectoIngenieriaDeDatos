@@ -4,7 +4,7 @@
 --
 -- Layout: s3://{{lake_bucket}}/trusted/posts/source={s}/dt={YYYY-MM-DD}/*.parquet
 -- Glue escribe con partitionBy(source, dt), asi que esas dos columnas NO estan dentro del Parquet.
--- dt = DATE(event_time) en UTC (decision de este contrato; la de Raw es la fecha de proceso).
+-- dt = DATE(event_time) en UTC (decision de este contrato; en Raw, dt es la fecha de proceso en el stream y la de event_time en el historico).
 -- Idempotencia: Glue sobrescribe la particion dt completa (§5.12).
 -- Respecto a posts_raw: sin `source` como columna (es particion) y con text_clean.
 CREATE EXTERNAL TABLE IF NOT EXISTS ta_trusted.posts (

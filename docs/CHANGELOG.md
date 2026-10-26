@@ -1,10 +1,27 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.32**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.33**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.33 · desde v2.32
+
+**Lote que lo motiva:** Lote 5.1 (HU-031) · entrega (Raw perfilado; Trusted pendiente del Lote 4.2)
+
+| Área | Cambio |
+|---|---|
+| Lote 5.1 | Entregado: `src/quality/` (`layers`, `checks`, `text_stats`, `profile_core`, `profiler`, `anomalies`, `rules`, `report_md`, `s3sync`, `publish`, `testing`, `cli`, `requirements.txt`), `scripts/{profile_data.py,validate_5_1.py}`, `src/ops/validate51.py`, `docs/validation/validation-5-1.md` y 189 pruebas (165 en `src/quality/tests/`, 24 en `src/ops/tests/test_ops_validate51.py`). Detalle en **§3.20** (interfaces en §3.20.1). |
+| Profiling (HU-031) | Por capa, origen y fuente: nulos, cardinalidad exacta, tipos lógicos y físicos, distribuciones (valores frecuentes, cuantiles, longitudes, fechas por hora y día, listas), 70 comprobaciones por fila, KPI preliminares, diversidad léxica (TTR, MATTR, Herdan, distinct-2, hapax) y texto repetido (textos y esqueletos de plantilla), duplicados por `event_id` (no por texto), archivos y esquema, stream frente a histórico y anomalías. Lee una caché local de solo lectura de S3 (fuera del repo); la evidencia lleva solo agregados. |
+| Profiling real de Raw | 26-oct-2026: 13.257 archivos (182,7 MB) y 221.637 filas (histórico 50.000; stream 171.637) en 168 s. Completitud y anonimización 100 % en los dos orígenes; esquema único igual al contrato; 0 anomalías de error. Hallazgos: 65.264 filas del stream sin NLP (procesadas antes de 2026-10-22T23:00Z, jobs sin NLP), 6 centinelas `ta-verify@2.1` en Raw stream, 2 `event_id` repetidos en horas distintas, `process_time` constante en el histórico, 12.102 archivos pequeños, vocabulario acotado (3.618 tipos; 99,98 % de textos distintos). Evidencia en `evidencia/profiling_raw_5_1.{json,md}`. |
+| Trusted | Trusted no existe (Lote 4.2): el profiler queda listo con el contrato de §5.7 (`source` de la partición, `text_clean`, `dt = DATE(event_time)`) y se prueba con un Trusted simulado desde la caché de Raw y con 4 defectos inyectados. **Pendiente:** el profiling real cuando exista el 4.2 (`validate_5_1.py trusted` lo hace solo al encontrar objetos). |
+| Reglas para HU-032 | Catálogo **DQ-01…DQ-63** en **§5.10** (capa, alcance, columna, comprobación, umbral, KPI, gravedad, expectativa de GE sugerida, predicado SQL de Athena, observado y motivo) y métricas agregadas con su SQL de referencia; en código, `quality.rules.RULES` (una prueba exige que coincidan). Hoy en Raw cumplen 55 de 56; no cumple DQ-63 (aviso). Las expectativas de GE y los SQL están **sin comprobar** (GE llega con el 5.2 y Athena con el 4.1). |
+| Validador | `validate_5_1.py preflight / tests / raw / trusted / all / clean` (§8): A preflight (capas = `contracts/athena`, caché fuera del repo, `ops.services.status()`), B pruebas, C caché de S3 y profiling real de Raw (cobertura de HU-031, resultados, reglas, privacidad de la evidencia y §5.10 = código), D Trusted real o simulado con detección de defectos; `clean` borra la caché local. Solo lee de la nube. |
+| Contratos | `contracts/` **sin cambios**; `schema_version` sigue en `"1.0"`. §5.1 (`TA_QUALITY_CACHE`), §5.7 (`quality/{run_date}/profiling/{capa}/` opcional; notas medidas de Raw histórico, Raw stream y lo que Trusted debe resolver), §5.10 (catálogo de reglas), §5.11 (fila de Calidad) y §5.12 (parámetros del profiling). Nueva **ADR-24**. |
+| Documento | Nueva §3.20 con §3.20.1; ampliadas §0, §1.4, §4, §5.1, §5.7, §5.10, §5.11, §5.12, §6 y §9 (ADR-24; riesgos de texto repetido, archivos pequeños y filas sin NLP o centinelas en Raw stream); PLAN.md §3 (Lote 5.1 🟨, Fase 5 🟨); HU.md (HU-031 🟨 y dependencia de HU-026 para la parte de Trusted); `docs/ACTIVE_SERVICES.md` (costo del `sync`); `GLOSSARY.md` (Profiling: términos del informe y `quality/`); nueva `docs/validation/validation-5-1.md`. |
+| Correcciones de documentación | §6 decía `CHANGELOG.md (v2.2 → v2.30)` con la versión vigente en 2.31: ahora v2.33. §6 describía `src/quality/` solo como Great Expectations: ahora el profiling (5.1) y GE (5.2). HU-031 dependía solo de HU-025, pero su criterio de Trusted necesita HU-026. |
+| Pendiente | Profiling real de Trusted (Lote 4.2). Decidir con el 4.2 qué hace Trusted con las filas sin NLP y con los centinelas (DQ-13, DQ-63; *a confirmar*). Verificar en el 5.2 los nombres de expectativa de GE y en Athena (4.1) los predicados SQL de §5.10. Siguen abiertos los de v2.32 y anteriores. |
 
 ## v2.32 · desde v2.31
 

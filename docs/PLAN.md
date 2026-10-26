@@ -1,6 +1,6 @@
 # TrendAnalyzer · PLAN
 
-> Plan por fases y lotes, matriz de trazabilidad Fase · Lote → HU y estado del proyecto. Alineado con `ARCHITECTURE.md` **v2.32**.
+> Plan por fases y lotes, matriz de trazabilidad Fase · Lote → HU y estado del proyecto. Alineado con `ARCHITECTURE.md` **v2.33**.
 > **Convención de actualización:** cerrar un lote = tocar **solo §3** de este archivo (la fila del lote). Cambiar una HU (alta, baja o reasignación) = actualizar `HU.md` y **§2** en el mismo commit.
 > Este archivo no define contratos: para cualquier interfaz (formatos, nombres, topics, tablas, IAM) la fuente es **§5 de [`ARCHITECTURE.md`](ARCHITECTURE.md)**. Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md).
 
@@ -164,8 +164,8 @@ Cada **lote** es una petición mía de tamaño razonable: yo entrego un conjunto
 | 4.2 | ⬜ | C | HU-026 | |
 | 4.3 | ⬜ | C | HU-027, HU-030 | |
 | 4.4 | ⬜ | C | HU-028 | |
-| **5 · Calidad y gobernanza** | ⬜ | A | HU-031 a HU-036, HU-048 | |
-| 5.1 | ⬜ | A | HU-031 | |
+| **5 · Calidad y gobernanza** | 🟨 | A | HU-031 a HU-036, HU-048 | En curso desde v2.33: Lote 5.1 entregado (Raw perfilado; Trusted pendiente del 4.2) |
+| 5.1 | 🟨 | A | HU-031 | Entregado en v2.33 (`project/src/quality/`, `scripts/profile_data.py`; descripción e interfaces en `ARCHITECTURE.md` §3.20 y §3.20.1; validación en `docs/validation/validation-5-1.md` con `scripts/validate_5_1.py`, partes A–D). **Raw hecho:** profiling real de los dos orígenes y las tres fuentes desde una caché local de solo lectura de S3 (13.257 archivos, 221.637 filas): completitud y anonimización 100 %, esquema único, 0 anomalías de error; hallazgos (filas del stream sin NLP antes de 2026-10-22T23:00Z, 6 centinelas `ta-verify@2.1`, 2 `event_id` repetidos, archivos pequeños, vocabulario acotado). Reglas propuestas para HU-032: catálogo DQ-01…DQ-63 en `ARCHITECTURE.md` §5.10. Evidencia en `evidencia/profiling_raw_5_1.{json,md}` y `validacion_5_1.json`. Pruebas: 165 + 24, sin red. **Pendiente:** profiling real de Trusted cuando exista el Lote 4.2 (hoy probado con un Trusted simulado y defectos inyectados); cerrar con `validate_5_1.py` en `main`. **Contratos tocados:** `contracts/` sin cambios; §5.1, §5.7, §5.10, §5.11, §5.12; ADR-24 |
 | 5.2 | ⬜ | A | HU-032, HU-033 | |
 | 5.3 | ⬜ | A | HU-034, HU-035, HU-036 | |
 | 5.4 | ⬜ | A | HU-048 | |

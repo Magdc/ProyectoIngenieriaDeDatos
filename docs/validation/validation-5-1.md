@@ -149,11 +149,36 @@ Necesita la parte C (usa la caché y `profiling_raw_5_1.json`). Mira si `s3://�
 
 Resultado de la parte: **AVISO** (por D1), código de salida 0.
 
-**Cuando exista Trusted (Lote 4.2):** D1 da OK con el número de objetos; D2 sincroniza `trusted/posts/`;
-D3 perfila el Trusted real (`profiling_trusted_5_1.{json,md}`, con `--raw-profile` para DQ-58) y D4
-comprueba el contrato (aquí un problema es AVISO: es un hallazgo del dato, para el 4.2); D6 la privacidad.
-Repita antes la parte C para que Raw y Trusted sean de la misma foto. Con D en OK, HU-031 y el Lote 5.1
-se pueden cerrar (✅).
+**Cuando exista Trusted (Lote 4.2): cierre del Lote 5.1.** Después de que `ta-job-raw-to-trusted` haya
+corrido al menos una vez (y sin que vuelva a correr ni el exportador suba objetos entre los pasos 1 y 2,
+para que Raw y Trusted sean la misma foto):
+
+1. `python project/scripts/validate_5_1.py raw` → C en OK, como arriba. Refresca la caché de Raw y
+   `profiling_raw_5_1.json` (si el exportador subió objetos nuevos, C2 los baja y las cifras crecen).
+2. `python project/scripts/validate_5_1.py trusted` → esperado:
+
+   | Paso | Esperado con Trusted real |
+   |---|---|
+   | D0 | Cuenta de AWS |
+   | D1 | **OK**: `N objetos: se perfila el Trusted real` (N > 0) |
+   | D2 | OK: `sync --layer trusted` baja `trusted/posts/` a la caché, sin fallidos |
+   | D3 | OK: `profiling_trusted_5_1.{json,md}`, perfilado con `--raw-profile project/evidencia/profiling_raw_5_1.json` |
+   | D4 | **OK** si: layout `trusted/posts/source=…/dt=…/` reconocido; esquema = las 24 columnas de `ta_trusted.posts` en orden (sin `source`, con `text_clean`; se comparan tipos lógicos, no físicos: Glue puede escribir otros tipos de fecha o enteros); `dt = DATE(event_time)` en todas; unicidad 1,0; DQ-58 `cumple` (filas entre el 99 y el 100 % de los `event_id` distintos de Raw: hoy 221.635); `text_clean` perfilado. Si algo de eso falla, D4 da **AVISO** (es un hallazgo del dato para el 4.2, no del validador) y el detalle lo nombra |
+   | D6 | OK: sin `user_hash` ni `user_id` en la evidencia de Trusted |
+
+   Resultado de la parte: OK (o AVISO por D4). Qué esperar según cómo resuelva el 4.2 los hallazgos de
+   Raw (`ARCHITECTURE.md` §3.20): si conserva las filas sin NLP y los centinelas, DQ-58 cumple (221.635) y
+   el informe muestra los avisos `nlp_ausente` y `eventos_de_validacion` (DQ-63 no cumple); si excluye
+   solo los 6 centinelas, DQ-58 sigue cumpliendo (221.629, 99,997 %); si excluyera las 65.264 filas sin
+   NLP, DQ-58 no cumpliría (≈ 70 %) y D4 daría AVISO. Eso se decide con el 4.2; no se corrige aquí.
+3. Revise en `profiling_trusted_5_1.md` las secciones 10 (anomalías) y 11 (las 54 reglas de Trusted con
+   su estado) y anote las cifras.
+4. Cierre en los documentos (con la versión que toque): `PLAN.md` §3, fila 5.1 → ✅ (la Fase 5 sigue 🟨
+   hasta el 5.4); `HU.md`, HU-031 → ✅ (tabla resumen y su "Estado"); `ARCHITECTURE.md` §3.20, una nota de
+   cierre con las cifras de Trusted y el estado de DQ-48, DQ-49 y DQ-54–DQ-58; la columna "Observado" de
+   §5.10 para las reglas de Trusted; `CHANGELOG.md`; y la tabla de **Cierre** de esta guía.
+5. `python project/scripts/validate_5_1.py all` sobre el commit de `main` → código 0, con A, B, C y D en
+   OK (D ya sin el AVISO de D1; con AVISO solo si D4 encontró algo, ver el punto 2).
 
 Manual (desde la raíz):
 

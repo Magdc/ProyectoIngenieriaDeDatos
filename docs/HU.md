@@ -1,6 +1,6 @@
 # TrendAnalyzer · Historias de Usuario (HU)
 
-> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.32** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
+> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.33** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
 > Cada HU tiene un ID **HU-000**, su fase/lote de `ARCHITECTURE.md` §7, responsable, sprint y criterios de aceptación verificables.
 
 ---
@@ -87,7 +87,7 @@ Criterios de aceptación: lista verificable.
 | HU-029 | Orquestación horaria | 4 · 4.1 | M | Must | 2 | 🟨 |
 | HU-030 | Consulta SQL para analistas | 4 · 4.3 | C | Must | 2 | ⬜ |
 | **E6 · Calidad y gobernanza** | | | | | | |
-| HU-031 | Profiling de datos | 5 · 5.1 | A | Must | 2 | ⬜ |
+| HU-031 | Profiling de datos | 5 · 5.1 | A | Must | 2 | 🟨 |
 | HU-032 | Reglas de calidad y KPIs | 5 · 5.2 | A | Must | 2 | ⬜ |
 | HU-033 | Precisión del NLP | 5 · 5.2 | A | Could | 2 | ⬜ |
 | HU-034 | Catálogo de datos | 5 · 5.3 | A | Must | 2 | ⬜ |
@@ -630,7 +630,7 @@ Criterios de aceptación: lista verificable.
 
 | Épica | Fase · Lote | Responsable | Prioridad | Sprint | Depende de |
 |---|---|---|---|---|---|
-| E6 | 5 · 5.1 | A | Must | 2 | HU-025 |
+| E6 | 5 · 5.1 | A | Must | 2 | HU-025; HU-026 (parte Trusted) |
 
 **Como** responsable de gobernanza **quiero** perfilar los datos de Raw y Trusted **para** conocer su estado real antes de fijar reglas de calidad. *(Equivale a US-14.)*
 
@@ -639,6 +639,8 @@ Criterios de aceptación: lista verificable.
 - Cubre las capas Raw y Trusted, y tanto `origin=stream` como `origin=historical`.
 - Incluye la diversidad léxica y el texto repetido del generador (se mide duplicados por `event_id`, no por texto).
 - Las conclusiones alimentan las reglas de HU-032.
+
+**Estado (v2.33, 🟨):** Raw perfilado con datos reales (los dos orígenes y las tres fuentes; `evidencia/profiling_raw_5_1.{json,md}`) y reglas propuestas en `ARCHITECTURE.md` §5.10 (DQ-01…DQ-63). Falta el profiling real de Trusted, que depende del Lote 4.2 (HU-026); la herramienta ya está lista y probada con un Trusted simulado (§3.20).
 
 ### HU-032 · Reglas de calidad y KPIs
 

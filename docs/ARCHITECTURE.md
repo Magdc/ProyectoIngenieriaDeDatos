@@ -1,6 +1,6 @@
 # TrendAnalyzer · ARCHITECTURE
 
-> Documento maestro de arquitectura y contratos. **Versión vigente: 2.32.**
+> Documento maestro de arquitectura y contratos. **Versión vigente: 2.33.**
 > Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md) · Plan por fases, trazabilidad HU y estado: [`PLAN.md`](PLAN.md) · Historias de usuario: `HU.md` · Visión general: `README.md`.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 
@@ -28,8 +28,9 @@ Este archivo está pensado para que **baste con leerlo (o pegármelo) para const
 | Generar y cargar el histórico (loader, NLP en lote, bucket S3 del lake, KMS y rol `ta-historical-loader`) | **§3.17**, `src/historical/HISTORICAL.md` y `docs/validation/validation-3-1.md` |
 | Exportar `enriched/` a S3 (federación OIDC GCP → AWS, job `ta-gcs-to-s3`, Scheduler en pausa) | **§3.18** (interfaces: CLI, logs, API, Terraform y validador en **§3.18.1**), §5.6, `src/exporter/EXPORTER.md` y `docs/validation/validation-3-2.md` |
 | Consultar el lake con Athena, el catálogo de Glue, el workflow `ta-wf-raw-to-curated` y su horario; escribir un job de Glue (4.2/4.3) | **§3.19** (interfaces: contrato de un job, cómo reemplazarlo, API, Terraform, operación y validador en **§3.19.1**), §5.7, §5.8 y `docs/validation/validation-4-1.md` |
+| Perfilar Raw y Trusted del lake (nulos, cardinalidad, distribuciones, tipos, anomalías, diversidad léxica) y ver las reglas de calidad propuestas para el Lote 5.2 | **§3.20** (interfaces: CLI, JSON del informe, API, comprobaciones y validador en **§3.20.1**), **§5.10** (catálogo de reglas DQ-01…DQ-63) y `docs/validation/validation-5-1.md` |
 | Comprobar qué está encendido antes de validar un lote | **§8** (preflight) |
-| Encender, comprobar y apagar lo que cobra; validar un lote con un solo comando | `docs/ACTIVE_SERVICES.md` (`scripts/on.py`, `off.py`, `status.py`), `scripts/validate_2_3.py` (§3.15), `scripts/validate_2_4.py` (§3.16), `scripts/validate_3_1.py` (§3.17), `scripts/validate_3_2.py` (§3.18; con `status` y `off` del exportador) y `scripts/validate_4_1.py` (§3.19; con `status`, `off` y `on` del horario del lakehouse) |
+| Encender, comprobar y apagar lo que cobra; validar un lote con un solo comando | `docs/ACTIVE_SERVICES.md` (`scripts/on.py`, `off.py`, `status.py`), `scripts/validate_2_3.py` (§3.15), `scripts/validate_2_4.py` (§3.16), `scripts/validate_3_1.py` (§3.17), `scripts/validate_3_2.py` (§3.18; con `status` y `off` del exportador), `scripts/validate_4_1.py` (§3.19; con `status`, `off` y `on` del horario del lakehouse) y `scripts/validate_5_1.py` (§3.20) |
 | Saber qué construir y en qué orden | `PLAN.md` §1 (fases y lotes) |
 | Saber qué historias de usuario cubre cada fase o lote | **`PLAN.md` §1 y §2** (detalle en `HU.md`) |
 | Saber en qué estado está cada fase y lote | **`PLAN.md` §3** |
@@ -75,7 +76,7 @@ El README menciona **Firestore, Cloud SQL, Neptune y Dataplex**, que **no están
 
 ### 1.4 Historial de cambios
 
-Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.32), la más reciente primero. Este documento describe siempre la versión vigente (2.32).
+Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.33), la más reciente primero. Este documento describe siempre la versión vigente (2.33).
 
 ---
 
@@ -1356,6 +1357,187 @@ Opciones globales: `--yes` (no pide confirmación), `--aws-profile`, `--project`
 - **Columnas:** el job no puede importar `src/lakehouse` (un solo archivo): las 24 columnas van escritas en el script, y una prueba del 4.2 puede compararlas con `catalog_spec.table("ta_trusted.posts").column_names`.
 - **Validar:** `count_parquet_rows(client, bucket, "trusted/posts/")` (§3.19.1, API) y `SELECT … FROM ta_trusted.posts` en `ta-analytics` (hoy da 0 filas, E6); el 4.2 debe dejar `trusted/_ta_placeholder/` sin escrituras nuevas (el marcador desaparece al reemplazar el script; `validate_4_1.py off` borra los restos). El horario sigue `DISABLED` hasta que existan 4.2 y 4.3.
 
+### 3.20 Profiling de Raw y Trusted (Lote 5.1)
+
+> Entregado en **v2.33** (HU-031, equivale a US-14), **🟨**: Raw perfilado con datos reales; el profiling real de Trusted queda pendiente del Lote 4.2 (Trusted todavía no existe). Validación en `docs/validation/validation-5-1.md` (automática con `scripts/validate_5_1.py`, partes A–D). Rutas relativas a `project/`. No toca `contracts/` ni `schema_version` y **no escribe en la nube**: solo lee S3 con el perfil de AWS. ADR-24. *(§3.19 es del Lote 4.1.)*
+
+**Flujo.**
+
+```
+s3://ta-{env}-{cuenta}-lake/raw/ ──sync (ListObjectsV2 + GetObject, solo lectura)──► caché local {cache}/s3/{bucket}/raw/…   (fuera del repo)
+{cache}/s3/{bucket}/ ──profile --layer raw (pyarrow, archivo por archivo)──► evidencia/profiling_raw_5_1.json   (solo agregados)
+                                                                         └─► evidencia/profiling_raw_5_1.md     (informe de HU-031)
+     cada informe trae: perfil por columna y grupo · texto · duplicados · archivos y esquema · stream vs histórico
+                        · anomalías · reglas DQ-01…DQ-63 evaluadas (§5.10) · filas de dq_results (vista previa, no se escriben)
+s3://…/trusted/posts/ (Lote 4.2) ──sync──► caché ──profile --layer trusted --raw-profile …──► profiling_trusted_5_1.json/.md
+(mientras no exista) caché raw/ ──synth-trusted──► Trusted simulado con el contrato de §5.7 ──profile──► profiling_trusted_synth_5_1.json/.md
+```
+
+`{cache}` = `--cache` > `TA_QUALITY_CACHE` > `~/.cache/trendanalyzer/quality` (en WSL, `/root/.cache/…`, en ext4: leer 13.000 archivos pequeños de `/mnt/c` sería mucho más lento). El profiler se niega a usar una caché dentro del repositorio: los datos nunca van a Git.
+
+| Ruta | Contenido |
+|---|---|
+| `src/quality/layers.py` | Contrato de las dos capas: columnas y orden (`RAW_COLUMNS` = las 24 de `posts_enriched`; `TRUSTED_COLUMNS` = sin `source`, con `text_clean` tras `text`), tipos lógicos, columnas sensibles, campos clave, claves de S3 y nombres de archivo, enums y los patrones de `contracts/*.schema.json`. Lógica pura. |
+| `src/quality/checks.py` | Las 70 comprobaciones por fila (`CHECKS`, `checks_for(capa)`, `RowMeta`) que el profiler cuenta por grupo. |
+| `src/quality/text_stats.py` | Diversidad léxica y texto repetido (`TextDiversity`, `Skeletonizer`, `tokens`). |
+| `src/quality/profile_core.py` | Acumuladores por columna (`ColumnAcc`) y por grupo (`GroupAcc`): nulos, distintos, valores frecuentes, cuantiles, longitudes, fechas, listas, KPI, usuarios, acuerdo del NLP. |
+| `src/quality/profiler.py` | `profile_layer()`: recorre la carpeta, lee cada Parquet, cuenta esquemas y tipos físicos, alimenta los grupos, cruza duplicados entre archivos y orígenes y arma el informe. pyarrow se importa al usarse. |
+| `src/quality/anomalies.py`, `rules.py` | Anomalías (`detect`) y catálogo de reglas propuestas para el 5.2 (`RULES`, `evaluate`, `dq_preview`); el catálogo es el de §5.10. |
+| `src/quality/report_md.py` | El informe en Markdown (11 secciones). |
+| `src/quality/s3sync.py`, `publish.py` | Caché de S3 (`sync_prefix`, `Boto3S3`, `resolve_cache`, `resolve_bucket`) y la publicación **apagada por defecto** en `s3://…/quality/`. |
+| `src/quality/testing.py` | Filas válidas de `posts_enriched`, Raw escrito con el escritor real (`common.parquet_rows`) y el Trusted simulado (`build_trusted`). |
+| `src/quality/cli.py`, `scripts/profile_data.py` | CLI: `sync`, `profile`, `rules`, `synth-trusted`, `publish`. |
+| `src/quality/requirements.txt` | pyarrow, boto3 y PyYAML con las versiones que ya trae `~/.venvs/ta-streaming` (el lote no instala nada). |
+| `scripts/validate_5_1.py`, `src/ops/validate51.py` | Validación automática (partes A–D, `all` y `clean`). Usa `ops.services.status()` sin modificarlo. |
+
+**Qué mide (criterios de HU-031).** Cada fila alimenta tres **grupos**: la capa entera (`*/*`), su origen (`stream/*`, `historical/*`) y origen × fuente; en Trusted, además, cada fuente (`*/reddit`…), porque `source` es la partición y el origen sale de la columna `origin`.
+
+- **Por columna** (las 24 de la capa; en Trusted también `source` desde la partición): filas, nulos y su proporción, distintos (exacto), tipo lógico, tipos de Python observados y tipos físicos de Parquet por archivo; y según el tipo: valores más frecuentes (todos si hay ≤ 12 distintos), cuantiles p01–p99, media, desviación, ceros, negativos y atípicos por IQR (enteros y decimales), longitudes (texto), rango, días y distribución por hora y día de la semana UTC (fechas; por día en los grupos de origen), largo de las listas, elementos y combinaciones más frecuentes (`brands`, `hashtags`). Las columnas sensibles (`event_id`, `user_hash`, `text`, `text_clean`, `payload`) **nunca** escriben valores: solo cardinalidad, la repetición máxima y un histograma de frecuencias.
+- **Derivadas:** largo del texto en caracteres y tokens, `ingest_time − event_time`, `process_time − event_time`, desfase respecto a la hora de la partición (`process_time` en el stream, `event_time` en el histórico), `payload.kind` y las claves del `payload`.
+- **Comprobaciones por fila** (§3.20.1): las 70 de `checks.py`, con `evaluated`, `failed` y `pass_ratio` por grupo. Igual que Great Expectations, las de formato no cuentan los nulos.
+- **KPI preliminares de §5.10** por grupo: completitud (no nulos de `event_id`, `event_time`, `source`, `text`, `user_hash`), unicidad y duplicados por `event_id`, anonimización (filas con `user_hash` hex de 64 y `payload` sin identidad).
+- **Texto:** diversidad léxica (tokens, tipos, TTR, Herdan C, Guiraud R, MATTR con ventana de 500 tokens, distinct-2, proporción de *hapax*, palabras más frecuentes) y **texto repetido** (textos idénticos, su histograma de frecuencias, los 5 más repetidos con sus primeros 60 caracteres, y **esqueletos**: minúsculas, sin tildes, sin hashtags, alias de marca → `<m>`, sin signos). Los duplicados se miden por **`event_id`, no por texto** (§3.5).
+- **Duplicados por `event_id`** en la capa: dentro de un archivo, en otro archivo del mismo origen y entre orígenes, con hasta 5 pares de claves de ejemplo (sin el `event_id`).
+- **Archivos y esquema:** listados, reconocidos (layout de §5.7), auxiliares (`_…`, `.…`), no reconocidos, ilegibles, variantes de esquema frente al contrato (en Raw, también frente a los tipos exactos de `common.parquet_rows.arrow_schema()`), filas y KB por archivo, semillas del histórico.
+- **Stream frente a histórico:** participación de cada valor de `brand_primary`, `sentiment_label`, `emotion_label`, `label_sentiment`, `lang`, `source` y `payload.kind` (diferencia en puntos porcentuales), métricas numéricas lado a lado y solapes (textos idénticos y `user_hash` comunes).
+- **Anomalías** (`error` = contrato roto; `warning` = posible por diseño pero vigilar; `info` = rasgo del dato) y **reglas propuestas** evaluadas con el dato de hoy (§5.10).
+
+**Resultados del profiling de Raw (26-oct-2026, `as_of` 14:29 UTC).** Evidencia en `evidencia/profiling_raw_5_1.json` y `profiling_raw_5_1.md`.
+
+| | Histórico | Stream |
+|---|---|---|
+| Archivos / MB | 12.102 / 130,9 (mediana 4 filas y 10,6 KB por archivo) | 1.155 / 51,9 (mediana 147 filas y 43,5 KB) |
+| Filas (reddit / facebook / instagram) | 50.000 (16.667 / 16.667 / 16.666) | 171.637 (57.132 / 57.224 / 57.281) |
+| `event_time` | 2026-04-27 → 2026-10-23 (180 días) | 2026-10-21 22:00 → 2026-10-24 03:11 UTC |
+| Completitud · unicidad · duplicados · anonimización | 100 % · 100 % · 0 · 100 % | 100 % · 99,9988 % · 2 copias · 100 % |
+| Esquema | 1 variante en los 13.257 archivos, igual al contrato | ídem |
+| Marcas (`brand_primary`) | postobon 42,4 % · pepsi 33,6 % · sprite 24,1 % | 46,0 % · 28,3 % · 25,7 % |
+| Sentimiento (NLP) · acuerdo con `label_sentiment` | neg 35,2 % · neu 32,0 % · pos 32,7 % · 91,8 % | 34,9 % · 32,3 % · 32,8 % · 92,0 % |
+| Emoción (NLP) | neutral 49 %, joy 28 %, anger 11,5 %, sadness 9 %; fear, surprise y disgust < 1 % cada una | igual (±0,4 pp) |
+| `label_sentiment` nulo | 29,9 % | 30,1 % |
+| Usuarios (`user_hash`) | 4.547; el más activo de una fuente tiene el 17 % de sus filas | 5.851; 4.461 comunes con el histórico (76 % de los del stream) |
+| Texto | 26–268 caracteres (p50 110), 20,4 tokens; 99,996 % distintos (2 textos dos veces); esqueletos 99,5 % | 24–283 (p50 110); 99,98 % distintos (36 textos dos veces); esqueletos 98,9 % |
+| Vocabulario | 2.332 tipos en 1,02 M tokens; MATTR(500) 0,479; hapax 25,5 % | 3.367 tipos en 3,5 M tokens; MATTR 0,479; hapax 29,5 % |
+| Latencia `process_time − event_time` | no aplica (`process_time` = instante de la carga, el mismo en las 50.000 filas) | p50 2,9 s · p95 5,4 s; lag `ingest − event` p95 4,75 s |
+
+**Hallazgos** (alimentan las reglas de §5.10; los marcados *a confirmar* los decide el Lote 4.2 o el 5.2):
+1. **Stream sin NLP antes de 2026-10-22 23:00 UTC:** 65.264 filas (38 % del stream; particiones `dt=2026-10-21` completa y `dt=2026-10-22` hasta las 22 h) tienen las 5 columnas de NLP nulas: las procesaron jobs de los lotes 2.1–2.2 sin NLP (§3.14) y el exportador las copió. Desde esa hora, 0 filas sin NLP. Por eso DQ-13 mide la completitud del NLP solo desde `NLP_SINCE`. Si Trusted debe reprocesarlas o dejarlas con NLP nulo: *a confirmar* con el 4.2.
+2. **Eventos de validación en Raw:** 6 filas de Reddit con `generator = ta-verify@2.1` (el centinela de `verify_streaming.py check`, §3.13) llegaron a `enriched/` y a `raw/origin=stream/`. No son comentarios: DQ-63 los marca; excluirlos en Trusted es *a confirmar* con el 4.2.
+3. **Duplicados en Raw stream:** 2 `event_id` repetidos en archivos de horas distintas (2026-10-23, 01 h → 03 h y 03:20 → 03:50); la deduplicación del stream es por ventanas de 1 h (§3.13), así que Trusted debe deduplicar (DQ-48, DQ-49). 0 duplicados dentro de un archivo y 0 entre orígenes.
+4. **`process_time` del histórico es constante** (el instante de la carga, 2026-10-24T14:57:48Z): la latencia solo se mide en el stream (DQ-59) y no tiene sentido sobre Trusted completo.
+5. **Particiones del stream:** `process_time` cae entre 19,6 s **antes** y 3.600 s después del inicio de la hora de su partición (se fija al enriquecer, antes de la ventana de escritura); ningún panel tardío (`p001`) en los 1.155 archivos. DQ-52 tolera −120 a +3.900 s.
+6. **Archivos pequeños:** el histórico tiene 12.102 archivos de mediana 10,6 KB (4 filas), por la proyección por `hr` (§3.17). El 4.2 debería compactar al escribir Trusted por `dt` (§9, riesgo).
+7. **Texto del generador:** casi todo texto es único (99,98 %), pero el vocabulario es acotado (3.618 tipos en 4,5 M tokens; TTR 0,0008) y la MATTR es la misma en los dos orígenes (0,479: mismo generador). Hay 13 textos idénticos entre stream e histórico. Confirma la limitación de §3.8: métricas de NLP optimistas.
+8. **Nulos por diseño:** `shares` nulo en el 66,7 % (Reddit e Instagram), `comments` en el 23,4 % (comentarios de Reddit), `label_sentiment` en el 30 %: no son anomalías (DQ-25, DQ-26, DQ-34).
+9. **Cola larga y Zipf:** `followers` p50 136, p99 ≈ 3.200, máximo 19.446; `likes` de −250 (Reddit) a 3.710; el usuario más activo de cada fuente concentra ~17 % de sus filas (Zipf s = 1,1, §3.10).
+10. **Stream vs histórico:** la única diferencia de más de 5 pp es Pepsi (28,3 % vs 33,6 %), que es la tendencia del plan del histórico (+35 %, §3.17). Sentimiento, emoción, fuentes, `kind`, hashtags (40 % de filas con alguno) y textos son casi iguales.
+11. **Sin anomalías de error** (0): esquema, formatos, enums, rangos, engagement por fuente, particiones del histórico, rango de la *partition projection* (todo `dt` ≥ 2026-01-01) y anonimización se cumplen en el 100 %. Hoy cumplen 55 de las 56 reglas de Raw; no cumple DQ-63 (aviso, hallazgo 2).
+
+**Conclusiones para HU-032:** el catálogo DQ-01…DQ-63 de §5.10 (umbrales, gravedad, KPI, expectativa y SQL), derivado de lo medido.
+
+**Pruebas** (sin red, Docker ni nube): 165 en `src/quality/tests/` (capas frente a `contracts/athena/` y los patrones de los schemas; cada comprobación con su defecto; diversidad léxica con valores conocidos; profiling de punta a punta sobre un Raw escrito con el escritor real y con defectos —copia en otro archivo, columna `handle`, `user_hash` inválido, partición equivocada, clave fuera del layout, Parquet ilegible—; reglas frente a §5.10 y a `common.stream_tables`; caché con un S3 falso; Trusted simulado y sus 4 defectos; CLI; informe) y 24 en `src/ops/tests/test_ops_validate51.py` (con un ejecutor falso y los JSON reales del profiler).
+
+> **Estado de la verificación (v2.33, antes de entregar):** en la máquina del equipo (WSL, `~/.venvs/ta-streaming`, Python 3.11.17, pyarrow 25.0.1): `python -m pytest src/quality src/ops/tests/test_ops_validate51.py`: **189 passed, 0 omitidas**. `sync --layer raw` real: 13.257 objetos (182,7 MB) en 254 s; el segundo `sync` no baja nada. `profile --layer raw` real: 221.637 filas en 159–188 s, pico de memoria 1.360 MB. `validate_5_1.py` (en esta copia del repo, sin commit): A OK (7/7), B OK (165 + 24 + 18 + 23), C OK (9/9), D en AVISO solo por D1 (Trusted no existe) con D2–D6 OK. **Trusted real: pendiente** (no existe hasta el Lote 4.2); el profiler de Trusted se probó con el Trusted simulado (221.635 filas en 543 archivos, uno por `source/dt`, perfilados en 242–272 s: contrato, `dt = DATE(event_time)`, unicidad y DQ-58 OK) y con 4 defectos inyectados (los 4 detectados). **No comprobado:** las expectativas de Great Expectations y los predicados SQL de §5.10 (Athena llega con el 4.1 y GE con el 5.2) y `publish --apply` contra S3.
+
+#### 3.20.1 Interfaces del lote (cómo usar cada pieza sin leer el código)
+
+*(v2.33)* Todo lo de esta subsección es interfaz: el Lote 5.2 (y el 4.2, para comprobar su Trusted) puede depender de ello; si cambia, se cambia aquí primero (§0).
+
+**CLI `python project/scripts/profile_data.py <subcomando>`** (desde la raíz del repo, con `~/.venvs/ta-streaming`; lo mismo que `python -m quality.cli` desde `src/`). Sale con 0 si todo bien, 1 si una comprobación falló (descargas fallidas o `--fail-on`) y 2 por un error de uso, de configuración o de credenciales (`NoCredentialsError`, `ClientError`…: mensaje corto, sin secretos). Nunca imprime credenciales ni valores de `user_hash`.
+
+| Subcomando | Qué hace | Credenciales | Opciones propias | Salida (`--json-out`) |
+|---|---|---|---|---|
+| `sync --layer raw\|trusted` | Baja a la caché lo que falte de `raw/` (o `raw/origin={o}/` con `--origin`) o de `trusted/posts/`; omite lo que ya está con el mismo tamaño; nunca borra (cuenta como `stale_local` lo local que ya no está en S3) | Perfil de AWS con `s3:ListBucket`, `s3:GetObject` y `kms:Decrypt` en la llave del lake | `--origin`, `--workers` (16), `--dry-run` (solo lista y cuenta) | `SyncReport`: `{bucket, prefix, cache_root, started_at, finished_at, duration_s, objects, bytes, to_download, downloaded, downloaded_bytes, skipped_same_size, failed, failures[≤20], stale_local, dry_run, by_prefix: {"origin=…/source=…": {objects, bytes}}, ok}`; además escribe el manifiesto `{cache}/s3/{bucket}/_sync/{capa}.json` (o `raw_origin-stream.json` con `--origin`) |
+| `profile --layer raw\|trusted` | Perfila la capa desde `{cache}/s3/{bucket}/` (o desde `--root`, cualquier carpeta con el layout del bucket) | Ninguna (lee la caché); para derivar el bucket sin `--bucket` ni `TA_LAKE_BUCKET`, `sts:GetCallerIdentity` | `--root`, `--as-of` (UTC; por defecto ahora), `--raw-profile` (Trusted: el JSON de Raw de la misma foto, para DQ-58), `--md-out`, `--max-files`, `--fail-on never\|error\|warning`, `--quiet` | El informe (abajo); imprime filas por grupo, KPI, anomalías y reglas |
+| `rules` | `--catalog`: el catálogo de §5.10; `--from INFORME.json [--raw-profile]`: lo vuelve a evaluar | — | `--catalog`, `--from`, `--raw-profile` | Lista de reglas (`Rule.public()`) o reglas evaluadas |
+| `synth-trusted` | Trusted simulado desde `raw/` (por defecto, la caché del bucket) en `{cache}/synthetic/trusted[-defects]`; escribe `_synthetic_trusted.json` y solo reemplaza una salida que tenga ese marcador | — | `--from-root`, `--out` (fuera del repo), `--defects` (4 defectos), `--limit-files N` | `{raw_files, raw_rows, distinct_event_ids, files, partitions, defects, out_root}` |
+| `publish --from INFORME.json [--md INFORME.md]` | **Apagado por defecto:** muestra `s3://{bucket}/quality/{AAAA-MM-DD}/profiling/{capa}/{archivo}`; con `--apply` sube con `PutObject` (SSE-KMS; `SSEKMSKeyId` y *bucket key* si está `TA_LAKE_KMS_KEY_ARN`). **Sin comprobar contra AWS** | Con `--apply`: `s3:PutObject` en `quality/*` y `kms:GenerateDataKey` | `--apply` | — |
+
+Opciones de `sync`, `profile`, `synth-trusted` y `publish`: `--bucket` (si no, `TA_LAKE_BUCKET` o `ta-{ENV}-{cuenta}-lake` con la cuenta del perfil, nombre de §5.7), `--aws-profile` (si no, `AWS_PROFILE` o el perfil por defecto), `--cache` y `--json-out`.
+
+**Informe de profiling** (`profile --json-out`; `schema = "ta-profile@1"`, `profiler = "ta-profiler@1.0"`; ~400 KB para Raw):
+
+| Clave | Contenido |
+|---|---|
+| `layer`, `table`, `source_uri`, `generated_at`, `as_of`, `duration_s` | Qué se perfiló (`ta_raw.posts_raw` o `ta_trusted.posts`), desde dónde (`s3://{bucket}/{prefijo} (caché local)` o `local`) y cuándo |
+| `contract` | `{columns, partition_keys}` de la capa |
+| `files` | `listed`, `recognized`, `auxiliary`, `unrecognized`, `unrecognized_examples[≤5]`, `read_errors[≤20]`, `read_error_count`, `bytes`, `schema_variants[{files, columns, order_matches, missing, extra, kind_mismatch, type_mismatch, matches_contract, types}]`, `physical_types{columna: {tipo de pyarrow: archivos}}`, `historical_seeds{semilla: archivos}` |
+| `groups[]` | Un objeto por grupo, en el orden `*/*`, `*/fuente` (Trusted), `historical/*`, `historical/fuente`…, `stream/*`…: `key{layer, origin, source}`, `rows`, `files{count, bytes, rows_per_file, bytes_per_file}`, `columns{nombre: perfil}`, `derived{text_length, text_tokens, ingest_lag_s, latency_s, partition_offset_s, payload_kind, payload_keys}`, `checks{id: {evaluated, failed, pass_ratio}}`, `text` (y `text_clean` en Trusted), `event_id{rows_with_id, distinct, duplicate_rows, duplicate_ids, max_copies, unique_ratio, duplicate_ratio}`, `users{distinct, posts_per_user, top_user_share}`, `kpi{completitud, unicidad, duplicados, anonimizacion}`, `nlp_agreement{labeled, agree, ratio, confusion{"etiqueta->predicción": n}}` y, en los grupos de origen, `by_dt{dt: {rows, nlp_missing}}` |
+| Perfil de una columna | `kind` (`string`, `json`, `int`, `float`, `timestamp`, `list`), `rows`, `nulls`, `null_ratio`, `non_null`, `distinct`, `distinct_ratio`, `python_types`, `max_frequency`; sensibles: `frequency_histogram{"1","2","3-5","6-10","11-100",">100"}`; `string`/`int`: `top[{value, count, ratio}]` y `top_complete`; `string`/`json`: `length{count, min, max, mean, std, p01…p99, zeros, negatives, outliers_iqr, empty}`; `int`/`float`: `numeric{…}` con las mismas claves; `timestamp`: `timestamp{min, max, span_days, by_hour_utc[24], by_weekday_utc[7] (0 = lunes)}` y, en `event_time` de los grupos `*/…`, `days` y `daily{AAAA-MM-DD: n}`; `list`: `list{length_histogram{"0","1","2","3+"}, elements_distinct, elements_top[≤10], combos_top[≤5]}` |
+| `text` | `texts`, `empty`, `tokens`, `types`, `tokens_per_text`, `ttr`, `herdan_c`, `guiraud_r`, `mattr`, `mattr_window`, `hapax_ratio`, `distinct_2`, `top_tokens[≤15]`, `repeated{distinct_texts, distinct_ratio, duplicate_text_ratio, texts_repeated, rows_in_repeated, max_repetition, frequency_histogram, top[≤5 {preview (60 caracteres), count}]}`, `skeletons{distinct, distinct_ratio, max_repetition, frequency_histogram}` |
+| `duplicates` | `rows`, `distinct_event_ids`, `duplicate_rows`, `same_file`, `other_file_same_origin`, `cross_origin`, `examples[≤5 {first, again}]` (claves de S3) |
+| `comparison` | `available`; `categorical{columna: {valor: {stream, historical, diff_pp}}}` (con `null` en `label_sentiment`, `brand_primary` y `lang`); `numeric{métrica: {stream, historical}}`; `overlap{texts_shared, texts_shared_ratio_of_stream, users_shared, users_shared_ratio_of_stream, users_stream, users_historical}` |
+| `anomalies[]` | `{severity (error\|warning\|info), kind, column, scope ("raw/stream/reddit"…), count, ratio, detail}` y, según el tipo, `check`, `examples`, `identity`, `by_dt`. Tipos: `sin_datos`, `esquema`, `lectura`, `clave_no_reconocida`, `auxiliares`, `regla` (una comprobación por fila que falló, en el grupo origen × fuente; no se informan las de gravedad `info` ni los `not_null` de NLP, que resume `nlp_ausente`), `duplicado`, `nlp_ausente`, `eventos_de_validacion`, `usuario_dominante`, `columna_nula`, `constante`, `nlp_version`, `cola_larga`, `clase_rara`, `ground_truth`, `texto_repetido`, `archivos_pequenos`, `latencia`, `stream_vs_historico`, `solape`, `cache` |
+| `rules[]` | Las reglas de §5.10 de la capa, con todos sus campos (`Rule.public()`) más `observed{origen: valor}` y `status` (`cumple`\|`no_cumple`\|`sin_dato`) |
+| `dq_results_preview[]` | Filas con las columnas de `dq_results` (§5.5): `run_id = profiling-{capa}-{AAAAMMDDThhmmssZ}`, `run_ts`, `layer`, `table_name`, `suite = profiling_5_1`, `check_name = {kpi}[origin={origen}]`, `kpi`, `observed_value`, `threshold`, `passed`, `details{origin, rows}`. **No se escriben** (lo hace el 5.2) |
+| `sync`, `summary` | El manifiesto del último `sync` (si existe) y el resumen `{rows{grupo: n}, files, bytes, kpi{origen: …}, anomalies{error, warning, info}, rules{estado: n}}` |
+
+El Markdown (`--md-out`) tiene 11 secciones fijas (`quality.report_md.SECTIONS`): Resumen, KPI preliminares, Columnas, Distribuciones, Tiempo y particiones, Texto, Duplicados por event_id, Archivos y esquema, Stream frente a histórico, Anomalías y Reglas propuestas.
+
+**API de Python** (`src/` en el `PYTHONPATH`):
+
+| Llamada | Contrato |
+|---|---|
+| `quality.profiler.profile_layer(root, layer, *, as_of=None, source_uri=None, brand_aliases=None, max_files=None, progress=None, sync_manifest=None, raw_report=None) -> dict` | El informe de arriba. `root` tiene el layout del bucket; `layer` ∈ `raw`, `trusted` (otro valor: `ValueError`). Un Parquet ilegible o una clave fuera del layout no detienen el profiling: quedan en `files` y en `anomalies` |
+| `quality.profiler.iter_layer_files(root, layer)`, `find_group(report, origin="*", source="*")`, `arrow_kind(tipo)`, `as_of_from_text(texto)` | Ayudas |
+| `quality.s3sync.sync_prefix(port, bucket, prefix, cache, *, workers=16, dry_run=False, progress=None) -> SyncReport` | Puerto `S3ReadPort`: `list_objects(bucket, prefix) -> [{key, size, etag}]`, `download(bucket, key, dest)`. Implementación real: `Boto3S3(profile=None, region=None, client=None)`. Baja a `dest.part` y renombra; un fallo cuenta en `failed` sin dejar parciales |
+| `quality.s3sync.resolve_cache(cache=None, *, env=None)`, `bucket_root(cache, bucket)`, `read_manifest(cache, bucket, capa)`, `resolve_bucket(bucket=None, *, env=None, account=None)`, `account_id(profile=None)` | Caché (lanza `CacheError` si cae dentro del repo), su raíz por bucket, el manifiesto y el bucket (§5.7) |
+| `quality.rules.RULES`, `RULE_IDS`, `RULES_BY_ID`, `evaluate(report, raw_report=None)`, `dq_preview(report)` | Catálogo de §5.10 (`Rule`: `id, layers, column, check, expectation, kwargs, mostly, threshold, kpi, severity, scope, sql_fail, why`) y su evaluación. Constantes de umbral: `TEXT_MAX_LENGTH`, `TEXT_DISTINCT_MIN`, `NLP_AGREEMENT_MIN`, `SOURCE_SHARE_RANGE`, `LABEL_NULL_RANGE`, `LATENCY_P95_MAX_S` (§5.12) |
+| `quality.checks.CHECKS`, `CHECKS_BY_ID`, `checks_for(layer)`, `RowMeta(layer, origin, source, dt, hr, file, as_of, window_start=None, brand_keys=…)`, `NLP_SINCE`, `NULLABLE_BY_DESIGN` | Comprobaciones por fila: `Check(id, column, description, fn(row, meta) -> True\|False\|None, severity, layers)`. `row` es un `dict` como el de `pyarrow.Table.to_pylist()` (fechas `datetime`; sin zona = UTC) |
+| `quality.layers`: `RAW_COLUMNS`, `TRUSTED_COLUMNS`, `COLUMN_KINDS`, `SENSITIVE_COLUMNS`, `KEY_FIELDS`, `NLP_COLUMNS`, `LAYERS`, `layer_spec`, `parse_key(layer, key)`, `file_name_matches_partition`, `load_brand_aliases(path=None)` y los patrones `UUID_RE`, `GENERATOR_RE`, `LANG_RE`, `BRAND_KEY_RE`, `HASHTAG_RE`, `NLP_VERSION_RE`, `HEX64_RE` | El contrato de las capas en código (iguales a `contracts/`; las pruebas lo exigen) |
+| `quality.text_stats.TextDiversity(skeletonizer=None, *, window=500)` (`add(texto)`, `result()`), `Skeletonizer(brand_aliases)`, `tokens(texto)`, `normalize(texto)` | Diversidad léxica sobre cualquier columna de texto (p. ej. `text_clean` del 4.2) |
+| `quality.testing.make_row(origin, source, seq, event_time)`, `make_rows(…)`, `write_raw_layer(root, rows)`, `build_trusted(raw_root, out_root, *, defects=False, limit_files=None)`, `trusted_arrow_schema()`, `placeholder_clean(texto)` | Datos sintéticos con la forma de Raw y de Trusted (el `text_clean` de aquí es un marcador, no la limpieza del 4.2). `build_trusted(defects=True)` inyecta `duplicate_event_id`, `dt_mismatch`, `null_text_clean` e `identity_column` |
+| `quality.report_md.render(report) -> str`, `quality.publish.plan(report, files)`, `publish(client, bucket, items, *, kms_key_arn=None, apply=False)` | Informe en Markdown y publicación opcional |
+
+**Comprobaciones por fila** (`quality.checks.CHECKS`; gravedad de la anomalía si fallan). Además de estas, `not_null:{columna}` para cada columna de la capa (`error` en las obligatorias; `warning` en `lang`, `followers`, `brand_primary` y las 5 de NLP; `info` —nulo por diseño— en `shares`, `comments` y `label_sentiment`) y `not_null:source_partition` en Trusted:
+
+| Comprobación | Columna | Capas | Gravedad | Qué exige |
+|---|---|---|---|---|
+| `uuid:event_id` | `event_id` | raw/trusted | error | UUID en minúsculas (§3.6) |
+| `enum:origin`, `enum:source` | `origin`, `source` | raw/trusted | error | Enums de §5.2 (en Trusted, `source` de la partición) |
+| `partition:origin`, `partition:source` | `origin`, `source` | raw | error | La columna = la partición `origin=`/`source=` |
+| `regex:generator` · `set:generator` | `generator` | raw/trusted | error · warning | `nombre@versión` · `= comment-gen@1.0` (otro valor = centinela de un verificador) |
+| `regex:lang` · `set:lang` | `lang` | raw/trusted | error · warning | Dos letras minúsculas · `= es` |
+| `regex:user_hash` | `user_hash` | raw/trusted | error | Hex de 64 (HMAC-SHA256) |
+| `payload:json`, `payload:no_identity`, `payload:kind` | `payload` | raw/trusted | error | Objeto JSON; sin claves `user_id`/`handle` en ningún nivel; `kind` ∈ {post, comment}, Instagram solo `comment` |
+| `enum:sentiment_label`, `enum:emotion_label`, `enum:label_sentiment` | — | raw/trusted | error | Enums de §5.2 y §3.3 |
+| `range:sentiment_score`, `range:emotion_score` | — | raw/trusted | error | En [0, 1] |
+| `regex:nlp_model_version` | `nlp_model_version` | raw/trusted | error | `robertuito-sentiment@…+robertuito-emotion@…` |
+| `nlp:complete` · `nlp:complete_since` | NLP | raw/trusted | warning | Las 5 columnas de NLP presentes · lo mismo con `process_time ≥ NLP_SINCE` (2026-10-22T23:00Z; antes no aplica) |
+| `regex:brands`, `set:brands`, `unique:brands` | `brands` | raw/trusted | error | Claves `[a-z0-9_]+`, ⊆ claves de `brands.yaml`, sin repetidos |
+| `set:brand_primary`, `pair:brand_primary` | `brand_primary` | raw/trusted | error | ∈ claves de `brands.yaml`; `= brands[0]` (nulo si `brands = []`) |
+| `regex:hashtags`, `unique:hashtags` · `consistency:hashtags_text` | `hashtags` | raw/trusted | error · warning | Canónicos `[a-z0-9_]{1,100}`, sin repetidos · `= common.hashtags.extract_hashtags(text)` |
+| `range:followers`, `engagement:likes`, `engagement:shares`, `engagement:comments` | engagement | raw/trusted | error | `followers ≥ 0`; `likes` entero (≥ 0 salvo Reddit); `shares` nulo en Reddit e Instagram y entero ≥ 0 en Facebook; `comments` entero ≥ 0 en Facebook e Instagram, entero ≥ 0 o nulo en Reddit (§5.2) |
+| `text:not_empty` | `text` | raw/trusted | error | No vacío ni solo espacios |
+| `time:ingest_ge_event`, `time:process_ge_ingest`, `time:not_future` · `time:ingest_lag` | tiempos | raw/trusted | error · warning | `ingest ≥ event`, `process ≥ ingest`, `event_time ≤ as_of + 5 min` · `0 ≤ ingest − event ≤ 5 s` |
+| `partition:projection_range` | `dt` | raw/trusted | error | `dt ≥ 2026-01-01` (inicio de la *partition projection* de `contracts/athena/`) |
+| `partition:hist_event_hour` | `event_time` | raw | error | Histórico: `dt`/`hr` = fecha y hora UTC de `event_time` |
+| `partition:file_name` · `partition:stream_process_hour` | `dt`, `process_time` | raw | warning | Nombre del archivo coherente con `dt`/`hr` · stream: `process_time − hora de la partición ∈ [−120, 3.900] s` |
+| `partition:trusted_event_date` | `event_time` | trusted | error | `dt = DATE(event_time)` UTC |
+| `text_clean:not_longer` | `text_clean` | trusted | warning | `len(text_clean) ≤ len(text)` |
+
+**Validador `python project/scripts/validate_5_1.py <parte> [opciones]`** (desde la raíz). Sale con 0 si ningún paso dio FALLA, con 1 si alguno la dio y con 2 fuera de WSL (salvo `preflight`). Pasos y resultado esperado en `docs/validation/validation-5-1.md`.
+
+| Parte | Qué hace | Escribe en `project/evidencia/` |
+|---|---|---|
+| `preflight` (A) | Python y dependencias, archivos, capas = `contracts/athena`, `aws`, caché fuera del repo, `ops.services.status()` | `validacion_5_1.json` |
+| `tests` (B) | `src/quality` (165), `test_ops_validate51.py` (24), `contracts/tests` (18), `test_ops_services.py` | ídem |
+| `raw` (C) | Cuenta de AWS, `sync` real, segundo `sync` sin descargas, `profile` real, cobertura de HU-031, resultados, reglas, privacidad de la evidencia y §5.10 = código | ídem, `profiling_sync_raw_5_1.json`, `profiling_raw_5_1.json`, `profiling_raw_5_1.md` |
+| `trusted` (D) | Si `trusted/posts/` tiene objetos: `sync` y `profile` real con `--raw-profile`. Si no (hoy): AVISO "pendiente del 4.2", Trusted simulado desde la caché de Raw, su profiling y los 4 defectos inyectados | ídem, `profiling_trusted_5_1.{json,md}` o `profiling_trusted_synth_5_1.{json,md}`, `profiling_trusted_synth_build_5_1.json`, `profiling_trusted_defects_5_1.json`, `profiling_trusted_defects_build_5_1.json` |
+| `all` | A, B, C y D seguidas | ídem |
+| `clean` | Borra la caché local (pide confirmación; no toca S3) | ídem |
+
+Opciones: `--bucket`, `--aws-profile`, `--cache` y `--yes`. `validacion_5_1.json` tiene la forma de los demás validadores: `{"lote": "5.1", "hu": ["HU-031"], "updated_at", "parts": {"A": {"title", "status", "started_at", "finished_at", "steps": [{"id", "title", "status", "detail", "data"}]}}}`.
+
+**Trampas conocidas.**
+- Correr desde **WSL** con el venv (en Windows, Python 3.14 sin pyarrow: el validador sale con 2). Con la caché en `/mnt/c` el profiling es varias veces más lento: déjela en `~/.cache` (por defecto).
+- La primera sincronización baja ~183 MB (13.257 objetos, ~4 min); las siguientes solo listan. El profiling de Raw tarda ~3 min y su pico de memoria es de ~1,4 GB (medido: 1.360 MB); el de Trusted simulado, ~4 min.
+- `profile` no consulta S3: perfila **la caché**. Si el exportador subió objetos después del último `sync`, el informe avisa (`cache`) y hay que repetir el `sync`.
+- Las reglas que dependen del tiempo (`time:not_future`) usan `as_of`; para repetir un informe idéntico, pase el mismo `--as-of`.
+- La MATTR depende del orden de lectura (archivos por clave y filas por `event_id`): compare MATTR entre corridas del mismo profiler, no con otras herramientas.
+- En Trusted, `source` no es una columna del Parquet: el profiler la toma de la partición. Si un Parquet de Glue trae fechas sin zona, se interpretan como UTC.
+- `rules` y los predicados SQL de §5.10 suponen las columnas de partición de `contracts/athena/` (`part_origin`, `part_dt`… en Raw; `source`, `dt` en Trusted).
+
 ---
 
 ## 4. Flujo extremo a extremo
@@ -1374,6 +1556,7 @@ Opciones globales: `--yes` (no pide confirmación), `--aws-profile`, `--project`
 | 10 | Raw → Trusted | Glue `ta-job-raw-to-trusted` (Lote 4.2; en el 4.1, marcador de posición, §3.19) | S3 `raw/` | S3 `trusted/posts/` | horario (EventBridge Scheduler → workflow `ta-wf-raw-to-curated`; deshabilitado por defecto) |
 | 11 | Trusted → Curated | Glue `ta-job-trusted-to-curated` (Lote 4.3, Glue o dbt) | `trusted/` | S3 `curated/*` | en la misma corrida, si el anterior terminó bien |
 | 12 | Consulta | Athena → QuickSight | `curated/` | Dashboards | **< 3 s** (KPI) |
+| — | Profiling (calidad, §3.20) | `scripts/profile_data.py` (Lote 5.1; reglas en el 5.2) | S3 `raw/` y `trusted/posts/` (copia local de solo lectura) | Informe JSON + Markdown en `evidencia/`; reglas propuestas (§5.10) | bajo demanda (~3 min para Raw) |
 
 ---
 
@@ -1406,7 +1589,8 @@ Opciones globales: `--yes` (no pide confirmación), `--aws-profile`, `--project`
 | `HIST_N` | `50000` | loader histórico: total de registros |
 | `TA_HIST_ROOT` | `project/.local-s3` | loader histórico: espejo local del bucket (no se versiona) |
 | `TA_LAKE_BUCKET`, `TA_LAKE_KMS_KEY_ARN`, `TA_HIST_LOADER_ROLE_ARN` | outputs `lake_bucket`, `kms_key_arn`, `historical_loader_role_arn` de `infra/aws` (§5.9) | `load_historical.py upload` y `verify --s3` (el validador los toma de `terraform output`) |
-| `AWS_PROFILE` | perfil de AWS CLI del desarrollador | Terraform de AWS, `load_historical.py upload` (asume `ta-historical-loader`), `export_gcs_to_s3.py verify` y `lake-report`, `validate_4_1.py` (Athena, Glue, Scheduler y la conciliación con boto3; v2.32) |
+| `AWS_PROFILE` | perfil de AWS CLI del desarrollador | Terraform de AWS, `load_historical.py upload` (asume `ta-historical-loader`), `export_gcs_to_s3.py verify` y `lake-report`, `validate_4_1.py` (Athena, Glue, Scheduler y la conciliación con boto3; v2.32) y `profile_data.py sync` (solo lectura del lake, §3.20) |
+| `TA_QUALITY_CACHE` | `~/.cache/trendanalyzer/quality` *(v2.33)* | `profile_data.py` y `validate_5_1.py` (§3.20): caché local de los Parquet del lake. Debe quedar **fuera del repositorio** (si no, el CLI sale con 2). `profile_data.py` lee además `TA_LAKE_BUCKET` (si no, `ta-{ENV}-{cuenta}-lake`) y, en `publish --apply`, `TA_LAKE_KMS_KEY_ARN` |
 | `TA_GCS_LAKE_BUCKET` | `{GCP_PROJECT}-ta-lake` | exportador (§3.18): lake de GCS que lee (solo `enriched/`) |
 | `TA_EXPORTER_ROLE_ARN`, `TA_EXPORTER_AUDIENCE` | outputs `exporter_role_arn` y `exporter_oidc_audience` de `infra/aws` (`ta-gcp-exporter-role`) | exportador: rol que asume y audiencia del ID token de `sa-exporter`. Usa además `TA_LAKE_BUCKET` y `TA_LAKE_KMS_KEY_ARN` |
 | `TA_EXPORTER_SA` | `sa-exporter@{GCP_PROJECT}.iam.gserviceaccount.com` | exportador fuera de Cloud Run: cuenta a impersonar para el token |
@@ -1686,7 +1870,8 @@ s3://…-lake/
   raw/origin={stream|historical}/source={s}/dt={YYYY-MM-DD}/…parquet
   trusted/posts/source={s}/dt={YYYY-MM-DD}/…parquet
   curated/{tabla}/…parquet
-  quality/{run_date}/…                      # reportes de Great Expectations
+  quality/{run_date}/…                      # reportes de Great Expectations (Lote 5.2)
+  quality/{run_date}/profiling/{capa}/…     # opcional (v2.33): informe del profiling; publish --apply, apagado por defecto (§3.20)
   athena-results/                           # resultados de Athena (SSE-KMS, 7 días)
   _glue/scripts/{job}.py                    # (v2.32) scripts de los jobs, los sube Terraform
   _glue/temp/                               # (v2.32) --TempDir de Glue
@@ -1698,10 +1883,10 @@ s3://…-lake/
 Formato: **Parquet + Snappy**. Particiones registradas con **partition projection** en Athena (sin crawlers, más simple y barato).
 
 - **Raw** (`ta_raw.posts_raw`): rutas `raw/origin=…/source=…/dt=…/hr=…/`; también el histórico escribe `hr`. Claves de partición `part_origin`, `part_source`, `part_dt`, `part_hr` (las columnas `origin` y `source` ya viajan dentro del Parquet). Columnas = las de BigQuery `posts_enriched`.
-- **Raw histórico** *(v2.28, §3.17, ADR-21)*: `raw/origin=historical/source={s}/dt={AAAA-MM-DD}/hr={HH}/part-historical-s{seed}-{AAAAMMDD}T{HH}.parquet`. `dt`/`hr` son la fecha y hora UTC de `event_time` (en el stream, las del proceso en GCS). Un archivo por fuente y hora, filas ordenadas por `event_id`, mismo Parquet que `enriched/` (§5.4), SSE-KMS con la llave del lake. Solo lo escribe `ta-historical-loader`; reejecutar reescribe las mismas claves.
+- **Raw histórico** *(v2.28, §3.17, ADR-21)*: `raw/origin=historical/source={s}/dt={AAAA-MM-DD}/hr={HH}/part-historical-s{seed}-{AAAAMMDD}T{HH}.parquet`. `dt`/`hr` son la fecha y hora UTC de `event_time` (en el stream, las del proceso en GCS). Un archivo por fuente y hora, filas ordenadas por `event_id`, mismo Parquet que `enriched/` (§5.4), SSE-KMS con la llave del lake. Solo lo escribe `ta-historical-loader`; reejecutar reescribe las mismas claves. *(v2.33, medido en §3.20)* `process_time` es el instante de la carga y vale lo mismo en las 50.000 filas: la latencia `process_time − event_time` solo tiene sentido en el stream.
 - **Existe desde el Lote 3.1** *(v2.28)*: el bucket `ta-dev-648617469176-lake`, la llave `alias/ta-dev-lake` y el rol `ta-historical-loader`, adelantados del Lote 4.1 (§3.17). Glue, Athena, EventBridge y los demás roles llegan con la Fase 4. *(v2.32)* Desde el Lote 4.1 existen las tres bases con sus 11 tablas, el workgroup `ta-analytics`, el workflow con sus dos jobs (marcadores de posición hasta 4.2/4.3), el horario (deshabilitado), la regla de fallos y los roles `ta-glue-role`, `ta-quicksight-role` y `ta-lakehouse-scheduler-role` (§3.19).
-- **Raw stream** *(v2.30, §3.18)*: `raw/origin=stream/source={s}/dt={AAAA-MM-DD}/hr={HH}/part-{AAAAMMDD}T{hhmmss}Z-p{panel:03d}.parquet`, copia byte a byte de `enriched/` (mismo Parquet de §5.4, mismo nombre), con `dt`/`hr` de la **hora de proceso** en GCS. Lo escribe solo `ta-gcp-exporter-role` (el job `ta-gcs-to-s3`), con SSE-KMS de la llave del lake y los metadatos de §5.6; un objeto puede sobrescribirse si cambió su tamaño en GCS. Trusted deduplica por `event_id` (§5.7).
-- **Trusted** (`ta_trusted.posts`): `trusted/posts/source=…/dt=…/`, con `dt = DATE(event_time)` UTC; añade `text_clean`; `source` es partición, no columna. *(v2.32)* Lo que hay hoy en Raw (duplicados, filas sin NLP, centinelas `ta-verify@2.1`) y cómo escribir y recalcular las particiones: §3.19.1, «Para el Lote 4.2».
+- **Raw stream** *(v2.30, §3.18)*: `raw/origin=stream/source={s}/dt={AAAA-MM-DD}/hr={HH}/part-{AAAAMMDD}T{hhmmss}Z-p{panel:03d}.parquet`, copia byte a byte de `enriched/` (mismo Parquet de §5.4, mismo nombre), con `dt`/`hr` de la **hora de proceso** en GCS. Lo escribe solo `ta-gcp-exporter-role` (el job `ta-gcs-to-s3`), con SSE-KMS de la llave del lake y los metadatos de §5.6; un objeto puede sobrescribirse si cambió su tamaño en GCS. Trusted deduplica por `event_id` (§5.7). *(v2.33, medido en §3.20)* `process_time` cae entre ~20 s antes y 3.600 s después del inicio de la hora de su partición (`dt`/`hr` es la hora de la ventana de escritura y `process_time` se fija antes, al enriquecer). Las filas procesadas antes de 2026-10-22T23:00Z (65.264) no tienen NLP, y hay 6 filas de un centinela de validación (`generator = ta-verify@2.1`).
+- **Trusted** (`ta_trusted.posts`): `trusted/posts/source=…/dt=…/`, con `dt = DATE(event_time)` UTC; añade `text_clean`; `source` es partición, no columna. *(v2.32)* Lo que hay hoy en Raw (duplicados, filas sin NLP, centinelas `ta-verify@2.1`) y cómo escribir y recalcular las particiones: §3.19.1, «Para el Lote 4.2». *(v2.33)* Lo que el profiling de Raw le deja al Lote 4.2 (§3.20, hallazgos): deduplicar (2 copias de `event_id` en Raw stream, en horas distintas); decidir qué hacer con las filas sin NLP y con los centinelas (*a confirmar*: DQ-13 y DQ-63 de §5.10); compactar el histórico (12.102 archivos de ~10 KB). El 4.2 puede comprobar su salida con `profile_data.py profile --layer trusted --raw-profile …` (§3.20.1).
 - DDL en `project/contracts/athena/`, copia verificada de esta sección (§5.13). Las columnas de Curated están definidas abajo. *(v2.32)* Terraform crea las tablas en Glue **desde esas DDL** (`infra/aws/modules/glue_catalog/tables.json`, generado con `python -m lakehouse.catalog_spec --write`; una prueba exige que estén al día, §3.19.1).
 
 | Capa | Glue DB | Contenido |
@@ -1796,6 +1981,105 @@ El código **nunca** hardcodea estos valores: los recibe como variables de entor
 
 Resultados en BigQuery `dq_results` (columnas en §5.5) y `s3://…/quality/`. El valor de `dq_results.kpi` sigue la primera columna de esta tabla (`completitud`, `unicidad`, `duplicados`, `anonimizacion`, `latencia`, `precision_nlp`); el resto, `otro`.
 
+**Reglas propuestas por el profiling** *(v2.33; Lote 5.1, HU-031 → HU-032, Lote 5.2)*. Derivadas de lo medido en Raw (§3.20) y del contrato de §5.2 y §5.7. Es el catálogo que implementa el Lote 5.2 con Great Expectations (y tests de dbt donde convenga). El código lo tiene en `quality.rules.RULES` (`python project/scripts/profile_data.py rules --catalog --json-out …` lo da en JSON) y una prueba exige que esta tabla y el código digan lo mismo (ids, comprobación y gravedad).
+
+- **Capa:** `raw` = `ta_raw.posts_raw` (`raw/`, los dos orígenes); `trusted` = `ta_trusted.posts`. **Alcance:** `*` = cada origen por separado (stream e histórico se miden aparte, porque sus diferencias son de diseño); `stream` o `historical` = solo ese origen.
+- **Umbral:** con `mostly`, la fracción mínima de filas que cumple (como en GE, los nulos no cuentan en las reglas de formato o de rango: los cubren las de `not_null`). Sin `mostly`, el umbral es el de la métrica agregada (tabla de abajo).
+- **Gravedad:** `error` = la suite falla y su fila de `dq_results` va con `passed = false`; `warning` = se registra con `passed = false`, pero la corrida no falla.
+- **KPI:** el valor de `dq_results.kpi` (los de la tabla de arriba; el resto, `otro`).
+- **Expectativa sugerida:** nombre de la API clásica de GE (en GX 1.x, la clase CamelCase equivalente, p. ej. `ExpectColumnValuesToNotBeNull`). *A verificar* con la versión que fije el 5.2. `custom (SQL)` = contar las filas que cumplen el predicado de la columna siguiente (p. ej. con `UnexpectedRowsExpectation` de GX 1.x, *a verificar*, o un test de dbt).
+- **Filas que fallan (Athena):** predicado `WHERE` sobre la tabla de la capa (motor v3 / Trino, con las columnas de partición de `contracts/athena/`). **No se han corrido** (Athena llega con el Lote 4.1). `—` = métrica agregada (abajo) o comprobación que solo hace el profiling.
+- **`dq_results` propuesto:** una fila por regla × origen con `layer` = capa, `table_name`, `suite` (p. ej. `ge_raw_posts`, `ge_trusted_posts`), `check_name = {id}[origin={origen}]`, `kpi`, `observed_value`, `threshold`, `passed` y `details` (`{"rule": id, "origin": …, "unexpected": n}`). El `dq_results_preview` del informe (§3.20.1) muestra la forma con los 4 KPI.
+- **Dónde escribir (lo que ya existe, para el 5.2):** la tabla es el output `dq_results_table` de `infra/gcp` (§5.9, `proyecto:ta_stream.dq_results`), partición por `DATE(run_ts)`, sin expiración, columnas de §5.5. En código, `common.stream_tables` tiene `DQ_RESULTS_COLUMNS` (columnas, tipo y modo), `DQ_LAYERS = ("stream", "raw", "trusted", "curated")` y `DQ_KPIS = ("completitud", "unicidad", "duplicados", "anonimizacion", "latencia", "precision_nlp", "otro")`: `layer` y `kpi` deben salir de ahí. El único escritor actual es `verify_trends.py report --write-dq` (§3.16, `layer = stream`); su código **no** está documentado como API reutilizable, así que el 5.2 decide si lo reutiliza (leyéndolo) o escribe con `google-cloud-bigquery` (ya en `ta-streaming`) y las credenciales del desarrollador (ADC; Owner/Editor del proyecto, §5.1). *Sin comprobar:* cómo acepta la columna `details` (JSON) un *streaming insert* (texto JSON u objeto). La copia en `s3://…/quality/{run_date}/` (§5.7) la puede escribir `ta-glue-role` (§5.8, R/W en `quality/`) o el perfil del desarrollador, con SSE-KMS de la llave del lake; el profiling usa `quality/{AAAA-MM-DD}/profiling/` y el 5.2 elige el resto del layout (propuesta: `quality/{AAAA-MM-DD}/ge/{suite}/{run_id}.json`).
+- **Dónde correr las reglas:** sobre Athena (`ta_raw.posts_raw` y, cuando exista, `ta_trusted.posts`; filtrar por `part_origin`/`part_dt` o `source`/`dt` para que la *partition projection* recorte lo leído) o sobre los Parquet de la caché del profiling (`{cache}/s3/{bucket}/raw/…`, mismo layout que S3, §3.20). Las 3 comprobaciones sin SQL (DQ-39, DQ-50, DQ-53) solo las mide el profiling: el 5.2 puede tomar su `observed` del informe (`rules[]`) o reimplementarlas con `quality.checks` (API en §3.20.1). Para contrastar: el profiling de Raw del 26-oct dio 0 filas que fallan en todas las reglas por fila salvo DQ-63 (6 filas del stream), y DQ-15 contó 2 copias en el stream.
+- **Hoy** (Raw, 26-oct-2026): cumplen 55 de las 56 reglas de Raw; no cumple **DQ-63** (aviso: 6 centinelas). Las de Trusted quedan *pendientes* hasta el Lote 4.2 (con el Trusted simulado cumplen 53 de 54; DQ-63 no, porque el simulado conserva los 6 centinelas, §3.20).
+
+| ID | Capa | Alcance | Columna | Comprobación | Umbral | KPI | Gravedad | Expectativa sugerida | Filas que fallan (Athena) | Observado en Raw (26-oct) | Motivo |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| DQ-01 | raw/trusted | * | `*` | `metric:schema` | todos los archivos | otro | error | expect_table_columns_to_match_ordered_list {"column_list": "RAW_COLUMNS \| TRUSTED_COLUMNS (§3.20.1)"} | — | * 1 → cumple | Esquema = posts_enriched (Raw) o posts (Trusted); medido 1 variante en Raw |
+| DQ-02 | raw/trusted | * | `*` | `metric:anonimizacion` | 100 % | anonimizacion | error | custom: sin columnas user_id/handle + DQ-03 + DQ-04 | — | historical 1, stream 1 → cumple | KPI de §5.10; medido 100 % |
+| DQ-03 | raw/trusted | * | `user_hash` | `regex:user_hash` | 100 % (`mostly` 1) | anonimizacion | error | expect_column_values_to_match_regex {"regex": "^[0-9a-f]{64}$"} | `NOT regexp_like(user_hash, '^[0-9a-f]{64}$')` | historical 1, stream 1 → cumple | — |
+| DQ-04 | raw/trusted | * | `payload` | `payload:no_identity` | 100 % (`mostly` 1) | anonimizacion | error | custom (SQL) | `regexp_like(payload, '"(user_id\|handle)"\s*:')` | historical 1, stream 1 → cumple | — |
+| DQ-05 | raw/trusted | * | `*` | `metric:completitud` | ≥ 95 % | completitud | error | custom: no nulos de event_id, event_time, source, text, user_hash / (5 × filas) {"min_value": 0.95} | — | historical 1, stream 1 → cumple | KPI de §5.10; medido 100 % |
+| DQ-06 | raw/trusted | * | `event_id` | `not_null:event_id` | 100 % (`mostly` 1) | completitud | error | expect_column_values_to_not_be_null | `event_id IS NULL` | historical 1, stream 1 → cumple | — |
+| DQ-07 | raw/trusted | * | `event_time` | `not_null:event_time` | 100 % (`mostly` 1) | completitud | error | expect_column_values_to_not_be_null | `event_time IS NULL` | historical 1, stream 1 → cumple | — |
+| DQ-08 | raw | * | `source` | `not_null:source` | 100 % (`mostly` 1) | completitud | error | expect_column_values_to_not_be_null | `source IS NULL` | historical 1, stream 1 → cumple | — |
+| DQ-09 | raw/trusted | * | `text` | `not_null:text` | 100 % (`mostly` 1) | completitud | error | expect_column_values_to_not_be_null | `text IS NULL` | historical 1, stream 1 → cumple | — |
+| DQ-10 | raw/trusted | * | `user_hash` | `not_null:user_hash` | 100 % (`mostly` 1) | completitud | error | expect_column_values_to_not_be_null | `user_hash IS NULL` | historical 1, stream 1 → cumple | — |
+| DQ-11 | raw/trusted | * | `lang` | `not_null:lang` | ≥ 98 % (`mostly` 0.98) | completitud | warning | expect_column_values_to_not_be_null | `lang IS NULL` | historical 1, stream 1 → cumple | El caos null_fields (1 %, §3.9) puede dejarlo nulo; medido 100 % sin caos |
+| DQ-12 | raw/trusted | * | `followers` | `not_null:followers` | ≥ 98 % (`mostly` 0.98) | completitud | warning | expect_column_values_to_not_be_null | `followers IS NULL` | historical 1, stream 1 → cumple | Igual que DQ-11 |
+| DQ-13 | raw/trusted | * | `nlp_model_version` | `nlp:complete_since` | ≥ 99 % desde 2026-10-22T23:00:00Z (`mostly` 0.99) | completitud | warning | expect_column_values_to_not_be_null (× 5 columnas de NLP, filas con process_time ≥ NLP_SINCE) {"since": "2026-10-22T23:00:00Z"} | `process_time >= from_iso8601_timestamp('2026-10-22T23:00:00Z') AND (sentiment_label IS NULL OR sentiment_score IS NULL OR emotion_label IS NULL OR emotion_score IS NULL OR nlp_model_version IS NULL)` | historical 1, stream 1 → cumple | Criterio de verify_enriched --expect-nlp (§3.15). Medido: 65.264 filas del stream procesadas antes de NLP_SINCE (jobs sin NLP) tienen el NLP nulo; después, 0 |
+| DQ-14 | raw | * | `event_id` | `metric:unicidad` | ≥ 99 % | unicidad | error | expect_column_proportion_of_unique_values_to_be_between {"min_value": 0.99} | — | historical 1, stream 0.999988 → cumple | KPI de §5.10 en Raw (antes de deduplicar) |
+| DQ-15 | raw | * | `event_id` | `metric:duplicados` | < 1 % | duplicados | warning | custom: (filas − event_id distintos) / filas {"max_value": 0.01} | — | historical 0, stream 1.2e-05 → cumple | En Raw solo se vigila: el KPI oficial se mide en Trusted (DQ-48) |
+| DQ-16 | raw/trusted | * | `event_id` | `uuid:event_id` | 100 % (`mostly` 1) | otro | error | expect_column_values_to_match_regex {"regex": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"} | `NOT regexp_like(event_id, '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')` | historical 1, stream 1 → cumple | — |
+| DQ-17 | raw/trusted | * | `origin` | `enum:origin` | 100 % (`mostly` 1) | otro | error | expect_column_values_to_be_in_set {"value_set": ["stream", "historical"]} | `origin NOT IN ('stream', 'historical')` | historical 1, stream 1 → cumple | — |
+| DQ-18 | raw | * | `origin` | `partition:origin` | 100 % (`mostly` 1) | otro | error | custom (SQL) | `origin <> part_origin` | historical 1, stream 1 → cumple | — |
+| DQ-19 | raw/trusted | * | `source` | `enum:source` | 100 % (`mostly` 1) | otro | error | expect_column_values_to_be_in_set {"value_set": ["reddit", "facebook", "instagram"]} | `source NOT IN ('reddit', 'facebook', 'instagram')` | historical 1, stream 1 → cumple | — |
+| DQ-20 | raw | * | `source` | `partition:source` | 100 % (`mostly` 1) | otro | error | custom (SQL) | `source <> part_source` | historical 1, stream 1 → cumple | — |
+| DQ-21 | raw/trusted | * | `generator` | `regex:generator` | 100 % (`mostly` 1) | otro | error | expect_column_values_to_match_regex {"regex": "^[a-z0-9][a-z0-9-]*@[0-9]+\\.[0-9]+(\\.[0-9]+)?$"} | `NOT regexp_like(generator, '^[a-z0-9][a-z0-9-]*@[0-9]+\.[0-9]+(\.[0-9]+)?$')` | historical 1, stream 1 → cumple | — |
+| DQ-22 | raw/trusted | * | `lang` | `set:lang` | 100 % (`mostly` 1) | otro | warning | expect_column_values_to_be_in_set {"value_set": ["es"]} | `lang <> 'es'` | historical 1, stream 1 → cumple | v2.2 solo emite es; otro idioma no rompe el contrato (^[a-z]{2}$) pero sería nuevo |
+| DQ-23 | raw/trusted | * | `followers` | `range:followers` | 100 % (`mostly` 1) | otro | error | expect_column_values_to_be_between {"min_value": 0} | `followers < 0` | historical 1, stream 1 → cumple | — |
+| DQ-24 | raw/trusted | * | `likes` | `engagement:likes` | 100 % (`mostly` 1) | otro | error | custom (SQL): ≥ 0 salvo Reddit | `source <> 'reddit' AND likes < 0` | historical 1, stream 1 → cumple | — |
+| DQ-25 | raw/trusted | * | `shares` | `engagement:shares` | 100 % (`mostly` 1) | otro | error | custom (SQL) por fuente | `(source IN ('reddit', 'instagram') AND shares IS NOT NULL) OR (source = 'facebook' AND (shares IS NULL OR shares < 0))` | historical 1, stream 1 → cumple | — |
+| DQ-26 | raw/trusted | * | `comments` | `engagement:comments` | 100 % (`mostly` 1) | otro | error | custom (SQL) por fuente | `(source IN ('facebook', 'instagram') AND (comments IS NULL OR comments < 0)) OR (source = 'reddit' AND comments < 0)` | historical 1, stream 1 → cumple | — |
+| DQ-27 | raw/trusted | * | `sentiment_label` | `enum:sentiment_label` | 100 % (`mostly` 1) | otro | error | expect_column_values_to_be_in_set {"value_set": ["negative", "neutral", "positive"]} | `sentiment_label NOT IN ('negative', 'neutral', 'positive')` | historical 1, stream 1 → cumple | — |
+| DQ-28 | raw/trusted | * | `emotion_label` | `enum:emotion_label` | 100 % (`mostly` 1) | otro | error | expect_column_values_to_be_in_set {"value_set": ["joy", "sadness", "anger", "fear", "disgust", "surprise", "neutral"]} | `emotion_label NOT IN ('joy', 'sadness', 'anger', 'fear', 'disgust', 'surprise', 'neutral')` | historical 1, stream 1 → cumple | — |
+| DQ-29 | raw/trusted | * | `sentiment_score` | `range:sentiment_score` | 100 % (`mostly` 1) | otro | error | expect_column_values_to_be_between {"min_value": 0, "max_value": 1} | `sentiment_score NOT BETWEEN 0 AND 1` | historical 1, stream 1 → cumple | — |
+| DQ-30 | raw/trusted | * | `emotion_score` | `range:emotion_score` | 100 % (`mostly` 1) | otro | error | expect_column_values_to_be_between {"min_value": 0, "max_value": 1} | `emotion_score NOT BETWEEN 0 AND 1` | historical 1, stream 1 → cumple | — |
+| DQ-31 | raw/trusted | * | `nlp_model_version` | `regex:nlp_model_version` | 100 % (`mostly` 1) | otro | error | expect_column_values_to_match_regex {"regex": "^robertuito-sentiment@\\S+\\+robertuito-emotion@\\S+$"} | `NOT regexp_like(nlp_model_version, '^robertuito-sentiment@\S+\+robertuito-emotion@\S+$')` | historical 1, stream 1 → cumple | — |
+| DQ-32 | raw/trusted | * | `nlp_model_version` | `metric:nlp_single_version` | 1 versión | otro | warning | expect_column_unique_value_count_to_be_between {"min_value": 1, "max_value": 1} | — | historical 1, stream 1 → cumple | Una sola versión en stream e histórico (§3.17); dos versiones = imágenes de NLP mezcladas |
+| DQ-33 | raw/trusted | * | `label_sentiment` | `enum:label_sentiment` | 100 % (nulos permitidos) (`mostly` 1) | otro | error | expect_column_values_to_be_in_set {"value_set": ["negative", "neutral", "positive"]} | `label_sentiment NOT IN ('negative', 'neutral', 'positive')` | historical 1, stream 1 → cumple | — |
+| DQ-34 | raw/trusted | * | `label_sentiment` | `metric:label_sentiment_null` | nulos entre 25% y 35% | otro | warning | expect_column_proportion_of_non_null_values_to_be_between (o custom) {"min_value": 0.65, "max_value": 0.75} | — | historical 0.2991, stream 0.300967 → cumple | nostalgia + adiccion = 30 % por diseño (ADR-13) |
+| DQ-35 | raw/trusted | * | `brands` | `regex:brands` | 100 % (`mostly` 1) | otro | error | custom (SQL): elementos [a-z0-9_]+ | `any_match(brands, b -> NOT regexp_like(b, '^[a-z0-9_]+$'))` | historical 1, stream 1 → cumple | — |
+| DQ-36 | raw/trusted | * | `brands` | `set:brands` | 100 % (`mostly` 1) | otro | error | custom (SQL): elementos ∈ claves de brands.yaml {"value_set": ["postobon", "pepsi", "sprite"]} | `any_match(brands, b -> b NOT IN ('postobon', 'pepsi', 'sprite'))` | historical 1, stream 1 → cumple | §5.2: claves de brands.yaml. El conjunto se lee de src/simulator/config/brands.yaml (no se fija a mano): v1 = 3 marcas |
+| DQ-37 | raw/trusted | * | `brand_primary` | `pair:brand_primary` | 100 % (`mostly` 1) | otro | error | custom (SQL) | `brand_primary IS DISTINCT FROM element_at(brands, 1)` | historical 1, stream 1 → cumple | — |
+| DQ-38 | raw/trusted | * | `hashtags` | `regex:hashtags` | 100 % (`mostly` 1) | otro | error | custom (SQL): elementos canónicos | `any_match(hashtags, h -> NOT regexp_like(h, '^[a-z0-9_]{1,100}$'))` | historical 1, stream 1 → cumple | — |
+| DQ-39 | raw/trusted | * | `hashtags` | `consistency:hashtags_text` | 100 % (`mostly` 1) | otro | warning | custom (Python: common.hashtags.extract_hashtags) | — | historical 1, stream 1 → cumple | Sin equivalente simple en SQL (tildes en el texto); lo mide el profiling |
+| DQ-40 | raw/trusted | * | `text` | `text:not_empty` | 100 % (`mostly` 1) | otro | error | expect_column_value_lengths_to_be_between {"min_value": 1} | `trim(text) = ''` | historical 1, stream 1 → cumple | — |
+| DQ-41 | raw/trusted | * | `text` | `metric:text_max_length` | ≤ 450 caracteres | otro | warning | expect_column_value_lengths_to_be_between {"max_value": 450} | `length(text) > 450` | historical 268, stream 283 → cumple | Máximo medido (283) × 1,5, redondeado a 50 |
+| DQ-42 | raw/trusted | * | `payload` | `payload:json` | 100 % (`mostly` 1) | otro | error | custom (SQL) | `try(CAST(json_parse(payload) AS MAP(VARCHAR, JSON))) IS NULL` | historical 1, stream 1 → cumple | — |
+| DQ-43 | raw/trusted | * | `payload` | `payload:kind` | 100 % (`mostly` 1) | otro | error | custom (SQL) | `json_extract_scalar(payload, '$.kind') NOT IN ('post', 'comment') OR (source = 'instagram' AND json_extract_scalar(payload, '$.kind') <> 'comment')` | historical 1, stream 1 → cumple | — |
+| DQ-44 | raw/trusted | * | `ingest_time` | `time:ingest_ge_event` | 100 % (`mostly` 1) | otro | error | expect_column_pair_values_a_to_be_greater_than_b {"column_A": "ingest_time", "column_B": "event_time", "or_equal": true} | `ingest_time < event_time` | historical 1, stream 1 → cumple | — |
+| DQ-45 | raw/trusted | * | `ingest_time` | `time:ingest_lag` | ≥ 98 % entre 0 y 5 s (`mostly` 0.98) | otro | warning | custom (SQL) | `date_diff('millisecond', event_time, ingest_time) NOT BETWEEN 0 AND 5000` | historical 1, stream 1 → cumple | Lag de 0–5 s (§3.8); el caos late (1 %) resta 2–30 min a event_time |
+| DQ-46 | raw/trusted | * | `process_time` | `time:process_ge_ingest` | 100 % (`mostly` 1) | otro | error | expect_column_pair_values_a_to_be_greater_than_b {"column_A": "process_time", "column_B": "ingest_time", "or_equal": true} | `process_time < ingest_time` | historical 1, stream 1 → cumple | — |
+| DQ-47 | raw/trusted | * | `event_time` | `time:not_future` | 100 % (`mostly` 1) | otro | error | custom (SQL) | `event_time > current_timestamp + INTERVAL '5' MINUTE` | historical 1, stream 1 → cumple | — |
+| DQ-48 | trusted | * | `event_id` | `metric:duplicados` | < 1 % | duplicados | error | custom: (filas − event_id distintos) / filas {"max_value": 0.01} | — | pendiente (Trusted) | KPI oficial de §5.10: se mide en Trusted tras deduplicar |
+| DQ-49 | trusted | * | `event_id` | `metric:unicidad` | 100 % | unicidad | error | expect_column_values_to_be_unique | — | pendiente (Trusted) | Trusted deduplica por event_id (§5.7); KPI ≥ 99 % y se espera 100 % |
+| DQ-50 | raw/trusted | * | `dt` | `partition:projection_range` | 100 % (`mostly` 1) | otro | error | custom (listado de S3) | — | historical 1, stream 1 → cumple | Athena no ve particiones fuera de projection.*.range (2026-01-01,NOW): se comprueba listando S3 |
+| DQ-51 | raw | historical | `event_time` | `partition:hist_event_hour` | 100 % (`mostly` 1) | otro | error | custom (SQL) | `part_origin = 'historical' AND (date_format(event_time, '%Y-%m-%d') <> part_dt OR date_format(event_time, '%H') <> part_hr)` | historical 1 → cumple | — |
+| DQ-52 | raw | stream | `process_time` | `partition:stream_process_hour` | 100 % entre −2 min y +65 min (`mostly` 1) | otro | warning | custom (SQL) | `part_origin = 'stream' AND date_diff('second', date_parse(part_dt \|\| ' ' \|\| part_hr, '%Y-%m-%d %H'), process_time) NOT BETWEEN -120 AND 3900` | stream 1 → cumple | En el stream dt/hr es la hora de la ventana de escritura en GCS (§5.4, §5.7); medido −19,6 a 3.600 s |
+| DQ-53 | raw | * | `dt` | `partition:file_name` | 100 % (`mostly` 1) | otro | warning | custom (Python: nombre del archivo) | — | historical 1, stream 1 → cumple | — |
+| DQ-54 | trusted | * | `event_time` | `partition:trusted_event_date` | 100 % (`mostly` 1) | otro | error | custom (SQL) | `date_format(event_time, '%Y-%m-%d') <> dt` | pendiente (Trusted) | dt = DATE(event_time) UTC (§5.7) |
+| DQ-55 | trusted | * | `source` | `not_null:source_partition` | 100 % (`mostly` 1) | completitud | error | expect_column_values_to_not_be_null | `source IS NULL` | pendiente (Trusted) | — |
+| DQ-56 | trusted | * | `text_clean` | `not_null:text_clean` | 100 % (`mostly` 1) | completitud | error | expect_column_values_to_not_be_null | `text_clean IS NULL` | pendiente (Trusted) | A confirmar con el Lote 4.2 (qué hace la limpieza) |
+| DQ-57 | trusted | * | `text_clean` | `text_clean:not_longer` | 100 % (`mostly` 1) | otro | warning | custom (SQL) | `length(text_clean) > length(text)` | pendiente (Trusted) | A confirmar con el Lote 4.2 |
+| DQ-58 | trusted | * | `*` | `metric:rows_vs_raw` | entre 99 % y 100 % de los event_id distintos de Raw | duplicados | error | custom (SQL): filas de Trusted frente a event_id distintos de Raw | — | pendiente (Trusted) | Trusted une ambos orígenes sin duplicar; puede descartar filas que no cumplan reglas (§5.7). Comparar la misma foto de Raw |
+| DQ-59 | raw | stream | `process_time` | `metric:latency_p95` | p95 < 300 s | latencia | warning | custom (SQL): approx_percentile(process_time − event_time, 0.95) {"max_value": 300.0} | — | stream 5.382 → cumple | KPI de §5.10; el oficial se mide en BigQuery (posts_enriched), aquí se vigila en S3 |
+| DQ-60 | raw/trusted | * | `source` | `metric:source_share` | cada fuente entre 30% y 37% | otro | warning | custom (SQL): participación de cada fuente por origen {"min_value": 0.3, "max_value": 0.37} | — | historical 0.3333/0.3333/0.3333, stream 0.3334/0.3337/0.3329 → cumple | Tres fuentes a ~0,5 msg/s y el histórico N/3 por fuente |
+| DQ-61 | raw/trusted | * | `text` | `metric:text_distinct_ratio` | ≥ 99% por origen | otro | warning | expect_column_proportion_of_unique_values_to_be_between {"min_value": 0.99} | — | historical 0.99996, stream 0.99979 → cumple | Diversidad del generador (§9, riesgo de texto repetido): avisa si las plantillas se degradan |
+| DQ-62 | raw/trusted | * | `sentiment_label` | `metric:nlp_agreement` | ≥ 88% | precision_nlp | warning | custom (SQL): acuerdo con label_sentiment {"min_value": 0.88} | — | historical 0.91802, stream 0.92048 → cumple | Vigilancia; la precisión formal (matriz de confusión) es HU-033 |
+| DQ-63 | raw/trusted | * | `generator` | `set:generator` | 100 % (`mostly` 1) | otro | warning | expect_column_values_to_be_in_set {"value_set": ["comment-gen@1.0"]} | `generator <> 'comment-gen@1.0'` | historical 1, stream 0.999965 → no_cumple | Medido: 6 filas de ta-verify@2.1 (centinela de verify_streaming, §3.13) en Raw stream; Trusted debería excluirlas (a confirmar con el 4.2) |
+
+**Métricas agregadas** (`metric:…`; por origen salvo que se diga; Athena, *sin correr*):
+
+| Métrica | Cálculo de referencia |
+|---|---|
+| `schema` | Las columnas de la tabla, en orden, = `RAW_COLUMNS` o `TRUSTED_COLUMNS` (§3.20.1). El profiling además lo exige en cada Parquet (y en Raw, los tipos exactos de `common.parquet_rows.arrow_schema()`) |
+| `anonimizacion` | Ninguna columna `user_id`/`handle` y `count_if(regexp_like(user_hash, '^[0-9a-f]{64}$') AND NOT regexp_like(payload, '"(user_id\|handle)"\s*:')) / count(*) = 1` |
+| `completitud` | `1 − (count_if(event_id IS NULL) + count_if(event_time IS NULL) + count_if(source IS NULL) + count_if(text IS NULL) + count_if(user_hash IS NULL)) / (5.0 × count(*))` |
+| `unicidad` | `count(DISTINCT event_id) / count(*)` |
+| `duplicados` | `(count(*) − count(DISTINCT event_id)) / count(*)` |
+| `nlp_single_version` | `count(DISTINCT nlp_model_version) = 1` |
+| `label_sentiment_null` | `count_if(label_sentiment IS NULL) / count(*)` |
+| `text_max_length` | `max(length(text))` |
+| `latency_p95` | `approx_percentile(date_diff('millisecond', event_time, process_time) / 1000.0, 0.95)` con `part_origin = 'stream'` |
+| `source_share` | `count(*) / sum(count(*)) OVER (PARTITION BY origin)` agrupando por `origin, source` |
+| `text_distinct_ratio` | `count(DISTINCT text) / count(*)` |
+| `nlp_agreement` | `count_if(sentiment_label = label_sentiment) / count_if(label_sentiment IS NOT NULL AND sentiment_label IS NOT NULL)` |
+| `rows_vs_raw` | `(SELECT count(*) FROM ta_trusted.posts) / (SELECT count(DISTINCT event_id) FROM ta_raw.posts_raw)` entre 0,99 y 1, con Raw y Trusted de la misma foto |
+
+Solo las mide el profiling (no hay SQL simple): `partition:projection_range` (Athena no ve particiones fuera del rango de la *partition projection*: hay que listar S3), `partition:file_name` (`"$path"`) y `consistency:hashtags_text` (`common.hashtags.extract_hashtags`).
+
 ### 5.11 Matriz "si construyes X, necesitas…"
 
 | Si construyes… | Necesitas leer | Me tienes que dar |
@@ -1811,7 +2095,7 @@ Resultados en BigQuery `dq_results` (columnas en §5.5) y `s3://…/quality/`. E
 | Loader histórico | §3.17, §3.2, §3.8, §3.10, §5.2, §5.7, §5.8, `src/historical/HISTORICAL.md` y `docs/validation/validation-3-1.md` | Salida de `load_historical.py doctor`, `evidencia/validacion_3_1.json`, los JSON de `verify` y `terraform output` de `infra/aws` |
 | Jobs de Glue / dbt | §5.2, §5.7, §5.10; *(v2.32)* **§3.19.1** (contrato de un job, cómo reemplazar el script, permisos de `ta-glue-role`, API de `catalog_spec` y `s3_parquet`), §5.8 y §5.12 | Esquema real de Athena (`SHOW CREATE TABLE`) si ya existe algo; *(v2.32)* `evidencia/validacion_4_1.json`, `terraform output` de `infra/aws` y, si un job falló, su evento de `/aws/events/ta-glue-job-fallos` |
 | Catálogo de Glue, Athena, el workflow o su horario | *(v2.32)* §3.19 (y §3.19.1), §5.7, §5.8, §5.9, §5.12 y `docs/validation/validation-4-1.md` | `evidencia/validacion_4_1.json` y la salida de `validate_4_1.py status` |
-| Calidad | §5.5, §5.7, §5.10 | — |
+| Calidad: profiling (Lote 5.1) o suites de Great Expectations y `dq_results` (Lote 5.2) | §3.20 (y §3.20.1: interfaces), §5.5 (`dq_results`), §5.7, **§5.10** (reglas DQ-01…DQ-63), §5.12 y `docs/validation/validation-5-1.md` | `evidencia/validacion_5_1.json`, `evidencia/profiling_raw_5_1.json` (y el de Trusted cuando exista) y la salida de `profile_data.py rules --catalog` |
 | Terraform | §5.1, §5.8, §5.9, §5.14 | Estado actual de `infra/` y `terraform.tfvars` (sin secretos) |
 | Desplegar, actualizar o apagar el simulador | §5.15 e `infra/DEPLOY_SIMULATOR.md` | Salida de `terraform plan` y, si falla, los logs de Cloud Run |
 | Verificar la ingesta o reutilizar el verificador | §3.11, §5.3, §5.4 | Los JSON de `verify_ingest.py` (`--json-out`) si algo falla |
@@ -1852,6 +2136,7 @@ Valores por defecto que evitan decidir en cada lote. Se ajustan aquí primero.
 | Exportador GCS → S3 | *(v2.30, §3.18)* Cada 15 min (UTC) con el Scheduler **en pausa por defecto**; solape de 1 h, margen de listado de 2 h, 8 subidas en paralelo, máximo 5.000 objetos por corrida, 840 s por ejecución y 1 reintento; watermark solo tras subir todo. Imagen `gcs-to-s3:{commit o fecha}-{huella}`. | HU-025 |
 | Límite de Athena | *(v2.32, §3.19; adoptado por defecto, a confirmar)* `ta-analytics` cancela la consulta que pase de **1 GiB** escaneado (`athena_bytes_scanned_cutoff_per_query = 1073741824`; ≈ 0,005 USD por consulta como máximo). Hoy todo Raw ocupa ~183 MB, así que el límite protege de errores, no de los datos actuales; si un CTAS de dbt (4.3) lo necesita, se sube aquí primero. | HU-007, HU-030 |
 | Orquestación del lakehouse | *(v2.32, §3.19)* EventBridge Scheduler `rate(1 hour)` UTC → `ta-wf-raw-to-curated`, **deshabilitado por defecto** (estado de ahorro; lo enciende el equipo con `validate_4_1.py on`), sin reintentos, 1 corrida a la vez. Jobs Glue Python shell 3.9, 0,0625 DPU, 30 min, 0 reintentos, `library-set = analytics` (ajustables por job con `glue_job_settings`). Logs de Glue y de fallos: 30 días. | HU-029 |
+| Profiling de calidad | *(v2.33, §3.20)* Bajo demanda, solo lectura de S3. Caché `~/.cache/trendanalyzer/quality` (`TA_QUALITY_CACHE`, fuera del repo), 16 descargas en paralelo, MATTR con ventana de 500 tokens, 5 textos repetidos de muestra con 60 caracteres, todos los valores de una columna con ≤ 12 distintos. Umbrales de las reglas (§5.10): `TEXT_MAX_LENGTH` 450, `TEXT_DISTINCT_MIN` 0,99, `NLP_AGREEMENT_MIN` 0,88, `SOURCE_SHARE_RANGE` 0,30–0,37, `LABEL_NULL_RANGE` 0,25–0,35, `LATENCY_P95_MAX_S` 300, `NLP_SINCE` 2026-10-22T23:00Z, desfase del stream −120 a +3.900 s, lag `ingest − event` ≤ 5 s. Publicar en `quality/` está **apagado por defecto**. | HU-031, HU-032 |
 | Prueba de humo E2E | `scripts/smoke_e2e.py` sigue un evento centinela (`event_id` conocido) desde el simulador hasta `ta_curated.fact_posts` y reporta latencia por etapa. | HU-048 |
 | Retención del estado de Terraform | GCS: se conservan las 10 versiones no vigentes más recientes. S3: las versiones no vigentes expiran a los 90 días y los *uploads* multiparte incompletos a los 7. | HU-046 |
 | Presupuestos | Solo avisan por correo; no cortan el gasto. GCP: 50 %, 90 % y 100 % del gasto real y 100 % del pronóstico. AWS: 50 %, 80 % y 100 % del gasto real y 100 % del pronóstico. Montos aplicados: 400000 COP (GCP) y 50 USD (AWS) (§9 #10). | HU-046, HU-043 |
@@ -2060,7 +2345,7 @@ infra/
 │
 ├── docs/
 │   ├── ARCHITECTURE.md                    <- este archivo: arquitectura y contratos (versión vigente)
-│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.32)
+│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.33)
 │   ├── PLAN.md                            <- fases y lotes, matriz HU y estado del proyecto
 │   ├── HU.md                              <- historias de usuario (HU-001 a HU-048)
 │   ├── ACTIVE_SERVICES.md                 <- encender, comprobar y apagar lo que cobra (on.py, off.py, status.py)
@@ -2070,7 +2355,8 @@ infra/
 │   │   ├── validation-2-4.md              <- Lote 2.4: validación paso a paso (automática con validate_2_4.py)
 │   │   ├── validation-3-1.md              <- Lote 3.1: validación paso a paso (automática con validate_3_1.py)
 │   │   ├── validation-3-2.md              <- Lote 3.2: validación paso a paso (automática con validate_3_2.py)
-│   │   └── validation-4-1.md              <- Lote 4.1: validación paso a paso (automática con validate_4_1.py)
+│   │   ├── validation-4-1.md              <- Lote 4.1: validación paso a paso (automática con validate_4_1.py)
+│   │   └── validation-5-1.md              <- Lote 5.1: validación paso a paso (automática con validate_5_1.py)
 │   ├── GLOSSARY.md                        <- glosario del proyecto
 │   ├── NOTAS.md                           <- notas de trabajo
 │   ├── trend_analyzer_multicloud.drawio   <- diagrama editable (v2.5)
@@ -2141,6 +2427,8 @@ infra/
     │   ├── build_exporter_image.sh        <- Lote 3.2: construye, prueba y publica la imagen gcs-to-s3
     │   ├── validate_3_2.py                <- Lote 3.2: validación automática (partes A a F, status y off de docs/validation/validation-3-2.md)
     │   ├── validate_4_1.py                <- Lote 4.1: validación automática (partes A a F, status, off y on de docs/validation/validation-4-1.md)
+    │   ├── profile_data.py                <- Lote 5.1: profiling de Raw y Trusted (sync, profile, rules, synth-trusted, publish; §3.20)
+    │   ├── validate_5_1.py                <- Lote 5.1: validación automática (partes A a D, all y clean de docs/validation/validation-5-1.md)
     │   ├── on.py  off.py  status.py       <- operación: encender, apagar y ver lo que cobra (ACTIVE_SERVICES.md)
     │   └── smoke_e2e.py                   <- prueba de humo extremo a extremo (HU-048)
     └── src/
@@ -2176,7 +2464,7 @@ infra/
         │                                     Lote 2.3: nlp, nlp_testing, nlp_image/ (Dockerfile, fetch_models, image_smoke, cloudbuild), tests/test_nlp* (§3.15).
         │                                     Lote 2.4: trends, trends_core, bq_sink, dlq_bq, trends_check, trends_bq, trends_cli, template_tools,
         │                                     flex_main, flex_template/ (Dockerfile, metadata.json), TRENDS.md, tests/test_trends_*, test_flex_template (§3.16)
-        ├── ops/                           <- operación y validación: services (on/off/status), validate23 (validate_2_3.py), validate24 (validate_2_4.py), validate31 (validate_3_1.py), validate32 (validate_3_2.py), validate41 (validate_4_1.py; reutiliza piezas de validate32 y services), tests/
+        ├── ops/                           <- operación y validación: services (on/off/status), validate23 (validate_2_3.py), validate24 (validate_2_4.py), validate31 (validate_3_1.py), validate32 (validate_3_2.py), validate41 (validate_4_1.py; reutiliza piezas de validate32 y services), validate51 (validate_5_1.py), tests/
         ├── historical/                    <- Lote 3.1: full load con el mismo simulador, anonimización y NLP (§3.17)
         │                                     plan, adapters, generate, nlp_batch, writer, verify, bq, s3io, doctor, cli, schema, work, testing,
         │                                     config/historical.yaml, requirements.txt, HISTORICAL.md, tests/test_hist_*
@@ -2185,7 +2473,9 @@ infra/
         ├── lakehouse/                     <- Lote 4.1 (§3.19): catalog_spec (DDL de contracts/athena → tables.json), s3_parquet (filas por pie de Parquet),
         │                                     glue_jobs/{raw_to_trusted,trusted_to_curated}.py (marcadores de posición: los reemplazan 4.2 y 4.3),
         │                                     queries/*.sql (consultas guardadas de Athena), tests/test_lake_*; dbt/ si el 4.3 lo elige
-        ├── quality/                       <- Great Expectations
+        ├── quality/                       <- Lote 5.1: profiling (§3.20): layers, checks, text_stats, profile_core, profiler, anomalies, rules,
+        │                                     report_md, s3sync, publish, testing, cli, requirements.txt, tests/test_quality_*.
+        │                                     Lote 5.2: suites de Great Expectations sobre el catálogo de reglas de §5.10
         └── collectors/                    <- LEGADO: conectores reales Mastodon/Reddit/RSS (no se despliega)
 ```
 
@@ -2274,6 +2564,7 @@ Estado actual: <salida de `bash scripts/preflight.sh` (nube) o `bash scripts/loc
 | ADR-22 | Exportador y federación (Lote 3.2): Cloud Run Job + Scheduler **creado en pausa** (`ignore_changes = [paused]`) con la identidad de `sa-exporter`; ID token de Google → `AssumeRoleWithWebIdentity` contra el proveedor **integrado** `accounts.google.com`, con `aud` (claim `azp`) ∈ {uniqueId, correo, audiencia}, `oaud` = audiencia y `sub` = uniqueId; idempotencia con `ListObjectsV2` por partición y `s3:prefix` (sin `GetObject`); `PutObject` de una parte con SSE-KMS, *bucket key* y el CRC32C de GCS; watermark por `timeCreated` con solape de 1 h y precondición de generación; lectura de `sa-exporter` limitada a `enriched/` con una condición de IAM (`resource.type` de bucket para listar); enlace entre nubes con `*.auto.tfvars` que escribe el validador; exportador sin dependencias de otros lotes | `aws_iam_openid_connect_provider` propio para Google (AWS ya lo trae integrado); llaves de IAM en Secret Manager (plan B de HU-006); `HeadObject` por objeto (pide `s3:GetObject`); Storage Transfer Service (ADR-07); `terraform_remote_state` entre nubes (credenciales cruzadas en cada plan); watermark por nombre de archivo (los paneles tardíos llegan a particiones anteriores); Scheduler encendido por defecto (cobra sin que nadie lo decida) |
 | ADR-21 | Histórico (Lote 3.1): reutilizar `EventFactory` del simulador con otra semilla y elegir los eventos por **aceptación** según un plan de tendencias (sin tocar el simulador); etapas reanudables con el NLP del pipeline (`nlp_from_options`) en lote dentro de la imagen de NLP local; Parquet por `source/dt/hr` de `event_time`; adelantar del Lote 4.1 el bucket del lake, su llave KMS y el rol `ta-historical-loader` (solo `PutObject`/`ListBucket` bajo `raw/origin=historical/` y `GenerateDataKey`) | `scripts/generate_comments.py` + usuarios y payloads propios (no sería el mismo pool ni los mismos payloads); forzar marca y sentimiento con escenarios (marcaría `sim.scenario`); NLP en Dataflow batch (cuesta y suma una plantilla); particiones por hora de carga (reejecutar en otro momento duplicaría Raw); esperar al 4.1 o escribir con las credenciales de administrador |
 | ADR-23 | Lakehouse (Lote 4.1): tablas de Glue creadas por **Terraform desde `contracts/athena/`** (`tables.json` generado y una prueba de sincronía) con partition projection; workgroup `ta-analytics` con configuración forzada, SSE-KMS y límite de 1 GiB; orquestación con **EventBridge Scheduler** (`rate(1 hour)` → destino universal `glue:StartWorkflowRun`, **creado `DISABLED`** con `ignore_changes = [state]`, sin reintentos) y un workflow con disparador `ON_DEMAND` + `CONDITIONAL`; jobs **Glue Python shell 3.9 de 0,0625 DPU** cuyos scripts suben desde `src/lakehouse/glue_jobs/` (`source_hash`), que en el 4.1 son **marcadores de posición** que prueban permisos, orden y fallos sin tocar datos (4.2/4.3 solo reemplazan el archivo; tipo y tamaño ajustables con `glue_job_settings`); fallos de `ta-job-*` a CloudWatch Logs con una regla de EventBridge; roles más estrictos que §5.8 v2.31 (Glue sin escribir `raw/`, QuickSight sin `athena:*`) | Crawlers (ADR-08); DDL lanzadas por un script contra Athena (estado fuera de Terraform); tablas escritas a mano en HCL (dos copias de §5.7 sin prueba); regla de EventBridge + disparador `EVENT` con `glue:notifyEvent` (no admite propiedades de corrida para provocar un fallo, y arrancar a mano `StartWorkflowRun` con disparador `EVENT` está sin comprobar); disparador `SCHEDULED` de Glue (solo `cron`, no es EventBridge); horario encendido por defecto (cobra sin que nadie lo decida); jobs Spark (`glueetl`) como marcadores (mínimo 2 DPU: ≈ 0,015 USD por job y ≈ 0,7 USD/día con el horario encendido); jobs vacíos que solo terminan (no probarían permisos de S3/KMS ni el orden) |
+| ADR-24 | Profiling (Lote 5.1): profiler propio en Python puro + pyarrow sobre una **copia local de solo lectura** del lake (`ListObjectsV2` + `GetObject` con el perfil; caché fuera del repo y reutilizable), archivo por archivo, con grupos capa × origen × fuente; las reglas candidatas se **miden** como comprobaciones por fila y salen como un catálogo fijo (`quality.rules`, = §5.10) con umbral, gravedad, KPI, expectativa de GE sugerida y predicado SQL de Athena; evidencia solo con agregados (sin `user_hash`, `event_id` ni textos completos); Trusted se prueba con un Trusted simulado con el contrato de §5.7 hasta que exista el 4.2; publicar en `quality/` y en `dq_results` queda apagado (es del 5.2) | ydata-profiling / pandas-profiling o el *profiler* de Great Expectations (dependencias nuevas en un venv compartido, informes con valores de muestra que expondrían `user_hash` y textos); Athena o Glue (llegan con el 4.1 y cobran por consulta); leer S3 en cada corrida (repite GET y KMS); pandas (no está en `ta-streaming`); umbrales fijados a mano sin medir |
 
 ### Riesgos
 
@@ -2285,12 +2576,13 @@ Estado actual: <salida de `bash scripts/preflight.sh` (nube) o `bash scripts/loc
 | Federación OIDC GCP→AWS no funciona a tiempo | Plan B con llaves en Secret Manager (documentar como deuda). **v2.30:** implementada sin llaves (§3.18); el riesgo baja a "por confirmar" hasta las partes D y E de `validation-3-2.md` (claims reales del token y asunción real) |
 | Licencias de modelos NLP | Uso académico; verificar la licencia de cada modelo en su *model card* (los de pysentimiento se entrenaron con corpus TASS) y citarlos en el informe. **v2.25:** las *model cards* no declaran licencia; pysentimiento advierte que los modelos quedan sujetos a las licencias de sus datos (TASS 2020, EmoEvent), muchas no comerciales. Compatible con el uso académico del proyecto; citas en §3.15 |
 | Modelos entrenados en tweets vs. comentarios con jerga y emojis de Reddit/Facebook/Instagram | Medir contra `label_sentiment`; declarar la limitación en el informe |
-| Generador por plantillas: baja variedad léxica y texto repetido | Ampliar plantillas (§3.2 cambio #5); medir duplicados por `event_id` y **no** por texto; reportar la diversidad léxica en el profiling. **v2.13:** plantillas ampliadas en el Lote 1.1 (5 categorías, 40 informativas y 18 comparativas); medido, 99,995 % de textos únicos en 20.000 comentarios |
+| Generador por plantillas: baja variedad léxica y texto repetido | Ampliar plantillas (§3.2 cambio #5); medir duplicados por `event_id` y **no** por texto; reportar la diversidad léxica en el profiling. **v2.13:** plantillas ampliadas en el Lote 1.1 (5 categorías, 40 informativas y 18 comparativas); medido, 99,995 % de textos únicos en 20.000 comentarios. **v2.33 (profiling de Raw, §3.20):** 99,98 % de textos distintos en 221.637 filas, pero vocabulario acotado (3.618 tipos en 4,5 M tokens, MATTR 0,479 igual en los dos orígenes); vigilado con DQ-61 (§5.10) |
 | Infraestructura desde cero (nada aplicado): retrasa la Fase 1 | Lote 1.0 (HU-046) primero; el simulador se desarrolla en local con el emulador (HU-047) mientras se crea el proyecto. **v2.12:** Lote 1.0 aplicado y verificado (§5.14); el riesgo baja a "mitigado" |
-| Histórico en muchos Parquet pequeños (~12.000 de ~9 KB, uno por fuente y hora) | Lo exige la proyección por `hr` de `posts_raw`; Athena solo lee las particiones pedidas y Trusted (4.2) reparte por `DATE(event_time)`. Si molesta, el 4.2 puede compactar Raw histórico por día *(v2.28)* |
+| Histórico en muchos Parquet pequeños (~12.000 de ~9 KB, uno por fuente y hora) | Lo exige la proyección por `hr` de `posts_raw`; Athena solo lee las particiones pedidas y Trusted (4.2) reparte por `DATE(event_time)`. Si molesta, el 4.2 puede compactar Raw histórico por día *(v2.28)*. **v2.33:** medido, 12.102 archivos con mediana de 4 filas y 10,6 KB; perfilarlos desde una caché local tarda ~3 min, pero en Athena cada archivo es una lectura: el 4.2 debería escribir Trusted compactado por `dt` |
 | Horario del lakehouse encendido con los marcadores de posición *(v2.32)* | Cobra poco (≈ 0,022 USD/día) pero no produce Trusted ni Curated y deja una marca por hora en `trusted/` y `curated/_ta_placeholder/`: se crea `DISABLED`, `validate_4_1.py status` lo muestra y `off` lo apaga y borra las marcas. Encenderlo de forma permanente lo decide el equipo cuando existan 4.2 y 4.3 |
 | Consultas lentas o caras sobre Raw por la proyección amplia *(v2.32)* | `posts_raw` proyecta ~43.000 particiones (desde 2026-01-01); filtrar por `part_dt`/`part_origin` y el límite de 1 GiB por consulta del workgroup. Si E1 resulta lento, acotar el rango de `projection.part_dt.range` en §5.7 y `contracts/` |
 | Deriva de Terraform en tablas de Glue o en el horario *(v2.32)* | C3b del validador replanea tras aplicar y falla si queda algo por cambiar; el estado del horario se ignora a propósito (ADR-23) |
+| Raw stream con filas que no son "datos de negocio" *(v2.33)*: 65.264 filas sin NLP (jobs de los lotes 2.1–2.2) y 6 centinelas `ta-verify@2.1` (§3.20) | Medido y visible en el profiling; reglas DQ-13 (NLP desde `NLP_SINCE`) y DQ-63 (generador) en §5.10. Qué hace Trusted con ellas lo decide el 4.2 (*a confirmar*); los verificadores que publican centinelas en el stream real deberían marcarlos para excluirlos |
 | Falsas alertas al arrancar (z-score sin baseline) | `is_alert = false` hasta 60 ventanas y *cooldown* de 15 min (§5.12). **v2.26:** el baseline vive en el estado del job, así que cada job nuevo vuelve a arrancar en frío (1 h sin alertas); se puede sembrar con el histórico (§5.12) cuando exista el Lote 3.1 |
 | Cuotas de la cuenta de crédito de GCP (p. ej. límite de vCPU) pueden limitar Dataflow con modelos pesados | Verificar cuotas en el Lote 1.0; `maxNumWorkers=1–2`; plan B: NLP en Cloud Run |
 

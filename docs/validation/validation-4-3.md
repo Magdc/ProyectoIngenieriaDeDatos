@@ -122,7 +122,7 @@ dim_source 3 · dim_brand 3 · dim_user 5936 · agg_emotion_by_brand_hour 39954 
 | `on` | — | — | El horario vuelve a cobrar ≈ 0,48 USD/día (estado normal decidido por el usuario) |
 
 **Estado final del lote:** horario `ta-wf-raw-to-curated-cada-hora` **`ENABLED`** (cada hora corren Trusted y
-Curated, ≈ 14,3 USD/mes estimado). Curated (~18 MB en S3) y los reportes de `quality/` quedan guardados (centavos
+Curated, ≈ 14,1 USD/mes medido en el cierre). Curated (~18 MB en S3) y los reportes de `quality/` quedan guardados (centavos
 al mes).
 
 ---
@@ -154,7 +154,7 @@ python project/scripts/validate_4_3.py tests
 | Paso | Comando (desde `project/`) | Esperado |
 |---|---|---|
 | B1 | `python -m pytest src/lakehouse -q -rs` | **123 passed, 0 skipped** (33 del job del 4.3, 39 del 4.2, las del 4.1 y lo común de los jobs) |
-| B2 | `python -m pytest src/ops/tests/test_ops_validate43.py -q` | **34 passed** |
+| B2 | `python -m pytest src/ops/tests/test_ops_validate43.py -q` | **35 passed** (34 en la entrega; +1 con la corrección de E5 en v2.38) |
 | B3 | `python -m pytest contracts/tests -q` | 18 passed |
 | B4 | `python -m pytest src/ops/tests/test_ops_validate42.py -q` | **30 passed** (piezas que reutiliza; `start_job_run` con `job=`) |
 | B5 | `python -m pytest src/ops/tests/test_ops_validate41.py -q` | **48 passed** |
@@ -251,8 +251,8 @@ python project/scripts/validate_4_3.py athena
 | E2 | Trusted frente a `fact_posts`, `date_key`, llaves foráneas y `dim_date` | `ta_trusted.posts 221629 = fact_posts 221629 · 0 date_key ≠ dt ≠ DATE(event_time) · 0 filas sin su fecha, fuente, marca o usuario en las dimensiones · dim_date 181 días seguidos` |
 | E3 | `agg_trend_daily` frente a lo recalculado desde `fact_posts` | `0 claves, conteos o promedios distintos · n_posts 221629 − con sentimiento 156366 = 65263 filas sin NLP · 6 filas (día × marca) con n_posts ≠ n_negative + n_neutral + n_positive` |
 | E4 | `agg_emotion_by_brand_hour` frente a lo recalculado | `0 claves o conteos distintos · n_posts 156366 + 65263 filas sin emoción = 221629` |
-| E5 | `dim_user` frente a lo recalculado | `5936 usuarios, 0 distintos · suma de n_posts 221629` |
-| E6 | Las cinco consultas guardadas (texto = `src/lakehouse/queries/curated_*.sql`, base `ta_curated`) | Cada una `SUCCEEDED` con filas: `ta-curated-posts-por-origen` 6 filas (2 orígenes × 3 fuentes), `ta-curated-tendencia-diaria` 90 (30 días × 3 marcas), `ta-curated-emociones-por-hora-bogota` hasta 504, `ta-curated-semana-vs-fin-de-semana` hasta 6, `ta-curated-precision-nlp` 9; MB y ms de cada una (*filas estimadas, a confirmar*) |
+| E5 | `dim_user` frente a lo recalculado desde `ta_trusted.posts` (*v2.38: `fact_posts` no tiene `followers`*) | `5936 usuarios, 0 distintos · suma de n_posts 221629` |
+| E6 | Las cinco consultas guardadas (texto = `src/lakehouse/queries/curated_*.sql`, base `ta_curated`) | Cada una `SUCCEEDED` con filas (medido en el cierre): `ta-curated-posts-por-origen` 6 (2 orígenes × 3 fuentes, ~8 MB), `ta-curated-tendencia-diaria` 90 (30 días × 3 marcas), `ta-curated-emociones-por-hora-bogota` 469, `ta-curated-semana-vs-fin-de-semana` 6, `ta-curated-precision-nlp` 9; 1,0–2,1 s cada una |
 | E7 | Bytes escaneados | Unos 10–60 MB en 10 consultas, la mayor muy por debajo de 1 GiB; ≈ 0,0005 USD (mínimo 10 MB por consulta) |
 | E8 | Latencia de las consultas guardadas | OK si todas tardan ≤ 3.000 ms en total (con la cola de Athena); AVISO si alguna pasa (el KPI de < 3 s es del dashboard con SPICE, Lote 6.1) |
 
@@ -281,7 +281,7 @@ python project/scripts/validate_4_3.py rerun    # pide confirmación (--yes la o
 | F5 | Athena otra vez | `221629 → 221629 filas · 221629 event_id distintos` |
 | F6 | `get-workflow-run-properties` | `ta_trusted_report = quality/…/raw_to_trusted/wr_….json · ta_trusted_rows = 221629 · ta_curated_report = quality/…/trusted_to_curated/wr_….json · ta_curated_rows = 221629 · ta_curated_files_changed = 0` |
 | F7 | Marcas, corridas y horario | `curated/_ta_placeholder/: 0 → 0 · corridas en curso: ninguna · horario DISABLED → DISABLED (al terminar: … on --yes)` |
-| F8 | Costo con lo medido | `ta-job-raw-to-trusted`: segundos × 1 DPU + S3 ≈ 0,019 USD · `ta-job-trusted-to-curated`: segundos × 0,0625 DPU (mínimo 60 s) + S3 ≈ 0,0007 USD → ≈ 0,020 USD por corrida del workflow; con el horario cada hora ≈ 0,48 USD/día, **≈ 14,3 USD/mes** (estimado antes de validar). Anótelo para el cierre |
+| F8 | Costo con lo medido | `ta-job-raw-to-trusted`: segundos × 1 DPU + S3 ≈ 0,019 USD · `ta-job-trusted-to-curated`: segundos × 0,0625 DPU (mínimo 60 s) + S3 ≈ 0,0007 USD → ≈ 0,020 USD por corrida del workflow; con el horario cada hora ≈ 0,48 USD/día, ≈ 14,3 USD/mes (estimado antes de validar; **medido en el cierre: ≈ 0,0196 USD por corrida, ≈ 0,47 USD/día, ≈ 14,1 USD/mes**) |
 
 Manual:
 
@@ -314,14 +314,33 @@ cobrar: `python project/scripts/validate_4_3.py off` (decisión del usuario; hoy
 
 ## Después de esta validación
 
+*(Hecho en v2.38: los dos puntos de abajo.)*
+
 - **Cierre del 4.3 (v2.38):** anotar en `ARCHITECTURE.md` §3.22 el tiempo, la CPU y la memoria en Glue (D3–D4), si
   Athena leyó los tipos de Curated y corrió las cinco consultas (E1, E6), la latencia (E8) y el costo medido (F8);
   en esta guía, la tabla de cierre; actualizar `ACTIVE_SERVICES.md` con el costo medido.
-- Si D4 mostró más de 800 MB o D3 pasó de unos minutos: decidir 1 DPU (`glue_job_settings`, §3.22).
+- Si D4 mostró más de 800 MB o D3 pasó de unos minutos: decidir 1 DPU (`glue_job_settings`, §3.22). *(No hizo
+  falta: 442 MB y 21 s.)*
 
 ## Cierre
 
-*(Lo completa el maestro tras validar: partes, resultados y el commit de `main`.)*
+**Cerrado en v2.38** (27-oct-2026, WSL, perfil `default` de la cuenta 648617469176; `main` = `2aec128`). Lo corrió
+el maestro del lote; E se repitió tras corregir E5 en el validador.
+
+| Parte | Resultado |
+|---|---|
+| `off` (Preparación, paso 7) | O1 `ENABLED → DISABLED`; O4 6 marcas viejas del marcador borradas |
+| A · Preflight | OK (8); A6 horario `DISABLED` y nada en curso |
+| B · Pruebas | OK: B1 123 sin omitidas, B2 34 (35 desde la corrección de E5), B3 18, B4 30, B5 48 |
+| L · Local | OK (4): L1 221.629 → 221.629 en 181 particiones, tablas como D4; L2 0 escritos, 187 sin cambios; L3 esquemas = contrato |
+| C · Terraform | AVISO solo por C0 (cuenta raíz): C2 5 a crear, 2 a cambiar, 0 a destruir; apply hecho; C3b sin cambios |
+| D · Corrida real | OK (8): `jr_a4ea718d…` `SUCCEEDED`, **21 s a 0,0625 DPU**; `glue_job_done`: leídas 221.629, `fact_posts` 221.629 en 181 particiones, `agg_emotion_by_brand_hour` 39.954, `agg_trend_daily` 543, `dim_brand` 3, `dim_date` 181, `dim_source` 3, `dim_user` 5.936; lectura 3,7 s, total 9,1 s, **CPU 9,8 s**, **pico 442,3 MB**, **Python 3.9.10, pyarrow 7.0.0, boto3 1.21.21**; conciliación OK (156.366 con sentimiento, 65.263 sin NLP); 187 objetos, 18.061.225 bytes, escritos 187; `_ta_placeholder` y `edges_*` 0 → 0; esquemas = contrato. El reporte de la corrida suelta quedó como `manual-…` (Glue no pasa `--JOB_RUN_ID`) |
+| E · Athena | **OK (8) tras la corrección.** Primera vuelta: E5 FALLA por un error del validador (`COLUMN_NOT_FOUND: … Column 'followers' cannot be resolved`: recalculaba `max_followers` desde `fact_posts`, que no tiene `followers`); el resto OK. Corregido en v2.38 (`USER_SQL` lee `ta_trusted.posts`, con su prueba) y repetido: E1 historical 50.000 (2.662 comparativas) y stream 171.629 (9.104), total 221.629; E2 Trusted = `fact_posts`, `date_key`, llaves foráneas y `dim_date` OK; E3 0 diferencias, 6 filas día × marca con `n_posts` ≠ suma (65.263 sin NLP); E4 OK; **E5 5.936 usuarios, 0 distintos**; E6 las 5 consultas guardadas OK (6, 90, 469, 6 y 9 filas); E7 26,6–32,6 MB en 10 consultas, la mayor 8,1 MB, ≈ 0,0005 USD; E8 la más lenta 1,5–2,1 s (motor 0,8–1,7 s) frente al KPI de 3 s |
+| F · Idempotencia y costo | OK (8): `wr_77faf078…` `COMPLETED`, `raw_to_trusted` 88 s → `trusted_to_curated` 20 s; 0 archivos cambiados, 0 escritos, mismos sha256, 187 → 187 objetos, Athena 221.629 → 221.629; propiedades `ta_trusted_*` y `ta_curated_*`; F8 ≈ 0,0196 USD por corrida (raw_to_trusted ≈ 0,01886, trusted_to_curated ≈ 0,00074) → ≈ 0,47 USD/día y ≈ 14,1 USD/mes con el horario cada hora |
+| `on` / `status` | N1 `DISABLED → ENABLED`, N2 `rate(1 hour)` UTC, 0 reintentos / 5 OK: horario `ENABLED`, nada en curso, `curated/` 187 objetos, 0 marcas |
+
+El horario queda **encendido cada hora** (estado normal): Trusted y Curated corren solos. Cifras también en
+`ARCHITECTURE.md` §3.22 y `CHANGELOG.md` v2.38.
 
 ## Problemas frecuentes
 

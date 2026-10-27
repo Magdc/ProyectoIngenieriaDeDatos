@@ -1,10 +1,24 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.37**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.38**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.38 · desde v2.37
+
+**Lote que lo motiva:** Lote 4.3 (HU-027, HU-030) · cierre
+
+| Área | Cambio |
+|---|---|
+| Cierre del Lote 4.3 | Validado por el maestro el 27-oct-2026 con `docs/validation/validation-4-3.md` sobre `main` = `2aec128`: `off` (O1 `ENABLED → DISABLED`, O4 6 marcas borradas); A OK (8); C en AVISO solo por la cuenta raíz (plan 5/2/0, apply hecho, C3b sin cambios); D OK (8); E OK (8) tras corregir E5; F OK (8); `on` (N1 `DISABLED → ENABLED`, N2 `rate(1 hour)` UTC, 0 reintentos); `status` 5 OK. El horario queda **encendido** (estado normal). |
+| Cifras en Glue | Corrida suelta `jr_a4ea718d…` `SUCCEEDED`, **21 s a 0,0625 DPU** (60 s cobrados); `glue_job_done`: leídas 221.629, `fact_posts` 221.629 en 181 particiones, `dim_date` 181, `dim_source` 3, `dim_brand` 3, `dim_user` 5.936, `agg_emotion_by_brand_hour` 39.954, `agg_trend_daily` 543; lectura de S3 3,7 s, total 9,1 s, **CPU 9,8 s** (más que el tiempo de pared: 0,0625 DPU da más de un núcleo), **pico 442,3 MB**, **Python 3.9.10, pyarrow 7.0.0, boto3 1.21.21, botocore 1.24.21**. Conciliación OK (156.366 con sentimiento, 65.263 sin NLP); 187 objetos y 18.061.225 bytes (los mismos que en local con pyarrow 7); `curated/_ta_placeholder/` y `curated/edges_*` 0 → 0; esquemas = contrato. |
+| Cifras en Athena | E1 (el «Listo cuando» de la Fase 4): historical 50.000 filas (2.662 comparativas), stream 171.629 (9.104), total 221.629; E2 Trusted = `fact_posts`, `date_key`, llaves foráneas y `dim_date` OK; E3 `agg_trend_daily` = recalculado, con 6 filas día × marca con `n_posts` ≠ suma (decisión 2); E4 OK; E5 OK tras la corrección (5.936 usuarios, 0 distintos); E6 las cinco consultas guardadas OK (6, 90, 469, 6 y 9 filas); E7 26,6–32,6 MB en 10 consultas, la mayor 8,1 MB, ≈ 0,0005 USD; **E8: la más lenta 1,5–2,1 s** frente al KPI de 3 s (motor 0,8–1,7 s). Athena lee los Parquet de pyarrow 7 de Curated (INT32, DATE, `boolean`, listas). |
+| Idempotencia y costo (F) | Segunda corrida en el workflow `wr_77faf078…`: `raw_to_trusted` 88 s → `trusted_to_curated` 20 s; 0 archivos cambiados, 0 escritos, mismos sha256, 187 → 187 objetos, Athena 221.629 → 221.629; propiedades `ta_trusted_*` y `ta_curated_*`. **F8 ≈ 0,0196 USD por corrida** (raw_to_trusted ≈ 0,01886, trusted_to_curated ≈ 0,00074), **≈ 0,47 USD/día, ≈ 14,1 USD/mes** con el horario cada hora (la estimación de v2.37 era 14,3). |
+| Corrección del validador (E5) | `validate43.USER_SQL` recalculaba `dim_user.max_followers` desde `ta_curated.fact_posts`, que no tiene `followers` (contrato de §5.7): Athena dio `COLUMN_NOT_FOUND`. Ahora lee `ta_trusted.posts` (el mismo grano; E2 lo comprueba), como el job. Nueva prueba `test_las_consultas_de_recalculo_usan_columnas_que_existen` (las CTE de recálculo solo usan columnas de su tabla según `catalog_spec`; falla con el SQL viejo): `test_ops_validate43.py` pasa de 34 a 35 y `validate43.B2_EXPECTED` también. `validate_4_3.py athena` repetido por el esclavo: **E OK (8)**. |
+| Documento | §3.22 (cerrado; cifras medidas en Glue y Athena en «Memoria y capacidad», «Costo», «Bibliotecas» y la nota «Cierre»), §3.22.1 (`USER_SQL` desde Trusted y la prueba nueva; trampa: columnas que `fact_posts` no tiene; «Para el Lote 4.4» con el estado en AWS, la conciliación de coocurrencias sobre `ta_trusted.posts`, la memoria medida y qué reutilizar del validador; «Para el Lote 5.2 y el 6.1» con lo corrido y la latencia medida), §3.19, §4, §5.7, §5.8 (escritura en `curated/` comprobada), §5.12 y §9 (riesgos de costo, memoria y marcas: medidos o cerrados); PLAN.md §3 (4.3 ✅; Fase 4 sigue 🟨 hasta el 4.4); HU.md (HU-027 y HU-030 ✅); `ACTIVE_SERVICES.md` (costo medido); tabla «Cierre» de `validation-4-3.md` (y E5, B2 y lo esperado de E6/F8 al día); cabeceras a 2.38. |
+| Abierto, sin bloquear | Lo de v2.37: el linaje de HU-035 sin *dbt docs* (ADR-10, decisión del usuario) y los textos de HU-032/`PLAN.md` §1 que dicen «tests dbt». Siguen los abiertos de v2.36 y anteriores (límite de 1 GiB a confirmar, exportador en pausa, regla de expiración de `quality/`). |
 
 ## v2.37 · desde v2.36
 

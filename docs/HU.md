@@ -1,6 +1,6 @@
 # TrendAnalyzer · Historias de Usuario (HU)
 
-> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.37** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
+> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.38** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
 > Cada HU tiene un ID **HU-000**, su fase/lote de `ARCHITECTURE.md` §7, responsable, sprint y criterios de aceptación verificables.
 
 ---
@@ -82,10 +82,10 @@ Criterios de aceptación: lista verificable.
 | HU-025 | Exportación GCS → S3 | 3 · 3.2 | M | Must | 2 | ✅ |
 | **E5 · Lakehouse en AWS** | | | | | | |
 | HU-026 | Capa Trusted | 4 · 4.2 | C | Must | 2 | ✅ |
-| HU-027 | Capa Curated (modelo estrella) | 4 · 4.3 | C | Must | 2 | 🟨 |
+| HU-027 | Capa Curated (modelo estrella) | 4 · 4.3 | C | Must | 2 | ✅ |
 | HU-028 | Tablas de aristas | 4 · 4.4 | C | Should | 2 | ⬜ |
 | HU-029 | Orquestación horaria | 4 · 4.1 | M | Must | 2 | ✅ |
-| HU-030 | Consulta SQL para analistas | 4 · 4.3 | C | Must | 2 | 🟨 |
+| HU-030 | Consulta SQL para analistas | 4 · 4.3 | C | Must | 2 | ✅ |
 | **E6 · Calidad y gobernanza** | | | | | | |
 | HU-031 | Profiling de datos | 5 · 5.1 | A | Must | 2 | ✅ |
 | HU-032 | Reglas de calidad y KPIs | 5 · 5.2 | A | Must | 2 | ⬜ |
@@ -583,6 +583,8 @@ Criterios de aceptación: lista verificable.
 - Construido con dbt-athena o Glue, con tests.
 - `SELECT` sobre `ta_curated.fact_posts` devuelve datos de ambos orígenes.
 
+*Cerrada en v2.38* (entregada en v2.37; `ARCHITECTURE.md` §3.22; `docs/validation/validation-4-3.md`, validada por el maestro el 27-oct-2026 sobre `2aec128`): en S3, las 7 tablas de Curated sin aristas (187 objetos) escritas por `ta-job-trusted-to-curated` en Glue (21 s a 0,0625 DPU, 442 MB de pico) con el esquema del contrato; **221.629 filas de `fact_posts`** = Trusted, `dim_user` 5.936 (solo `user_hash`), `dim_date` 181, `dim_source` 3, `dim_brand` 3, `agg_emotion_by_brand_hour` 39.954 y `agg_trend_daily` 543; en Athena, **`SELECT` sobre `ta_curated.fact_posts` con historical 50.000 y stream 171.629**, llaves foráneas sin huérfanos y agregados y `dim_user` iguales a lo recalculado (E1–E5); construido con Glue sin dbt (decisión del usuario), con 33 pruebas del job, 35 del validador y las comprobaciones SQL de la parte E; una segunda corrida dentro del workflow no cambió ningún archivo (mismos sha256).
+
 **Estado (v2.37, 🟨):** entregado, pendiente de la validación del maestro (`docs/validation/validation-4-3.md`, `scripts/validate_4_3.py`; `ARCHITECTURE.md` §3.22). Por criterio: *existen `fact_posts`, las cuatro dimensiones (`dim_user` solo con `user_hash`) y los dos agregados*: los escribe el job `ta-job-trusted-to-curated` con el contrato de `contracts/athena/curated.sql` (D6–D8, E1–E5; en local L1–L3); *construido con Glue* (Python shell, **sin dbt**, decisión del usuario) *con tests*: 33 pruebas del job y 34 del validador (B), más las comprobaciones SQL en Athena de la parte E (Trusted = `fact_posts`, llaves foráneas, agregados y `dim_user` recalculados); *`SELECT` sobre `ta_curated.fact_posts` con los dos orígenes*: E1. Filas sin NLP: en `fact_posts` con NLP nulo, en `agg_trend_daily.n_posts` sí y en su sentimiento no, fuera de `agg_emotion_by_brand_hour` (decisión del usuario). En local con el Trusted real: 221.629 filas de `fact_posts` (stream 171.629, histórico 50.000) en 181 particiones; `dim_user` 5.936; `agg_trend_daily` 543; `agg_emotion_by_brand_hour` 39.954.
 
 ### HU-028 · Tablas de aristas
@@ -627,6 +629,8 @@ Criterios de aceptación: lista verificable.
 - Existe un conjunto de consultas de ejemplo documentado.
 
 *Adelantado en el Lote 4.1 (v2.32, sin validar):* el workgroup `ta-analytics` con límite de bytes, la proyección en las tablas particionadas y dos consultas guardadas sobre Raw (`ta-raw-conteo-por-origen`, `ta-raw-sentimiento-7-dias`; `ARCHITECTURE.md` §3.19). Faltan las consultas sobre Curated (Lote 4.3).
+
+*Cerrada en v2.38* (entregada en v2.37; `ARCHITECTURE.md` §3.22.1; `docs/validation/validation-4-3.md`, parte E en OK): `ta-analytics` operativo con el límite de 1 GiB (las 10 consultas de la validación leyeron 26,6–32,6 MB en total, la mayor 8,1 MB); `ta_curated.fact_posts` se resuelve con partition projection por `dt`, sin crawlers; las **cinco consultas guardadas sobre Curated** (`ta-curated-posts-por-origen`, `ta-curated-tendencia-diaria`, `ta-curated-emociones-por-hora-bogota`, `ta-curated-semana-vs-fin-de-semana`, `ta-curated-precision-nlp`), documentadas en §3.22.1 junto con las dos de Raw, corrieron en Athena con filas (6, 90, 469, 6 y 9) y tardaron 1,0–2,1 s cada una (por debajo del KPI de 3 s aun sin SPICE).
 
 **Estado (v2.37, 🟨):** entregado, pendiente de la validación del maestro (`ARCHITECTURE.md` §3.22.1, `docs/validation/validation-4-3.md`). Por criterio: *workgroup `ta-analytics` con límite de bytes* (del 4.1; E7 comprueba que ninguna consulta del lote pasa de 1 GiB); *particiones con partition projection, sin crawlers* (`ta_curated.fact_posts` por `dt`; E1 y la consulta de fin de semana podan por `dt`); *conjunto de consultas de ejemplo documentado*: cinco consultas guardadas sobre Curated (`ta-curated-posts-por-origen`, `ta-curated-tendencia-diaria`, `ta-curated-emociones-por-hora-bogota`, `ta-curated-semana-vs-fin-de-semana`, `ta-curated-precision-nlp`) más las dos de Raw del 4.1, descritas en §3.22.1; E6 las corre y E8 compara su latencia con el KPI de < 3 s.
 

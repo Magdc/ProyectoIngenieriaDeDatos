@@ -108,7 +108,7 @@ TODAY = {"trusted_rows": 221629, "stream": 171629, "historical": 50000, "fact_pa
 
 # Pruebas esperadas (B): las cuenta docs/validation/validation-4-3.md.
 B1_EXPECTED = 123
-B2_EXPECTED = 34
+B2_EXPECTED = 35
 B4_EXPECTED = 30
 B5_EXPECTED = 48
 
@@ -300,9 +300,12 @@ SELECT
   (SELECT count_if(emotion_label IS NULL) FROM ta_curated.fact_posts) AS sin_emocion
 FROM e FULL OUTER JOIN f ON e.h = f.h AND e.brand = f.brand AND e.source = f.source AND e.emotion_label = f.emotion_label"""
 
+# (v2.38) dim_user se recalcula desde ta_trusted.posts, como lo arma el job: fact_posts no tiene followers
+# (contracts/athena/curated.sql) y en la validación del 4.3 la consulta sobre fact_posts dio COLUMN_NOT_FOUND.
+# Trusted = fact_posts lo comprueba E2.
 USER_SQL = """WITH f AS (
   SELECT user_hash, min(event_time) AS fs, max(event_time) AS ls, COUNT(*) AS n, max(followers) AS mf
-  FROM ta_curated.fact_posts WHERE user_hash IS NOT NULL GROUP BY user_hash)
+  FROM ta_trusted.posts WHERE user_hash IS NOT NULL GROUP BY user_hash)
 SELECT
   count_if(u.user_hash IS NULL OR f.user_hash IS NULL) AS claves_distintas,
   count_if(u.first_seen <> f.fs OR u.last_seen <> f.ls OR u.n_posts <> f.n OR u.max_followers IS DISTINCT FROM f.mf)
@@ -832,7 +835,8 @@ def part_athena(ctx: Ctx) -> int:
     q = query(USER_SQL)
     r = ints(first_row(q)) if q["state"] == "SUCCEEDED" else {}
     bad = [f"{k} = {r.get(k)}" for k in ("claves_distintas", "filas_distintas") if r.get(k)] if r else [f"{q['state']}: {q['reason']}"]
-    part.add("E5", "dim_user = recalculado (first_seen, last_seen, n_posts, max_followers)", FALLA if bad else OK,
+    part.add("E5", "dim_user = recalculado desde ta_trusted.posts (first_seen, last_seen, n_posts, max_followers)",
+             FALLA if bad else OK,
              "\n".join(bad) if bad else f"{r.get('usuarios')} usuarios, 0 distintos · suma de n_posts {r.get('n_posts')}", counts=r)
 
     stored = named_queries(ctx)

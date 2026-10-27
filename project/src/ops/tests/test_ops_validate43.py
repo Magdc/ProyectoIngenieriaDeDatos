@@ -6,6 +6,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import re
 import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -14,6 +15,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
+from lakehouse import catalog_spec
 from ops import validate41 as v41
 from ops import validate42 as v42
 from ops import validate43 as v
@@ -423,6 +425,29 @@ def test_costos_resumen_y_cifras_de_hoy():
     assert v.failed_checks(report) == {} and list(v.failed_checks(make_report("r", bad_check=True))) == ["emotion_n_posts_eq_rows_with_emotion"]
     assert v.compare_today({"dim_user": 5936, "trusted_rows": 221629}) == []
     assert v.compare_today({"dim_user": 6000}) == ["dim_user 6000 (el 26-oct: 5936)"]
+
+
+def cte_body(sql, name="f"):
+    start = sql.index(f"WITH {name} AS (") + len(f"WITH {name} AS (")
+    depth, i = 1, start
+    while depth:
+        depth += {"(": 1, ")": -1}.get(sql[i], 0)
+        i += 1
+    return sql[start:i - 1]
+
+
+def test_las_consultas_de_recalculo_usan_columnas_que_existen():
+    # v2.38: E5 leía followers de fact_posts, que no la tiene (COLUMN_NOT_FOUND en la validación del 4.3).
+    functions = {"min", "max", "avg", "count_if", "date_trunc"}
+    for name in ("TREND_SQL", "EMOTION_SQL", "USER_SQL"):
+        body = cte_body(getattr(v, name))
+        table = re.search(r"FROM\s+(\w+\.\w+)", body).group(1)
+        text = re.sub(r"'[^']*'", " ", body)
+        aliases = set(re.findall(r"\bAS\s+(\w+)", text))
+        used = set(re.findall(r"\b[a-z_][a-z0-9_]*\b", text)) - aliases - functions - set(table.split("."))
+        spec = catalog_spec.table(table)
+        assert used <= set(spec.column_names) | set(spec.partition_names), (name, table, used - set(spec.column_names))
+    assert "FROM ta_trusted.posts" in cte_body(v.USER_SQL) and "followers" not in catalog_spec.table("ta_curated.fact_posts").column_names
 
 
 def test_start_job_run_de_validate42_con_otro_job(sandbox):

@@ -1,0 +1,1362 @@
+{
+  "lote": "4.3",
+  "hu": [
+    "HU-027",
+    "HU-030"
+  ],
+  "parts": {
+    "A": {
+      "title": "Preflight del código y de lo encendido",
+      "status": "OK",
+      "started_at": "2026-10-27T04:06:24.184276+00:00",
+      "finished_at": "2026-10-27T04:06:33.180943+00:00",
+      "steps": [
+        {
+          "id": "A1",
+          "title": "Python y dependencias",
+          "status": "OK",
+          "detail": "Python 3.11.17; boto3, botocore y pyarrow",
+          "data": {}
+        },
+        {
+          "id": "A2",
+          "title": "los 12 archivos del lote",
+          "status": "OK",
+          "detail": "12 presentes",
+          "data": {}
+        },
+        {
+          "id": "A3",
+          "title": "archivos de lotes anteriores que usa",
+          "status": "OK",
+          "detail": "14 presentes",
+          "data": {}
+        },
+        {
+          "id": "A4",
+          "title": "tables.json al día con contracts/athena/",
+          "status": "OK",
+          "detail": "las tablas de ta_curated y las demás = las DDL",
+          "data": {}
+        },
+        {
+          "id": "A5",
+          "title": "herramientas",
+          "status": "OK",
+          "detail": "terraform, aws, bash",
+          "data": {}
+        },
+        {
+          "id": "A6",
+          "title": "AWS: horario, corridas y job runs",
+          "status": "OK",
+          "detail": "horario ta-wf-raw-to-curated-cada-hora: DISABLED; ninguna corrida en curso; ningún job run en curso",
+          "data": {
+            "schedule": "DISABLED",
+            "running": [],
+            "job_runs": {}
+          }
+        },
+        {
+          "id": "A7",
+          "title": "GCP y local (services.status)",
+          "status": "OK",
+          "detail": "local: nada encendido\nGCP simulador: apagado · terraform.tfvars simulator_running = False\nGCP Dataflow: ningún job activo",
+          "data": {}
+        },
+        {
+          "id": "A8",
+          "title": "Trusted local para la parte L",
+          "status": "OK",
+          "detail": "/root/.cache/trendanalyzer/quality/s3/ta-dev-648617469176-lake/trusted/posts/ (copia de S3 (profile_data.py sync --layer trusted))",
+          "data": {}
+        }
+      ]
+    },
+    "B": {
+      "title": "Pruebas",
+      "status": "OK",
+      "started_at": "2026-10-27T04:26:10.665926+00:00",
+      "finished_at": "2026-10-27T04:26:22.719688+00:00",
+      "steps": [
+        {
+          "id": "B1",
+          "title": "pytest src/lakehouse",
+          "status": "OK",
+          "detail": "123 passed, 0 skipped, 0 failed (esperado 123 passed, 0 skipped)",
+          "data": {
+            "passed": 123,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B2",
+          "title": "pytest test_ops_validate43.py",
+          "status": "OK",
+          "detail": "35 passed, 0 skipped, 0 failed (esperado 35 passed, 0 skipped)",
+          "data": {
+            "passed": 35,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B3",
+          "title": "pytest contracts/tests",
+          "status": "OK",
+          "detail": "18 passed, 0 skipped, 0 failed (esperado 18 passed, 0 skipped)",
+          "data": {
+            "passed": 18,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B4",
+          "title": "regresión: test_ops_validate42.py (piezas reutilizadas)",
+          "status": "OK",
+          "detail": "30 passed, 0 skipped, 0 failed (esperado 30 passed, 0 skipped)",
+          "data": {
+            "passed": 30,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B5",
+          "title": "regresión: test_ops_validate41.py (piezas reutilizadas)",
+          "status": "OK",
+          "detail": "48 passed, 0 skipped, 0 failed (esperado 48 passed, 0 skipped)",
+          "data": {
+            "passed": 48,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        }
+      ]
+    },
+    "L": {
+      "title": "El job en local contra el Trusted real (sin nube)",
+      "status": "OK",
+      "started_at": "2026-10-27T04:00:24.553520+00:00",
+      "finished_at": "2026-10-27T04:00:31.707541+00:00",
+      "steps": [
+        {
+          "id": "L0",
+          "title": "Trusted local",
+          "status": "OK",
+          "detail": "lee /root/.cache/trendanalyzer/quality/s3/ta-dev-648617469176-lake/trusted/posts/ (copia de S3 (profile_data.py sync --layer trusted)) · escribe en /root/.cache/trendanalyzer/quality/trusted_to_curated_local (fuera del repo) · /root/.cache/ta-glue39-venv/bin/python",
+          "data": {}
+        },
+        {
+          "id": "L1",
+          "title": "corrida local (conteos y conciliación)",
+          "status": "OK",
+          "detail": "Trusted 221629 → fact_posts 221629 en 181 particiones · tablas {'agg_emotion_by_brand_hour': 39954, 'agg_trend_daily': 543, 'dim_brand': 3, 'dim_date': 181, 'dim_source': 3, 'dim_user': 5936, 'fact_posts': 221629} · sin NLP 65263 · 3.5 s, 6.0 s de CPU, pico 409.5 MB · Python 3.9.25, pyarrow 7.0.0",
+          "data": {
+            "done": {
+              "bytes_written": 18061225,
+              "conciliation_ok": true,
+              "cpu_seconds": 6.0,
+              "dry_run": false,
+              "dt_max": "2026-10-24",
+              "dt_min": "2026-04-27",
+              "dt_mismatch": 0,
+              "duration_s": 3.5,
+              "environment": {
+                "boto3": "1.21.21",
+                "botocore": "1.24.21",
+                "pyarrow": "7.0.0",
+                "python": "3.9.25"
+              },
+              "event": "glue_job_done",
+              "fact_partitions": 181,
+              "fact_rows": 221629,
+              "files_changed": 187,
+              "input_objects": 543,
+              "job": "ta-job-trusted-to-curated",
+              "lote": "4.3",
+              "nlp_missing": 65263,
+              "objects": 187,
+              "objects_deleted": 0,
+              "objects_unchanged": 0,
+              "objects_written": 187,
+              "peak_rss_mb": 409.5,
+              "read_seconds": 0.6,
+              "report": "quality/2026-10-27/trusted_to_curated/manual-20261027T040024Z-ccf4442f.json",
+              "rows_read": 221629,
+              "rows_read_by_origin": {
+                "historical": 50000,
+                "stream": 171629
+              },
+              "rows_without_brand": 0,
+              "run_id": "manual-20261027T040024Z-ccf4442f",
+              "skipped_objects": 0,
+              "tables": {
+                "agg_emotion_by_brand_hour": 39954,
+                "agg_trend_daily": 543,
+                "dim_brand": 3,
+                "dim_date": 181,
+                "dim_source": 3,
+                "dim_user": 5936,
+                "fact_posts": 221629
+              },
+              "time": "2026-10-27T04:00:28.235Z",
+              "transform_seconds": 2.3,
+              "trusted_rows_match": null,
+              "version": "trusted-to-curated@1.0",
+              "workflow_run_id": null
+            }
+          }
+        },
+        {
+          "id": "L2",
+          "title": "segunda corrida local (idempotencia)",
+          "status": "OK",
+          "detail": "escritos 0 · sin cambios 187 · archivos cambiados 0 · borrados 0",
+          "data": {
+            "done": {
+              "bytes_written": 18061225,
+              "conciliation_ok": true,
+              "cpu_seconds": 5.6,
+              "dry_run": false,
+              "dt_max": "2026-10-24",
+              "dt_min": "2026-04-27",
+              "dt_mismatch": 0,
+              "duration_s": 2.9,
+              "environment": {
+                "boto3": "1.21.21",
+                "botocore": "1.24.21",
+                "pyarrow": "7.0.0",
+                "python": "3.9.25"
+              },
+              "event": "glue_job_done",
+              "fact_partitions": 181,
+              "fact_rows": 221629,
+              "files_changed": 0,
+              "input_objects": 543,
+              "job": "ta-job-trusted-to-curated",
+              "lote": "4.3",
+              "nlp_missing": 65263,
+              "objects": 187,
+              "objects_deleted": 0,
+              "objects_unchanged": 187,
+              "objects_written": 0,
+              "peak_rss_mb": 428.9,
+              "read_seconds": 0.5,
+              "report": "quality/2026-10-27/trusted_to_curated/manual-20261027T040028Z-9123fa0f.json",
+              "rows_read": 221629,
+              "rows_read_by_origin": {
+                "historical": 50000,
+                "stream": 171629
+              },
+              "rows_without_brand": 0,
+              "run_id": "manual-20261027T040028Z-9123fa0f",
+              "skipped_objects": 0,
+              "tables": {
+                "agg_emotion_by_brand_hour": 39954,
+                "agg_trend_daily": 543,
+                "dim_brand": 3,
+                "dim_date": 181,
+                "dim_source": 3,
+                "dim_user": 5936,
+                "fact_posts": 221629
+              },
+              "time": "2026-10-27T04:00:31.349Z",
+              "transform_seconds": 2.2,
+              "trusted_rows_match": null,
+              "version": "trusted-to-curated@1.0",
+              "workflow_run_id": null
+            }
+          }
+        },
+        {
+          "id": "L3",
+          "title": "esquema de cada tabla = contracts/athena/curated.sql",
+          "status": "OK",
+          "detail": "7 tablas (archivos: {'fact_posts': 181, 'dim_date': 1, 'dim_source': 1, 'dim_brand': 1, 'dim_user': 1, 'agg_emotion_by_brand_hour': 1, 'agg_trend_daily': 1}); int → int32, date → date32, boolean, timestamp[ms, UTC], bigint → int64, array<string>",
+          "data": {}
+        }
+      ]
+    },
+    "C": {
+      "title": "Terraform (script y descripción del job y consultas guardadas de Curated)",
+      "status": "AVISO",
+      "started_at": "2026-10-27T04:06:33.421402+00:00",
+      "finished_at": "2026-10-27T04:08:23.293399+00:00",
+      "steps": [
+        {
+          "id": "C0",
+          "title": "identidad de AWS",
+          "status": "AVISO",
+          "detail": "arn:aws:iam::648617469176:root (cuenta raíz: sirve para aplicar; el job corre con ta-glue-role)",
+          "data": {}
+        },
+        {
+          "id": "C0b",
+          "title": "backend.hcl y terraform.tfvars de infra/aws",
+          "status": "OK",
+          "detail": "presentes (no se versionan)",
+          "data": {}
+        },
+        {
+          "id": "C1",
+          "title": "bash infra/validate.sh",
+          "status": "OK",
+          "detail": "\u001b[32m\u001b[1mSuccess!\u001b[0m The configuration is valid.\n\u001b[0m\n== validate: aws/environments/dev ==\n\u001b[32m\u001b[1mSuccess!\u001b[0m The configuration is valid.\n\u001b[0m\nOK",
+          "data": {}
+        },
+        {
+          "id": "C2a",
+          "title": "terraform init",
+          "status": "OK",
+          "detail": "If you ever set or change modules or backend configuration for Terraform,\nrerun this command to reinitialize your working directory. If you forget, other\ncommands will detect it and remind you to do so if necessary.\u001b[0m",
+          "data": {}
+        },
+        {
+          "id": "C2",
+          "title": "plan (-target=module.glue_workflow -target=module.athena)",
+          "status": "OK",
+          "detail": "5 a crear, 2 a cambiar, 0 a destruir, 0 a reemplazar (esperado: 5 consultas guardadas a crear; el script y la descripción del job a cambiar)\nmodule.glue_workflow.aws_glue_job.this[\"trusted_to_curated\"]:\n  description: 'Trusted → Curated (HU-027, Lote 4.3). En el 4.1, marcador de posición.' → 'Trusted → Curated (HU-027, Lote 4.3): fact_posts, dimensiones y agregados.'\nmodule.glue_workflow.aws_s3_object.script[\"trusted_to_curated\"]:\n  source_hash: '3c1467ebdbbea3f7a09de1a002ac1ef6' → 'aa7d9b37d70f62c8c9cc961c2746877b'\n  version_id: '' → (se sabrá al aplicar)",
+          "data": {
+            "create": [
+              "module.athena.aws_athena_named_query.this[\"ta-curated-emociones-por-hora-bogota\"]",
+              "module.athena.aws_athena_named_query.this[\"ta-curated-posts-por-origen\"]",
+              "module.athena.aws_athena_named_query.this[\"ta-curated-precision-nlp\"]",
+              "module.athena.aws_athena_named_query.this[\"ta-curated-semana-vs-fin-de-semana\"]",
+              "module.athena.aws_athena_named_query.this[\"ta-curated-tendencia-diaria\"]"
+            ],
+            "update": [
+              "module.glue_workflow.aws_glue_job.this[\"trusted_to_curated\"]",
+              "module.glue_workflow.aws_s3_object.script[\"trusted_to_curated\"]"
+            ],
+            "delete": [],
+            "replace": [],
+            "diffs": {
+              "module.glue_workflow.aws_glue_job.this[\"trusted_to_curated\"]": [
+                "description: 'Trusted → Curated (HU-027, Lote 4.3). En el 4.1, marcador de posición.' → 'Trusted → Curated (HU-027, Lote 4.3): fact_posts, dimensiones y agregados.'"
+              ],
+              "module.glue_workflow.aws_s3_object.script[\"trusted_to_curated\"]": [
+                "source_hash: '3c1467ebdbbea3f7a09de1a002ac1ef6' → 'aa7d9b37d70f62c8c9cc961c2746877b'",
+                "version_id: '' → (se sabrá al aplicar)"
+              ]
+            }
+          }
+        },
+        {
+          "id": "C3",
+          "title": "apply",
+          "status": "OK",
+          "detail": "lake_bucket_arn = \"arn:aws:s3:::ta-dev-648617469176-lake\"\nlakehouse_schedule_name = \"ta-wf-raw-to-curated-cada-hora\"\nlakehouse_scheduler_role_arn = \"arn:aws:iam::648617469176:role/ta-lakehouse-scheduler-role\"\nquicksight_role_arn = \"arn:aws:iam::648617469176:role/ta-quicksight-role\"",
+          "data": {}
+        },
+        {
+          "id": "C3b",
+          "title": "plan tras aplicar (sin deriva)",
+          "status": "OK",
+          "detail": "No changes",
+          "data": {
+            "create": [],
+            "update": [],
+            "delete": [],
+            "replace": [],
+            "diffs": {}
+          }
+        }
+      ]
+    },
+    "status": {
+      "title": "Estado del lakehouse y de Curated (solo lectura)",
+      "status": "OK",
+      "started_at": "2026-10-27T04:14:28.595310+00:00",
+      "finished_at": "2026-10-27T04:14:37.868536+00:00",
+      "steps": [
+        {
+          "id": "S1",
+          "title": "horario ta-wf-raw-to-curated-cada-hora",
+          "status": "OK",
+          "detail": "ENABLED (estado normal por decisión del usuario: cada hora corren Trusted y Curated)",
+          "data": {
+            "schedule": "ENABLED"
+          }
+        },
+        {
+          "id": "S2",
+          "title": "corridas y job runs en curso",
+          "status": "OK",
+          "detail": "ninguna corrida; ningún job run",
+          "data": {}
+        },
+        {
+          "id": "S3",
+          "title": "Curated y su último reporte",
+          "status": "OK",
+          "detail": "curated/: 187 objetos {'fact_posts': 181, 'dim_date': 1, 'dim_source': 1, 'dim_brand': 1, 'dim_user': 1, 'agg_emotion_by_brand_hour': 1, 'agg_trend_daily': 1} · último reporte wr_77faf078dfcac378a2513013365efd5b1799bda670b5c33b8672f9394386ba54 (2026-10-27T04:13:53.944Z): fact_posts 221629 filas, 0 archivos cambiados",
+          "data": {}
+        },
+        {
+          "id": "S4",
+          "title": "horarios de prueba del 4.1",
+          "status": "OK",
+          "detail": "ninguno",
+          "data": {}
+        },
+        {
+          "id": "S5",
+          "title": "marcas del marcador de posición en curated/_ta_placeholder/",
+          "status": "OK",
+          "detail": "0 objetos",
+          "data": {}
+        }
+      ]
+    },
+    "off": {
+      "title": "Apagado (estado de ahorro del lakehouse)",
+      "status": "OK",
+      "started_at": "2026-10-27T04:05:57.889937+00:00",
+      "finished_at": "2026-10-27T04:06:23.981802+00:00",
+      "steps": [
+        {
+          "id": "O1",
+          "title": "deshabilitar el horario",
+          "status": "OK",
+          "detail": "ENABLED → DISABLED",
+          "data": {}
+        },
+        {
+          "id": "O2",
+          "title": "corridas y job runs",
+          "status": "OK",
+          "detail": "nada en curso",
+          "data": {}
+        },
+        {
+          "id": "O3",
+          "title": "horarios de prueba de F8",
+          "status": "OK",
+          "detail": "ninguno",
+          "data": {}
+        },
+        {
+          "id": "O4",
+          "title": "marcas de los marcadores de posición",
+          "status": "OK",
+          "detail": "6 borradas",
+          "data": {}
+        },
+        {
+          "id": "O5",
+          "title": "status.py (lo demás que cobra)",
+          "status": "OK",
+          "detail": "local: nada encendido\nGCP simulador: apagado · terraform.tfvars simulator_running = False\nGCP Dataflow: ningún job activo",
+          "data": {}
+        }
+      ]
+    },
+    "D": {
+      "title": "Corrida real de ta-job-trusted-to-curated y conciliación Trusted → Curated",
+      "status": "OK",
+      "started_at": "2026-10-27T04:08:23.517736+00:00",
+      "finished_at": "2026-10-27T04:09:31.718712+00:00",
+      "steps": [
+        {
+          "id": "D1",
+          "title": "ta-job-trusted-to-curated: Python shell 3.9, 0.0625 DPU, script de S3 = repo",
+          "status": "OK",
+          "detail": "pythonshell 3.9 · 0.0625 DPU (1 GB) · library-set analytics · script de S3 idéntico al repo",
+          "data": {}
+        },
+        {
+          "id": "D2",
+          "title": "Trusted antes de la corrida",
+          "status": "OK",
+          "detail": "trusted/posts/: 543 objetos y 221629 filas · curated/_ta_placeholder/: 0 · curated/edges_*: 0",
+          "data": {
+            "trusted": {
+              "objects": 543,
+              "rows": 221629,
+              "error_count": 0,
+              "seconds": 6.2
+            },
+            "placeholders_before": 0,
+            "edges_before": 0
+          }
+        },
+        {
+          "id": "D3",
+          "title": "corrida del job",
+          "status": "OK",
+          "detail": "jr_a4ea718d0400874c059f28e346b5cda7eec141650fed55f1abadab8a6c47769a: SUCCEEDED · 21 s de ejecución · 0.0625 DPU",
+          "data": {
+            "job_run_id": "jr_a4ea718d0400874c059f28e346b5cda7eec141650fed55f1abadab8a6c47769a",
+            "execution_s": 21,
+            "max_capacity": 0.0625,
+            "state": "SUCCEEDED"
+          }
+        },
+        {
+          "id": "D4",
+          "title": "línea glue_job_done en /aws-glue/python-jobs/output",
+          "status": "OK",
+          "detail": "leídas 221629 · fact_posts 221629 en 181 particiones · tablas {'agg_emotion_by_brand_hour': 39954, 'agg_trend_daily': 543, 'dim_brand': 3, 'dim_date': 181, 'dim_source': 3, 'dim_user': 5936, 'fact_posts': 221629} · lectura 3.7 s · total 9.1 s · CPU 9.8 s · pico de memoria 442.3 MB de 1024 · Python 3.9.10, pyarrow 7.0.0, boto3 1.21.21",
+          "data": {
+            "done": {
+              "bytes_written": 18061225,
+              "conciliation_ok": true,
+              "cpu_seconds": 9.8,
+              "dry_run": false,
+              "dt_max": "2026-10-24",
+              "dt_min": "2026-04-27",
+              "dt_mismatch": 0,
+              "duration_s": 9.1,
+              "environment": {
+                "boto3": "1.21.21",
+                "botocore": "1.24.21",
+                "pyarrow": "7.0.0",
+                "python": "3.9.10"
+              },
+              "event": "glue_job_done",
+              "fact_partitions": 181,
+              "fact_rows": 221629,
+              "files_changed": 187,
+              "input_objects": 543,
+              "job": "ta-job-trusted-to-curated",
+              "lote": "4.3",
+              "nlp_missing": 65263,
+              "objects": 187,
+              "objects_deleted": 0,
+              "objects_unchanged": 0,
+              "objects_written": 187,
+              "peak_rss_mb": 442.3,
+              "read_seconds": 3.7,
+              "report": "quality/2026-10-27/trusted_to_curated/manual-20261027T040848Z-c542c37b.json",
+              "rows_read": 221629,
+              "rows_read_by_origin": {
+                "historical": 50000,
+                "stream": 171629
+              },
+              "rows_without_brand": 0,
+              "run_id": "manual-20261027T040848Z-c542c37b",
+              "skipped_objects": 0,
+              "tables": {
+                "agg_emotion_by_brand_hour": 39954,
+                "agg_trend_daily": 543,
+                "dim_brand": 3,
+                "dim_date": 181,
+                "dim_source": 3,
+                "dim_user": 5936,
+                "fact_posts": 221629
+              },
+              "time": "2026-10-27T04:08:57.907Z",
+              "transform_seconds": 4.9,
+              "trusted_rows_match": null,
+              "version": "trusted-to-curated@1.0",
+              "workflow_run_id": null
+            }
+          }
+        },
+        {
+          "id": "D5",
+          "title": "reporte de la corrida en quality/",
+          "status": "OK",
+          "detail": "quality/2026-10-27/trusted_to_curated/manual-20261027T040848Z-c542c37b.json y quality/_latest/trusted_to_curated.json (corrida manual-20261027T040848Z-c542c37b, esquema ta-trusted-to-curated-report@1)",
+          "data": {
+            "report": {
+              "bucket": "ta-dev-648617469176-lake",
+              "checks": {
+                "dim_date_continuous": {
+                  "expected": 181,
+                  "observed": 181,
+                  "ok": true
+                },
+                "emotion_n_posts_eq_rows_with_emotion": {
+                  "expected": 156366,
+                  "observed": 156366,
+                  "ok": true
+                },
+                "fact_rows_eq_trusted_rows": {
+                  "expected": 221629,
+                  "observed": 221629,
+                  "ok": true
+                },
+                "fk_brand_in_dim_brand": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "fk_date_key_in_dim_date": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "fk_source_in_dim_source": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "trend_n_posts_eq_rows_with_brand": {
+                  "expected": 221629,
+                  "observed": 221629,
+                  "ok": true
+                },
+                "trend_rows_without_sentiment": {
+                  "expected": 65263,
+                  "observed": 65263,
+                  "ok": true
+                },
+                "trend_sentiment_eq_rows_with_sentiment": {
+                  "expected": 156366,
+                  "observed": 156366,
+                  "ok": true
+                },
+                "unique_event_id": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "user_n_posts_eq_rows_with_user": {
+                  "expected": 221629,
+                  "observed": 221629,
+                  "ok": true
+                }
+              },
+              "conciliation": {
+                "formula": "fact_posts = Trusted; sumas de agg_* y dim_user = conteos de fact_posts; llaves foráneas en sus dimensiones (checks)",
+                "ok": true
+              },
+              "counts": {
+                "brands": {
+                  "pepsi": 65328,
+                  "postobon": 100116,
+                  "sprite": 56185
+                },
+                "dt_mismatch": 0,
+                "duplicate_event_ids": 0,
+                "fact_rows": 221629,
+                "nlp_missing": 65263,
+                "nlp_missing_by_origin": {
+                  "stream": 65263
+                },
+                "rows_without_brand": 0,
+                "rows_without_user": 0,
+                "unknown_brands": [],
+                "unknown_emotion_labels": 0,
+                "unknown_sentiment_labels": 0,
+                "with_emotion": 156366,
+                "with_sentiment": 156366
+              },
+              "cpu_seconds": 9.8,
+              "dry_run": false,
+              "duration_s": 9.1,
+              "environment": {
+                "boto3": "1.21.21",
+                "botocore": "1.24.21",
+                "pyarrow": "7.0.0",
+                "python": "3.9.10"
+              },
+              "finished_at": "2026-10-27T04:08:57.773Z",
+              "input": {
+                "by_origin": {
+                  "historical": 50000,
+                  "stream": 171629
+                },
+                "by_source": {
+                  "facebook": 73890,
+                  "instagram": 73946,
+                  "reddit": 73793
+                },
+                "bytes": 67447599,
+                "dt_max": "2026-10-24",
+                "dt_min": "2026-04-27",
+                "objects": 543,
+                "partitions": 543,
+                "prefix": "trusted/posts/",
+                "read_seconds": 3.7,
+                "rows": 221629,
+                "skipped_examples": [],
+                "skipped_objects": 0,
+                "trusted_report": null,
+                "trusted_rows_expected": null,
+                "trusted_rows_match": null
+              },
+              "job": "ta-job-trusted-to-curated",
+              "job_run_id": null,
+              "peak_rss_mb": 442.3,
+              "previous_report": null,
+              "report_key": "quality/2026-10-27/trusted_to_curated/manual-20261027T040848Z-c542c37b.json",
+              "run_id": "manual-20261027T040848Z-c542c37b",
+              "schema": "ta-trusted-to-curated-report@1",
+              "started_at": "2026-10-27T04:08:48.716Z",
+              "tables": {
+                "agg_emotion_by_brand_hour": {
+                  "bytes": 100423,
+                  "files": 1,
+                  "files_changed": 1,
+                  "rows": 39954
+                },
+                "agg_trend_daily": {
+                  "bytes": 12825,
+                  "files": 1,
+                  "files_changed": 1,
+                  "rows": 543
+                },
+                "dim_brand": {
+                  "bytes": 1183,
+                  "files": 1,
+                  "files_changed": 1,
+                  "rows": 3
+                },
+                "dim_date": {
+                  "bytes": 5150,
+                  "files": 1,
+                  "files_changed": 1,
+                  "rows": 181
+                },
+                "dim_source": {
+                  "bytes": 1323,
+                  "files": 1,
+                  "files_changed": 1,
+                  "rows": 3
+                },
+                "dim_user": {
+                  "bytes": 496763,
+                  "files": 1,
+                  "files_changed": 1,
+                  "rows": 5936
+                },
+                "fact_posts": {
+                  "bytes": 17443558,
+                  "files": 181,
+                  "files_changed": 181,
+                  "rows": 221629
+                }
+              },
+              "transform_seconds": 4.9,
+              "version": "trusted-to-curated@1.0",
+              "workflow": null,
+              "workflow_run_id": null,
+              "output": {
+                "bytes": 18061225,
+                "files_changed": 187,
+                "files_removed": 0,
+                "objects": 187,
+                "objects_deleted": 0,
+                "objects_unchanged": 0,
+                "objects_written": 187,
+                "prefix": "curated/",
+                "stale_objects": 0,
+                "tables": [
+                  "fact_posts",
+                  "dim_date",
+                  "dim_source",
+                  "dim_brand",
+                  "dim_user",
+                  "agg_emotion_by_brand_hour",
+                  "agg_trend_daily"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": "D6",
+          "title": "conciliación Trusted → Curated",
+          "status": "OK",
+          "detail": "Trusted 221629 (pies de S3) = leídas 221629 = fact_posts 221629\nagg_trend_daily: n_posts 221629 = filas con marca; con sentimiento 156366; sin sentimiento 65263 (= sin NLP 65263: decisión 2)\nagg_emotion_by_brand_hour: 156366 = filas con emoción · dim_user: 221629 = filas con usuario · llaves foráneas y dim_date continua: OK",
+          "data": {
+            "checks": {
+              "dim_date_continuous": {
+                "expected": 181,
+                "observed": 181,
+                "ok": true
+              },
+              "emotion_n_posts_eq_rows_with_emotion": {
+                "expected": 156366,
+                "observed": 156366,
+                "ok": true
+              },
+              "fact_rows_eq_trusted_rows": {
+                "expected": 221629,
+                "observed": 221629,
+                "ok": true
+              },
+              "fk_brand_in_dim_brand": {
+                "expected": 0,
+                "observed": 0,
+                "ok": true
+              },
+              "fk_date_key_in_dim_date": {
+                "expected": 0,
+                "observed": 0,
+                "ok": true
+              },
+              "fk_source_in_dim_source": {
+                "expected": 0,
+                "observed": 0,
+                "ok": true
+              },
+              "trend_n_posts_eq_rows_with_brand": {
+                "expected": 221629,
+                "observed": 221629,
+                "ok": true
+              },
+              "trend_rows_without_sentiment": {
+                "expected": 65263,
+                "observed": 65263,
+                "ok": true
+              },
+              "trend_sentiment_eq_rows_with_sentiment": {
+                "expected": 156366,
+                "observed": 156366,
+                "ok": true
+              },
+              "unique_event_id": {
+                "expected": 0,
+                "observed": 0,
+                "ok": true
+              },
+              "user_n_posts_eq_rows_with_user": {
+                "expected": 221629,
+                "observed": 221629,
+                "ok": true
+              }
+            },
+            "tables": {
+              "agg_emotion_by_brand_hour": 39954,
+              "agg_trend_daily": 543,
+              "dim_brand": 3,
+              "dim_date": 181,
+              "dim_source": 3,
+              "dim_user": 5936,
+              "fact_posts": 221629
+            }
+          }
+        },
+        {
+          "id": "D7",
+          "title": "curated/ en S3 (filas, layout; marcas y aristas sin tocar)",
+          "status": "OK",
+          "detail": "187 objetos (187 en el reporte; 221629 filas de fact_posts en 181 particiones) · filas por tabla en los pies {'fact_posts': 221629, 'dim_date': 181, 'dim_source': 3, 'dim_brand': 3, 'dim_user': 5936, 'agg_emotion_by_brand_hour': 39954, 'agg_trend_daily': 543} · dt 2026-04-27 → 2026-10-24 · 18061225 bytes · escritos 187, sin cambios 0, borrados 0 · curated/_ta_placeholder/: 0 → 0 · curated/edges_*: 0 → 0",
+          "data": {
+            "s3_tables": {
+              "fact_posts": 221629,
+              "dim_date": 181,
+              "dim_source": 3,
+              "dim_brand": 3,
+              "dim_user": 5936,
+              "agg_emotion_by_brand_hour": 39954,
+              "agg_trend_daily": 543
+            },
+            "layout": []
+          }
+        },
+        {
+          "id": "D8",
+          "title": "esquema de un Parquet de cada tabla = contrato",
+          "status": "OK",
+          "detail": "7 tablas con las columnas y tipos de contracts/athena/curated.sql (filas del archivo leído: {'fact_posts': 189, 'dim_date': 181, 'dim_source': 3, 'dim_brand': 3, 'dim_user': 5936, 'agg_emotion_by_brand_hour': 39954, 'agg_trend_daily': 543})",
+          "data": {}
+        }
+      ]
+    },
+    "E": {
+      "title": "Athena: ta_curated (Listo cuando, conciliación, consultas guardadas)",
+      "status": "OK",
+      "started_at": "2026-10-27T04:17:59.553881+00:00",
+      "finished_at": "2026-10-27T04:19:12.165292+00:00",
+      "steps": [
+        {
+          "id": "E1",
+          "title": "Listo cuando de la Fase 4: SELECT sobre ta_curated.fact_posts con stream e histórico",
+          "status": "OK",
+          "detail": "historical: 50000 filas, 50000 event_id, comparativas 2662 (2026-04-27 → 2026-10-23); stream: 171629 filas, 171629 event_id, comparativas 9104 (2026-10-21 → 2026-10-24) · total 221629 (reporte 221629)",
+          "data": {
+            "rows": [
+              {
+                "origin": "historical",
+                "filas": "50000",
+                "event_ids": "50000",
+                "desde": "2026-04-27",
+                "hasta": "2026-10-23",
+                "comparativas": "2662"
+              },
+              {
+                "origin": "stream",
+                "filas": "171629",
+                "event_ids": "171629",
+                "desde": "2026-10-21",
+                "hasta": "2026-10-24",
+                "comparativas": "9104"
+              }
+            ],
+            "total": 221629
+          }
+        },
+        {
+          "id": "E2",
+          "title": "Trusted = fact_posts; date_key; llaves foráneas; dim_date continua",
+          "status": "OK",
+          "detail": "ta_trusted.posts 221629 = fact_posts 221629 · 0 date_key ≠ dt ≠ DATE(event_time) · 0 filas sin su fecha, fuente, marca o usuario en las dimensiones · dim_date 181 días seguidos",
+          "data": {
+            "counts": {
+              "trusted": 221629,
+              "fact": 221629,
+              "date_key_mal": 0,
+              "sin_fecha": 0,
+              "sin_fuente": 0,
+              "sin_marca": 0,
+              "sin_usuario": 0,
+              "dias": 181,
+              "dias_esperados": 181
+            }
+          }
+        },
+        {
+          "id": "E3",
+          "title": "agg_trend_daily = recalculado desde fact_posts (decisión 2: sin NLP en n_posts, no en el sentimiento)",
+          "status": "OK",
+          "detail": "0 claves, conteos o promedios distintos · n_posts 221629 − con sentimiento 156366 = 65263 filas sin NLP · 6 filas (día × marca) con n_posts ≠ n_negative + n_neutral + n_positive",
+          "data": {
+            "counts": {
+              "claves_distintas": 0,
+              "conteos_distintos": 0,
+              "promedios_distintos": 0,
+              "filas_con_posts_sin_nlp": 6,
+              "n_posts": 221629,
+              "con_sentimiento": 156366
+            }
+          }
+        },
+        {
+          "id": "E4",
+          "title": "agg_emotion_by_brand_hour = recalculado (sin las filas sin emoción)",
+          "status": "OK",
+          "detail": "0 claves o conteos distintos · n_posts 156366 + 65263 filas sin emoción = 221629",
+          "data": {
+            "counts": {
+              "claves_distintas": 0,
+              "conteos_distintos": 0,
+              "n_posts": 156366,
+              "sin_emocion": 65263
+            }
+          }
+        },
+        {
+          "id": "E5",
+          "title": "dim_user = recalculado desde ta_trusted.posts (first_seen, last_seen, n_posts, max_followers)",
+          "status": "OK",
+          "detail": "5936 usuarios, 0 distintos · suma de n_posts 221629",
+          "data": {
+            "counts": {
+              "claves_distintas": 0,
+              "filas_distintas": 0,
+              "n_posts": 221629,
+              "usuarios": 5936
+            }
+          }
+        },
+        {
+          "id": "E6",
+          "title": "las 5 consultas guardadas de Curated (HU-030)",
+          "status": "OK",
+          "detail": "ta-curated-posts-por-origen: 6 filas, 8.0 MB, 1128 ms; ta-curated-tendencia-diaria: 90 filas, 0.0 MB, 1008 ms; ta-curated-emociones-por-hora-bogota: 469 filas, 0.2 MB, 1154 ms; ta-curated-semana-vs-fin-de-semana: 6 filas, 1.2 MB, 2064 ms; ta-curated-precision-nlp: 9 filas, 0.2 MB, 1404 ms",
+          "data": {
+            "queries": [
+              {
+                "name": "ta-curated-posts-por-origen",
+                "state": "SUCCEEDED",
+                "rows": 6,
+                "scanned_bytes": 8043288,
+                "engine_ms": 918,
+                "total_ms": 1128
+              },
+              {
+                "name": "ta-curated-tendencia-diaria",
+                "state": "SUCCEEDED",
+                "rows": 90,
+                "scanned_bytes": 12997,
+                "engine_ms": 833,
+                "total_ms": 1008
+              },
+              {
+                "name": "ta-curated-emociones-por-hora-bogota",
+                "state": "SUCCEEDED",
+                "rows": 469,
+                "scanned_bytes": 161737,
+                "engine_ms": 962,
+                "total_ms": 1154
+              },
+              {
+                "name": "ta-curated-semana-vs-fin-de-semana",
+                "state": "SUCCEEDED",
+                "rows": 6,
+                "scanned_bytes": 1150826,
+                "engine_ms": 1664,
+                "total_ms": 2064
+              },
+              {
+                "name": "ta-curated-precision-nlp",
+                "state": "SUCCEEDED",
+                "rows": 9,
+                "scanned_bytes": 166425,
+                "engine_ms": 1230,
+                "total_ms": 1404
+              }
+            ]
+          }
+        },
+        {
+          "id": "E7",
+          "title": "bytes escaneados ≤ límite del workgroup",
+          "status": "OK",
+          "detail": "32.6 MB en 10 consultas; la mayor 8.1 MB (límite 1 GiB) · ≈ 0.00050 USD (mínimo 10 MB por consulta)",
+          "data": {
+            "scanned_bytes": 32608236,
+            "queries": 10,
+            "usd": 0.0005
+          }
+        },
+        {
+          "id": "E8",
+          "title": "latencia de las consultas guardadas frente al KPI de < 3 s (§4)",
+          "status": "OK",
+          "detail": "la más lenta 2064 ms (total, con la cola de Athena); motor: ta-curated-posts-por-origen 918 ms, ta-curated-tendencia-diaria 833 ms, ta-curated-emociones-por-hora-bogota 962 ms, ta-curated-semana-vs-fin-de-semana 1664 ms, ta-curated-precision-nlp 1230 ms",
+          "data": {
+            "worst_ms": 2064
+          }
+        }
+      ]
+    },
+    "F": {
+      "title": "Segunda corrida dentro del workflow: idempotencia y costo (sumado al del 4.2)",
+      "status": "OK",
+      "started_at": "2026-10-27T04:10:40.027651+00:00",
+      "finished_at": "2026-10-27T04:14:24.213961+00:00",
+      "steps": [
+        {
+          "id": "F1",
+          "title": "Curated antes de la segunda corrida",
+          "status": "OK",
+          "detail": "187 objetos · reporte manual-20261027T040848Z-c542c37b · 221629 filas de fact_posts en Athena · horario DISABLED",
+          "data": {
+            "objects": 187,
+            "rows": 221629,
+            "schedule": "DISABLED"
+          }
+        },
+        {
+          "id": "F2",
+          "title": "corrida del workflow",
+          "status": "OK",
+          "detail": "wr_77faf078dfcac378a2513013365efd5b1799bda670b5c33b8672f9394386ba54: COMPLETED · ta-job-raw-to-trusted SUCCEEDED (88 s) → ta-job-trusted-to-curated SUCCEEDED (20 s)",
+          "data": {
+            "run_id": "wr_77faf078dfcac378a2513013365efd5b1799bda670b5c33b8672f9394386ba54",
+            "job_runs": {
+              "ta-job-raw-to-trusted": "jr_832897d60b572656b84a0890c21e5f8d310f5851ac2c46a79a2501d455150e6c",
+              "ta-job-trusted-to-curated": "jr_ae1c30c7baa6fbab41fc773ce18722a4c16ca198a364b16ee2944ac245f64037"
+            },
+            "durations": [
+              88,
+              20
+            ]
+          }
+        },
+        {
+          "id": "F3",
+          "title": "reporte de la segunda corrida: nada cambió",
+          "status": "OK",
+          "detail": "corrida wr_77faf078dfcac378a2513013365efd5b1799bda670b5c33b8672f9394386ba54 · archivos cambiados 0 · escritos 0 · borrados 0 · mismos sha256 que la corrida anterior en 187 archivos · fact_posts 221629 · Trusted de la misma corrida: 221629 filas (coincide: True)",
+          "data": {
+            "report": {
+              "bucket": "ta-dev-648617469176-lake",
+              "checks": {
+                "dim_date_continuous": {
+                  "expected": 181,
+                  "observed": 181,
+                  "ok": true
+                },
+                "emotion_n_posts_eq_rows_with_emotion": {
+                  "expected": 156366,
+                  "observed": 156366,
+                  "ok": true
+                },
+                "fact_rows_eq_trusted_rows": {
+                  "expected": 221629,
+                  "observed": 221629,
+                  "ok": true
+                },
+                "fk_brand_in_dim_brand": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "fk_date_key_in_dim_date": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "fk_source_in_dim_source": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "trend_n_posts_eq_rows_with_brand": {
+                  "expected": 221629,
+                  "observed": 221629,
+                  "ok": true
+                },
+                "trend_rows_without_sentiment": {
+                  "expected": 65263,
+                  "observed": 65263,
+                  "ok": true
+                },
+                "trend_sentiment_eq_rows_with_sentiment": {
+                  "expected": 156366,
+                  "observed": 156366,
+                  "ok": true
+                },
+                "unique_event_id": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "user_n_posts_eq_rows_with_user": {
+                  "expected": 221629,
+                  "observed": 221629,
+                  "ok": true
+                }
+              },
+              "conciliation": {
+                "formula": "fact_posts = Trusted; sumas de agg_* y dim_user = conteos de fact_posts; llaves foráneas en sus dimensiones (checks)",
+                "ok": true
+              },
+              "counts": {
+                "brands": {
+                  "pepsi": 65328,
+                  "postobon": 100116,
+                  "sprite": 56185
+                },
+                "dt_mismatch": 0,
+                "duplicate_event_ids": 0,
+                "fact_rows": 221629,
+                "nlp_missing": 65263,
+                "nlp_missing_by_origin": {
+                  "stream": 65263
+                },
+                "rows_without_brand": 0,
+                "rows_without_user": 0,
+                "unknown_brands": [],
+                "unknown_emotion_labels": 0,
+                "unknown_sentiment_labels": 0,
+                "with_emotion": 156366,
+                "with_sentiment": 156366
+              },
+              "cpu_seconds": 8.9,
+              "dry_run": false,
+              "duration_s": 8.0,
+              "environment": {
+                "boto3": "1.21.21",
+                "botocore": "1.24.21",
+                "pyarrow": "7.0.0",
+                "python": "3.9.10"
+              },
+              "finished_at": "2026-10-27T04:13:53.944Z",
+              "input": {
+                "by_origin": {
+                  "historical": 50000,
+                  "stream": 171629
+                },
+                "by_source": {
+                  "facebook": 73890,
+                  "instagram": 73946,
+                  "reddit": 73793
+                },
+                "bytes": 67447599,
+                "dt_max": "2026-10-24",
+                "dt_min": "2026-04-27",
+                "objects": 543,
+                "partitions": 543,
+                "prefix": "trusted/posts/",
+                "read_seconds": 3.6,
+                "rows": 221629,
+                "skipped_examples": [],
+                "skipped_objects": 0,
+                "trusted_report": "quality/2026-10-27/raw_to_trusted/wr_77faf078dfcac378a2513013365efd5b1799bda670b5c33b8672f9394386ba54.json",
+                "trusted_rows_expected": "221629",
+                "trusted_rows_match": true
+              },
+              "job": "ta-job-trusted-to-curated",
+              "job_run_id": null,
+              "peak_rss_mb": 440.7,
+              "previous_report": "manual-20261027T040848Z-c542c37b",
+              "report_key": "quality/2026-10-27/trusted_to_curated/wr_77faf078dfcac378a2513013365efd5b1799bda670b5c33b8672f9394386ba54.json",
+              "run_id": "wr_77faf078dfcac378a2513013365efd5b1799bda670b5c33b8672f9394386ba54",
+              "schema": "ta-trusted-to-curated-report@1",
+              "started_at": "2026-10-27T04:13:45.957Z",
+              "tables": {
+                "agg_emotion_by_brand_hour": {
+                  "bytes": 100423,
+                  "files": 1,
+                  "files_changed": 0,
+                  "rows": 39954
+                },
+                "agg_trend_daily": {
+                  "bytes": 12825,
+                  "files": 1,
+                  "files_changed": 0,
+                  "rows": 543
+                },
+                "dim_brand": {
+                  "bytes": 1183,
+                  "files": 1,
+                  "files_changed": 0,
+                  "rows": 3
+                },
+                "dim_date": {
+                  "bytes": 5150,
+                  "files": 1,
+                  "files_changed": 0,
+                  "rows": 181
+                },
+                "dim_source": {
+                  "bytes": 1323,
+                  "files": 1,
+                  "files_changed": 0,
+                  "rows": 3
+                },
+                "dim_user": {
+                  "bytes": 496763,
+                  "files": 1,
+                  "files_changed": 0,
+                  "rows": 5936
+                },
+                "fact_posts": {
+                  "bytes": 17443558,
+                  "files": 181,
+                  "files_changed": 0,
+                  "rows": 221629
+                }
+              },
+              "transform_seconds": 3.7,
+              "version": "trusted-to-curated@1.0",
+              "workflow": "ta-wf-raw-to-curated",
+              "workflow_run_id": "wr_77faf078dfcac378a2513013365efd5b1799bda670b5c33b8672f9394386ba54",
+              "output": {
+                "bytes": 18061225,
+                "files_changed": 0,
+                "files_removed": 0,
+                "objects": 187,
+                "objects_deleted": 0,
+                "objects_unchanged": 187,
+                "objects_written": 0,
+                "prefix": "curated/",
+                "stale_objects": 0,
+                "tables": [
+                  "fact_posts",
+                  "dim_date",
+                  "dim_source",
+                  "dim_brand",
+                  "dim_user",
+                  "agg_emotion_by_brand_hour",
+                  "agg_trend_daily"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": "F4",
+          "title": "mismos objetos y tamaños en curated/ (siete tablas)",
+          "status": "OK",
+          "detail": "187 → 187 objetos",
+          "data": {}
+        },
+        {
+          "id": "F5",
+          "title": "Athena: mismas filas, sin duplicar",
+          "status": "OK",
+          "detail": "221629 → 221629 filas · 221629 event_id distintos",
+          "data": {}
+        },
+        {
+          "id": "F6",
+          "title": "propiedades de la corrida (para el 4.4 y el 5.2)",
+          "status": "OK",
+          "detail": "ta_trusted_report = quality/2026-10-27/raw_to_trusted/wr_77faf078dfcac378a2513013365efd5b1799bda670b5c33b8672f9394386ba54.json · ta_trusted_rows = 221629 · ta_curated_report = quality/2026-10-27/trusted_to_curated/wr_77faf078dfcac378a2513013365efd5b1799bda670b5c33b8672f9394386ba54.json · ta_curated_rows = 221629 · ta_curated_files_changed = 0",
+          "data": {
+            "properties": {
+              "ta_validacion": "4.3",
+              "ta_curated_files_changed": "0",
+              "ta_trusted_report": "quality/2026-10-27/raw_to_trusted/wr_77faf078dfcac378a2513013365efd5b1799bda670b5c33b8672f9394386ba54.json",
+              "ta_trusted_partitions_changed": "0",
+              "ta_curated_rows": "221629",
+              "ta_curated_report": "quality/2026-10-27/trusted_to_curated/wr_77faf078dfcac378a2513013365efd5b1799bda670b5c33b8672f9394386ba54.json",
+              "ta_trusted_rows": "221629"
+            }
+          }
+        },
+        {
+          "id": "F7",
+          "title": "sin marcas nuevas, nada en curso, horario sin cambios",
+          "status": "OK",
+          "detail": "curated/_ta_placeholder/: 0 → 0 · corridas en curso: ninguna · horario DISABLED → DISABLED (al terminar: python project/scripts/validate_4_3.py on --yes)",
+          "data": {}
+        },
+        {
+          "id": "F8",
+          "title": "costo con lo medido (4.2 + 4.3, horario cada hora)",
+          "status": "OK",
+          "detail": "ta-job-raw-to-trusted: 88 s × 1 DPU + S3 ≈ 0.01886 USD · ta-job-trusted-to-curated: 20 s × 0.0625 DPU (mínimo 60 s) + S3 (≈ 543 GET, 0 PUT de datos) ≈ 0.00074 USD (el marcador costaba ≈ 0.00046) → ≈ 0.0196 USD por corrida del workflow; con el horario cada hora ≈ 0.470 USD/día, ≈ 14.11 USD/mes (KMS con bucket key y logs aparte, sin comprobar en la factura)",
+          "data": {
+            "usd_per_run": 0.0196,
+            "usd_per_day": 0.4704,
+            "usd_per_month": 14.11,
+            "trusted_usd": 0.01886,
+            "curated_usd": 0.00074,
+            "execution_s": [
+              88,
+              20
+            ]
+          }
+        }
+      ]
+    },
+    "on": {
+      "title": "Encender el horario del lakehouse (estado normal, decisión del usuario)",
+      "status": "OK",
+      "started_at": "2026-10-27T04:14:24.438592+00:00",
+      "finished_at": "2026-10-27T04:14:28.353863+00:00",
+      "steps": [
+        {
+          "id": "N1",
+          "title": "encender el horario",
+          "status": "OK",
+          "detail": "DISABLED → ENABLED; se apaga con: python project/scripts/validate_4_3.py off",
+          "data": {}
+        },
+        {
+          "id": "N2",
+          "title": "definición del horario intacta",
+          "status": "OK",
+          "detail": "ENABLED · rate(1 hour) · UTC · reintentos 0",
+          "data": {
+            "schedule": "ENABLED",
+            "usd_per_day": 0.4704
+          }
+        }
+      ]
+    }
+  },
+  "updated_at": "2026-10-27T04:26:22.719817+00:00"
+}

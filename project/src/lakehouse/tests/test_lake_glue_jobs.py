@@ -174,8 +174,9 @@ def test_trusted_to_curated_ignora_carpetas_y_marcas(capsys):
 
 ALLOWED_IMPORTS = {
     # Jobs reales (4.2 y 4.3): biblioteca estándar, boto3/botocore y pyarrow (en Glue lo trae el analytics library set).
-    "trusted_to_curated": {"__future__", "hashlib", "io", "json", "math", "os", "re", "resource", "sys", "time", "uuid",
-                           "concurrent", "datetime", "boto3", "botocore", "pyarrow"},
+    # itertools: las aristas del 4.4 (combinations).
+    "trusted_to_curated": {"__future__", "hashlib", "io", "itertools", "json", "math", "os", "re", "resource", "sys", "time",
+                           "uuid", "concurrent", "datetime", "boto3", "botocore", "pyarrow"},
     "raw_to_trusted": {"__future__", "hashlib", "io", "json", "os", "re", "resource", "sys", "time", "unicodedata",
                        "uuid", "concurrent", "datetime", "boto3", "botocore", "pyarrow"},
 }

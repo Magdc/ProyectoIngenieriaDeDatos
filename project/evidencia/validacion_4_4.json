@@ -1,0 +1,477 @@
+{
+  "lote": "4.4",
+  "hu": [
+    "HU-028"
+  ],
+  "parts": {
+    "A": {
+      "title": "Preflight del código y de lo encendido",
+      "status": "AVISO",
+      "started_at": "2026-10-27T11:58:37.048471+00:00",
+      "finished_at": "2026-10-27T11:58:50.333654+00:00",
+      "steps": [
+        {
+          "id": "A1",
+          "title": "Python y dependencias",
+          "status": "OK",
+          "detail": "Python 3.11.17; boto3, botocore y pyarrow",
+          "data": {}
+        },
+        {
+          "id": "A2",
+          "title": "los 7 archivos del lote",
+          "status": "OK",
+          "detail": "7 presentes",
+          "data": {}
+        },
+        {
+          "id": "A3",
+          "title": "archivos de lotes anteriores que usa",
+          "status": "OK",
+          "detail": "16 presentes",
+          "data": {}
+        },
+        {
+          "id": "A4",
+          "title": "tables.json al día con contracts/athena/ (aristas incluidas)",
+          "status": "OK",
+          "detail": "edges_user_brand y edges_hashtag_cooccurrence en el catálogo = las DDL",
+          "data": {}
+        },
+        {
+          "id": "A5",
+          "title": "herramientas",
+          "status": "OK",
+          "detail": "terraform, aws, bash",
+          "data": {}
+        },
+        {
+          "id": "A6",
+          "title": "AWS: horario, corridas y job runs",
+          "status": "AVISO",
+          "detail": "horario ta-wf-raw-to-curated-cada-hora: ENABLED; ninguna corrida en curso; ningún job run en curso (ENABLED es el estado normal por decisión del usuario, pero mientras valida apáguelo: python project/scripts/validate_4_4.py off; al terminar: validate_4_4.py on --yes)",
+          "data": {
+            "schedule": "ENABLED",
+            "running": [],
+            "job_runs": {}
+          }
+        },
+        {
+          "id": "A7",
+          "title": "GCP y local (services.status)",
+          "status": "OK",
+          "detail": "local: nada encendido\nGCP simulador: apagado · terraform.tfvars simulator_running = False\nGCP Dataflow: ningún job activo",
+          "data": {}
+        },
+        {
+          "id": "A8",
+          "title": "Trusted local para la parte L",
+          "status": "OK",
+          "detail": "/root/.cache/trendanalyzer/quality/s3/ta-dev-648617469176-lake/trusted/posts/ (copia de S3 (profile_data.py sync --layer trusted))",
+          "data": {}
+        }
+      ]
+    },
+    "B": {
+      "title": "Pruebas",
+      "status": "OK",
+      "started_at": "2026-10-27T11:58:50.633304+00:00",
+      "finished_at": "2026-10-27T11:59:06.622657+00:00",
+      "steps": [
+        {
+          "id": "B1",
+          "title": "pytest src/lakehouse (job con aristas)",
+          "status": "OK",
+          "detail": "127 passed, 0 skipped, 0 failed (esperado 127 passed, 0 skipped)",
+          "data": {
+            "passed": 127,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B2",
+          "title": "pytest test_ops_validate44.py",
+          "status": "OK",
+          "detail": "27 passed, 0 skipped, 0 failed (esperado 27 passed, 0 skipped)",
+          "data": {
+            "passed": 27,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B3",
+          "title": "pytest contracts/tests",
+          "status": "OK",
+          "detail": "18 passed, 0 skipped, 0 failed (esperado 18 passed, 0 skipped)",
+          "data": {
+            "passed": 18,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B4",
+          "title": "regresión: test_ops_validate43.py (piezas reutilizadas)",
+          "status": "OK",
+          "detail": "35 passed, 0 skipped, 0 failed (esperado 35 passed, 0 skipped)",
+          "data": {
+            "passed": 35,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B5",
+          "title": "regresión: test_ops_validate42.py",
+          "status": "OK",
+          "detail": "30 passed, 0 skipped, 0 failed (esperado 30 passed, 0 skipped)",
+          "data": {
+            "passed": 30,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B6",
+          "title": "regresión: test_ops_validate41.py",
+          "status": "OK",
+          "detail": "48 passed, 0 skipped, 0 failed (esperado 48 passed, 0 skipped)",
+          "data": {
+            "passed": 48,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        }
+      ]
+    },
+    "L": {
+      "title": "El job en local contra el Trusted real y las aristas recalculadas aparte (sin nube)",
+      "status": "OK",
+      "started_at": "2026-10-27T11:59:06.856759+00:00",
+      "finished_at": "2026-10-27T11:59:18.910442+00:00",
+      "steps": [
+        {
+          "id": "L0",
+          "title": "Trusted local",
+          "status": "OK",
+          "detail": "lee /root/.cache/trendanalyzer/quality/s3/ta-dev-648617469176-lake/trusted/posts/ (copia de S3 (profile_data.py sync --layer trusted)) · escribe en /root/.cache/trendanalyzer/quality/trusted_to_curated_local (fuera del repo) · /root/.cache/ta-glue39-venv/bin/python",
+          "data": {}
+        },
+        {
+          "id": "L1",
+          "title": "corrida local (aristas y conciliación)",
+          "status": "OK",
+          "detail": "Trusted 221629 → fact_posts 221629 · edges_user_brand 15395 pares, 233395 menciones · edges_hashtag_cooccurrence 136 pares, 44578 coocurrencias, 25 hashtags · 16 comprobaciones (todas OK) · versión trusted-to-curated@1.1 · archivos cambiados 0 (2 = solo las aristas, la primera vez sobre la salida del 4.3) · 5.1 s, 7.9 s de CPU, pico 424.5 MB · Python 3.9.25, pyarrow 7.0.0",
+          "data": {
+            "done": {
+              "bytes_written": 18480344,
+              "conciliation_ok": true,
+              "cooccurrences": 44578,
+              "cpu_seconds": 7.9,
+              "dry_run": false,
+              "dt_max": "2026-10-24",
+              "dt_min": "2026-04-27",
+              "dt_mismatch": 0,
+              "duration_s": 5.1,
+              "environment": {
+                "boto3": "1.21.21",
+                "botocore": "1.24.21",
+                "pyarrow": "7.0.0",
+                "python": "3.9.25"
+              },
+              "event": "glue_job_done",
+              "fact_partitions": 181,
+              "fact_rows": 221629,
+              "files_changed": 0,
+              "hashtags_distinct": 25,
+              "input_objects": 543,
+              "job": "ta-job-trusted-to-curated",
+              "lote": "4.4",
+              "mentions": 233395,
+              "nlp_missing": 65263,
+              "objects": 189,
+              "objects_deleted": 0,
+              "objects_unchanged": 189,
+              "objects_written": 0,
+              "peak_rss_mb": 424.5,
+              "read_seconds": 0.6,
+              "report": "quality/2026-10-27/trusted_to_curated/manual-20261027T115907Z-32ba2ccf.json",
+              "rows_read": 221629,
+              "rows_read_by_origin": {
+                "historical": 50000,
+                "stream": 171629
+              },
+              "rows_without_brand": 0,
+              "run_id": "manual-20261027T115907Z-32ba2ccf",
+              "skipped_objects": 0,
+              "tables": {
+                "agg_emotion_by_brand_hour": 39954,
+                "agg_trend_daily": 543,
+                "dim_brand": 3,
+                "dim_date": 181,
+                "dim_source": 3,
+                "dim_user": 5936,
+                "edges_hashtag_cooccurrence": 136,
+                "edges_user_brand": 15395,
+                "fact_posts": 221629
+              },
+              "time": "2026-10-27T11:59:12.166Z",
+              "transform_seconds": 3.8,
+              "trusted_rows_match": null,
+              "version": "trusted-to-curated@1.1",
+              "workflow_run_id": null
+            },
+            "edge_checks": {
+              "edges_hashtag_a_lt_b": {
+                "expected": 0,
+                "observed": 0,
+                "ok": true
+              },
+              "edges_hashtag_weight_eq_pairs": {
+                "expected": 44578,
+                "observed": 44578,
+                "ok": true
+              },
+              "edges_user_brand_weight_eq_mentions": {
+                "expected": 233395,
+                "observed": 233395,
+                "ok": true
+              },
+              "fk_edge_brand_in_dim_brand": {
+                "expected": 0,
+                "observed": 0,
+                "ok": true
+              },
+              "fk_edge_user_in_dim_user": {
+                "expected": 0,
+                "observed": 0,
+                "ok": true
+              }
+            }
+          }
+        },
+        {
+          "id": "L2",
+          "title": "segunda corrida local (idempotencia)",
+          "status": "OK",
+          "detail": "escritos 0 · sin cambios 189 · archivos cambiados 0 · borrados 0",
+          "data": {
+            "done": {
+              "bytes_written": 18480344,
+              "conciliation_ok": true,
+              "cooccurrences": 44578,
+              "cpu_seconds": 7.7,
+              "dry_run": false,
+              "dt_max": "2026-10-24",
+              "dt_min": "2026-04-27",
+              "dt_mismatch": 0,
+              "duration_s": 4.7,
+              "environment": {
+                "boto3": "1.21.21",
+                "botocore": "1.24.21",
+                "pyarrow": "7.0.0",
+                "python": "3.9.25"
+              },
+              "event": "glue_job_done",
+              "fact_partitions": 181,
+              "fact_rows": 221629,
+              "files_changed": 0,
+              "hashtags_distinct": 25,
+              "input_objects": 543,
+              "job": "ta-job-trusted-to-curated",
+              "lote": "4.4",
+              "mentions": 233395,
+              "nlp_missing": 65263,
+              "objects": 189,
+              "objects_deleted": 0,
+              "objects_unchanged": 189,
+              "objects_written": 0,
+              "peak_rss_mb": 427.3,
+              "read_seconds": 0.7,
+              "report": "quality/2026-10-27/trusted_to_curated/manual-20261027T115912Z-dfa8281a.json",
+              "rows_read": 221629,
+              "rows_read_by_origin": {
+                "historical": 50000,
+                "stream": 171629
+              },
+              "rows_without_brand": 0,
+              "run_id": "manual-20261027T115912Z-dfa8281a",
+              "skipped_objects": 0,
+              "tables": {
+                "agg_emotion_by_brand_hour": 39954,
+                "agg_trend_daily": 543,
+                "dim_brand": 3,
+                "dim_date": 181,
+                "dim_source": 3,
+                "dim_user": 5936,
+                "edges_hashtag_cooccurrence": 136,
+                "edges_user_brand": 15395,
+                "fact_posts": 221629
+              },
+              "time": "2026-10-27T11:59:17.135Z",
+              "transform_seconds": 3.7,
+              "trusted_rows_match": null,
+              "version": "trusted-to-curated@1.1",
+              "workflow_run_id": null
+            }
+          }
+        },
+        {
+          "id": "L3",
+          "title": "esquema de las nueve tablas = contracts/athena/curated.sql",
+          "status": "OK",
+          "detail": "9 tablas (archivos: {'fact_posts': 181, 'dim_date': 1, 'dim_source': 1, 'dim_brand': 1, 'dim_user': 1, 'agg_emotion_by_brand_hour': 1, 'agg_trend_daily': 1, 'edges_user_brand': 1, 'edges_hashtag_cooccurrence': 1}); aristas: string, string, bigint → int64",
+          "data": {}
+        },
+        {
+          "id": "L4",
+          "title": "aristas = recalculadas aparte con pyarrow",
+          "status": "OK",
+          "detail": "15395 pares usuario–marca con los mismos pesos (Σ 233395 = menciones del job 233395) · 136 pares de hashtags con los mismos pesos (Σ 44578) · 25 hashtags · 221629 filas de Trusted",
+          "data": {
+            "recomputed": {
+              "mentions": 233395,
+              "cooccurrences": 44578,
+              "hashtags": 25,
+              "rows": 221629
+            }
+          }
+        }
+      ]
+    },
+    "status": {
+      "title": "Estado del lakehouse y de Curated con aristas (solo lectura)",
+      "status": "AVISO",
+      "started_at": "2026-10-27T11:59:19.314751+00:00",
+      "finished_at": "2026-10-27T11:59:29.735143+00:00",
+      "steps": [
+        {
+          "id": "S1",
+          "title": "horario ta-wf-raw-to-curated-cada-hora",
+          "status": "OK",
+          "detail": "ENABLED (estado normal por decisión del usuario: cada hora corren Trusted y Curated con las aristas)",
+          "data": {
+            "schedule": "ENABLED"
+          }
+        },
+        {
+          "id": "S2",
+          "title": "corridas y job runs en curso",
+          "status": "OK",
+          "detail": "ninguna corrida; ningún job run",
+          "data": {}
+        },
+        {
+          "id": "S3",
+          "title": "Curated (nueve tablas) y su último reporte",
+          "status": "AVISO",
+          "detail": "curated/: 187 objetos {'fact_posts': 181, 'dim_date': 1, 'dim_source': 1, 'dim_brand': 1, 'dim_user': 1, 'agg_emotion_by_brand_hour': 1, 'agg_trend_daily': 1, 'edges_user_brand': 0, 'edges_hashtag_cooccurrence': 0} · último reporte wr_56ffae59f68c33c6c36c5ce0e2ca70ec38630192173a70b9f987287254e2673d (trusted-to-curated@1.0, 2026-10-27T11:18:19.188Z): fact_posts 221629 filas, aristas {}, menciones None, coocurrencias None, 0 archivos cambiados · sin aristas todavía (aplique C y corra D)",
+          "data": {}
+        },
+        {
+          "id": "S4",
+          "title": "horarios de prueba del 4.1",
+          "status": "OK",
+          "detail": "ninguno",
+          "data": {}
+        },
+        {
+          "id": "S5",
+          "title": "marcas del marcador de posición en curated/_ta_placeholder/",
+          "status": "OK",
+          "detail": "0 objetos",
+          "data": {}
+        }
+      ]
+    },
+    "C": {
+      "title": "Terraform (script y descripción del job)",
+      "status": "AVISO",
+      "started_at": "2026-10-27T11:59:40.429771+00:00",
+      "finished_at": "2026-10-27T12:01:03.386066+00:00",
+      "steps": [
+        {
+          "id": "C0",
+          "title": "identidad de AWS",
+          "status": "AVISO",
+          "detail": "arn:aws:iam::648617469176:root (cuenta raíz: sirve para aplicar; el job corre con ta-glue-role)",
+          "data": {}
+        },
+        {
+          "id": "C0b",
+          "title": "backend.hcl y terraform.tfvars de infra/aws",
+          "status": "OK",
+          "detail": "presentes (no se versionan)",
+          "data": {}
+        },
+        {
+          "id": "C1",
+          "title": "bash infra/validate.sh",
+          "status": "OK",
+          "detail": "\u001b[32m\u001b[1mSuccess!\u001b[0m The configuration is valid.\n\u001b[0m\n== validate: aws/environments/dev ==\n\u001b[32m\u001b[1mSuccess!\u001b[0m The configuration is valid.\n\u001b[0m\nOK",
+          "data": {}
+        },
+        {
+          "id": "C2a",
+          "title": "terraform init",
+          "status": "OK",
+          "detail": "If you ever set or change modules or backend configuration for Terraform,\nrerun this command to reinitialize your working directory. If you forget, other\ncommands will detect it and remind you to do so if necessary.\u001b[0m",
+          "data": {}
+        },
+        {
+          "id": "C2",
+          "title": "plan (-target=module.glue_workflow)",
+          "status": "OK",
+          "detail": "0 a crear, 2 a cambiar, 0 a destruir, 0 a reemplazar (esperado: el script y la descripción del job a cambiar; nada a crear ni a destruir)\nmodule.glue_workflow.aws_glue_job.this[\"trusted_to_curated\"]:\n  description: 'Trusted → Curated (HU-027, Lote 4.3): fact_posts, dimensiones y agregados.' → 'Trusted → Curated (HU-027 y HU-028, Lotes 4.3 y 4.4): fact_posts, dimensiones, agregados y aristas.'\nmodule.glue_workflow.aws_s3_object.script[\"trusted_to_curated\"]:\n  source_hash: 'aa7d9b37d70f62c8c9cc961c2746877b' → 'e590b714f7a40dcf278f745f7ffbe5bc'\n  version_id: '' → (se sabrá al aplicar)",
+          "data": {
+            "create": [],
+            "update": [
+              "module.glue_workflow.aws_glue_job.this[\"trusted_to_curated\"]",
+              "module.glue_workflow.aws_s3_object.script[\"trusted_to_curated\"]"
+            ],
+            "delete": [],
+            "replace": [],
+            "diffs": {
+              "module.glue_workflow.aws_glue_job.this[\"trusted_to_curated\"]": [
+                "description: 'Trusted → Curated (HU-027, Lote 4.3): fact_posts, dimensiones y agregados.' → 'Trusted → Curated (HU-027 y HU-028, Lotes 4.3 y 4.4): fact_posts, dimensiones, agregados y aristas.'"
+              ],
+              "module.glue_workflow.aws_s3_object.script[\"trusted_to_curated\"]": [
+                "source_hash: 'aa7d9b37d70f62c8c9cc961c2746877b' → 'e590b714f7a40dcf278f745f7ffbe5bc'",
+                "version_id: '' → (se sabrá al aplicar)"
+              ]
+            }
+          }
+        },
+        {
+          "id": "C3",
+          "title": "apply",
+          "status": "AVISO",
+          "detail": "sin --apply: no se aplicó (repita con --apply)",
+          "data": {}
+        },
+        {
+          "id": "C3b",
+          "title": "plan tras aplicar (sin deriva)",
+          "status": "OMITIDO",
+          "detail": "pendiente del apply",
+          "data": {}
+        }
+      ]
+    }
+  },
+  "updated_at": "2026-10-27T12:01:03.386168+00:00"
+}

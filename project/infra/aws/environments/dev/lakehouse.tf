@@ -40,10 +40,11 @@ locals {
     {
       key         = "trusted_to_curated"
       name        = "ta-job-trusted-to-curated"
-      description = "Trusted → Curated (HU-027, Lote 4.3): fact_posts, dimensiones y agregados."
+      description = "Trusted → Curated (HU-027 y HU-028, Lotes 4.3 y 4.4): fact_posts, dimensiones, agregados y aristas."
       script_path = "${local.lakehouse_src}/glue_jobs/trusted_to_curated.py"
       # Lote 4.3 (§3.22, ADR-26): la capacidad por defecto del módulo, 0,0625 DPU (1 GB). Pico medido
       # en local con Python 3.9 y pyarrow 7: ~0,43 GB con el Trusted de hoy. glue_job_settings la cambia.
+      # Lote 4.4 (§3.23, ADR-27): el mismo job escribe también las aristas (edges_*).
       arguments = {
         "--ta_input_prefix"  = "trusted/"
         "--ta_output_prefix" = "curated/"

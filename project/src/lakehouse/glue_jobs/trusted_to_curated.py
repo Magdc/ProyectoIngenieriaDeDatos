@@ -1,4 +1,5 @@
-"""Glue job ``ta-job-trusted-to-curated`` · Trusted → Curated (Lote 4.3, HU-027; ARCHITECTURE.md §3.22, ADR-26).
+"""Glue job ``ta-job-trusted-to-curated`` · Trusted → Curated (Lotes 4.3 y 4.4, HU-027 y HU-028;
+ARCHITECTURE.md §3.22 y §3.23, ADR-26 y ADR-27).
 
 Reemplaza al marcador de posición del Lote 4.1. Terraform lo sube a
 ``s3://{lake}/_glue/scripts/ta-job-trusted-to-curated.py``; corre en Glue **Python shell 3.9** con el
@@ -9,18 +10,21 @@ Qué hace en cada corrida (reconstruye Curated entero desde Trusted; mismo Trust
 
 1. Lista y lee en paralelo los Parquet de ``trusted/posts/source={s}/dt={d}/`` directamente de S3 (el rol
    no tiene Athena), solo las columnas que usa Curated; ``source`` y ``dt`` salen de la ruta.
-2. Construye las tablas de ``contracts/athena/curated.sql`` salvo las aristas (``edges_*``, Lote 4.4):
+2. Construye las nueve tablas de ``contracts/athena/curated.sql``:
    ``fact_posts`` (una fila por ``event_id``, ``date_key = yyyymmdd`` de ``dt``, NLP nulo en las filas sin
    NLP), ``dim_date``, ``dim_source``, ``dim_brand``, ``dim_user``, ``agg_emotion_by_brand_hour`` (sin las
    filas sin emoción) y ``agg_trend_daily`` (``n_posts`` cuenta todas las filas; ``n_negative``,
-   ``n_neutral``, ``n_positive`` y ``avg_sentiment``, solo las que tienen sentimiento).
-3. Concilia antes de escribir (filas de ``fact_posts`` = filas de Trusted, sumas de los agregados = conteos
-   de ``fact_posts``, llaves foráneas): si algo no cuadra falla sin tocar Curated.
+   ``n_neutral``, ``n_positive`` y ``avg_sentiment``, solo las que tienen sentimiento); y las aristas del
+   Lote 4.4: ``edges_user_brand`` (``weight`` = filas del usuario que mencionan la marca, cada marca
+   distinta de ``brands``) y ``edges_hashtag_cooccurrence`` (``weight`` = filas en las que aparecen los dos
+   hashtags, cada hashtag distinto una vez por fila, siempre ``hashtag_a < hashtag_b``).
+3. Concilia antes de escribir (filas de ``fact_posts`` = filas de Trusted, sumas de los agregados y de las
+   aristas = conteos de Trusted, llaves foráneas): si algo no cuadra falla sin tocar Curated.
 4. Escribe un Parquet + Snappy por partición de ``fact_posts``
    (``curated/fact_posts/dt={AAAA-MM-DD}/part-00000.parquet``) y uno por tabla
    (``curated/{tabla}/part-00000.parquet``). Solo sube los objetos cuyo sha256 cambió frente al último
    reporte (o que faltan); sobrescribir un objeto de S3 es atómico. Después borra lo que sobre, **solo**
-   bajo los prefijos de sus siete tablas (nunca ``curated/edges_*`` ni ``curated/_ta_placeholder/``).
+   bajo los prefijos de sus nueve tablas (nunca ``curated/_ta_placeholder/`` ni otra cosa de ``curated/``).
 5. Deja el reporte de la corrida en ``quality/{AAAA-MM-DD}/trusted_to_curated/{corrida}.json`` y en
    ``quality/_latest/trusted_to_curated.json`` y una línea JSON ``glue_job_done`` en
    ``/aws-glue/python-jobs/output``. Dentro del workflow deja ``ta_curated_report``, ``ta_curated_rows`` y
@@ -51,12 +55,14 @@ import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta, timezone
+from itertools import combinations
 
 JOB_KEY = "trusted_to_curated"
 JOB_NAME = "ta-job-trusted-to-curated"
-JOB_VERSION = "trusted-to-curated@1.0"
+#: 1.1 (Lote 4.4): suma las aristas; las siete tablas del 4.3 salen con los mismos bytes.
+JOB_VERSION = "trusted-to-curated@1.1"
 REPORT_SCHEMA = "ta-trusted-to-curated-report@1"
-LOTE = "4.3"
+LOTE = "4.4"
 
 DEFAULTS = {
     "ta_input_prefix": "trusted/",
@@ -98,6 +104,7 @@ READ_COLUMNS = (
     ("followers", "int64"),
     ("brands", "list"),
     ("brand_primary", "string"),
+    ("hashtags", "list"),
     ("likes", "int64"),
     ("shares", "int64"),
     ("comments", "int64"),
@@ -110,7 +117,7 @@ READ_COLUMNS = (
 )
 READ_NAMES = tuple(c[0] for c in READ_COLUMNS)
 
-# Tablas de Curated (= contracts/athena/curated.sql salvo edges_*): (nombre, tipo lógico, admite nulos).
+# Tablas de Curated (= contracts/athena/curated.sql): (nombre, tipo lógico, admite nulos).
 # Los tipos lógicos se traducen a Arrow en arrow_type(); las pruebas los comparan con catalog_spec.
 FACT_COLUMNS = (
     ("event_id", "string", False),
@@ -173,6 +180,16 @@ AGG_TREND_COLUMNS = (
     ("n_positive", "int64", False),
     ("avg_sentiment", "double", True),
 )
+EDGE_USER_BRAND_COLUMNS = (
+    ("user_hash", "string", False),
+    ("brand", "string", False),
+    ("weight", "int64", False),
+)
+EDGE_HASHTAG_COLUMNS = (
+    ("hashtag_a", "string", False),
+    ("hashtag_b", "string", False),
+    ("weight", "int64", False),
+)
 TABLES = (
     ("fact_posts", FACT_COLUMNS),
     ("dim_date", DIM_DATE_COLUMNS),
@@ -181,10 +198,12 @@ TABLES = (
     ("dim_user", DIM_USER_COLUMNS),
     ("agg_emotion_by_brand_hour", AGG_EMOTION_COLUMNS),
     ("agg_trend_daily", AGG_TREND_COLUMNS),
+    ("edges_user_brand", EDGE_USER_BRAND_COLUMNS),
+    ("edges_hashtag_cooccurrence", EDGE_HASHTAG_COLUMNS),
 )
 TABLE_NAMES = tuple(t[0] for t in TABLES)
 TABLE_COLUMNS = dict(TABLES)
-#: Del Lote 4.4: este job no las escribe ni las borra.
+#: Las aristas (Lote 4.4, ADR-27): desde la versión 1.1 las escribe este mismo job, como las demás.
 EDGE_TABLES = ("edges_user_brand", "edges_hashtag_cooccurrence")
 
 #: dim_source (ARCHITECTURE.md §3.3; mezcla de ``kind`` de src/simulator/config/sim.yaml). Las pruebas
@@ -590,6 +609,43 @@ class Accumulator:
         self.nlp_missing, self.nlp_missing_by_origin = 0, {}
         self.with_sentiment, self.with_emotion = 0, 0
         self.unknown_sentiment, self.unknown_emotion = 0, 0
+        # Aristas (Lote 4.4, ADR-27): cada marca o hashtag distinto cuenta una vez por fila.
+        self.mentions = {}  # (user_hash, marca) → filas
+        self.mention_brands = {}  # marca de brands → filas con usuario que la mencionan
+        self.mention_total = 0  # Σ marcas distintas de las filas con usuario (= Σ weight de edges_user_brand)
+        self.rows_without_brands = 0  # filas con usuario y sin ninguna marca en brands
+        self.rows_with_repeated_brands = 0
+        self.cooc = {}  # (hashtag_a, hashtag_b) con a < b → filas
+        self.hashtags = {}  # hashtag → filas (solo se reporta cuántos hay)
+        self.rows_by_hashtag_count = {}  # nº de hashtags distintos de la fila → filas
+        self.rows_with_repeated_hashtags = 0
+        self.cooc_total = 0  # Σ C(k, 2) por fila (= Σ weight de edges_hashtag_cooccurrence)
+
+    def add_edges(self, user, marks, tags):
+        """Una fila de Trusted en las aristas: ``marks`` = su ``brands`` y ``tags`` = sus ``hashtags``."""
+        marks = [b for b in (marks or ()) if b]
+        distinct = sorted(set(marks))
+        if len(distinct) < len(marks):
+            self.rows_with_repeated_brands += 1
+        if user is not None:
+            if not distinct:
+                self.rows_without_brands += 1
+            for brand in distinct:
+                key = (user, brand)
+                self.mentions[key] = self.mentions.get(key, 0) + 1
+                self.mention_brands[brand] = self.mention_brands.get(brand, 0) + 1
+            self.mention_total += len(distinct)
+        tags = [h for h in (tags or ()) if h]
+        uniq = sorted(set(tags))
+        if len(uniq) < len(tags):
+            self.rows_with_repeated_hashtags += 1
+        k = len(uniq)
+        self.rows_by_hashtag_count[k] = self.rows_by_hashtag_count.get(k, 0) + 1
+        for h in uniq:
+            self.hashtags[h] = self.hashtags.get(h, 0) + 1
+        for pair in combinations(uniq, 2):  # uniq ordenada ⇒ pair[0] < pair[1]
+            self.cooc[pair] = self.cooc.get(pair, 0) + 1
+        self.cooc_total += k * (k - 1) // 2
 
     def add(self, source, dt, table):
         import pyarrow as pa
@@ -606,6 +662,7 @@ class Accumulator:
         users = col("user_hash").to_pylist()
         followers = col("followers").to_pylist()
         brands = col("brand_primary").to_pylist()
+        marks, tags = col("brands").to_pylist(), col("hashtags").to_pylist()
         sl, ss = col("sentiment_label").to_pylist(), col("sentiment_score").to_pylist()
         el, es = col("emotion_label").to_pylist(), col("emotion_score").to_pylist()
         nv = col("nlp_model_version").to_pylist()
@@ -641,6 +698,7 @@ class Accumulator:
                     rec[2] += 1
                     if fol is not None and (rec[3] is None or fol > rec[3]):
                         rec[3] = fol
+            self.add_edges(user, marks[i], tags[i])
             brand = brands[i]
             if brand is None:
                 self.rows_without_brand += 1
@@ -678,7 +736,8 @@ def build_dimensions_and_aggregates(acc):
     tables["dim_source"] = table_from_columns("dim_source", src)
 
     known = {b for b, _, _ in BRAND_ROWS}
-    unknown = sorted(b for b in acc.brands if b not in known)
+    # (4.4) también las marcas de brands que no son brand_primary: edges_user_brand.brand → dim_brand.brand
+    unknown = sorted(b for b in set(acc.brands) | set(acc.mention_brands) if b not in known)
     rows = sorted(list(BRAND_ROWS) + [(b, None, None) for b in unknown])
     tables["dim_brand"] = table_from_columns("dim_brand", {
         "brand": [r[0] for r in rows], "display": [r[1] for r in rows], "role": [r[2] for r in rows]})
@@ -698,6 +757,13 @@ def build_dimensions_and_aggregates(acc):
         "full_date": [date.fromisoformat(k[0]) for k, _ in trend], "brand": [k[1] for k, _ in trend],
         "n_posts": [v[0] for _, v in trend], "n_negative": [v[1] for _, v in trend], "n_neutral": [v[2] for _, v in trend],
         "n_positive": [v[3] for _, v in trend], "avg_sentiment": [avg_sentiment(v[4]) for _, v in trend]})
+
+    pairs = sorted(acc.mentions.items())
+    tables["edges_user_brand"] = table_from_columns("edges_user_brand", {
+        "user_hash": [k[0] for k, _ in pairs], "brand": [k[1] for k, _ in pairs], "weight": [n for _, n in pairs]})
+    cooc = sorted(acc.cooc.items())
+    tables["edges_hashtag_cooccurrence"] = table_from_columns("edges_hashtag_cooccurrence", {
+        "hashtag_a": [k[0] for k, _ in cooc], "hashtag_b": [k[1] for k, _ in cooc], "weight": [n for _, n in cooc]})
     return tables, unknown
 
 
@@ -728,9 +794,15 @@ def build_fact_partition(parts):
 def conciliation_checks(acc, fact_rows, tables):
     """Lo que tiene que cuadrar antes de escribir (ARCHITECTURE.md §3.22): ``{nombre: {expected, observed, ok}}``."""
     trend, emo, users = tables["agg_trend_daily"], tables["agg_emotion_by_brand_hour"], tables["dim_user"]
+    eub, eht = tables["edges_user_brand"], tables["edges_hashtag_cooccurrence"]
 
     def total(table, name):
         return sum(v for v in table.column(name).to_pylist() if v is not None)
+
+    edge_users = set(eub.column("user_hash").to_pylist())
+    dim_users = set(users.column("user_hash").to_pylist())
+    unordered = sum(1 for a, b in zip(eht.column("hashtag_a").to_pylist(), eht.column("hashtag_b").to_pylist())
+                    if not a < b)
 
     with_brand = acc.rows - acc.rows_without_brand
     trend_sentiment = total(trend, "n_negative") + total(trend, "n_neutral") + total(trend, "n_positive")
@@ -753,6 +825,12 @@ def conciliation_checks(acc, fact_rows, tables):
         "fk_brand_in_dim_brand": (0, len(set(acc.brands) - brands)),
         "fk_date_key_in_dim_date": (0, len(fact_keys - date_keys)),
         "dim_date_continuous": (n_days, tables["dim_date"].num_rows),
+        # (4.4) aristas
+        "edges_user_brand_weight_eq_mentions": (acc.mention_total, total(eub, "weight")),
+        "fk_edge_user_in_dim_user": (0, len(edge_users - dim_users)),
+        "fk_edge_brand_in_dim_brand": (0, len(set(eub.column("brand").to_pylist()) - brands)),
+        "edges_hashtag_weight_eq_pairs": (acc.cooc_total, total(eht, "weight")),
+        "edges_hashtag_a_lt_b": (0, unordered),
     }
     return {k: {"expected": e, "observed": o, "ok": e == o} for k, (e, o) in raw.items()}
 
@@ -917,10 +995,20 @@ def transform_and_write(parts, inventory, dst, args, run_id, started_at, previou
             "unknown_sentiment_labels": acc.unknown_sentiment,
             "unknown_emotion_labels": acc.unknown_emotion,
             "brands": dict(sorted(acc.brands.items())),
+            # (4.4) aristas: solo conteos (sin user_hash ni nombres de hashtags)
+            "mentions": acc.mention_total,
+            "mentions_by_brand": dict(sorted(acc.mention_brands.items())),
+            "rows_without_brands": acc.rows_without_brands,
+            "rows_with_repeated_brands": acc.rows_with_repeated_brands,
+            "hashtags_distinct": len(acc.hashtags),
+            "rows_by_hashtag_count": {str(k): v for k, v in sorted(acc.rows_by_hashtag_count.items())},
+            "rows_with_repeated_hashtags": acc.rows_with_repeated_hashtags,
+            "cooccurrences": acc.cooc_total,
         },
         "tables": by_table,
         "checks": checks,
         "conciliation": {"ok": True, "formula": "fact_posts = Trusted; sumas de agg_* y dim_user = conteos de fact_posts; "
+                                                "Σ weight de las aristas = menciones y pares de hashtags de Trusted; "
                                                 "llaves foráneas en sus dimensiones (checks)"},
         "output": {
             "prefix": output_prefix,
@@ -980,6 +1068,9 @@ def summary_fields(report, report_key):
         "tables": {k: v["rows"] for k, v in sorted(report["tables"].items())},
         "nlp_missing": c["nlp_missing"],
         "rows_without_brand": c["rows_without_brand"],
+        "mentions": c["mentions"],
+        "cooccurrences": c["cooccurrences"],
+        "hashtags_distinct": c["hashtags_distinct"],
         "dt_mismatch": c["dt_mismatch"],
         "conciliation_ok": report["conciliation"]["ok"],
         "objects": o["objects"],

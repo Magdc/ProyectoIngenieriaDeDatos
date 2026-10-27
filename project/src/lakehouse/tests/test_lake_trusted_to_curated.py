@@ -1,8 +1,8 @@
-"""Job real Trusted → Curated (Lote 4.3, HU-027) con un S3 y un Glue falsos.
+"""Job real Trusted → Curated (Lotes 4.3 y 4.4, HU-027 y HU-028) con un S3 y un Glue falsos.
 
 El Trusted de entrada lo escribe el job real del 4.2 (``raw_to_trusted.py`` en modo local) a partir de
 Raw sintético de ``quality.testing``: así se prueba la cadena con el formato real de Trusted. Lo esperado
-se recalcula aquí con código aparte (sin las funciones del job)."""
+se recalcula aquí con código aparte (sin las funciones del job), también las aristas del 4.4."""
 
 from __future__ import annotations
 
@@ -59,7 +59,8 @@ class AccessDenied(Exception):
 
 
 TABLE_PREFIXES = tuple(f"curated/{t}/" for t in ("fact_posts", "dim_date", "dim_source", "dim_brand", "dim_user",
-                                                  "agg_emotion_by_brand_hour", "agg_trend_daily"))
+                                                  "agg_emotion_by_brand_hour", "agg_trend_daily", "edges_user_brand",
+                                                  "edges_hashtag_cooccurrence"))
 
 
 class FakeS3:
@@ -121,7 +122,10 @@ def ts(text):
 
 
 def raw_world():
-    """Histórico que cruza medianoche, stream sin NLP, una comparativa, una fila en el borde de la hora."""
+    """Histórico que cruza medianoche, stream sin NLP, una comparativa, una fila en el borde de la hora.
+
+    Para las aristas (4.4): la comparativa trae tres hashtags con uno repetido, otras dos filas comparten un
+    par de hashtags en distinto orden y una fila repite su marca en ``brands``."""
     rows = qt.make_rows("historical", "reddit", 6, ts("2026-05-01T20:00:00"), step=timedelta(hours=2))
     rows += qt.make_rows("historical", "facebook", 4, ts("2026-05-03T08:00:00"), step=timedelta(hours=1))
     rows += qt.make_rows("stream", "instagram", 5, ts("2026-10-23T23:50:00"), step=timedelta(minutes=3))
@@ -133,7 +137,11 @@ def raw_world():
     edge = qt.make_row("stream", "reddit", 50, ts("2026-10-23T23:00:00"))
     edge["brands"], edge["brand_primary"] = ["pepsi", "postobon"], "pepsi"
     edge["sentiment_label"], edge["emotion_label"] = "neutral", "joy"
+    edge["hashtags"] = ["gaseosa", "colombia", "gaseosa", "bebidas"]
     rows.append(edge)
+    rows[0]["hashtags"] = ["colombia", "gaseosa"]
+    rows[7]["hashtags"] = ["gaseosa", "colombia"]
+    rows[1]["brands"] = [rows[1]["brand_primary"]] * 2
     return rows
 
 
@@ -155,7 +163,8 @@ def world(trusted):
     objects = dict(trusted)
     objects["curated/"] = b""
     objects["curated/_ta_placeholder/ta-job-trusted-to-curated/wr_0ab6.json"] = b"{}"
-    objects["curated/edges_user_brand/part-00000.parquet"] = b"PAR1aristasPAR1"
+    objects["curated/edges_user_brand/part-00000.parquet"] = b"PAR1aristasPAR1"  # lo reemplaza (4.4)
+    objects["curated/otra_tabla/part-00000.parquet"] = b"PAR1ajenaPAR1"  # no es suya: no la toca
     return objects
 
 
@@ -287,6 +296,20 @@ def expected_from(rows):
     return trend, emotion, users
 
 
+def expected_edges(rows):
+    """Aristas esperadas (ADR-27), aparte del job: marcas y hashtags distintos de cada fila."""
+    user_brand, pairs = Counter(), Counter()
+    for r in rows:
+        if r["user_hash"] is not None:
+            for b in set(r["brands"] or []):
+                user_brand[(r["user_hash"], b)] += 1
+        tags = sorted(set(r["hashtags"] or []))
+        for i, a in enumerate(tags):
+            for b in tags[i + 1:]:
+                pairs[(a, b)] += 1
+    return user_brand, pairs
+
+
 def test_job_de_punta_a_punta(job, trusted, world, capsys):
     rows = trusted_rows(trusted)
     s3, glue = FakeS3(world), FakeGlue({"ta_trusted_report": "quality/x/raw_to_trusted/wr_123.json",
@@ -351,21 +374,44 @@ def test_job_de_punta_a_punta(job, trusted, world, capsys):
     for name in job.TABLE_NAMES:
         assert read_table(s3, name).schema.equals(job.table_schema(name)), name
 
+    # aristas (4.4): cada marca distinta de brands y cada par de hashtags distintos, una vez por fila
+    user_brand, pairs = expected_edges(rows)
+    eub = read_table(s3, "edges_user_brand").to_pylist()
+    assert [(e["user_hash"], e["brand"]) for e in eub] == sorted(user_brand)  # ordenada y sin pares repetidos
+    assert {(e["user_hash"], e["brand"]): e["weight"] for e in eub} == dict(user_brand)
+    assert sum(user_brand.values()) == report["counts"]["mentions"] == len(rows) + 1  # la comparativa cuenta 2
+    comparativa = next(r for r in rows if len(r["brands"]) == 2 and r["brands"][0] != r["brands"][1])
+    assert {(comparativa["user_hash"], "pepsi"), (comparativa["user_hash"], "postobon")} <= set(user_brand)
+    eht = read_table(s3, "edges_hashtag_cooccurrence").to_pylist()
+    assert {(e["hashtag_a"], e["hashtag_b"]): e["weight"] for e in eht} == dict(pairs)
+    assert pairs[("colombia", "gaseosa")] == 3 and pairs[("bebidas", "gaseosa")] == 1 and len(pairs) == 3
+    assert all(e["hashtag_a"] < e["hashtag_b"] for e in eht) and sum(e["weight"] for e in eht) == 5
+    c = report["counts"]
+    assert c["cooccurrences"] == 5 and c["rows_with_repeated_hashtags"] == 1 and c["rows_with_repeated_brands"] == 1
+    assert c["rows_by_hashtag_count"]["3"] == 1 and c["rows_by_hashtag_count"]["2"] == 2 and c["rows_without_brands"] == 0
+    assert sum(c["rows_by_hashtag_count"].values()) == len(rows) and c["mentions_by_brand"]["postobon"] >= 1
+
     assert all(c["ok"] for c in report["checks"].values()) and report["conciliation"]["ok"]
+    assert len(report["checks"]) == 16
     assert report["checks"]["trend_rows_without_sentiment"] == {"expected": 3, "observed": 3, "ok": True}
-    assert report["output"]["objects_written"] == report["output"]["objects"] == len(dts) + 6
-    assert report["output"]["files_changed"] == len(dts) + 6 and report["output"]["objects_deleted"] == 0
+    assert report["checks"]["edges_hashtag_weight_eq_pairs"] == {"expected": 5, "observed": 5, "ok": True}
+    assert report["output"]["objects_written"] == report["output"]["objects"] == len(dts) + 8
+    assert report["output"]["files_changed"] == len(dts) + 8 and report["output"]["objects_deleted"] == 0
     reports = [k for k in s3.puts if k.startswith("quality/")]
     dated = next(k for k in reports if "_latest" not in k)
     assert re.match(r"quality/\d{4}-\d{2}-\d{2}/trusted_to_curated/wr_123\.json$", dated)
     assert "quality/_latest/trusted_to_curated.json" in reports
     assert glue.puts == [("ta-wf-raw-to-curated", "wr_123", {"ta_curated_report": dated, "ta_curated_rows": str(len(rows)),
-                                                             "ta_curated_files_changed": str(len(dts) + 6)})]
+                                                             "ta_curated_files_changed": str(len(dts) + 8)})]
     events = logs(capsys)
     assert [e["event"] for e in events] == ["glue_job_start", "glue_curated_read", "glue_job_done"]
     assert events[-1]["fact_rows"] == len(rows) and events[-1]["tables"]["dim_source"] == 3
+    assert events[-1]["tables"]["edges_hashtag_cooccurrence"] == 3 and events[-1]["cooccurrences"] == 5
+    assert events[-1]["mentions"] == len(rows) + 1 and events[-1]["hashtags_distinct"] >= 3
+    assert all(e["lote"] == "4.4" and e["version"] == "trusted-to-curated@1.1" for e in events)
     # lo que no es suyo, intacto; y la primera corrida no pide el reporte anterior (daría 403)
-    assert s3.objects["curated/edges_user_brand/part-00000.parquet"] == b"PAR1aristasPAR1"
+    assert s3.objects["curated/edges_user_brand/part-00000.parquet"] != b"PAR1aristasPAR1"
+    assert s3.objects["curated/otra_tabla/part-00000.parquet"] == b"PAR1ajenaPAR1"
     assert "curated/_ta_placeholder/ta-job-trusted-to-curated/wr_0ab6.json" in s3.objects and "curated/" in s3.objects
     assert "quality/_latest/trusted_to_curated.json" not in s3.gets
     assert not any(k.startswith(("trusted/", "raw/")) for k in s3.puts + s3.deleted)
@@ -406,12 +452,16 @@ def test_borra_lo_que_sobra_solo_en_sus_tablas(job, world, capsys):
     extra = {"curated/fact_posts/dt=2026-01-05/part-00000.parquet": b"PAR1viejoPAR1",
              "curated/dim_user/part-00001.parquet": b"PAR1otroPAR1",
              "curated/edges_hashtag_cooccurrence/part-00000.parquet": b"PAR1",
+             "curated/edges_user_brand/part-00001.parquet": b"PAR1viejoPAR1",
              "curated/fact_posts/": b""}
     s3 = FakeS3({**objects, **extra})
     report = job.main(argv(), s3=s3, glue=FakeGlue())
-    assert sorted(s3.deleted) == ["curated/dim_user/part-00001.parquet", "curated/fact_posts/dt=2026-01-05/part-00000.parquet"]
-    assert report["output"]["objects_deleted"] == 2 and "curated/fact_posts/" in s3.objects
-    assert "curated/edges_hashtag_cooccurrence/part-00000.parquet" in s3.objects
+    # (4.4) las aristas son suyas: reemplaza su part-00000 y borra lo demás de sus prefijos
+    assert sorted(s3.deleted) == ["curated/dim_user/part-00001.parquet", "curated/edges_user_brand/part-00001.parquet",
+                                  "curated/fact_posts/dt=2026-01-05/part-00000.parquet"]
+    assert report["output"]["objects_deleted"] == 3 and "curated/fact_posts/" in s3.objects
+    assert s3.objects["curated/edges_hashtag_cooccurrence/part-00000.parquet"] != b"PAR1"
+    assert "curated/otra_tabla/part-00000.parquet" in s3.objects
     capsys.readouterr()
 
 
@@ -529,6 +579,70 @@ def test_trusted_vacio_deja_las_dimensiones_fijas(job, capsys):
     assert report["counts"]["fact_rows"] == 0 and curated_keys(s3, "fact_posts") == []
     assert report["output"]["objects_deleted"] == 1 and read_table(s3, "dim_source").num_rows == 3
     assert read_table(s3, "dim_brand").num_rows == 3 and read_table(s3, "dim_date").num_rows == 0
+    assert read_table(s3, "edges_user_brand").num_rows == 0 and read_table(s3, "edges_hashtag_cooccurrence").num_rows == 0
+    assert report["counts"]["mentions"] == report["counts"]["cooccurrences"] == 0
+    capsys.readouterr()
+
+
+# --- aristas (Lote 4.4, ADR-27) ---------------------------------------------------------------------
+
+
+def test_add_edges_cuenta_cada_marca_y_hashtag_una_vez_por_fila(job):
+    acc = job.Accumulator()
+    acc.add_edges("u1", ["pepsi", "postobon"], ["b", "a", "c", "a"])
+    acc.add_edges("u1", ["pepsi", "pepsi", None], ["a", "c"])
+    acc.add_edges(None, ["sprite"], ["c", "a"])  # sin usuario: no hay arista usuario → marca, sí coocurrencia
+    acc.add_edges("u2", [], None)
+    acc.add_edges("u2", None, ["", "z"])
+    assert acc.mentions == {("u1", "pepsi"): 2, ("u1", "postobon"): 1}
+    assert acc.mention_total == 3 and acc.mention_brands == {"pepsi": 2, "postobon": 1}
+    assert acc.rows_without_brands == 2 and acc.rows_with_repeated_brands == 1
+    assert acc.cooc == {("a", "b"): 1, ("a", "c"): 3, ("b", "c"): 1} and acc.cooc_total == 5
+    assert acc.rows_with_repeated_hashtags == 1 and acc.rows_by_hashtag_count == {3: 1, 2: 2, 0: 1, 1: 1}
+    assert acc.hashtags == {"a": 3, "b": 1, "c": 3, "z": 1}
+
+
+def test_marca_desconocida_de_una_comparativa_entra_en_dim_brand(job, world, capsys):
+    key = next(k for k in world if k.startswith("trusted/posts/"))
+    table = pq.read_table(pa.BufferReader(world[key]))
+    idx = table.schema.get_field_index("brands")
+    brands = [[b[0], "colombiana"] for b in table.column("brands").to_pylist()]
+    table = table.set_column(idx, table.schema.field(idx), pa.array(brands, table.schema.field(idx).type))
+    buf = io.BytesIO()
+    pq.write_table(table, buf)
+    s3 = FakeS3({**world, key: buf.getvalue()})
+    report = job.main(argv(), s3=s3, glue=FakeGlue())
+    assert "colombiana" in read_table(s3, "dim_brand").column("brand").to_pylist()
+    assert report["counts"]["unknown_brands"] == ["colombiana"] and "colombiana" not in report["counts"]["brands"]
+    assert report["counts"]["mentions_by_brand"]["colombiana"] == table.num_rows
+    assert report["checks"]["fk_edge_brand_in_dim_brand"]["ok"]
+    capsys.readouterr()
+
+
+def test_aristas_que_no_concilian_no_escriben(job, world, monkeypatch, capsys):
+    real = job.build_dimensions_and_aggregates
+
+    def broken(acc):
+        tables, unknown = real(acc)
+        t = tables["edges_hashtag_cooccurrence"]
+        tables["edges_hashtag_cooccurrence"] = job.table_from_columns("edges_hashtag_cooccurrence", {
+            "hashtag_a": t.column("hashtag_b").to_pylist(), "hashtag_b": t.column("hashtag_a").to_pylist(),
+            "weight": [w + 1 for w in t.column("weight").to_pylist()]})
+        return tables, unknown
+
+    monkeypatch.setattr(job, "build_dimensions_and_aggregates", broken)
+    s3 = FakeS3(world)
+    with pytest.raises(job.CuratedBuildError, match="edges_hashtag_a_lt_b.*edges_hashtag_weight_eq_pairs"):
+        job.main(argv(), s3=s3, glue=FakeGlue())
+    assert s3.puts == [] and s3.deleted == []
+    capsys.readouterr()
+
+
+def test_aristas_sin_valores_sensibles_en_el_reporte(job, trusted, world, capsys):
+    s3 = FakeS3(world)
+    report = job.main(argv(), s3=s3, glue=FakeGlue())
+    text = json.dumps(report)
+    assert "colombia" not in text and "gaseosa" not in text  # solo cuántos hashtags, no cuáles
     capsys.readouterr()
 
 

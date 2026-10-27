@@ -1,6 +1,6 @@
 # TrendAnalyzer · ARCHITECTURE
 
-> Documento maestro de arquitectura y contratos. **Versión vigente: 2.42.**
+> Documento maestro de arquitectura y contratos. **Versión vigente: 2.43.**
 > Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md) · Plan por fases, trazabilidad HU y estado: [`PLAN.md`](PLAN.md) · Historias de usuario: `HU.md` · Visión general: `README.md`.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 
@@ -33,8 +33,9 @@ Este archivo está pensado para que **baste con leerlo (o pegármelo) para const
 | Construir o leer Curated (`ta_curated`: `fact_posts`, dimensiones y agregados): el job `ta-job-trusted-to-curated`, su reporte, qué es cada tabla, las consultas guardadas de ejemplo y cómo sumar las aristas (4.4) o probar Curated (5.2) | **§3.22** (interfaces: argumentos, reporte, API, consultas guardadas, Terraform, validador, «Para el Lote 4.4» y «Para el Lote 5.2 y el 6.1» en **§3.22.1**), §5.7 (Curated) y `docs/validation/validation-4-3.md` |
 | Leer o cambiar las aristas (`edges_user_brand`, `edges_hashtag_cooccurrence`: grano, peso, orden de los pares, cómo las calcula el job y cómo se recalculan en SQL); qué de Curated usan el 5.2 y el 6.1 | **§3.23** (interfaces: reglas de ADR-27, reporte y comprobaciones nuevas, API del job y del validador, SQL de recálculo y de ejemplo, «Para el siguiente lote» en **§3.23.1**), §5.7 (aristas) y `docs/validation/validation-4-4.md` |
 | Medir la calidad con Great Expectations (Raw, Trusted y Curated), los KPI de HU-032, la precisión del NLP (HU-033) y escribir `dq_results`; reglas DQ-64…DQ-77 de Curated | **§3.24** (interfaces: CLI `run_dq.py`, forma de cada regla en GX, reglas de Curated, filas de `dq_results`, API, validador y «Para el siguiente lote» en **§3.24.1**), §5.10 (catálogo DQ-01…DQ-63), §5.5 y `docs/validation/validation-5-2.md` |
+| Describir una tabla o columna en el catálogo de Glue (descripción y clase de privacidad), ver el diccionario de datos, el linaje de extremo a extremo y por columna, o la gobernanza (DAMA-DMBOK, Ley 1581, datos sintéticos) | **§3.25** (interfaces: cómo describir una columna, CLI y API de `catalog_spec`, validador y «Para el siguiente lote» en **§3.25.1**), `docs/CATALOG.md`, `docs/LINEAGE.md`, `docs/GOVERNANCE.md` y `docs/validation/validation-5-3.md` |
 | Comprobar qué está encendido antes de validar un lote | **§8** (preflight) |
-| Encender, comprobar y apagar lo que cobra; validar un lote con un solo comando | `docs/ACTIVE_SERVICES.md` (`scripts/on.py`, `off.py`, `status.py`), `scripts/validate_2_3.py` (§3.15), `scripts/validate_2_4.py` (§3.16), `scripts/validate_3_1.py` (§3.17), `scripts/validate_3_2.py` (§3.18; con `status` y `off` del exportador), `scripts/validate_4_1.py` (§3.19; con `status`, `off` y `on` del horario del lakehouse), `scripts/validate_4_2.py` (§3.21; con `status` y `off`), `scripts/validate_4_3.py` (§3.22; con `status`, `off` y `on`: el horario queda **encendido**, estado normal), `scripts/validate_4_4.py` (§3.23; ídem, con las aristas), `scripts/validate_5_1.py` (§3.20) y `scripts/validate_5_2.py` (§3.24; calidad con Great Expectations en el venv `~/.venvs/ta-gx`) |
+| Encender, comprobar y apagar lo que cobra; validar un lote con un solo comando | `docs/ACTIVE_SERVICES.md` (`scripts/on.py`, `off.py`, `status.py`), `scripts/validate_2_3.py` (§3.15), `scripts/validate_2_4.py` (§3.16), `scripts/validate_3_1.py` (§3.17), `scripts/validate_3_2.py` (§3.18; con `status` y `off` del exportador), `scripts/validate_4_1.py` (§3.19; con `status`, `off` y `on` del horario del lakehouse), `scripts/validate_4_2.py` (§3.21; con `status` y `off`), `scripts/validate_4_3.py` (§3.22; con `status`, `off` y `on`: el horario queda **encendido**, estado normal), `scripts/validate_4_4.py` (§3.23; ídem, con las aristas), `scripts/validate_5_1.py` (§3.20), `scripts/validate_5_2.py` (§3.24; calidad con Great Expectations en el venv `~/.venvs/ta-gx`) y `scripts/validate_5_3.py` (§3.25; catálogo, linaje y gobernanza) |
 | Saber qué construir y en qué orden | `PLAN.md` §1 (fases y lotes) |
 | Saber qué historias de usuario cubre cada fase o lote | **`PLAN.md` §1 y §2** (detalle en `HU.md`) |
 | Saber en qué estado está cada fase y lote | **`PLAN.md` §3** |
@@ -76,7 +77,7 @@ El README menciona **Firestore, Cloud SQL, Neptune y Dataplex**, que **no están
 |---|---|
 | Firestore, Cloud SQL | **Fuera del alcance v1.** El estado del simulador vive en un objeto GCS (§3.6). |
 | Neptune | **Fuera del alcance v1.** "Análisis de relaciones" se cubre con tablas de aristas en Curated consultables por Athena (§5.7). Neptune queda como extensión si sobra tiempo. |
-| Dataplex / OpenLineage | Catálogo = **Glue Data Catalog**. Linaje = **dbt docs + documento de linaje** (`PLAN.md` §1, Fase 5). *(v2.37)* El Lote 4.3 se hizo **sin dbt** (decisión del usuario, §3.22): no hay proyecto dbt del que salgan los *dbt docs*; cómo se hace el linaje del 5.3 queda **a decidir por el usuario** (§9, ADR-10). |
+| Dataplex / OpenLineage | Catálogo = **Glue Data Catalog**. Linaje = **dbt docs + documento de linaje** (`PLAN.md` §1, Fase 5). *(v2.37)* El Lote 4.3 se hizo **sin dbt** (decisión del usuario, §3.22): no hay proyecto dbt del que salgan los *dbt docs*; cómo se hace el linaje del 5.3 queda **a decidir por el usuario** (§9, ADR-10). *(v2.43, decisión del usuario)* Linaje = **documento y diagrama hechos a mano** (`docs/LINEAGE.md`, §3.25, ADR-29), sin *dbt docs*. |
 
 ### 1.4 Historial de cambios
 
@@ -1190,7 +1191,7 @@ Athena (workgroup ta-analytics, límite por consulta, resultados SSE-KMS en athe
 | `src/lakehouse/tests/test_lake_*.py` | 50 pruebas (catálogo, jobs con S3/Glue falsos, pies de Parquet, reglas del Terraform) |
 | `scripts/validate_4_1.py`, `src/ops/validate41.py`, `src/ops/tests/test_ops_validate41.py` | Validación automática (48 pruebas con un AWS y un Terraform falsos) |
 
-**Catálogo (HU-007).** Tres bases con `location_uri` = `s3://{lake}/{raw|trusted|curated}/` y las 11 tablas de §5.7, todas `EXTERNAL_TABLE` Parquet (`MapredParquetInputFormat`, `ParquetHiveSerDe`) con las columnas, tipos, particiones, `LOCATION` y `TBLPROPERTIES` exactos de `contracts/athena/` (más `EXTERNAL = TRUE` y `classification = parquet`). Las descripciones de tabla son los comentarios que preceden a cada `CREATE` y los comentarios de columna (`-- …`) pasan a `Comment` en Glue (base para HU-034). Partition projection en `ta_raw.posts_raw` (`part_origin` ∈ {stream, historical}, `part_source` ∈ las tres fuentes, `part_dt` de `2026-01-01` a `NOW`, `part_hr` 00–23), `ta_trusted.posts` (`source`, `dt`) y `ta_curated.fact_posts` (`dt`); las demás de Curated no tienen particiones. Sin crawlers ni particiones registradas (ADR-08). Lake Formation de la cuenta está en modo IAM (`IAM_ALLOWED_PRINCIPALS`): los permisos son los de IAM.
+**Catálogo (HU-007).** Tres bases con `location_uri` = `s3://{lake}/{raw|trusted|curated}/` y las 11 tablas de §5.7, todas `EXTERNAL_TABLE` Parquet (`MapredParquetInputFormat`, `ParquetHiveSerDe`) con las columnas, tipos, particiones, `LOCATION` y `TBLPROPERTIES` exactos de `contracts/athena/` (más `EXTERNAL = TRUE` y `classification = parquet`). Las descripciones de tabla son los comentarios que preceden a cada `CREATE` y los comentarios de columna (`-- …`) pasan a `Comment` en Glue (base para HU-034). *(v2.43, Lote 5.3, §3.25)* La descripción es solo el bloque `--` **pegado** al `CREATE`; toda tabla tiene descripción y toda columna y clave de partición un comentario `[clase de privacidad] descripción` (HU-034). Partition projection en `ta_raw.posts_raw` (`part_origin` ∈ {stream, historical}, `part_source` ∈ las tres fuentes, `part_dt` de `2026-01-01` a `NOW`, `part_hr` 00–23), `ta_trusted.posts` (`source`, `dt`) y `ta_curated.fact_posts` (`dt`); las demás de Curated no tienen particiones. Sin crawlers ni particiones registradas (ADR-08). Lake Formation de la cuenta está en modo IAM (`IAM_ALLOWED_PRINCIPALS`): los permisos son los de IAM.
 
 **Athena.** Workgroup `ta-analytics`, motor v3, **configuración forzada** (`EnforceWorkGroupConfiguration`): todas las consultas dejan su resultado en `s3://{lake}/athena-results/` cifrado con SSE-KMS y la llave del lake (el bucket lo borra a los 7 días, §5.12) y Athena **cancela** la consulta que pase de `athena_bytes_scanned_cutoff_per_query` (1 GiB por defecto, §5.12). Publica métricas de CloudWatch. Dos consultas guardadas: `ta-raw-conteo-por-origen` (la demostración del lote) y `ta-raw-sentimiento-7-dias` (filtra por `part_dt`, así que Athena solo lee esas particiones).
 
@@ -2151,6 +2152,89 @@ Reutiliza de `ops/validate41.py` `json_lines`, `s3_keys`, `services_status`; de 
 - **5.4:** una prueba de humo puede usar `run_dq.py run --layers trusted,curated` como paso final (≈ 30 s) y leer `dq_done.ok`.
 - **6.1:** el panel de calidad lee `ta_stream.dq_results` (BigQuery, conector de QuickSight → BigQuery diferido desde la Fase 0) o `quality/_latest/ge/summary.json`; los KPI de HU-032 son las filas con `kpi` ≠ `otro`; la precisión del NLP, `NLP[accuracy]` y `nlp_precision.json` (matriz de confusión).
 
+### 3.25 Catálogo, linaje y gobernanza (Lote 5.3)
+
+> Entregado en **v2.43** (HU-034, HU-035, HU-036). Rutas relativas a `project/` salvo las de `docs/`. **ADR-29.** **Decisión del usuario (27-oct-2026):** el linaje de HU-035 es un **documento y un diagrama hechos a mano, sin *dbt docs*** (el proyecto no usa dbt desde el 4.3; cierra ADR-10). Lo demás lo decidió el lote (ADR-29). No cambia datos, jobs, IAM, el horario ni el esquema de ninguna tabla: `contracts/` solo cambia **comentarios** de las tres DDL de Athena (`schema_version` sigue en `"1.0"`) y Terraform solo la descripción y los comentarios de las 11 tablas de Glue.
+
+**Qué entrega.**
+
+| Ruta | Contenido |
+|---|---|
+| `contracts/athena/{posts_raw,posts,curated}.sql` | La **descripción de cada tabla** (las líneas `--` pegadas a su `CREATE`) y el **comentario de cada columna y clave de partición**, que empieza por su **clase de privacidad**. Fuente única del catálogo |
+| `src/lakehouse/catalog_spec.py` | Lee también los comentarios de las claves de partición; clases de privacidad (`Column.privacy`, `.description`, `.anonymized`); reglas del catálogo (`catalog_problems`), comparación con Glue (`glue_description_problems`), conteos (`privacy_summary`) y el diccionario (`render_dictionary`, `check_dictionary`); `--write`/`--check` cubren `tables.json` **y** `docs/CATALOG.md` |
+| `infra/aws/modules/glue_catalog/{main.tf,tables.json}` | `tables.json` regenerado con las descripciones; `main.tf` solo recorta también el comentario de las claves de partición a 255 |
+| `docs/CATALOG.md` | **Diccionario de datos generado** (no se edita a mano): las 11 tablas, sus 108 columnas con tipo, si es dato anonimizado, clase y descripción |
+| `docs/LINEAGE.md` | **Linaje (HU-035):** diagrama Mermaid de extremo a extremo, tabla de etapas con su código, auditoría, linaje **por columna** de las 11 tablas y análisis de impacto |
+| `docs/GOVERNANCE.md` | **Gobernanza (HU-036):** declaración de datos sintéticos y sus limitaciones, mapeo de las 11 áreas de DAMA-DMBOK, clasificación, nota de la Ley 1581 (anonimización, acceso restringido a `raw/`, minimización, transferencia internacional), roles y los controles verificados |
+| `src/lakehouse/tests/test_lake_catalog_spec.py` | +5 pruebas (132 en `src/lakehouse`): catálogo completo, comentarios de particiones, reglas que fallan, comparación con Glue y diccionario al día |
+| `scripts/validate_5_3.py`, `src/ops/validate53.py`, `src/ops/tests/test_ops_validate53.py` | Validación automática (20 pruebas) |
+
+**Catálogo (HU-034).** Cada tabla de `ta_raw`, `ta_trusted` y `ta_curated` tiene en Glue una descripción para el analista (qué es una fila, de dónde sale, qué filas entran, particiones) y cada una de sus **108 columnas** (con las 7 claves de partición) un `Comment` con la forma `[clase] descripción`; el tipo es el de la DDL. Las clases (`catalog_spec.PRIVACY_CLASSES`):
+
+| Clase | Columnas (v2.43) | ¿Dato anonimizado? |
+|---|---|---|
+| `anonimizado` | `user_hash` de `posts_raw`, `posts`, `fact_posts`, `dim_user` y `edges_user_brand` (5) | **Sí**: seudónimo HMAC-SHA256 de `user_id` (§3.14) |
+| `cuasi_identificador` | `followers` y `payload` (Raw y Trusted); `first_seen`, `last_seen`, `n_posts`, `max_followers` de `dim_user` (8) | No |
+| `texto_libre` | `text` (Raw y Trusted), `text_clean` (3) | No |
+| `sin_dato_personal` | El resto (92) | No |
+
+Reglas (`catalog_problems`, prueba y L1): descripción de tabla ≥ 40 y ≤ 2.048 caracteres y sin `{{lake_bucket}}`; cada columna con una de las 4 etiquetas, descripción no vacía y ≤ 255 caracteres (límite de Glue: Terraform recorta, la prueba exige que no haga falta); `[anonimizado]` **exactamente** en las columnas `user_hash`; ninguna columna `user_id`/`handle`. Glue muestra la etiqueta al inicio del comentario (consola, `DESCRIBE`, `information_schema.columns` de Athena).
+
+**Linaje (HU-035)** y **gobernanza (HU-036):** el contenido está en `docs/LINEAGE.md` y `docs/GOVERNANCE.md` (no se repite aquí). Lo que el validador comprueba de ellos: cada columna del catálogo aparece en el linaje por columna (L3), las rutas `project/…` y `docs/…` citadas existen (L4), las 11 áreas de DAMA-DMBOK y las partes de la Ley 1581 que pide HU-036 están (L5), sin correos, llaves, URLs prefirmadas ni hashes (L6), y los controles de acceso y cifrado que cita la nota, en la nube (G1–G7).
+
+**Terraform.** `plan -target=module.glue_catalog`: **0 a crear, 11 a cambiar (en sitio), 0 a destruir**; cambian solo `description`, `partition_keys[*].comment` y `storage_descriptor[0].columns[*].comment` (C2 lo exige con `plan_only_descriptions`). Glue guarda cada cambio como una versión nueva de la tabla; Athena y la proyección de particiones no cambian. No hace falta apagar el horario: los jobs no leen el catálogo (§3.19.1).
+
+**Costo.** 0 por hora: 11 `UpdateTable` y las lecturas de Glue entran en el millón gratuito; D3 es una consulta de Athena a `information_schema` (mínimo de 10 MB ≈ 0,00005 USD).
+
+> **Estado de la verificación (v2.43, antes de entregar):** WSL, `ta-streaming` (Python 3.11.17). `src/lakehouse`: **132 passed**; `test_ops_validate53.py`: **20 passed**; `contracts/tests` 18; `src/dq` (ta-streaming) 3; `test_ops_validate51.py` 24; `test_enriched_contract.py` sin fallas con las DDL comentadas. `ruff --select F,E9` y `py_compile` sin errores; `terraform fmt -check` OK. `python -m lakehouse.catalog_spec --check`: al día y completo. **`terraform plan -target=module.glue_catalog`** contra el estado real: **0 a crear, 11 a cambiar, 0 a destruir**, solo `description`, `partition_keys` y `storage_descriptor` (comentarios). Con el árbol de trabajo (antes del commit): `validate_5_3.py preflight` OK (7), `tests` OK (5: 132, 20, 18, 3, 24), `local` OK (6: 108 columnas, 44 rutas), **`controls` OK (7, en la nube, solo lectura)**: S3 con los 4 bloqueos, SSE-KMS con *bucket key* y Deny sin TLS; 16 casos de IAM como se esperaba; GCS del lake uniforme, `enforced`, `raw/` y `dlq/` a 30 días y sin miembros públicos; `ta-hmac-key` solo con `sa-dataflow`. `glue`: D1 OK (esquema = DDL) y D2/D3 en FALLA **porque falta aplicar** (Glue tiene las descripciones del 4.1); comprobado de paso que `information_schema.columns` de Athena expone la columna `comment` (D3 corrió). `terraform` sin `--apply`: C2 OK, C3 AVISO. **No** se aplicó: falta el OK del usuario.
+
+#### 3.25.1 Interfaces del lote (cómo usar cada pieza sin leer el código)
+
+*(v2.43)* Todo lo de esta subsección es interfaz: el 5.4, el 6.1 y cualquier lote que cambie una tabla dependen de ello; si cambia, se cambia aquí primero (§0).
+
+**Cómo describir una tabla o columna nueva** (o cambiar una descripción): en la DDL de `contracts/athena/`, (1) las líneas `--` **pegadas** al `CREATE` (sin línea en blanco) son la descripción de la tabla; lo que esté separado por una línea en blanco es una nota técnica y no va a Glue; (2) cada columna y cada clave de partición (una por línea dentro de `PARTITIONED BY (…)`) lleva `-- [clase] descripción` en su línea; (3) `cd project/src && python -m lakehouse.catalog_spec --write` regenera `tables.json` y `docs/CATALOG.md` y avisa si el catálogo quedó incompleto; (4) agregar la columna a `docs/LINEAGE.md` §4; (5) `validate_5_3.py local`, `terraform --apply` y `glue`. Todo en el mismo commit (§5.13).
+
+**CLI `python -m lakehouse.catalog_spec`** (desde `project/src`): `--write` (tables.json y diccionario; imprime los problemas del catálogo si los hay), `--check` (0 si los dos están al día **y** el catálogo está completo; 1 si no), `--print`; opciones `--contracts-dir`, `--tables-json`, `--dictionary`. *(Cambio respecto a v2.32: `--check` también exige el diccionario y las reglas del catálogo; `catalog_spec.check()` sigue mirando solo `tables.json`, así que los A4 de `validate_4_x.py` no cambian.)*
+
+**API de Python** (`src/` en el `PYTHONPATH`):
+
+| Llamada | Contrato |
+|---|---|
+| `catalog_spec.PRIVACY_CLASSES`, `ANONYMIZED`, `ANONYMIZED_COLUMNS` (`("user_hash",)`), `IDENTITY_COLUMNS`, `COMMENT_MAX` (255), `DESCRIPTION_MAX` (2048), `DESCRIPTION_MIN` (40), `DICTIONARY_MD` | Constantes del catálogo |
+| `Column.privacy -> str`, `Column.description -> str`, `Column.anonymized -> bool` | La etiqueta (`""` si no hay), el comentario sin ella y si es `[anonimizado]` |
+| `TableSpec.partition_keys` | *(v2.43)* Ahora con el comentario de cada clave (antes `""`) |
+| `catalog_spec.all_columns(spec)` | Columnas + claves de partición, en el orden de Glue |
+| `catalog_spec.catalog_problems(tablas) -> [str]` | Reglas de HU-034 (arriba); vacío = cumple |
+| `catalog_spec.glue_description_problems(spec, tabla_glue, bucket) -> [str]` | `Description` y el `Comment` de cada columna y clave de `aws glue get-table(s)` frente a la DDL (con los recortes de Terraform) |
+| `catalog_spec.privacy_summary(tablas) -> dict` | `{tables, columns, by_class{clase: n}, anonymized[base.tabla.columna]}` |
+| `catalog_spec.render_dictionary(tablas) -> str`, `check_dictionary(contracts_dir, path) -> [str]` | El Markdown de `docs/CATALOG.md` y su comparación |
+| `ops.validate53.lineage_columns(texto)`, `lineage_problems(texto, tablas)`, `doc_paths`, `path_problems`, `governance_problems`, `leak_problems`, `plan_only_descriptions(plan)`, `raw_access_cases(cuenta, bucket)`, `gcs_bucket_problems`, `iam_summary`, `mask_member`, `athena_comment_problems` | Piezas del validador reutilizables (p. ej. el 5.4 para comprobar que la evidencia no lleva datos personales con `leak_problems`) |
+
+**Validador `python project/scripts/validate_5_3.py <parte> [opciones]`** (en `ta-streaming`; 0 si ningún paso dio FALLA). Pasos y lo esperado en `docs/validation/validation-5-3.md`. Evidencia: `project/evidencia/validacion_5_3.json` (`lote` 5.3, `hu` [HU-034, HU-035, HU-036]).
+
+| Parte | Qué comprueba | Cambia la nube |
+|---|---|---|
+| `preflight` (A) | Python, archivos, catálogo al día, herramientas (`gcloud` opcional), horario (ENABLED es normal), lo que cobra | — |
+| `tests` (B) | B1 `src/lakehouse` 132 · B2 `test_ops_validate53.py` 20 · B3 `contracts/tests` 18 · B4 `src/dq` 3 · B5 `test_ops_validate51.py` 24 | — |
+| `local` (L) | L1 catálogo de las DDL · L2 `tables.json` y `CATALOG.md` · L3 linaje · L4 rutas · L5 gobernanza · L6 fugas | — |
+| `terraform` (C) | Plan con `-target=module.glue_catalog` (solo documentación), `--apply` con confirmación, plan sin deriva | Descripciones de Glue |
+| `glue` (D) | D1 esquema = DDL · D2 descripciones = DDL · D3 comentarios en `information_schema.columns` de Athena | — (una consulta de Athena) |
+| `controls` (G) | G1–G3 bucket de S3 · G4 16 casos de IAM simulados · G5–G6 bucket de GCS · G7 secreto HMAC (miembros enmascarados) | — |
+| `status` | Tablas de Glue con las descripciones de las DDL; horario | — |
+
+Reutiliza de `ops/validate41.py` `Ctx`, `athena_query`, `simulate`, `account_id`, `get_schedule` y `services_status`; de `ops/validate32.py` `Part`, `Runner`, `tf_plan`, `tf_apply`, `plan_line`, `diff_text`, `pytest_counts`.
+
+**Trampas conocidas.**
+- La descripción de una tabla es el bloque `--` **pegado** al `CREATE`: una línea en blanco lo corta (así quedan fuera las notas técnicas de cabecera, que antes del 5.3 entraban enteras en `ta_raw.posts_raw`).
+- Un comentario de columna con `--` dentro se corta en el primer `--` (el parser toma lo que sigue al primero como comentario).
+- `--write` desde las pruebas debe pasar `--dictionary` a un archivo temporal: si no, reescribe `docs/CATALOG.md` del repo.
+- `validate_4_4.py tests` (B1 esperaba 127 en `src/lakehouse`) ya no cuadra: ahora son 132 (esperado, como pasó con el 4.3 → 4.4).
+- Las descripciones no cambian cómo Athena lee las tablas; si un `apply` futuro muestra cambios en `columns[*].type` o en `parameters`, no es del catálogo (C2 lo detiene).
+
+**Para el siguiente lote (5.4 prueba de humo, 6.1 dashboard).**
+- **5.4:** el recorrido del evento centinela es el de `docs/LINEAGE.md` §2 y §3 (por `event_id`, de Pub/Sub a `fact_posts`); la comprobación «sin `handle` ni `user_id` después de Dataflow» puede usar `catalog_spec.IDENTITY_COLUMNS` y, para la evidencia, `validate53.leak_problems`. Si la prueba de humo agrega algo al flujo, se suma una fila a `LINEAGE.md` §2.
+- **6.1:** los datasets de QuickSight deben salir solo de `ta_curated` (lo exige `ta-quicksight-role`, G4) y no mostrar `user_hash` (`[anonimizado]` en `CATALOG.md`); las descripciones de las columnas sirven de ayuda en los campos del tablero. Al existir el tablero, cambiar en `LINEAGE.md` la etapa 11 de «previsto» a real y agregar su fila de gobernanza (consumidores) en `GOVERNANCE.md` §5.
+
 ---
 
 ## 4. Flujo extremo a extremo
@@ -2512,7 +2596,7 @@ Formato: **Parquet + Snappy**. Particiones registradas con **partition projectio
   - **`dt`** = `DATE(event_time)` en UTC (a diferencia de Raw stream, donde es la hora de proceso).
   - **`text_clean`** (regla **`text-clean@1`**; `text` queda intacto): (1) normalizar a Unicode NFC si no alarga el texto; (2) quitar emojis y otros símbolos pictográficos: los caracteres de categoría Unicode So, Sk, Me, Cf, Cn, Co y Cs y los selectores de variante (U+FE00–FE0F, U+E0100–E01EF), y pasar a espacio los de control (Cc: saltos de línea, tabuladores); (3) quitar URLs (`http(s)://…`, `www.…`), menciones (`@usuario`) y hashtags (`#Etiqueta`, ya canónicos en la columna `hashtags`); (4) pasar a minúsculas sin cambiar el largo (un carácter cuya minúscula ocupa más, como «İ», se deja igual); se conservan tildes, ñ, dígitos y la puntuación; (5) colapsar los espacios, quitar el que quede entre una palabra y `. , ; : ! ? ) ] } » …` o entre `¿ ¡ ( [ { «` y una palabra, y recortar los extremos. Se repite hasta que no cambia. Garantías: nunca es nulo si `text` no lo es (puede ser `""` si el texto solo tenía emojis o hashtags), nunca es más largo que `text` (DQ-57) y aplicarla dos veces da lo mismo. Ejemplo: «Queda registrado. #Gaseosas 🥤» → «queda registrado.».
   - **Reporte de calidad de la corrida:** `quality/{AAAA-MM-DD}/raw_to_trusted/{corrida}.json` y `quality/_latest/raw_to_trusted.json` (leídas, descartadas, centinelas, duplicadas, sin NLP, escritas, particiones y sha256 por archivo; forma en §3.21.1).
-- DDL en `project/contracts/athena/`, copia verificada de esta sección (§5.13). Las columnas de Curated están definidas abajo. *(v2.32)* Terraform crea las tablas en Glue **desde esas DDL** (`infra/aws/modules/glue_catalog/tables.json`, generado con `python -m lakehouse.catalog_spec --write`; una prueba exige que estén al día, §3.19.1).
+- DDL en `project/contracts/athena/`, copia verificada de esta sección (§5.13). Las columnas de Curated están definidas abajo. *(v2.32)* Terraform crea las tablas en Glue **desde esas DDL** (`infra/aws/modules/glue_catalog/tables.json`, generado con `python -m lakehouse.catalog_spec --write`; una prueba exige que estén al día, §3.19.1). *(v2.43, §3.25)* Las DDL también son la fuente del **catálogo** (HU-034): descripción de cada tabla y comentario de cada columna con su clase de privacidad (`anonimizado` solo en `user_hash`), que Terraform lleva a Glue y `catalog_spec` al diccionario `docs/CATALOG.md`. Son solo comentarios: no cambian columnas, tipos ni `schema_version`.
 
 | Capa | Glue DB | Contenido |
 |---|---|---|
@@ -2988,10 +3072,13 @@ infra/
 │
 ├── docs/
 │   ├── ARCHITECTURE.md                    <- este archivo: arquitectura y contratos (versión vigente)
-│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.38)
+│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.43)
 │   ├── PLAN.md                            <- fases y lotes, matriz HU y estado del proyecto
 │   ├── HU.md                              <- historias de usuario (HU-001 a HU-048)
 │   ├── ACTIVE_SERVICES.md                 <- encender, comprobar y apagar lo que cobra (on.py, off.py, status.py)
+│   ├── CATALOG.md                         <- Lote 5.3: diccionario de datos GENERADO desde contracts/athena/ (catalog_spec --write; §3.25)
+│   ├── LINEAGE.md                         <- Lote 5.3: linaje de extremo a extremo y por columna, diagrama Mermaid (HU-035)
+│   ├── GOVERNANCE.md                      <- Lote 5.3: DAMA-DMBOK, nota de la Ley 1581 y datos sintéticos (HU-036)
 │   ├── validation/                        <- guías de validación, una por lote (desde v2.25; convención en §8)
 │   │   ├── validation-2-2.md              <- Lote 2.2: validación paso a paso
 │   │   ├── validation-2-3.md              <- Lote 2.3: validación paso a paso (automática con validate_2_3.py)
@@ -3003,6 +3090,7 @@ infra/
 │   │   ├── validation-4-3.md              <- Lote 4.3: validación paso a paso (automática con validate_4_3.py)
 │   │   ├── validation-4-4.md              <- Lote 4.4: validación paso a paso de las aristas (automática con validate_4_4.py)
 │   │   ├── validation-5-2.md              <- Lote 5.2: validación de las suites de Great Expectations (automática con validate_5_2.py)
+│   │   ├── validation-5-3.md              <- Lote 5.3: validación del catálogo, el linaje y la gobernanza (automática con validate_5_3.py)
 │   │   └── validation-5-1.md              <- Lote 5.1: validación paso a paso (automática con validate_5_1.py)
 │   ├── GLOSSARY.md                        <- glosario del proyecto
 │   ├── NOTAS.md                           <- notas de trabajo
@@ -3079,6 +3167,7 @@ infra/
     │   ├── validate_4_4.py                <- Lote 4.4: validación automática de las aristas (las mismas partes, docs/validation/validation-4-4.md)
     │   ├── run_dq.py                      <- Lote 5.2: suites de Great Expectations (sync, run, rules; venv ~/.venvs/ta-gx, §3.24)
     │   ├── validate_5_2.py                <- Lote 5.2: validación automática (preflight, venv, tests, sync, local, publish, status)
+    │   ├── validate_5_3.py                <- Lote 5.3: validación automática (preflight, tests, local, terraform, glue, controls, status)
     │   ├── profile_data.py                <- Lote 5.1: profiling de Raw y Trusted (sync, profile, rules, synth-trusted, publish; §3.20)
     │   ├── validate_5_1.py                <- Lote 5.1: validación automática (partes A a D, all y clean de docs/validation/validation-5-1.md)
     │   ├── on.py  off.py  status.py       <- operación: encender, apagar y ver lo que cobra (ACTIVE_SERVICES.md)
@@ -3116,7 +3205,7 @@ infra/
         │                                     Lote 2.3: nlp, nlp_testing, nlp_image/ (Dockerfile, fetch_models, image_smoke, cloudbuild), tests/test_nlp* (§3.15).
         │                                     Lote 2.4: trends, trends_core, bq_sink, dlq_bq, trends_check, trends_bq, trends_cli, template_tools,
         │                                     flex_main, flex_template/ (Dockerfile, metadata.json), TRENDS.md, tests/test_trends_*, test_flex_template (§3.16)
-        ├── ops/                           <- operación y validación: services (on/off/status), validate23 (validate_2_3.py), validate24 (validate_2_4.py), validate31 (validate_3_1.py), validate32 (validate_3_2.py), validate41 (validate_4_1.py; reutiliza piezas de validate32 y services), validate42 (validate_4_2.py; reutiliza validate41), validate43 (validate_4_3.py; reutiliza validate41 y validate42), validate44 (validate_4_4.py; reutiliza validate43 y, sus pruebas, el AWS falso de test_ops_validate43.py), validate51 (validate_5_1.py), validate52 (validate_5_2.py; llama a run_dq.py con el venv de GX), tests/
+        ├── ops/                           <- operación y validación: services (on/off/status), validate23 (validate_2_3.py), validate24 (validate_2_4.py), validate31 (validate_3_1.py), validate32 (validate_3_2.py), validate41 (validate_4_1.py; reutiliza piezas de validate32 y services), validate42 (validate_4_2.py; reutiliza validate41), validate43 (validate_4_3.py; reutiliza validate41 y validate42), validate44 (validate_4_4.py; reutiliza validate43 y, sus pruebas, el AWS falso de test_ops_validate43.py), validate51 (validate_5_1.py), validate52 (validate_5_2.py; llama a run_dq.py con el venv de GX), validate53 (validate_5_3.py; catálogo, linaje y controles de gobernanza; reutiliza validate41 y validate32), tests/
         ├── historical/                    <- Lote 3.1: full load con el mismo simulador, anonimización y NLP (§3.17)
         │                                     plan, adapters, generate, nlp_batch, writer, verify, bq, s3io, doctor, cli, schema, work, testing,
         │                                     config/historical.yaml, requirements.txt, HISTORICAL.md, tests/test_hist_*
@@ -3208,7 +3297,7 @@ Estado actual: <salida de `bash scripts/preflight.sh` (nube) o `bash scripts/loc
 | ADR-07 | GCS→S3 con Cloud Run Job + OIDC | Storage Transfer Service / llaves estáticas |
 | ADR-08 | Partition projection en Athena | Glue Crawlers |
 | ADR-09 | Aristas en Curated en lugar de Neptune | Neptune |
-| ADR-10 | Catálogo = Glue Data Catalog; linaje = dbt docs. *(v2.37)* El 4.3 se hizo sin dbt (ADR-26, decisión del usuario): no hay *dbt docs*; **a decidir por el usuario** cómo se cumple el linaje de HU-035 (Lote 5.3), p. ej. un documento y un diagrama hechos a mano desde §3.21–§3.22 | Dataplex + OpenLineage |
+| ADR-10 | Catálogo = Glue Data Catalog; linaje = dbt docs. *(v2.37)* El 4.3 se hizo sin dbt (ADR-26, decisión del usuario): no hay *dbt docs*; **a decidir por el usuario** cómo se cumple el linaje de HU-035 (Lote 5.3), p. ej. un documento y un diagrama hechos a mano desde §3.21–§3.22. *(v2.43, decidido por el usuario el 27-oct-2026)* Linaje = documento y diagrama **hechos a mano** (`docs/LINEAGE.md`); cómo, en ADR-29 | Dataplex + OpenLineage |
 | ADR-11 | Generador de comentarios **integrado en el proceso del simulador** y reutilizado en batch para el histórico; la selección de marca/sentimiento la hace el simulador | Generar un CSV fijo y reproducirlo por vueltas; servicio de generación separado |
 | ADR-12 | Región de GCP **`us-central1`** (cuotas de vCPU y Dataflow verificadas en esa región; decidido en v2.10) | `us-east1` (primera elección en v2.4: más cerca de AWS `us-east-1` y de Colombia) |
 | ADR-13 | Mapeo `categoria → sentimiento`: `gusto → positive`, `asco → negative`, `informativo → neutral`, `nostalgia` y `adiccion → null` ✅ **Aprobado** | Forzar una etiqueta a las categorías ambiguas (inflaría la precisión del NLP) |
@@ -3227,6 +3316,7 @@ Estado actual: <salida de `bash scripts/preflight.sh` (nube) o `bash scripts/loc
 | ADR-26 | Curated (Lote 4.3): job **Glue Python shell 3.9 de 0,0625 DPU** con biblioteca estándar, boto3 y pyarrow, **sin dbt** y sin Athena para `ta-glue-role` (decisión del usuario); lee Trusted directo de S3 (solo las columnas que usa) y **recalcula las 7 tablas enteras** en cada corrida, con un `part-00000.parquet` de nombre fijo por partición de `fact_posts` y por tabla; **sube solo los objetos cuyo sha256 cambió** frente al reporte anterior y borra lo que sobre solo bajo sus 7 prefijos (nunca `edges_*`); concilia antes de escribir (11 comprobaciones; si una falla no escribe); agregados por `brand_primary` (como `trend_windows`); filas sin NLP en `n_posts` pero no en el sentimiento ni en las emociones (decisión del usuario); `dim_source` y `dim_brand` como constantes del script comprobadas por pruebas contra `sim.yaml` y `brands.yaml`; comprueba los no nulos antes de escribir (pyarrow 7 escribe un Parquet corrupto sin avisar); reporte por corrida en `quality/` y propiedades de la corrida; cinco consultas guardadas de ejemplo (HU-030) | dbt-athena (otra herramienta, otra identidad con Athena y CTAS que no sobrescriben particiones; el usuario lo descartó); 1 DPU (pico medido 0,43 GB de 1 GB; costaría ≈ +5 USD/mes); regenerar solo las `dt` de `changed_keys` del reporte de Trusted (las dimensiones dependen de todos los días; ahorra ~543 GET ≈ 0,0002 USD por corrida con más estado); reescribir todos los objetos en cada corrida (≈ 190 PUT por hora sin necesidad); agregados que repiten la fila por cada marca de `brands` (las sumas dejarían de conciliar con `fact_posts`; las menciones van a `edges_user_brand`, 4.4); leer `brands.yaml` en Glue (el job es un solo archivo sin el repo) o pasarlo por argumentos de Terraform (más piezas para 3 filas) |
 | ADR-27 | Aristas (Lote 4.4, HU-028): las escribe **el mismo job `ta-job-trusted-to-curated`** (versión 1.1; Terraform solo cambia el script y la descripción) en la misma pasada sobre Trusted, como dos tablas más de su lista (`TABLES`): mismo borrado de sobrantes, reporte, `sha256` y conciliación antes de escribir (+5 comprobaciones: Σ `weight` = menciones y = Σ C(k, 2), `hashtag_a < hashtag_b`, llaves a `dim_user` y `dim_brand`). **`edges_user_brand`:** grano (`user_hash`, marca); `weight` = filas del usuario cuyo `brands` contiene la marca, **cada marca distinta de `brands`** una vez por fila (una comparativa cuenta para sus dos marcas); filas sin `user_hash` fuera; `dim_brand` suma las marcas desconocidas de `brands` para que la llave se cumpla. **`edges_hashtag_cooccurrence`:** `weight` = filas con los dos hashtags, **cada hashtag distinto una vez por fila** (repetidos en la fila no suman; sin pares consigo mismo), orden canónico **`hashtag_a < hashtag_b` por punto de código** (igual en Python y Trino); todas las filas de Trusted (también sin usuario o sin NLP); desde `trusted/posts/` (`fact_posts` no tiene `hashtags`). El reporte y los logs solo llevan conteos (ni `user_hash` ni nombres de hashtags) | Un job aparte en el workflow (otro disparador condicional, otro arranque de Glue de ≥ 60 s cobrados por hora, leer Trusted dos veces y duplicar escritura y reporte); solo `brand_primary` (15.189 pares y 221.629 menciones: la segunda marca de las 11.766 comparativas no tendría arista; los agregados ya cubren `brand_primary`); contar cada aparición de un hashtag repetido en la fila (infla el peso por un texto que repite la etiqueta; hoy no hay repetidos); pares dirigidos o con `a > b` (duplica filas); aristas desde `fact_posts` en SQL (no tiene `hashtags`; `ta-glue-role` no tiene Athena); un CTAS o `INSERT` en Athena (otra identidad y otra herramienta) |
 | ADR-28 | Calidad (Lote 5.2, HU-032/HU-033): **Great Expectations 1.24.1 de verdad** (decisión del usuario), en un **venv propio** (`~/.venvs/ta-gx`, `src/dq/requirements.txt`) y **a demanda** desde WSL (`run_dq.py`), sobre la **copia local** del lake (la caché del 5.1, más `curated/`), con pandas; las reglas de §5.10 se llevan a GX sin cambiarlas: `native` (la expectativa de GX), `flag` (la comprobación por fila del 5.1 como columna booleana y `ExpectColumnValuesToBeInSet([True])`) o `metric` (tabla larga y `row_condition`); 14 reglas nuevas para Curated (esquemas, anonimización, unicidad, completitud, `fact_posts` = Trusted, `date_key`, llaves foráneas, `dim_date` y agregados, `dim_user` y aristas recalculados con pandas); resultados en `dq_results` (streaming insert con ADC) y en `quality/{día}/ge/{run_id}/`, sin datos de filas (`SUMMARY` con 0 ejemplos, sin `id` de GX, `value_set` de `user_hash` reemplazada); precisión del NLP sobre `fact_posts` | SQL en Athena sin GX (más simple; se aparta de HU-032, como pasó con dbt); GX en `ta-streaming` (pandas 3 y numpy 2 arriesgan Beam y el NLP); correr cada hora en Glue (empaquetar GX para Python shell y dar a AWS una credencial de BigQuery); GX con Athena/SQLAlchemy (más dependencias, cobra por consulta y `ta-glue-role` no tiene Athena); `UnexpectedRowsExpectation` (solo para fuentes SQL); reimplementar las reglas `custom` en pandas (dos definiciones de la misma regla: el 5.1 y el 5.2 dirían cosas distintas) |
+| ADR-29 | Catálogo, linaje y gobernanza (Lote 5.3, HU-034/035/036): **las descripciones viven en las DDL de `contracts/athena/`** (bloque `--` pegado al `CREATE` = descripción de la tabla; comentario de línea de cada columna y de cada clave de partición = su `Comment`), y `catalog_spec` las lleva a `tables.json` (Terraform → Glue, el camino del 4.1) y a un **diccionario generado** `docs/CATALOG.md`, los dos con prueba de sincronía; **«contiene dato anonimizado» como clase de privacidad al inicio de cada comentario** (`[anonimizado]`, `[cuasi_identificador]`, `[texto_libre]`, `[sin_dato_personal]`), con `[anonimizado]` exactamente en `user_hash` (prueba); **linaje hecho a mano** (decisión del usuario) en `docs/LINEAGE.md` con diagrama **Mermaid** (texto versionado que GitHub dibuja) y linaje por columna comprobado contra el catálogo; **gobernanza** en `docs/GOVERNANCE.md`: las 11 áreas de DAMA-DMBOK 2 con evidencia (rutas que el validador comprueba) y brechas, nota de la Ley 1581 que llama **seudonimización** al HMAC y documenta acceso a `raw/`, minimización y transferencia internacional, y la declaración de datos sintéticos; los controles que cita la nota se **verifican en la nube** en solo lectura (G1–G7) | Un YAML o JSON de descripciones aparte (tercera copia del esquema, que se desalinea); describir las tablas solo en los documentos (no cumple HU-034, que pide Glue); la clase de privacidad como `parameters` de columna de Glue (Athena y la consola no la muestran); *dbt docs* (no hay dbt desde el 4.3) u OpenLineage/Marquez (otro servicio que operar para 3 capas); Dataplex (ADR-10); diagrama en draw.io o imagen (no se puede comparar en un diff ni comprobar); llamar «anonimización» al HMAC sin matiz (con la llave se revierte el vínculo) |
 
 ### Riesgos
 

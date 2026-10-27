@@ -5,13 +5,19 @@ SQL, así que este módulo las traduce a ``infra/aws/modules/glue_catalog/tables
 módulo ``glue_catalog`` lee con ``jsondecode(file(...))``. Una prueba exige que el JSON
 versionado sea exactamente el que sale de las DDL: si cambia un lado sin el otro, falla.
 
-    python -m lakehouse.catalog_spec --check     # desde project/src: 0 si tables.json está al día
-    python -m lakehouse.catalog_spec --write     # lo regenera
+    python -m lakehouse.catalog_spec --check     # desde project/src: 0 si tables.json y docs/CATALOG.md están al día
+    python -m lakehouse.catalog_spec --write     # los regenera
     python -m lakehouse.catalog_spec --print     # resumen de las tablas
 
 API (otros lotes pueden usarla, p. ej. el 4.2 para el orden de columnas de ``ta_trusted.posts``):
 ``load_contract_tables()``, ``load_tables_json()``, ``table(name)``, ``check()``,
 ``resolve(spec, bucket)`` y ``glue_table_problems(spec, glue_table, bucket)``.
+
+Lote 5.3 (catálogo, HU-034; ARCHITECTURE.md §3.25.1): las descripciones de tabla y los comentarios de columna (también
+los de las claves de partición) salen de las DDL; cada comentario empieza por su clase de privacidad
+(``[anonimizado]``, ``[cuasi_identificador]``, ``[texto_libre]``, ``[sin_dato_personal]``). ``catalog_problems()`` exige
+que todo esté descrito, ``glue_description_problems()`` compara las descripciones con Glue y ``render_dictionary()``
+genera el diccionario de datos ``docs/CATALOG.md`` (``check_dictionary()``).
 """
 
 from __future__ import annotations
@@ -28,7 +34,21 @@ PROJECT = Path(__file__).resolve().parents[2]
 CONTRACTS_DIR = PROJECT / "contracts" / "athena"
 CONTRACT_FILES = ("posts_raw.sql", "posts.sql", "curated.sql")
 TABLES_JSON = PROJECT / "infra" / "aws" / "modules" / "glue_catalog" / "tables.json"
+DICTIONARY_MD = PROJECT.parent / "docs" / "CATALOG.md"
 PLACEHOLDER = "{{lake_bucket}}"
+
+# Catálogo (Lote 5.3): clases de privacidad de una columna, en el orden en que se explican (§3.25.1).
+PRIVACY_CLASSES = ("anonimizado", "cuasi_identificador", "texto_libre", "sin_dato_personal")
+ANONYMIZED = "anonimizado"
+#: Las únicas columnas que identifican a una persona: el seudónimo HMAC del autor (§3.14, ADR-06).
+ANONYMIZED_COLUMNS = ("user_hash",)
+IDENTITY_COLUMNS = ("user_id", "handle")
+# Límites de Glue: Comment de columna ≤ 255 y Description de tabla ≤ 2048 (el módulo de Terraform recorta;
+# la prueba exige que no haga falta).
+COMMENT_MAX = 255
+DESCRIPTION_MAX = 2048
+DESCRIPTION_MIN = 40
+_TAG = re.compile(r"^\[([a-z_]+)\]\s*(.*)$", re.S)
 
 # Lo que Athena escribe al crear una tabla STORED AS PARQUET (Glue lo guarda así).
 PARQUET_INPUT = "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat"
@@ -50,6 +70,22 @@ class Column:
 
     def to_json(self) -> dict[str, str]:
         return {"name": self.name, "type": self.type, "comment": self.comment}
+
+    @property
+    def privacy(self) -> str:
+        """Clase de privacidad (la etiqueta ``[…]`` del comentario) o ``""`` si no tiene."""
+        m = _TAG.match(self.comment)
+        return m.group(1) if m else ""
+
+    @property
+    def description(self) -> str:
+        """El comentario sin la etiqueta de privacidad."""
+        m = _TAG.match(self.comment)
+        return m.group(2).strip() if m else self.comment
+
+    @property
+    def anonymized(self) -> bool:
+        return self.privacy == ANONYMIZED
 
 
 @dataclass(frozen=True)
@@ -112,6 +148,33 @@ def _norm_type(text: str) -> str:
     return re.sub(r"\s+", "", text).lower()
 
 
+def _partition_comments(pairs: list[tuple[str, str]]) -> dict[str, str]:
+    """Comentario de cada clave de ``PARTITIONED BY (…)``: el de su línea (una clave por línea; en la forma de una
+    sola línea, solo si hay una única clave)."""
+    notes: dict[str, str] = {}
+    inside = False
+    for code, comment in pairs:
+        if not inside:
+            m = re.search(r"PARTITIONED\s+BY\s*\((.*)$", code, re.I)
+            if not m:
+                continue
+            inline = m.group(1)
+            if ")" in inline:
+                items = [x for x in inline.split(")", 1)[0].split(",") if x.strip()]
+                cm = _COLUMN.match(items[0]) if len(items) == 1 else None
+                if cm and comment:
+                    notes[cm.group(1).lower()] = comment
+                return notes
+            inside = True
+            code = inline
+        if code.strip().startswith(")"):
+            return notes
+        cm = _COLUMN.match(code) if code.strip() else None
+        if cm and comment:
+            notes[cm.group(1).lower()] = comment
+    return notes
+
+
 def parse_ddl(text: str, source: str = "") -> list[TableSpec]:
     """Tablas de un archivo de DDL de Athena (``CREATE EXTERNAL TABLE … STORED AS PARQUET``)."""
     lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
@@ -143,16 +206,19 @@ def parse_ddl(text: str, source: str = "") -> list[TableSpec]:
             i += 1
         else:
             raise DdlError(f"{source}: {database}.{name} sin cierre de columnas")
-        # Resto del enunciado hasta el ';' (sin comentarios).
+        # Resto del enunciado hasta el ';' (sin comentarios para el cuerpo; los de las particiones aparte).
         rest: list[str] = []
-        first_code, _ = _split_comment(lines[i])
+        first_code, first_comment = _split_comment(lines[i])
         rest.append(first_code.strip()[1:])
+        pairs = [(rest[0], first_comment)]
         while ";" not in rest[-1] and i + 1 < len(lines):
             i += 1
-            code, _ = _split_comment(lines[i])
+            code, comment = _split_comment(lines[i])
             rest.append(code)
+            pairs.append((code, comment))
         body = " ".join(rest)
         body = body.split(";", 1)[0]
+        notes = _partition_comments(pairs)
         parts: list[Column] = []
         pm = re.search(r"PARTITIONED\s+BY\s*\((.*?)\)", body, re.I | re.S)
         if pm:
@@ -163,7 +229,8 @@ def parse_ddl(text: str, source: str = "") -> list[TableSpec]:
                 cm = _COLUMN.match(item)
                 if not cm:
                     raise DdlError(f"{source}: partición ilegible en {database}.{name}: {item!r}")
-                parts.append(Column(cm.group(1).lower(), _norm_type(cm.group(2))))
+                key = cm.group(1).lower()
+                parts.append(Column(key, _norm_type(cm.group(2)), notes.get(key, "")))
         if not re.search(r"STORED\s+AS\s+PARQUET", body, re.I):
             raise DdlError(f"{source}: {database}.{name} no es STORED AS PARQUET")
         lm = re.search(r"LOCATION\s+'([^']+)'", body, re.I)
@@ -290,26 +357,167 @@ def projection_problems(spec: TableSpec) -> list[str]:
     return out
 
 
+# --- Catálogo (Lote 5.3, HU-034) ---------------------------------------------------------------
+
+
+def all_columns(spec: TableSpec) -> tuple[Column, ...]:
+    """Columnas de datos y claves de partición, en el orden de Glue."""
+    return spec.columns + spec.partition_keys
+
+
+def catalog_problems(tables: Iterable[TableSpec]) -> list[str]:
+    """Reglas del catálogo de HU-034 (vacío = cumple): cada tabla con descripción y cada columna (también las claves
+    de partición) con clase de privacidad válida y descripción, dentro de los límites de Glue; ``[anonimizado]``
+    exactamente en las columnas ``user_hash`` y ninguna columna de identidad en claro."""
+    out: list[str] = []
+    for t in tables:
+        desc = t.description
+        if len(desc) < DESCRIPTION_MIN:
+            out.append(f"{t.full_name}: descripción de tabla vacía o corta ({len(desc)} < {DESCRIPTION_MIN} caracteres)")
+        if len(desc) > DESCRIPTION_MAX:
+            out.append(f"{t.full_name}: descripción de {len(desc)} caracteres (Glue admite {DESCRIPTION_MAX})")
+        if PLACEHOLDER in desc:
+            out.append(f"{t.full_name}: la descripción menciona {PLACEHOLDER}")
+        for c in all_columns(t):
+            where = f"{t.full_name}.{c.name}"
+            if c.name in IDENTITY_COLUMNS:
+                out.append(f"{where}: identidad en claro")
+            if not c.comment:
+                out.append(f"{where}: sin comentario")
+                continue
+            if c.privacy not in PRIVACY_CLASSES:
+                out.append(f"{where}: sin clase de privacidad válida al inicio ({'[' + c.privacy + ']' if c.privacy else 'ninguna'}; "
+                           f"use una de {', '.join('[' + p + ']' for p in PRIVACY_CLASSES)})")
+            if len(c.description) < 3:
+                out.append(f"{where}: comentario sin descripción")
+            if len(c.comment) > COMMENT_MAX:
+                out.append(f"{where}: comentario de {len(c.comment)} caracteres (Glue admite {COMMENT_MAX})")
+            if c.anonymized != (c.name in ANONYMIZED_COLUMNS):
+                out.append(f"{where}: [{c.privacy}] — [{ANONYMIZED}] va exactamente en {', '.join(ANONYMIZED_COLUMNS)}")
+    return out
+
+
+def glue_description_problems(spec: TableSpec, glue_table: dict[str, Any], bucket: str) -> list[str]:
+    """Descripción de la tabla y comentario de cada columna y clave de partición en Glue frente a la DDL (vacío =
+    igual). Aplica los mismos recortes que el módulo de Terraform (2048 y 255 caracteres)."""
+    want = resolve(spec, bucket)
+    problems: list[str] = []
+    if (glue_table.get("Description") or "") != want.description[:DESCRIPTION_MAX]:
+        problems.append(f"{spec.full_name}: descripción distinta de la DDL")
+    sd = glue_table.get("StorageDescriptor") or {}
+    got = {c.get("Name"): c.get("Comment") or "" for c in (sd.get("Columns") or []) + (glue_table.get("PartitionKeys") or [])}
+    for c in all_columns(want):
+        if got.get(c.name, "") != c.comment[:COMMENT_MAX]:
+            problems.append(f"{spec.full_name}.{c.name}: comentario distinto de la DDL")
+    return problems
+
+
+def privacy_summary(tables: Iterable[TableSpec]) -> dict[str, Any]:
+    """Conteos del catálogo: tablas, columnas (con particiones) por clase y las anonimizadas (``base.tabla.columna``)."""
+    tables = list(tables)
+    counts = {p: 0 for p in PRIVACY_CLASSES}
+    anonymized: list[str] = []
+    for t in tables:
+        for c in all_columns(t):
+            if c.privacy in counts:
+                counts[c.privacy] += 1
+            if c.anonymized:
+                anonymized.append(f"{t.full_name}.{c.name}")
+    return {"tables": len(tables), "columns": sum(len(all_columns(t)) for t in tables), "by_class": counts,
+            "anonymized": anonymized}
+
+
+def _md(text: str) -> str:
+    return text.replace("|", "\\|").replace("\n", " ")
+
+
+def render_dictionary(tables: Iterable[TableSpec]) -> str:
+    """El diccionario de datos ``docs/CATALOG.md`` (lo mismo que muestra Glue), generado desde las DDL."""
+    tables = list(tables)
+    s = privacy_summary(tables)
+    out = [
+        "# TrendAnalyzer · Catálogo de datos (diccionario)",
+        "",
+        "> **Generado** desde `project/contracts/athena/*.sql` con `cd project/src && python -m lakehouse.catalog_spec --write`; "
+        "no se edita a mano (una prueba exige que coincida con las DDL). Es lo mismo que el Glue Data Catalog muestra en "
+        "`ta_raw`, `ta_trusted` y `ta_curated` (descripción de cada tabla y `Comment` de cada columna). Reglas, linaje y "
+        "gobernanza: `ARCHITECTURE.md` §3.25, `LINEAGE.md` y `GOVERNANCE.md`. Datos sintéticos.",
+        "",
+        f"**{s['tables']} tablas y {s['columns']} columnas** (con las claves de partición). Clases de privacidad: "
+        + ", ".join(f"`{p}` {n}" for p, n in s["by_class"].items()) + ".",
+        "",
+        "| Clase | Qué significa | ¿Dato anonimizado? |",
+        "|---|---|---|",
+        "| `anonimizado` | El identificador del autor, reemplazado por un seudónimo HMAC-SHA256 (`user_hash`): la única columna que "
+        "identifica a una persona; sin la llave `ta-hmac-key` no se revierte | **Sí** |",
+        "| `cuasi_identificador` | No identifica por sí sola, pero cruzada con otras fuentes ayudaría a reidentificar al autor "
+        "(seguidores, actividad, ids y enlaces del post en `payload`) | No |",
+        "| `texto_libre` | Texto escrito por el autor: en datos reales podría traer nombres, menciones o datos sensibles | No |",
+        "| `sin_dato_personal` | Describe el comentario, la marca, el tiempo, la red o el modelo, no a la persona | No |",
+        "",
+        "| Tabla | Columnas | Particiones | Anonimizadas | Ubicación |",
+        "|---|---|---|---|---|",
+    ]
+    for t in tables:
+        anon = [c.name for c in all_columns(t) if c.anonymized]
+        out.append(f"| [`{t.full_name}`](#{t.full_name.replace('.', '')}) | {len(t.columns)} | "
+                   f"{', '.join(f'`{p}`' for p in t.partition_names) or '—'} | {', '.join(f'`{a}`' for a in anon) or '—'} | "
+                   f"`{t.location.replace(PLACEHOLDER, '{lake}')}` |")
+    for t in tables:
+        out += ["", f"## {t.full_name}", "", _md(t.description), "",
+                f"Ubicación `{t.location.replace(PLACEHOLDER, '{lake}')}` · Parquet + Snappy · "
+                + (f"particiones {', '.join(f'`{p}`' for p in t.partition_names)} (partition projection)"
+                   if t.partition_keys else "sin particiones") + f" · DDL `contracts/athena/{t.source.rsplit('/', 1)[-1]}`",
+                "", "| # | Columna | Tipo | Anonimizado | Clase | Descripción |", "|---|---|---|---|---|---|"]
+        for n, c in enumerate(all_columns(t), 1):
+            kind = " (partición)" if c in t.partition_keys else ""
+            out.append(f"| {n} | `{c.name}`{kind} | `{c.type}` | {'**sí**' if c.anonymized else 'no'} | `{c.privacy or '—'}` | "
+                       f"{_md(c.description)} |")
+    return "\n".join(out) + "\n"
+
+
+def check_dictionary(contracts_dir: Path = CONTRACTS_DIR, path: Path = DICTIONARY_MD) -> list[str]:
+    """Diferencias entre ``docs/CATALOG.md`` y lo que sale de las DDL (vacío = al día)."""
+    try:
+        expected = render_dictionary(load_contract_tables(contracts_dir))
+    except (OSError, DdlError) as exc:
+        return [f"no se pudieron leer las DDL: {exc}"]
+    try:
+        current = Path(path).read_text(encoding="utf-8").replace("\r\n", "\n")
+    except OSError:
+        return [f"no existe {path}"]
+    return [] if current == expected else [f"{path.name} distinto de las DDL: regenérelo con --write"]
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m lakehouse.catalog_spec", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--check", action="store_true", help="0 si tables.json coincide con las DDL")
-    group.add_argument("--write", action="store_true", help="regenera tables.json desde las DDL")
+    group.add_argument("--check", action="store_true", help="0 si tables.json y docs/CATALOG.md coinciden con las DDL")
+    group.add_argument("--write", action="store_true", help="regenera tables.json y docs/CATALOG.md desde las DDL")
     group.add_argument("--print", action="store_true", help="resumen de las tablas")
     parser.add_argument("--contracts-dir", type=Path, default=CONTRACTS_DIR)
     parser.add_argument("--tables-json", type=Path, default=TABLES_JSON)
+    parser.add_argument("--dictionary", type=Path, default=DICTIONARY_MD, help="diccionario de datos (Markdown)")
     args = parser.parse_args(argv)
     if args.write:
         tables = load_contract_tables(args.contracts_dir)
-        args.tables_json.parent.mkdir(parents=True, exist_ok=True)
-        with open(args.tables_json, "w", encoding="utf-8", newline="\n") as fh:
-            fh.write(render(tables))
-        print(f"{len(tables)} tablas → {args.tables_json}")
+        for path, text in ((args.tables_json, render(tables)), (args.dictionary, render_dictionary(tables))):
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, "w", encoding="utf-8", newline="\n") as fh:
+                fh.write(text)
+        print(f"{len(tables)} tablas → {args.tables_json} y {args.dictionary}")
+        problems = catalog_problems(tables)
+        if problems:
+            print("catálogo incompleto (HU-034):\n" + "\n".join(problems))
         return 0
     if args.check:
-        problems = check(args.contracts_dir, args.tables_json)
-        print("tables.json al día" if not problems else "\n".join(problems))
+        problems = check(args.contracts_dir, args.tables_json) + check_dictionary(args.contracts_dir, args.dictionary)
+        try:
+            problems += catalog_problems(load_contract_tables(args.contracts_dir))
+        except (OSError, DdlError):
+            pass  # ya lo informa check()
+        print("tables.json y diccionario al día; catálogo completo" if not problems else "\n".join(problems))
         return 0 if not problems else 1
     for t in load_contract_tables(args.contracts_dir):
         parts = f" · particiones {', '.join(t.partition_names)}" if t.partition_keys else ""

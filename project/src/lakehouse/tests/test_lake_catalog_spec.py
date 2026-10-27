@@ -71,11 +71,78 @@ def test_ubicaciones_por_capa(tables):
 
 
 def test_comentarios_y_descripciones(tables):
+    # v2.43 (Lote 5.3): la descripción es el bloque pegado al CREATE y cada comentario lleva su clase de privacidad.
     t = by_name(tables)
-    dim_date = {c.name: c.comment for c in t["ta_curated.dim_date"].columns}
-    assert dim_date["date_key"] == "yyyymmdd" and dim_date["year"] == ""
-    assert t["ta_curated.fact_posts"].description == "Un registro por post. Grano = event_id."
-    assert t["ta_raw.posts_raw"].description.startswith("ta_raw.posts_raw")
+    dim_date = {c.name: c for c in t["ta_curated.dim_date"].columns}
+    assert dim_date["date_key"].comment == "[sin_dato_personal] Día como entero yyyymmdd (llave)"
+    assert dim_date["date_key"].privacy == "sin_dato_personal" and dim_date["year"].description == "Año"
+    assert t["ta_curated.fact_posts"].description.startswith("Hechos: un registro por comentario de Trusted (grano = event_id)")
+    assert t["ta_raw.posts_raw"].description.startswith("Capa Raw (bronce)")
+    assert "Placeholders" not in t["ta_raw.posts_raw"].description
+
+
+def test_comentarios_de_las_claves_de_particion(tables):
+    t = by_name(tables)
+    raw = {c.name: c for c in t["ta_raw.posts_raw"].partition_keys}
+    assert list(raw) == ["part_origin", "part_source", "part_dt", "part_hr"]
+    assert all(c.privacy == "sin_dato_personal" and c.description for c in raw.values())
+    assert t["ta_curated.fact_posts"].partition_keys[0].description.startswith("Día UTC de event_time")
+    assert [c.name for c in t["ta_trusted.posts"].partition_keys] == ["source", "dt"]
+
+
+def test_catalogo_completo_hu034(tables):
+    assert cs.catalog_problems(tables) == []
+    s = cs.privacy_summary(tables)
+    assert s["tables"] == 11 and s["columns"] == sum(len(t.columns) + len(t.partition_keys) for t in tables)
+    assert s["anonymized"] == ["ta_raw.posts_raw.user_hash", "ta_trusted.posts.user_hash", "ta_curated.fact_posts.user_hash",
+                               "ta_curated.dim_user.user_hash", "ta_curated.edges_user_brand.user_hash"]
+    assert sum(s["by_class"].values()) == s["columns"]
+    texto = {f"{t.full_name}.{c.name}" for t in tables for c in cs.all_columns(t) if c.privacy == "texto_libre"}
+    assert texto == {"ta_raw.posts_raw.text", "ta_trusted.posts.text", "ta_trusted.posts.text_clean"}
+
+
+def test_catalog_problems_detecta_lo_que_falta():
+    ddl = ("CREATE EXTERNAL TABLE IF NOT EXISTS ta_x.t (\n"
+           "  user_hash string,  -- [sin_dato_personal] Autor\n"
+           "  user_id string,    -- [anonimizado] Identidad en claro\n"
+           "  a string,          -- sin etiqueta\n"
+           "  b string,\n"
+           f"  c string          -- [sin_dato_personal] {'x' * 300}\n"
+           ")\nPARTITIONED BY (\n  dt string\n)\nSTORED AS PARQUET\nLOCATION 's3://{{lake_bucket}}/x/t/'\n"
+           "TBLPROPERTIES ('projection.enabled' = 'true', 'projection.dt.type' = 'date');\n")
+    (spec,) = cs.parse_ddl(ddl, "x.sql")
+    problems = "\n".join(cs.catalog_problems([spec]))
+    for text in ("descripción de tabla vacía", "ta_x.t.user_hash: [sin_dato_personal]", "ta_x.t.user_id: identidad en claro",
+                 "ta_x.t.user_id: [anonimizado]", "ta_x.t.a: sin clase de privacidad", "ta_x.t.b: sin comentario",
+                 "ta_x.t.c: comentario de", "ta_x.t.dt: sin comentario"):
+        assert text in problems, text
+
+
+def glue_of(spec):
+    r = cs.resolve(spec, BUCKET)
+    return {"Name": r.name, "Description": r.description,
+            "PartitionKeys": [{"Name": c.name, "Type": c.type, "Comment": c.comment} for c in r.partition_keys],
+            "StorageDescriptor": {"Columns": [{"Name": c.name, "Type": c.type, "Comment": c.comment} for c in r.columns]}}
+
+
+def test_glue_description_problems(tables):
+    spec = by_name(tables)["ta_raw.posts_raw"]
+    glue = glue_of(spec)
+    assert cs.glue_description_problems(spec, glue, BUCKET) == []
+    glue["Description"] = "TrendAnalyzer"
+    glue["StorageDescriptor"]["Columns"][7].pop("Comment")
+    glue["PartitionKeys"][2]["Comment"] = "otra"
+    assert cs.glue_description_problems(spec, glue, BUCKET) == [
+        "ta_raw.posts_raw: descripción distinta de la DDL", "ta_raw.posts_raw.user_hash: comentario distinto de la DDL",
+        "ta_raw.posts_raw.part_dt: comentario distinto de la DDL"]
+
+
+def test_diccionario_al_dia(tables):
+    assert cs.check_dictionary() == [], "regenere con: cd project/src && python -m lakehouse.catalog_spec --write"
+    md = cs.render_dictionary(tables)
+    assert "## ta_curated.dim_user" in md and "| 1 | `user_hash` | `string` | **sí** | `anonimizado` |" in md
+    assert "| 25 | `part_origin` (partición) | `string` | no | `sin_dato_personal` |" in md
+    assert "stream \\| historical" in md and "{lake}" in md and "{{lake_bucket}}" not in md
 
 
 def test_parser_tolera_crlf_y_rechaza_lo_ilegible():
@@ -97,13 +164,18 @@ def test_check_detecta_un_lado_cambiado(tmp_path):
     contracts = tmp_path / "athena"
     shutil.copytree(cs.CONTRACTS_DIR, contracts)
     out = tmp_path / "tables.json"
-    assert cs.main(["--write", "--contracts-dir", str(contracts), "--tables-json", str(out)]) == 0
-    assert cs.check(contracts, out) == []
+    md = tmp_path / "CATALOG.md"
+    files = ["--contracts-dir", str(contracts), "--tables-json", str(out), "--dictionary", str(md)]
+    assert cs.main(["--write", *files]) == 0
+    assert cs.check(contracts, out) == [] and cs.check_dictionary(contracts, md) == []
+    assert cs.main(["--check", *files]) == 0
     sql = (contracts / "curated.sql").read_text(encoding="utf-8").replace("  max_followers bigint", "  max_followers int")
     (contracts / "curated.sql").write_text(sql, encoding="utf-8")
     assert cs.check(contracts, out) == ["ta_curated.dim_user distinta"]
-    assert cs.main(["--check", "--contracts-dir", str(contracts), "--tables-json", str(out)]) == 1
+    assert cs.check_dictionary(contracts, md) == ["CATALOG.md distinto de las DDL: regenérelo con --write"]
+    assert cs.main(["--check", *files]) == 1
     assert "no existe" in cs.check(contracts, tmp_path / "otro.json")[0]
+    assert "no existe" in cs.check_dictionary(contracts, tmp_path / "otro.md")[0]
 
 
 def test_resolve_y_comparacion_con_glue(tables):

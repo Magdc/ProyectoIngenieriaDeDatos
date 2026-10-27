@@ -90,9 +90,9 @@ Criterios de aceptación: lista verificable.
 | HU-031 | Profiling de datos | 5 · 5.1 | A | Must | 2 | ✅ |
 | HU-032 | Reglas de calidad y KPIs | 5 · 5.2 | A | Must | 2 | ✅ |
 | HU-033 | Precisión del NLP | 5 · 5.2 | A | Could | 2 | ✅ |
-| HU-034 | Catálogo de datos | 5 · 5.3 | A | Must | 2 | ⬜ |
-| HU-035 | Linaje de datos | 5 · 5.3 | A | Must | 2 | ⬜ |
-| HU-036 | Cumplimiento normativo y DAMA-DMBOK | 5 · 5.3 | A | Must | 2 | ⬜ |
+| HU-034 | Catálogo de datos | 5 · 5.3 | A | Must | 2 | 🟨 |
+| HU-035 | Linaje de datos | 5 · 5.3 | A | Must | 2 | 🟨 |
+| HU-036 | Cumplimiento normativo y DAMA-DMBOK | 5 · 5.3 | A | Must | 2 | 🟨 |
 | HU-048 | Prueba de humo end-to-end | 5 · 5.4 | A | Must | 2 | ⬜ |
 | **E7 · Serving y alertas** | | | | | | |
 | HU-037 | Dashboard de tendencias y sentimiento | 6 · 6.1 | C | Must | Final | ⬜ |
@@ -708,6 +708,8 @@ Criterios de aceptación: lista verificable.
 - Todas las tablas de `ta_raw`, `ta_trusted` y `ta_curated` tienen descripción en el Glue Data Catalog.
 - Cada columna tiene descripción, tipo y si contiene dato anonimizado.
 
+**Estado (v2.43, 🟨):** entregado, pendiente del `apply` y de la validación en la nube (`docs/validation/validation-5-3.md`, `scripts/validate_5_3.py`; `ARCHITECTURE.md` §3.25, ADR-29). Por criterio: *descripción de cada tabla en Glue*: las 11 tablas la tienen en su DDL de `contracts/athena/` y Terraform la lleva a Glue (L1, C, D2); *cada columna con descripción, tipo y si contiene dato anonimizado*: cada una de las 108 columnas (con las claves de partición) lleva `[clase de privacidad] descripción`, con `[anonimizado]` exactamente en las 5 `user_hash` (L1, D2, D3); el diccionario legible está en `docs/CATALOG.md` (generado).
+
 ### HU-035 · Linaje de datos
 
 | Épica | Fase · Lote | Responsable | Prioridad | Sprint | Depende de |
@@ -719,6 +721,8 @@ Criterios de aceptación: lista verificable.
 **Criterios de aceptación**
 - Linaje generado con dbt docs que cubre Raw → Trusted → Curated.
 - Documento y diagrama de linaje de extremo a extremo (generador de comentarios → simulador → Pub/Sub → Dataflow → BigQuery/S3 → Curated → dashboard).
+
+**Estado (v2.43, 🟨):** entregado (`docs/LINEAGE.md`; `ARCHITECTURE.md` §3.25, ADR-29). Por criterio: *«linaje generado con dbt docs»*: **sustituido por decisión del usuario (27-oct-2026)** por un documento y un diagrama hechos a mano, porque el proyecto no usa dbt desde el 4.3 (ADR-26, ADR-10); cubre Raw → Trusted → Curated **por columna** (las 108 columnas del catálogo; L3 lo comprueba); *documento y diagrama de extremo a extremo*: diagrama Mermaid y tabla de etapas del generador al tablero (el tablero, Lote 6.1, figura como previsto); L4 comprueba que las rutas citadas existen.
 
 ### HU-036 · Cumplimiento normativo y DAMA-DMBOK
 
@@ -732,6 +736,8 @@ Criterios de aceptación: lista verificable.
 - Mapeo de las áreas de conocimiento de DAMA-DMBOK a componentes del proyecto.
 - Nota de cumplimiento de la Ley 1581: anonimización, acceso restringido a `raw/`, minimización.
 - Se declara explícitamente que los datos son sintéticos y las limitaciones (comentarios de plantillas con vocabulario acotado, asociación marca→sentimiento artificial, métricas de NLP optimistas).
+
+**Estado (v2.43, 🟨):** entregado (`docs/GOVERNANCE.md`; `ARCHITECTURE.md` §3.25, ADR-29). Por criterio: *mapeo DAMA-DMBOK*: las 11 áreas con cobertura, evidencia y brechas (L5); *nota de la Ley 1581*: anonimización (seudonimización HMAC en el primer paso), acceso restringido a `raw/` (GCS y S3) y minimización, más principios, transferencia internacional y brechas (L5); los controles que cita se verificaron en la nube en solo lectura (G1–G7 en OK antes de entregar); *declaración de datos sintéticos y limitaciones*: sección 1 (L5).
 
 ### HU-048 · Prueba de humo end-to-end
 

@@ -4,6 +4,8 @@
 # tables.json, que se genera desde project/contracts/athena/*.sql (python -m lakehouse.catalog_spec
 # --write; una prueba exige que estén al día, §5.13). Las particiones se resuelven con partition
 # projection (parámetros projection.* de cada tabla): sin crawlers ni particiones registradas.
+# Lote 5.3 (HU-034, §3.25): la descripción de cada tabla y el comentario de cada columna y clave de partición
+# también salen de las DDL (con su clase de privacidad); aquí solo se recortan a los límites de Glue.
 
 terraform {
   required_providers {
@@ -67,7 +69,7 @@ resource "aws_glue_catalog_table" "this" {
     content {
       name    = partition_keys.value.name
       type    = partition_keys.value.type
-      comment = partition_keys.value.comment != "" ? partition_keys.value.comment : null
+      comment = partition_keys.value.comment != "" ? substr(partition_keys.value.comment, 0, 255) : null
     }
   }
 

@@ -1,10 +1,24 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.42**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.43**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.43 · desde v2.42
+
+**Lote que lo motiva:** Lote 5.3 (HU-034, HU-035, HU-036) · entrega
+
+| Área | Cambio |
+|---|---|
+| Lote 5.3 | Entregado: descripciones de tabla y comentarios de columna (con clase de privacidad) en `contracts/athena/{posts_raw,posts,curated}.sql`; `src/lakehouse/catalog_spec.py` (comentarios de particiones, `catalog_problems`, `glue_description_problems`, `privacy_summary`, `render_dictionary`, `check_dictionary`; `--write`/`--check` también del diccionario) con +5 pruebas; `infra/aws/modules/glue_catalog/tables.json` regenerado; nuevos `docs/CATALOG.md` (generado), `docs/LINEAGE.md`, `docs/GOVERNANCE.md`, `scripts/validate_5_3.py`, `src/ops/validate53.py` (20 pruebas) y `docs/validation/validation-5-3.md`. Detalle en **§3.25** e interfaces en **§3.25.1** (con «Para el siguiente lote»: 5.4 y 6.1). |
+| Decisión del usuario (27-oct-2026) | Linaje de HU-035 = **documento y diagrama hechos a mano, sin *dbt docs***: cierra ADR-10. |
+| Decisiones del lote (ADR-29) | Descripciones en las DDL (fuente única → Terraform → Glue, y diccionario generado); «dato anonimizado» como **clase de privacidad** al inicio de cada comentario (`[anonimizado]` solo en `user_hash`, 5 columnas; `cuasi_identificador` 8; `texto_libre` 3; `sin_dato_personal` 92); diagrama Mermaid y linaje por columna comprobado contra el catálogo; DAMA-DMBOK con evidencia comprobable; nota de la Ley 1581 que llama seudonimización al HMAC; controles de la nota verificados en la nube en solo lectura. |
+| Verificación antes de entregar | `src/lakehouse` 132, `test_ops_validate53.py` 20, `contracts/tests` 18, `src/dq` 3, `test_ops_validate51.py` 24; ruff y `py_compile` sin errores; `catalog_spec --check` al día. `validate_5_3.py` preflight OK (7), tests OK (5), local OK (6: 11 tablas, 108 columnas, 44 rutas), **controls OK (7, nube en solo lectura)**, glue D1 OK y D2/D3 en FALLA hasta aplicar; **`terraform plan -target=module.glue_catalog`: 0 a crear, 11 a cambiar, 0 a destruir** (solo descripción y comentarios). **No** se aplicó (falta el OK del usuario). |
+| Contratos | `contracts/athena/*.sql`: **solo comentarios** (sin cambios de columnas, tipos ni `schema_version`). §5.7 (las DDL son también la fuente del catálogo), §3.19 (la descripción es el bloque pegado al `CREATE`), §3.19.1 se complementa con §3.25.1 (`--check` exige también el diccionario; `check()` no cambia); ADR-10 cerrado y ADR-29. |
+| Documento | Nueva §3.25 con §3.25.1; notas en §0, §1.2, §3.19, §5.7, §6 y §9; PLAN.md §3 (5.3 🟨); HU.md (HU-034, HU-035 y HU-036 🟨, con el estado por criterio); cabeceras a 2.43. |
+| Correcciones de documentación | §6 decía «CHANGELOG (v2.2 → v2.38)»: al día. HU-035 pide «linaje generado con dbt docs»: anotado (sin dbt desde el 4.3; decisión del usuario). Notas de cabecera de `posts_raw.sql` que entraban como descripción de la tabla en Glue: separadas. `validate_4_4.py tests` B1 (127) ya no cuadra: ahora son 132 (esperado). |
 
 ## v2.42 · desde v2.41
 

@@ -5,150 +5,150 @@
       "database": "ta_raw",
       "name": "posts_raw",
       "source": "contracts/athena/posts_raw.sql",
-      "description": "ta_raw.posts_raw · ARCHITECTURE.md §5.7 Capa Raw: Parquet+Snappy tal como llega a S3 (ya anonimizado), stream (exportador) e historico (loader). Placeholders de despliegue: {{lake_bucket}}. Los ${...} de abajo son variables de Athena (partition projection). Layout fisico de S3 (los dos productores deben respetarlo): s3://{{lake_bucket}}/raw/origin={stream|historical}/source={s}/dt={YYYY-MM-DD}/hr={HH}/*.parquet Las columnas `origin` y `source` tambien viajan DENTRO del Parquet, por eso las claves de particion se llaman part_* (Athena/Hive no admite una clave de particion con el nombre de una columna de datos). El esquema de columnas es el de BigQuery posts_enriched (envelope enriquecido aplanado); `payload` viaja como JSON en STRING. Debe coincidir columna a columna con bigquery/posts_enriched.sql.",
+      "description": "Capa Raw (bronce): una fila por comentario simulado de redes sociales, tal como llega a S3 desde GCP (stream, exportador gcs-to-s3) y desde la carga histórica (loader). Ya viene anonimizada: el autor es user_hash, nunca user_id ni handle. Puede tener event_id repetidos, filas sin NLP y los centinelas ta-verify@* de los verificadores: Trusted (ta_trusted.posts) los resuelve. Particiones: origen, red social, día y hora (en el stream, de proceso; en el histórico, de event_time). Datos sintéticos.",
       "location": "s3://{{lake_bucket}}/raw/",
       "columns": [
         {
           "name": "event_id",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Identificador del evento (UUID del simulador); clave de deduplicación"
         },
         {
           "name": "origin",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Origen del dato: stream (simulador en vivo) | historical (carga histórica)"
         },
         {
           "name": "source",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Red social simulada: reddit | facebook | instagram"
         },
         {
           "name": "generator",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Nombre y versión del generador de comentarios (ta-verify@* = centinela de validación)"
         },
         {
           "name": "event_time",
           "type": "timestamp",
-          "comment": ""
+          "comment": "[sin_dato_personal] Instante en que se publicó el comentario (UTC)"
         },
         {
           "name": "ingest_time",
           "type": "timestamp",
-          "comment": ""
+          "comment": "[sin_dato_personal] Instante en que el simulador o el loader lo emitió (UTC)"
         },
         {
           "name": "process_time",
           "type": "timestamp",
-          "comment": ""
+          "comment": "[sin_dato_personal] Instante en que Dataflow (o el loader) lo enriqueció (UTC)"
         },
         {
           "name": "user_hash",
           "type": "string",
-          "comment": ""
+          "comment": "[anonimizado] Autor seudonimizado: HMAC-SHA256 en hex (64) de user_id con la llave ta-hmac-key; mismo usuario, mismo hash"
         },
         {
           "name": "followers",
           "type": "bigint",
-          "comment": ""
+          "comment": "[cuasi_identificador] Seguidores del autor al publicar (puede ser nulo)"
         },
         {
           "name": "text",
           "type": "string",
-          "comment": ""
+          "comment": "[texto_libre] Texto del comentario tal como se publicó (sintético: plantillas, emojis y hashtags)"
         },
         {
           "name": "lang",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Idioma del texto (es)"
         },
         {
           "name": "brands",
           "type": "array<string>",
-          "comment": ""
+          "comment": "[sin_dato_personal] Marcas mencionadas, claves de brands.yaml (postobon, pepsi, sprite); puede ser vacío"
         },
         {
           "name": "brand_primary",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Marca principal: la primera de brands (nula si no hay)"
         },
         {
           "name": "hashtags",
           "type": "array<string>",
-          "comment": ""
+          "comment": "[sin_dato_personal] Hashtags del texto en forma canónica (minúsculas, sin #, [a-z0-9_]), en orden de aparición"
         },
         {
           "name": "likes",
           "type": "bigint",
-          "comment": ""
+          "comment": "[sin_dato_personal] Me gusta, normalizados desde payload según la red (§5.2)"
         },
         {
           "name": "shares",
           "type": "bigint",
-          "comment": ""
+          "comment": "[sin_dato_personal] Veces compartido, normalizado desde payload (solo Facebook lo tiene)"
         },
         {
           "name": "comments",
           "type": "bigint",
-          "comment": ""
+          "comment": "[sin_dato_personal] Respuestas o comentarios recibidos, normalizado desde payload"
         },
         {
           "name": "sentiment_label",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Sentimiento predicho por RoBERTuito: negative | neutral | positive (nulo si no hubo NLP)"
         },
         {
           "name": "sentiment_score",
           "type": "double",
-          "comment": ""
+          "comment": "[sin_dato_personal] Confianza del modelo en sentiment_label, en [0, 1]"
         },
         {
           "name": "emotion_label",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Emoción predicha: joy, sadness, anger, fear, disgust, surprise, neutral (nula sin NLP)"
         },
         {
           "name": "emotion_score",
           "type": "double",
-          "comment": ""
+          "comment": "[sin_dato_personal] Confianza del modelo en emotion_label, en [0, 1]"
         },
         {
           "name": "label_sentiment",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Sentimiento de verdad del simulador (ground truth; nulo en categorías ambiguas). Solo para evaluar el NLP"
         },
         {
           "name": "nlp_model_version",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Modelos de NLP y commit con que se predijo (nulo sin NLP)"
         },
         {
           "name": "payload",
           "type": "string",
-          "comment": ""
+          "comment": "[cuasi_identificador] JSON con los campos propios de la red (ids del post, enlace, página, reacciones); sin identidad del autor"
         }
       ],
       "partition_keys": [
         {
           "name": "part_origin",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Partición de S3 origin=: stream | historical"
         },
         {
           "name": "part_source",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Partición de S3 source=: reddit | facebook | instagram"
         },
         {
           "name": "part_dt",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Partición de S3 dt=: día UTC (AAAA-MM-DD); en el stream, el de proceso; en el histórico, el de event_time"
         },
         {
           "name": "part_hr",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Partición de S3 hr=: hora UTC (00-23), con el mismo criterio que part_dt"
         }
       ],
       "parameters": {
@@ -173,140 +173,140 @@
       "database": "ta_trusted",
       "name": "posts",
       "source": "contracts/athena/posts.sql",
-      "description": "ta_trusted.posts · ARCHITECTURE.md §5.7 Capa Trusted: union stream + historico, deduplicado por event_id, tipos correctos, texto limpio. Placeholders de despliegue: {{lake_bucket}}. Layout: s3://{{lake_bucket}}/trusted/posts/source={s}/dt={YYYY-MM-DD}/*.parquet Glue escribe con partitionBy(source, dt), asi que esas dos columnas NO estan dentro del Parquet. dt = DATE(event_time) en UTC (decision de este contrato; en Raw, dt es la fecha de proceso en el stream y la de event_time en el historico). Idempotencia: Glue sobrescribe la particion dt completa (§5.12). Respecto a posts_raw: sin `source` como columna (es particion) y con text_clean.",
+      "description": "Capa Trusted (plata): una fila por comentario (event_id único), unión de stream e histórico. La reconstruye entera cada hora ta-job-raw-to-trusted desde Raw: deduplica por event_id (se queda con el menor process_time), descarta los centinelas ta-verify@* y las filas sin event_id o event_time, corrige tipos y añade text_clean. Las filas sin NLP se conservan con el NLP en nulo. Particiones: red social y día UTC de event_time. Fuente de Curated. Datos sintéticos, ya anonimizados.",
       "location": "s3://{{lake_bucket}}/trusted/posts/",
       "columns": [
         {
           "name": "event_id",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Identificador del evento (UUID del simulador); único en esta tabla"
         },
         {
           "name": "origin",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Origen del dato: stream (simulador en vivo) | historical (carga histórica)"
         },
         {
           "name": "generator",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Nombre y versión del generador de comentarios"
         },
         {
           "name": "event_time",
           "type": "timestamp",
-          "comment": ""
+          "comment": "[sin_dato_personal] Instante en que se publicó el comentario (UTC); nunca nulo"
         },
         {
           "name": "ingest_time",
           "type": "timestamp",
-          "comment": ""
+          "comment": "[sin_dato_personal] Instante en que el simulador o el loader lo emitió (UTC)"
         },
         {
           "name": "process_time",
           "type": "timestamp",
-          "comment": ""
+          "comment": "[sin_dato_personal] Instante en que Dataflow (o el loader) lo enriqueció (UTC)"
         },
         {
           "name": "user_hash",
           "type": "string",
-          "comment": ""
+          "comment": "[anonimizado] Autor seudonimizado: HMAC-SHA256 en hex (64) de user_id con la llave ta-hmac-key; mismo usuario, mismo hash"
         },
         {
           "name": "followers",
           "type": "bigint",
-          "comment": ""
+          "comment": "[cuasi_identificador] Seguidores del autor al publicar (puede ser nulo)"
         },
         {
           "name": "text",
           "type": "string",
-          "comment": ""
+          "comment": "[texto_libre] Texto original del comentario, sin cambios (sintético)"
         },
         {
           "name": "text_clean",
           "type": "string",
-          "comment": ""
+          "comment": "[texto_libre] Texto normalizado con la regla text-clean@1: sin emojis, URLs, menciones ni hashtags, en minúsculas"
         },
         {
           "name": "lang",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Idioma del texto (es)"
         },
         {
           "name": "brands",
           "type": "array<string>",
-          "comment": ""
+          "comment": "[sin_dato_personal] Marcas mencionadas, claves de brands.yaml (postobon, pepsi, sprite); puede ser vacío"
         },
         {
           "name": "brand_primary",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Marca principal: la primera de brands (nula si no hay)"
         },
         {
           "name": "hashtags",
           "type": "array<string>",
-          "comment": ""
+          "comment": "[sin_dato_personal] Hashtags del texto en forma canónica (minúsculas, sin #, [a-z0-9_]), en orden de aparición"
         },
         {
           "name": "likes",
           "type": "bigint",
-          "comment": ""
+          "comment": "[sin_dato_personal] Me gusta, normalizados desde payload según la red (§5.2)"
         },
         {
           "name": "shares",
           "type": "bigint",
-          "comment": ""
+          "comment": "[sin_dato_personal] Veces compartido, normalizado desde payload (solo Facebook lo tiene)"
         },
         {
           "name": "comments",
           "type": "bigint",
-          "comment": ""
+          "comment": "[sin_dato_personal] Respuestas o comentarios recibidos, normalizado desde payload"
         },
         {
           "name": "sentiment_label",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Sentimiento predicho por RoBERTuito: negative | neutral | positive (nulo si la fila no tiene NLP)"
         },
         {
           "name": "sentiment_score",
           "type": "double",
-          "comment": ""
+          "comment": "[sin_dato_personal] Confianza del modelo en sentiment_label, en [0, 1]"
         },
         {
           "name": "emotion_label",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Emoción predicha: joy, sadness, anger, fear, disgust, surprise, neutral (nula sin NLP)"
         },
         {
           "name": "emotion_score",
           "type": "double",
-          "comment": ""
+          "comment": "[sin_dato_personal] Confianza del modelo en emotion_label, en [0, 1]"
         },
         {
           "name": "label_sentiment",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Sentimiento de verdad del simulador (ground truth; nulo en categorías ambiguas). Solo para evaluar el NLP"
         },
         {
           "name": "nlp_model_version",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Modelos de NLP y commit con que se predijo (nulo sin NLP)"
         },
         {
           "name": "payload",
           "type": "string",
-          "comment": ""
+          "comment": "[cuasi_identificador] JSON con los campos propios de la red (ids del post, enlace, página, reacciones); sin identidad del autor"
         }
       ],
       "partition_keys": [
         {
           "name": "source",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Red social simulada (partición source=): reddit | facebook | instagram"
         },
         {
           "name": "dt",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Día UTC de event_time (partición dt=, AAAA-MM-DD)"
         }
       ],
       "parameters": {
@@ -326,95 +326,95 @@
       "database": "ta_curated",
       "name": "fact_posts",
       "source": "contracts/athena/curated.sql",
-      "description": "Un registro por post. Grano = event_id.",
+      "description": "Hechos: un registro por comentario de Trusted (grano = event_id), con sus llaves a las dimensiones, el engagement y el NLP (nulo en las filas sin NLP). Partición dt = día UTC de event_time.",
       "location": "s3://{{lake_bucket}}/curated/fact_posts/",
       "columns": [
         {
           "name": "event_id",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Identificador del comentario (UUID del simulador); grano de la tabla"
         },
         {
           "name": "date_key",
           "type": "int",
-          "comment": ""
+          "comment": "[sin_dato_personal] Día UTC de event_time como entero yyyymmdd; llave a dim_date.date_key"
         },
         {
           "name": "origin",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Origen del dato: stream | historical"
         },
         {
           "name": "source",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Red social simulada; llave a dim_source.source"
         },
         {
           "name": "brand_primary",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Marca principal (la primera de brands); llave a dim_brand.brand"
         },
         {
           "name": "brands",
           "type": "array<string>",
-          "comment": ""
+          "comment": "[sin_dato_personal] Todas las marcas mencionadas (claves de brands.yaml)"
         },
         {
           "name": "user_hash",
           "type": "string",
-          "comment": ""
+          "comment": "[anonimizado] Autor seudonimizado (HMAC-SHA256 en hex de user_id); llave a dim_user.user_hash"
         },
         {
           "name": "event_time",
           "type": "timestamp",
-          "comment": ""
+          "comment": "[sin_dato_personal] Instante en que se publicó el comentario (UTC)"
         },
         {
           "name": "likes",
           "type": "bigint",
-          "comment": ""
+          "comment": "[sin_dato_personal] Me gusta, normalizados según la red"
         },
         {
           "name": "shares",
           "type": "bigint",
-          "comment": ""
+          "comment": "[sin_dato_personal] Veces compartido (solo Facebook)"
         },
         {
           "name": "comments",
           "type": "bigint",
-          "comment": ""
+          "comment": "[sin_dato_personal] Respuestas o comentarios recibidos"
         },
         {
           "name": "sentiment_label",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Sentimiento predicho: negative | neutral | positive (nulo sin NLP)"
         },
         {
           "name": "sentiment_score",
           "type": "double",
-          "comment": ""
+          "comment": "[sin_dato_personal] Confianza del modelo en sentiment_label, en [0, 1]"
         },
         {
           "name": "emotion_label",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Emoción predicha: joy, sadness, anger, fear, disgust, surprise, neutral (nula sin NLP)"
         },
         {
           "name": "emotion_score",
           "type": "double",
-          "comment": ""
+          "comment": "[sin_dato_personal] Confianza del modelo en emotion_label, en [0, 1]"
         },
         {
           "name": "label_sentiment",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Sentimiento de verdad del simulador (ground truth); solo para medir la precisión del NLP"
         }
       ],
       "partition_keys": [
         {
           "name": "dt",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Día UTC de event_time (partición dt=, AAAA-MM-DD)"
         }
       ],
       "parameters": {
@@ -432,48 +432,48 @@
       "database": "ta_curated",
       "name": "dim_date",
       "source": "contracts/athena/curated.sql",
-      "description": "",
+      "description": "Dimensión calendario: un día por fila, continuo desde el primer hasta el último dt de fact_posts.",
       "location": "s3://{{lake_bucket}}/curated/dim_date/",
       "columns": [
         {
           "name": "date_key",
           "type": "int",
-          "comment": "yyyymmdd"
+          "comment": "[sin_dato_personal] Día como entero yyyymmdd (llave)"
         },
         {
           "name": "full_date",
           "type": "date",
-          "comment": ""
+          "comment": "[sin_dato_personal] Fecha del día (UTC)"
         },
         {
           "name": "year",
           "type": "int",
-          "comment": ""
+          "comment": "[sin_dato_personal] Año"
         },
         {
           "name": "month",
           "type": "int",
-          "comment": ""
+          "comment": "[sin_dato_personal] Mes (1-12)"
         },
         {
           "name": "day",
           "type": "int",
-          "comment": ""
+          "comment": "[sin_dato_personal] Día del mes (1-31)"
         },
         {
           "name": "iso_week",
           "type": "int",
-          "comment": ""
+          "comment": "[sin_dato_personal] Semana ISO 8601 (1-53)"
         },
         {
           "name": "day_of_week",
           "type": "int",
-          "comment": "1 = lunes ... 7 = domingo"
+          "comment": "[sin_dato_personal] Día de la semana: 1 = lunes ... 7 = domingo"
         },
         {
           "name": "is_weekend",
           "type": "boolean",
-          "comment": ""
+          "comment": "[sin_dato_personal] Verdadero en sábado y domingo"
         }
       ],
       "partition_keys": [],
@@ -485,23 +485,23 @@
       "database": "ta_curated",
       "name": "dim_source",
       "source": "contracts/athena/curated.sql",
-      "description": "",
+      "description": "Dimensión red social: las tres fuentes simuladas con su nombre visible y su mezcla de publicaciones y comentarios.",
       "location": "s3://{{lake_bucket}}/curated/dim_source/",
       "columns": [
         {
           "name": "source",
           "type": "string",
-          "comment": "reddit | facebook | instagram"
+          "comment": "[sin_dato_personal] Red social simulada (llave): reddit | facebook | instagram"
         },
         {
           "name": "display_name",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Nombre para mostrar en los tableros"
         },
         {
           "name": "kind_mix",
           "type": "string",
-          "comment": "descripcion de la mezcla de kind (§3.3)"
+          "comment": "[sin_dato_personal] Mezcla de kind de la fuente (§3.3), p. ej. post 30% · comment 70%"
         }
       ],
       "partition_keys": [],
@@ -513,23 +513,23 @@
       "database": "ta_curated",
       "name": "dim_brand",
       "source": "contracts/athena/curated.sql",
-      "description": "",
+      "description": "Dimensión marca: las marcas de brands.yaml (propia y competidores), más cualquier marca de los datos que no esté (con display y role nulos).",
       "location": "s3://{{lake_bucket}}/curated/dim_brand/",
       "columns": [
         {
           "name": "brand",
           "type": "string",
-          "comment": "clave canonica de brands.yaml (postobon, pepsi, sprite)"
+          "comment": "[sin_dato_personal] Clave canónica de brands.yaml (postobon, pepsi, sprite); llave"
         },
         {
           "name": "display",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Nombre para mostrar de la marca"
         },
         {
           "name": "role",
           "type": "string",
-          "comment": "propia | competidor"
+          "comment": "[sin_dato_personal] Papel de la marca para el análisis: propia | competidor"
         }
       ],
       "partition_keys": [],
@@ -541,33 +541,33 @@
       "database": "ta_curated",
       "name": "dim_user",
       "source": "contracts/athena/curated.sql",
-      "description": "Solo user_hash: nunca handle ni user_id.",
+      "description": "Dimensión autor seudonimizado: una fila por user_hash con su actividad. Solo user_hash: nunca handle ni user_id.",
       "location": "s3://{{lake_bucket}}/curated/dim_user/",
       "columns": [
         {
           "name": "user_hash",
           "type": "string",
-          "comment": ""
+          "comment": "[anonimizado] Autor seudonimizado (HMAC-SHA256 en hex de user_id); llave"
         },
         {
           "name": "first_seen",
           "type": "timestamp",
-          "comment": ""
+          "comment": "[cuasi_identificador] Primer comentario del autor (mínimo event_time, UTC)"
         },
         {
           "name": "last_seen",
           "type": "timestamp",
-          "comment": ""
+          "comment": "[cuasi_identificador] Último comentario del autor (máximo event_time, UTC)"
         },
         {
           "name": "n_posts",
           "type": "bigint",
-          "comment": ""
+          "comment": "[cuasi_identificador] Comentarios del autor en fact_posts"
         },
         {
           "name": "max_followers",
           "type": "bigint",
-          "comment": ""
+          "comment": "[cuasi_identificador] Máximo de seguidores observado para el autor"
         }
       ],
       "partition_keys": [],
@@ -579,33 +579,33 @@
       "database": "ta_curated",
       "name": "agg_emotion_by_brand_hour",
       "source": "contracts/athena/curated.sql",
-      "description": "Conteos de emocion por marca / fuente / hora (formato largo).",
+      "description": "Conteos de emoción por hora UTC, marca principal, red social y emoción (formato largo). Solo cuenta las filas con emoción predicha.",
       "location": "s3://{{lake_bucket}}/curated/agg_emotion_by_brand_hour/",
       "columns": [
         {
           "name": "hour_start",
           "type": "timestamp",
-          "comment": "UTC, truncado a la hora"
+          "comment": "[sin_dato_personal] Inicio de la hora (UTC, truncado a la hora)"
         },
         {
           "name": "brand",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Marca principal (brand_primary)"
         },
         {
           "name": "source",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Red social simulada"
         },
         {
           "name": "emotion_label",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Emoción predicha"
         },
         {
           "name": "n_posts",
           "type": "bigint",
-          "comment": ""
+          "comment": "[sin_dato_personal] Comentarios de esa hora, marca, red y emoción"
         }
       ],
       "partition_keys": [],
@@ -617,43 +617,43 @@
       "database": "ta_curated",
       "name": "agg_trend_daily",
       "source": "contracts/athena/curated.sql",
-      "description": "Volumen y sentimiento diario por marca. avg_sentiment: misma definicion que BigQuery trend_windows (con signo en [-1, 1]). El dia es UTC; los dashboards convierten a America/Bogota (§5.12).",
+      "description": "Volumen y sentimiento diario por marca principal. n_posts cuenta todas las filas; los conteos por sentimiento y avg_sentiment, solo las que tienen sentimiento. El día es UTC; los tableros convierten a America/Bogota (§5.12).",
       "location": "s3://{{lake_bucket}}/curated/agg_trend_daily/",
       "columns": [
         {
           "name": "full_date",
           "type": "date",
-          "comment": ""
+          "comment": "[sin_dato_personal] Día UTC"
         },
         {
           "name": "brand",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Marca principal (brand_primary)"
         },
         {
           "name": "n_posts",
           "type": "bigint",
-          "comment": ""
+          "comment": "[sin_dato_personal] Comentarios del día y la marca (también los que no tienen NLP)"
         },
         {
           "name": "n_negative",
           "type": "bigint",
-          "comment": ""
+          "comment": "[sin_dato_personal] Comentarios con sentimiento negative"
         },
         {
           "name": "n_neutral",
           "type": "bigint",
-          "comment": ""
+          "comment": "[sin_dato_personal] Comentarios con sentimiento neutral"
         },
         {
           "name": "n_positive",
           "type": "bigint",
-          "comment": ""
+          "comment": "[sin_dato_personal] Comentarios con sentimiento positive"
         },
         {
           "name": "avg_sentiment",
           "type": "double",
-          "comment": ""
+          "comment": "[sin_dato_personal] Media de +score (positive), -score (negative) y 0 (neutral), en [-1, 1]; como trend_windows"
         }
       ],
       "partition_keys": [],
@@ -665,23 +665,23 @@
       "database": "ta_curated",
       "name": "edges_user_brand",
       "source": "contracts/athena/curated.sql",
-      "description": "Arista usuario -> marca; weight = numero de menciones.",
+      "description": "Arista usuario -> marca para análisis de relaciones: una fila por par (user_hash, marca); weight = número de menciones (filas del usuario cuyo brands contiene la marca).",
       "location": "s3://{{lake_bucket}}/curated/edges_user_brand/",
       "columns": [
         {
           "name": "user_hash",
           "type": "string",
-          "comment": ""
+          "comment": "[anonimizado] Autor seudonimizado (HMAC-SHA256 en hex de user_id); llave a dim_user"
         },
         {
           "name": "brand",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Marca mencionada; llave a dim_brand"
         },
         {
           "name": "weight",
           "type": "bigint",
-          "comment": ""
+          "comment": "[sin_dato_personal] Comentarios del autor que mencionan la marca (cada marca una vez por comentario)"
         }
       ],
       "partition_keys": [],
@@ -693,23 +693,23 @@
       "database": "ta_curated",
       "name": "edges_hashtag_cooccurrence",
       "source": "contracts/athena/curated.sql",
-      "description": "Co-ocurrencia de hashtags; arista no dirigida, siempre hashtag_a < hashtag_b.",
+      "description": "Coocurrencia de hashtags: arista no dirigida, siempre hashtag_a < hashtag_b; weight = comentarios con los dos.",
       "location": "s3://{{lake_bucket}}/curated/edges_hashtag_cooccurrence/",
       "columns": [
         {
           "name": "hashtag_a",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Primer hashtag del par (forma canónica; el menor por punto de código)"
         },
         {
           "name": "hashtag_b",
           "type": "string",
-          "comment": ""
+          "comment": "[sin_dato_personal] Segundo hashtag del par (siempre mayor que hashtag_a)"
         },
         {
           "name": "weight",
           "type": "bigint",
-          "comment": ""
+          "comment": "[sin_dato_personal] Comentarios que contienen los dos hashtags"
         }
       ],
       "partition_keys": [],

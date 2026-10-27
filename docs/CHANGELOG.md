@@ -1,10 +1,24 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.44**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.45**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.45 · desde v2.44
+
+**Lote que lo motiva:** Lote 5.4 (HU-048) · entrega
+
+| Área | Cambio |
+|---|---|
+| Lote 5.4 | Entregado: el paquete `src/smoke/` (`e2e`, `clouds`, `cli` y 11 pruebas con un pipeline falso), `scripts/smoke_e2e.py` (`plan`, `run`), `scripts/validate_5_4.py`, `src/ops/validate54.py` (14 pruebas) y `docs/validation/validation-5-4.md`. Detalle en **§3.26** e interfaces en **§3.26.1**. |
+| Decisiones del usuario (27-oct-2026) | (1) Centinela = **comentario normal** `comment-gen@1.0` (semilla 990048) con `event_id` conocido, que llega a `fact_posts` (1 fila sintética por corrida); (2) para validarla: *seek* del atraso de `ta-raw-*-df` (~73.600 mensajes del 24-oct), Dataflow con NLP hasta drenarlo, una ejecución del exportador y una corrida del workflow; simulador apagado. |
+| Decisiones del lote (ADR-30) | Calentamiento `ta-verify@2.1` (Trusted lo descarta) para medir el estado estable; disparar el exportador y el workflow; hora del dato cuando existe; bytes de S3 = GCS; identidad en las 5 etapas; puertos inyectables. |
+| Parámetros | §5.12 «Prueba de humo E2E»: objetivos por etapa (BigQuery ≤ 60 s, `enriched/` ≤ 900 s desde la publicación; S3 ≤ 300 s desde GCS; Trusted ≤ 900 s desde S3; Curated ≤ 600 s desde Trusted). |
+| Verificación antes de entregar | `src/smoke` 11, `test_ops_validate54.py` 14, `contracts/tests` 18, `test_ops_validate53.py` 20; ruff y `py_compile` sin errores; `smoke_e2e.py plan` válido contra el contrato. **Sin** nube todavía (`prepare`, `smoke`, `off` en la validación). |
+| Contratos | `contracts/` **sin cambios**; §5.12 (objetivos); ADR-30. |
+| Documento | Nueva §3.26 con §3.26.1; notas en §0, §5.12, §6 y §9; PLAN.md §3 (5.4 🟨); HU.md (HU-048 🟨); cabeceras a 2.45. |
 
 ## v2.44 · desde v2.43
 

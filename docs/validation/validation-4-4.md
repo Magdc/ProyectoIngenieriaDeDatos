@@ -270,7 +270,7 @@ python project/scripts/validate_4_4.py rerun    # pide confirmación (--yes la o
 | F5 | Athena otra vez | Mismas filas y pesos que F1 |
 | F6 | `get-workflow-run-properties` | `ta_trusted_report …, ta_trusted_rows = 221629, ta_curated_report …, ta_curated_rows = 221629, ta_curated_files_changed = 0` |
 | F7 | Marcas, corridas y horario | `curated/_ta_placeholder/: 0 → 0 · corridas en curso: ninguna · horario DISABLED → DISABLED (al terminar: … on --yes)` |
-| F8 | Costo con lo medido | Como el 4.3: ≈ 0,0196 USD por corrida del workflow, ≈ 0,47 USD/día, ≈ 14,1 USD/mes (el job sigue por debajo del mínimo de 60 s cobrados; las aristas suman 2 PUT solo cuando cambian) |
+| F8 | Costo con lo medido | Como el 4.3: ≈ 0,0196 USD por corrida del workflow, ≈ 0,47 USD/día, ≈ 14,1 USD/mes (el job sigue por debajo del mínimo de 60 s cobrados; las aristas suman 2 PUT solo cuando cambian). **Medido en el cierre: ≈ 0,0195 USD por corrida, ≈ 0,467 USD/día, ≈ 14,0 USD/mes** |
 
 Manual:
 
@@ -302,13 +302,28 @@ python project/scripts/status.py                  # lo demás que cobra (GCP y l
 
 ## Después de esta validación
 
+*(Hecho en v2.40.)*
+
 - **Cierre del 4.4 (v2.40):** anotar en `ARCHITECTURE.md` §3.23 el tiempo, la CPU y la memoria en Glue con las
   aristas (D3–D4), lo de Athena (E1–E6) y el costo (F8); en esta guía, la tabla de cierre; PLAN §3 (4.4 y la
   Fase 4) y HU-028.
 
 ## Cierre
 
-*(Se completa en v2.40.)*
+**Cerrado en v2.40** (27-oct-2026, WSL, perfil `default` de la cuenta 648617469176; `main` = `462fdce`). A, B, L y
+C sin `--apply` se corrieron antes de la entrega sobre el mismo código (A en AVISO solo por A6, B 6 OK, L 5 OK).
+
+| Parte | Resultado |
+|---|---|
+| `off` (Preparación, paso 6) | O1 `ENABLED → DISABLED`; nada en curso; 0 marcas |
+| C · Terraform | AVISO solo por C0 (cuenta raíz): C2 0 a crear, 2 a cambiar, 0 a destruir (`source_hash` del script y `description` del job); apply hecho; C3b sin cambios |
+| D · Corrida real | OK (8): `jr_236aab5b…` `SUCCEEDED`, **24 s a 0,0625 DPU**; `glue_job_done`: leídas 221.629, `fact_posts` 221.629, `edges_user_brand` 15.395 (**233.395 menciones**), `edges_hashtag_cooccurrence` 136 (**44.578 coocurrencias**, 25 hashtags); lectura 3,8 s, total 10,9 s, **CPU 11,5 s**, **pico 456,7 MB**, **Python 3.9.10, pyarrow 7.0.0, boto3 1.21.21**; reporte `trusted-to-curated@1.1` con **16 comprobaciones OK**; `curated/` 187 → **189 objetos**, **2 archivos cambiados (solo aristas)**, escritos 2, sin cambios 187, 18.480.344 bytes; esquemas de las 9 tablas = contrato |
+| E · Athena | OK (6): E1 15.395 pares, 0 diferencias, Σ `weight` 233.395 = menciones = Σ `cardinality(brands)`; E2 todo en 0; E3 136 pares, 0 diferencias, Σ 44.578 = Σ C(k, 2), 25 hashtags; E4 `colombia` + `gaseosa` (3.898), usuarios por nº de marcas {1: 479, 2: 1.455, 3: 4.002}; E5 26,5 MB en 5 consultas, la mayor 17,6 MB, ≈ 0,0003 USD; **E6 574–602 ms** (motor 407–463 ms) |
+| F · Idempotencia y costo | OK (8): `wr_50a17310…` `COMPLETED`, `raw_to_trusted` 87 s → `trusted_to_curated` 27 s; 0 archivos cambiados, 0 escritos, 0 borrados, mismos sha256 en 189 archivos (2 de aristas); Athena igual antes y después; propiedades con `ta_curated_files_changed = 0`; **F8 ≈ 0,0195 USD por corrida** (raw_to_trusted ≈ 0,01874, trusted_to_curated ≈ 0,00074) → **≈ 0,467 USD/día y ≈ 14,0 USD/mes** con el horario cada hora |
+| `on` / `status` | N1 `DISABLED → ENABLED`, N2 `rate(1 hour)` UTC, 0 reintentos / 5 OK: horario `ENABLED`, nada en curso, `curated/` 189 objetos, último reporte 1.1 con las aristas |
+
+El horario queda **encendido cada hora** (estado normal): Trusted y Curated (con las aristas) corren solos. Cifras
+también en `ARCHITECTURE.md` §3.23 y `CHANGELOG.md` v2.40.
 
 ## Problemas frecuentes
 

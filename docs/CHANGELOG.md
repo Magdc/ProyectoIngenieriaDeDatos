@@ -1,10 +1,24 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.39**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.40**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.40 · desde v2.39
+
+**Lote que lo motiva:** Lote 4.4 (HU-028) · cierre
+
+| Área | Cambio |
+|---|---|
+| Cierre del Lote 4.4 | Validado el 27-oct-2026 con `docs/validation/validation-4-4.md` sobre `main` = `462fdce`: `off` (O1 `ENABLED → DISABLED`); C en AVISO solo por la cuenta raíz (plan 0/2/0, apply hecho, C3b sin cambios); D OK (8); E OK (6); F OK (8); `on` (N1 `DISABLED → ENABLED`, N2 `rate(1 hour)` UTC, 0 reintentos); `status` 5 OK. A, B y L, en la entrega. El horario queda **encendido** (estado normal). |
+| Cifras en Glue | Corrida suelta `jr_236aab5b…` `SUCCEEDED`, **24 s a 0,0625 DPU** (60 s cobrados); `glue_job_done`: leídas 221.629, `fact_posts` 221.629, **`edges_user_brand` 15.395 pares (233.395 menciones)**, **`edges_hashtag_cooccurrence` 136 pares (44.578 coocurrencias, 25 hashtags)**; lectura 3,8 s, total 10,9 s, CPU 11,5 s, **pico 456,7 MB** (+14 MB frente al 4.3), Python 3.9.10, pyarrow 7.0.0, boto3 1.21.21. Reporte `trusted-to-curated@1.1` con 16 comprobaciones OK; `curated/` 187 → 189 objetos, **solo cambiaron los 2 archivos de aristas** (18.480.344 bytes, los mismos que en local); esquemas de las 9 tablas = contrato. |
+| Cifras en Athena | E1 `edges_user_brand` = recalculada desde `fact_posts`, 0 diferencias, Σ `weight` 233.395 = Σ `cardinality(brands)`; E2 0 llaves huérfanas, nulos, pares fuera de orden, no canónicos o repetidos; E3 `edges_hashtag_cooccurrence` = recalculada desde `ta_trusted.posts`, 0 diferencias, Σ 44.578 = Σ C(k, 2); E4 par más frecuente `colombia`+`gaseosa` (3.898), usuarios por nº de marcas 479 / 1.455 / 4.002; E5 26,5 MB en 5 consultas, ≈ 0,0003 USD; E6 0,57–0,60 s frente al KPI de 3 s. Athena lee los Parquet de las aristas y la sintaxis Trino de E1–E3 (`UNNEST`, `filter` con lambda, autounión) es válida. |
+| Idempotencia y costo (F) | Segunda corrida en el workflow `wr_50a17310…`: `raw_to_trusted` 87 s → `trusted_to_curated` 27 s; 0 archivos cambiados, mismos sha256 en 189 archivos (2 de aristas); Athena igual antes y después; **F8 ≈ 0,0195 USD por corrida, ≈ 0,467 USD/día, ≈ 14,0 USD/mes** con el horario cada hora: las aristas no cambiaron el costo por hora. |
+| Fase 4 | **Cerrada** (✅): 4.1–4.4 cerrados; su «Listo cuando» ya se había cumplido en el 4.3 (E1). |
+| Documento | §3.23 (cerrado; cifras medidas en «Memoria, tiempo y costo» y la nota «Cierre»; «Para el siguiente lote» con la latencia medida), §5.12 (Curated: medido), §9 (riesgo de memoria: medido en Glue); PLAN.md §3 (4.4 ✅, Fase 4 ✅); HU.md (HU-028 ✅); `ACTIVE_SERVICES.md` (costo medido); tabla «Cierre» y F8 de `validation-4-4.md`; evidencia `validacion_4_4.json`; cabeceras a 2.40. |
+| Abierto, sin bloquear | Los de v2.38: linaje de HU-035 sin *dbt docs* (ADR-10, decisión del usuario), «tests dbt» en HU-032 y `PLAN.md` §1, límite de 1 GiB a confirmar, exportador en pausa, regla de expiración de `quality/`. `validate_4_3.py tests` (B1) espera 123 pruebas en `src/lakehouse` y hay 127 (esperado; use `validate_4_4.py`). |
 
 ## v2.39 · desde v2.38
 

@@ -355,9 +355,9 @@
     },
     "status": {
       "title": "Estado del lakehouse y de Curated con aristas (solo lectura)",
-      "status": "AVISO",
-      "started_at": "2026-10-27T11:59:19.314751+00:00",
-      "finished_at": "2026-10-27T11:59:29.735143+00:00",
+      "status": "OK",
+      "started_at": "2026-10-27T12:32:53.127173+00:00",
+      "finished_at": "2026-10-27T12:33:01.795315+00:00",
       "steps": [
         {
           "id": "S1",
@@ -378,8 +378,8 @@
         {
           "id": "S3",
           "title": "Curated (nueve tablas) y su último reporte",
-          "status": "AVISO",
-          "detail": "curated/: 187 objetos {'fact_posts': 181, 'dim_date': 1, 'dim_source': 1, 'dim_brand': 1, 'dim_user': 1, 'agg_emotion_by_brand_hour': 1, 'agg_trend_daily': 1, 'edges_user_brand': 0, 'edges_hashtag_cooccurrence': 0} · último reporte wr_56ffae59f68c33c6c36c5ce0e2ca70ec38630192173a70b9f987287254e2673d (trusted-to-curated@1.0, 2026-10-27T11:18:19.188Z): fact_posts 221629 filas, aristas {}, menciones None, coocurrencias None, 0 archivos cambiados · sin aristas todavía (aplique C y corra D)",
+          "status": "OK",
+          "detail": "curated/: 189 objetos {'fact_posts': 181, 'dim_date': 1, 'dim_source': 1, 'dim_brand': 1, 'dim_user': 1, 'agg_emotion_by_brand_hour': 1, 'agg_trend_daily': 1, 'edges_user_brand': 1, 'edges_hashtag_cooccurrence': 1} · último reporte wr_50a17310f24724767f8bfb7d131b03ea50036493c0199549a2759ffb4a395e73 (trusted-to-curated@1.1, 2026-10-27T12:31:58.128Z): fact_posts 221629 filas, aristas {'edges_hashtag_cooccurrence': 136, 'edges_user_brand': 15395}, menciones 233395, coocurrencias 44578, 0 archivos cambiados",
           "data": {}
         },
         {
@@ -401,8 +401,8 @@
     "C": {
       "title": "Terraform (script y descripción del job)",
       "status": "AVISO",
-      "started_at": "2026-10-27T11:59:40.429771+00:00",
-      "finished_at": "2026-10-27T12:01:03.386066+00:00",
+      "started_at": "2026-10-27T12:25:01.624380+00:00",
+      "finished_at": "2026-10-27T12:26:41.949048+00:00",
       "steps": [
         {
           "id": "C0",
@@ -459,19 +459,1007 @@
         {
           "id": "C3",
           "title": "apply",
-          "status": "AVISO",
-          "detail": "sin --apply: no se aplicó (repita con --apply)",
+          "status": "OK",
+          "detail": "lake_bucket_arn = \"arn:aws:s3:::ta-dev-648617469176-lake\"\nlakehouse_schedule_name = \"ta-wf-raw-to-curated-cada-hora\"\nlakehouse_scheduler_role_arn = \"arn:aws:iam::648617469176:role/ta-lakehouse-scheduler-role\"\nquicksight_role_arn = \"arn:aws:iam::648617469176:role/ta-quicksight-role\"",
           "data": {}
         },
         {
           "id": "C3b",
           "title": "plan tras aplicar (sin deriva)",
-          "status": "OMITIDO",
-          "detail": "pendiente del apply",
+          "status": "OK",
+          "detail": "No changes",
+          "data": {
+            "create": [],
+            "update": [],
+            "delete": [],
+            "replace": [],
+            "diffs": {}
+          }
+        }
+      ]
+    },
+    "off": {
+      "title": "Apagado (estado de ahorro del lakehouse)",
+      "status": "OK",
+      "started_at": "2026-10-27T12:24:39.633002+00:00",
+      "finished_at": "2026-10-27T12:25:01.414322+00:00",
+      "steps": [
+        {
+          "id": "O1",
+          "title": "deshabilitar el horario",
+          "status": "OK",
+          "detail": "ENABLED → DISABLED",
           "data": {}
+        },
+        {
+          "id": "O2",
+          "title": "corridas y job runs",
+          "status": "OK",
+          "detail": "nada en curso",
+          "data": {}
+        },
+        {
+          "id": "O3",
+          "title": "horarios de prueba de F8",
+          "status": "OK",
+          "detail": "ninguno",
+          "data": {}
+        },
+        {
+          "id": "O4",
+          "title": "marcas de los marcadores de posición",
+          "status": "OK",
+          "detail": "0 borradas",
+          "data": {}
+        },
+        {
+          "id": "O5",
+          "title": "status.py (lo demás que cobra)",
+          "status": "OK",
+          "detail": "local: nada encendido\nGCP simulador: apagado · terraform.tfvars simulator_running = False\nGCP Dataflow: ningún job activo",
+          "data": {}
+        }
+      ]
+    },
+    "D": {
+      "title": "Corrida real de ta-job-trusted-to-curated con las aristas y su conciliación",
+      "status": "OK",
+      "started_at": "2026-10-27T12:26:56.587913+00:00",
+      "finished_at": "2026-10-27T12:28:06.011224+00:00",
+      "steps": [
+        {
+          "id": "D1",
+          "title": "ta-job-trusted-to-curated: Python shell 3.9, 0.0625 DPU, script de S3 = repo (versión 1.1)",
+          "status": "OK",
+          "detail": "pythonshell 3.9 · 0.0625 DPU (1 GB) · library-set analytics · script de S3 idéntico al repo",
+          "data": {}
+        },
+        {
+          "id": "D2",
+          "title": "Trusted y aristas antes de la corrida",
+          "status": "OK",
+          "detail": "trusted/posts/: 543 objetos y 221629 filas · curated/ (nueve tablas): 187 objetos, aristas 0 · curated/_ta_placeholder/: 0",
+          "data": {
+            "trusted": {
+              "objects": 543,
+              "rows": 221629,
+              "error_count": 0,
+              "seconds": 6.0
+            },
+            "objects_before": 187,
+            "edges_before": 0
+          }
+        },
+        {
+          "id": "D3",
+          "title": "corrida del job",
+          "status": "OK",
+          "detail": "jr_236aab5bb0ba083b87658e6d1ebe0fb3b32b830b160ab5867a3c28d9f8a509ba: SUCCEEDED · 24 s de ejecución · 0.0625 DPU",
+          "data": {
+            "job_run_id": "jr_236aab5bb0ba083b87658e6d1ebe0fb3b32b830b160ab5867a3c28d9f8a509ba",
+            "execution_s": 24,
+            "max_capacity": 0.0625,
+            "state": "SUCCEEDED"
+          }
+        },
+        {
+          "id": "D4",
+          "title": "línea glue_job_done en /aws-glue/python-jobs/output",
+          "status": "OK",
+          "detail": "leídas 221629 · fact_posts 221629 · edges_user_brand 15395 (233395 menciones) · edges_hashtag_cooccurrence 136 (44578 coocurrencias, 25 hashtags) · lectura 3.8 s · total 10.9 s · CPU 11.5 s · pico de memoria 456.7 MB de 1024 · Python 3.9.10, pyarrow 7.0.0, boto3 1.21.21",
+          "data": {
+            "done": {
+              "bytes_written": 18480344,
+              "conciliation_ok": true,
+              "cooccurrences": 44578,
+              "cpu_seconds": 11.5,
+              "dry_run": false,
+              "dt_max": "2026-10-24",
+              "dt_min": "2026-04-27",
+              "dt_mismatch": 0,
+              "duration_s": 10.9,
+              "environment": {
+                "boto3": "1.21.21",
+                "botocore": "1.24.21",
+                "pyarrow": "7.0.0",
+                "python": "3.9.10"
+              },
+              "event": "glue_job_done",
+              "fact_partitions": 181,
+              "fact_rows": 221629,
+              "files_changed": 2,
+              "hashtags_distinct": 25,
+              "input_objects": 543,
+              "job": "ta-job-trusted-to-curated",
+              "lote": "4.4",
+              "mentions": 233395,
+              "nlp_missing": 65263,
+              "objects": 189,
+              "objects_deleted": 0,
+              "objects_unchanged": 187,
+              "objects_written": 2,
+              "peak_rss_mb": 456.7,
+              "read_seconds": 3.8,
+              "report": "quality/2026-10-27/trusted_to_curated/manual-20261027T122724Z-a4105f3a.json",
+              "rows_read": 221629,
+              "rows_read_by_origin": {
+                "historical": 50000,
+                "stream": 171629
+              },
+              "rows_without_brand": 0,
+              "run_id": "manual-20261027T122724Z-a4105f3a",
+              "skipped_objects": 0,
+              "tables": {
+                "agg_emotion_by_brand_hour": 39954,
+                "agg_trend_daily": 543,
+                "dim_brand": 3,
+                "dim_date": 181,
+                "dim_source": 3,
+                "dim_user": 5936,
+                "edges_hashtag_cooccurrence": 136,
+                "edges_user_brand": 15395,
+                "fact_posts": 221629
+              },
+              "time": "2026-10-27T12:27:35.112Z",
+              "transform_seconds": 6.2,
+              "trusted_rows_match": null,
+              "version": "trusted-to-curated@1.1",
+              "workflow_run_id": null
+            }
+          }
+        },
+        {
+          "id": "D5",
+          "title": "reporte de la corrida en quality/ (versión 1.1)",
+          "status": "OK",
+          "detail": "quality/2026-10-27/trusted_to_curated/manual-20261027T122724Z-a4105f3a.json y quality/_latest/trusted_to_curated.json (corrida manual-20261027T122724Z-a4105f3a, trusted-to-curated@1.1, esquema ta-trusted-to-curated-report@1)",
+          "data": {
+            "report": {
+              "bucket": "ta-dev-648617469176-lake",
+              "checks": {
+                "dim_date_continuous": {
+                  "expected": 181,
+                  "observed": 181,
+                  "ok": true
+                },
+                "edges_hashtag_a_lt_b": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "edges_hashtag_weight_eq_pairs": {
+                  "expected": 44578,
+                  "observed": 44578,
+                  "ok": true
+                },
+                "edges_user_brand_weight_eq_mentions": {
+                  "expected": 233395,
+                  "observed": 233395,
+                  "ok": true
+                },
+                "emotion_n_posts_eq_rows_with_emotion": {
+                  "expected": 156366,
+                  "observed": 156366,
+                  "ok": true
+                },
+                "fact_rows_eq_trusted_rows": {
+                  "expected": 221629,
+                  "observed": 221629,
+                  "ok": true
+                },
+                "fk_brand_in_dim_brand": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "fk_date_key_in_dim_date": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "fk_edge_brand_in_dim_brand": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "fk_edge_user_in_dim_user": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "fk_source_in_dim_source": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "trend_n_posts_eq_rows_with_brand": {
+                  "expected": 221629,
+                  "observed": 221629,
+                  "ok": true
+                },
+                "trend_rows_without_sentiment": {
+                  "expected": 65263,
+                  "observed": 65263,
+                  "ok": true
+                },
+                "trend_sentiment_eq_rows_with_sentiment": {
+                  "expected": 156366,
+                  "observed": 156366,
+                  "ok": true
+                },
+                "unique_event_id": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "user_n_posts_eq_rows_with_user": {
+                  "expected": 221629,
+                  "observed": 221629,
+                  "ok": true
+                }
+              },
+              "conciliation": {
+                "formula": "fact_posts = Trusted; sumas de agg_* y dim_user = conteos de fact_posts; Σ weight de las aristas = menciones y pares de hashtags de Trusted; llaves foráneas en sus dimensiones (checks)",
+                "ok": true
+              },
+              "counts": {
+                "brands": {
+                  "pepsi": 65328,
+                  "postobon": 100116,
+                  "sprite": 56185
+                },
+                "cooccurrences": 44578,
+                "dt_mismatch": 0,
+                "duplicate_event_ids": 0,
+                "fact_rows": 221629,
+                "hashtags_distinct": 25,
+                "mentions": 233395,
+                "mentions_by_brand": {
+                  "pepsi": 69434,
+                  "postobon": 103436,
+                  "sprite": 60525
+                },
+                "nlp_missing": 65263,
+                "nlp_missing_by_origin": {
+                  "stream": 65263
+                },
+                "rows_by_hashtag_count": {
+                  "0": 132578,
+                  "1": 55725,
+                  "2": 27700,
+                  "3": 5626
+                },
+                "rows_with_repeated_brands": 0,
+                "rows_with_repeated_hashtags": 0,
+                "rows_without_brand": 0,
+                "rows_without_brands": 0,
+                "rows_without_user": 0,
+                "unknown_brands": [],
+                "unknown_emotion_labels": 0,
+                "unknown_sentiment_labels": 0,
+                "with_emotion": 156366,
+                "with_sentiment": 156366
+              },
+              "cpu_seconds": 11.5,
+              "dry_run": false,
+              "duration_s": 10.9,
+              "environment": {
+                "boto3": "1.21.21",
+                "botocore": "1.24.21",
+                "pyarrow": "7.0.0",
+                "python": "3.9.10"
+              },
+              "finished_at": "2026-10-27T12:27:34.999Z",
+              "input": {
+                "by_origin": {
+                  "historical": 50000,
+                  "stream": 171629
+                },
+                "by_source": {
+                  "facebook": 73890,
+                  "instagram": 73946,
+                  "reddit": 73793
+                },
+                "bytes": 67447599,
+                "dt_max": "2026-10-24",
+                "dt_min": "2026-04-27",
+                "objects": 543,
+                "partitions": 543,
+                "prefix": "trusted/posts/",
+                "read_seconds": 3.8,
+                "rows": 221629,
+                "skipped_examples": [],
+                "skipped_objects": 0,
+                "trusted_report": null,
+                "trusted_rows_expected": null,
+                "trusted_rows_match": null
+              },
+              "job": "ta-job-trusted-to-curated",
+              "job_run_id": null,
+              "peak_rss_mb": 456.7,
+              "previous_report": "wr_068e4f67049b9619f8a35df95c99721e7c0c66dfef40ef6af9ed4ea6c8dcdffe",
+              "report_key": "quality/2026-10-27/trusted_to_curated/manual-20261027T122724Z-a4105f3a.json",
+              "run_id": "manual-20261027T122724Z-a4105f3a",
+              "schema": "ta-trusted-to-curated-report@1",
+              "started_at": "2026-10-27T12:27:24.097Z",
+              "tables": {
+                "agg_emotion_by_brand_hour": {
+                  "bytes": 100423,
+                  "files": 1,
+                  "files_changed": 0,
+                  "rows": 39954
+                },
+                "agg_trend_daily": {
+                  "bytes": 12825,
+                  "files": 1,
+                  "files_changed": 0,
+                  "rows": 543
+                },
+                "dim_brand": {
+                  "bytes": 1183,
+                  "files": 1,
+                  "files_changed": 0,
+                  "rows": 3
+                },
+                "dim_date": {
+                  "bytes": 5150,
+                  "files": 1,
+                  "files_changed": 0,
+                  "rows": 181
+                },
+                "dim_source": {
+                  "bytes": 1323,
+                  "files": 1,
+                  "files_changed": 0,
+                  "rows": 3
+                },
+                "dim_user": {
+                  "bytes": 496763,
+                  "files": 1,
+                  "files_changed": 0,
+                  "rows": 5936
+                },
+                "edges_hashtag_cooccurrence": {
+                  "bytes": 2288,
+                  "files": 1,
+                  "files_changed": 1,
+                  "rows": 136
+                },
+                "edges_user_brand": {
+                  "bytes": 416831,
+                  "files": 1,
+                  "files_changed": 1,
+                  "rows": 15395
+                },
+                "fact_posts": {
+                  "bytes": 17443558,
+                  "files": 181,
+                  "files_changed": 0,
+                  "rows": 221629
+                }
+              },
+              "transform_seconds": 6.2,
+              "version": "trusted-to-curated@1.1",
+              "workflow": null,
+              "workflow_run_id": null,
+              "output": {
+                "bytes": 18480344,
+                "files_changed": 2,
+                "files_removed": 0,
+                "objects": 189,
+                "objects_deleted": 0,
+                "objects_unchanged": 187,
+                "objects_written": 2,
+                "prefix": "curated/",
+                "stale_objects": 0,
+                "tables": [
+                  "fact_posts",
+                  "dim_date",
+                  "dim_source",
+                  "dim_brand",
+                  "dim_user",
+                  "agg_emotion_by_brand_hour",
+                  "agg_trend_daily",
+                  "edges_user_brand",
+                  "edges_hashtag_cooccurrence"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": "D6",
+          "title": "conciliación (16 comprobaciones; 5 de aristas)",
+          "status": "OK",
+          "detail": "Trusted 221629 (pies de S3) = leídas 221629 = fact_posts 221629\nedges_user_brand: Σ weight 233395 = menciones 233395 (15395 pares; por marca {'pepsi': 69434, 'postobon': 103436, 'sprite': 60525}) · llaves en dim_user y dim_brand OK · filas con usuario sin marcas 0\nedges_hashtag_cooccurrence: Σ weight 44578 = Σ C(k, 2) 44578 (136 pares, 25 hashtags; filas por nº de hashtags {'0': 132578, '1': 55725, '2': 27700, '3': 5626}) · hashtag_a < hashtag_b en todas",
+          "data": {
+            "checks": {
+              "edges_hashtag_a_lt_b": {
+                "expected": 0,
+                "observed": 0,
+                "ok": true
+              },
+              "edges_hashtag_weight_eq_pairs": {
+                "expected": 44578,
+                "observed": 44578,
+                "ok": true
+              },
+              "edges_user_brand_weight_eq_mentions": {
+                "expected": 233395,
+                "observed": 233395,
+                "ok": true
+              },
+              "fk_edge_brand_in_dim_brand": {
+                "expected": 0,
+                "observed": 0,
+                "ok": true
+              },
+              "fk_edge_user_in_dim_user": {
+                "expected": 0,
+                "observed": 0,
+                "ok": true
+              }
+            },
+            "tables": {
+              "agg_emotion_by_brand_hour": 39954,
+              "agg_trend_daily": 543,
+              "dim_brand": 3,
+              "dim_date": 181,
+              "dim_source": 3,
+              "dim_user": 5936,
+              "edges_hashtag_cooccurrence": 136,
+              "edges_user_brand": 15395,
+              "fact_posts": 221629
+            }
+          }
+        },
+        {
+          "id": "D7",
+          "title": "curated/ en S3 (filas, layout; solo cambian las aristas)",
+          "status": "OK",
+          "detail": "187 → 189 objetos (189 en el reporte) · filas por tabla en los pies {'fact_posts': 221629, 'dim_date': 181, 'dim_source': 3, 'dim_brand': 3, 'dim_user': 5936, 'agg_emotion_by_brand_hour': 39954, 'agg_trend_daily': 543, 'edges_user_brand': 15395, 'edges_hashtag_cooccurrence': 136} · archivos cambiados 2 (solo aristas) · escritos 2, sin cambios 187, borrados 0 · 18480344 bytes · curated/_ta_placeholder/: 0 → 0",
+          "data": {
+            "s3_tables": {
+              "fact_posts": 221629,
+              "dim_date": 181,
+              "dim_source": 3,
+              "dim_brand": 3,
+              "dim_user": 5936,
+              "agg_emotion_by_brand_hour": 39954,
+              "agg_trend_daily": 543,
+              "edges_user_brand": 15395,
+              "edges_hashtag_cooccurrence": 136
+            },
+            "layout": [],
+            "files_changed": 2,
+            "changed_outside_edges": 0
+          }
+        },
+        {
+          "id": "D8",
+          "title": "esquema de un Parquet de cada tabla = contrato (nueve)",
+          "status": "OK",
+          "detail": "9 tablas con las columnas y tipos de contracts/athena/curated.sql (filas del archivo leído: {'fact_posts': 189, 'dim_date': 181, 'dim_source': 3, 'dim_brand': 3, 'dim_user': 5936, 'agg_emotion_by_brand_hour': 39954, 'agg_trend_daily': 543, 'edges_user_brand': 15395, 'edges_hashtag_cooccurrence': 136})",
+          "data": {}
+        }
+      ]
+    },
+    "E": {
+      "title": "Athena: aristas recalculadas, llaves y consultas de ejemplo (HU-028)",
+      "status": "OK",
+      "started_at": "2026-10-27T12:28:06.340373+00:00",
+      "finished_at": "2026-10-27T12:28:37.883463+00:00",
+      "steps": [
+        {
+          "id": "E1",
+          "title": "edges_user_brand = recalculada desde fact_posts (cada marca de brands, una vez por fila)",
+          "status": "OK",
+          "detail": "15395 pares, 0 claves o pesos distintos · Σ weight 233395 = menciones 233395 = Σ cardinality(brands) 233395 (= reporte)",
+          "data": {
+            "counts": {
+              "claves_distintas": 0,
+              "pesos_distintos": 0,
+              "pares": 15395,
+              "peso_total": 233395,
+              "menciones": 233395,
+              "marcas_en_brands": 233395
+            }
+          }
+        },
+        {
+          "id": "E2",
+          "title": "llaves foráneas, nulos, orden hashtag_a < hashtag_b y pares únicos",
+          "status": "OK",
+          "detail": "0 aristas sin su usuario en dim_user o su marca en dim_brand · 0 nulos o pesos < 1 · 0 pares fuera de orden, no canónicos o repetidos",
+          "data": {
+            "counts": {
+              "sin_usuario": 0,
+              "sin_marca": 0,
+              "nulos_usuario_marca": 0,
+              "pares_repetidos_ub": 0,
+              "nulos_hashtags": 0,
+              "fuera_de_orden": 0,
+              "no_canonicos": 0,
+              "pares_repetidos_ht": 0
+            }
+          }
+        },
+        {
+          "id": "E3",
+          "title": "edges_hashtag_cooccurrence = recalculada desde ta_trusted.posts (fact_posts no tiene hashtags)",
+          "status": "OK",
+          "detail": "136 pares, 0 claves o pesos distintos · Σ weight 44578 = recalculadas 44578 = Σ C(k, 2) por fila 44578 · 25 hashtags",
+          "data": {
+            "counts": {
+              "claves_distintas": 0,
+              "pesos_distintos": 0,
+              "pares": 136,
+              "peso_total": 44578,
+              "coocurrencias": 44578,
+              "pares_por_fila": 44578,
+              "hashtags": 25
+            }
+          }
+        },
+        {
+          "id": "E4",
+          "title": "consultas de ejemplo de HU-028 (sin user_hash)",
+          "status": "OK",
+          "detail": "par de hashtags más frecuente: colombia + gaseosa (3898) · usuarios por nº de marcas mencionadas: {'1': '479', '2': '1455', '3': '4002'} · pares-de-hashtags-mas-frecuentes 10 filas, 574 ms; usuarios-por-numero-de-marcas 3 filas, 602 ms",
+          "data": {
+            "queries": [
+              {
+                "name": "pares-de-hashtags-mas-frecuentes",
+                "state": "SUCCEEDED",
+                "rows": 10,
+                "scanned_bytes": 1296,
+                "engine_ms": 407,
+                "total_ms": 574
+              },
+              {
+                "name": "usuarios-por-numero-de-marcas",
+                "state": "SUCCEEDED",
+                "rows": 3,
+                "scanned_bytes": 412723,
+                "engine_ms": 463,
+                "total_ms": 602
+              }
+            ],
+            "top_pair": {
+              "hashtag_a": "colombia",
+              "hashtag_b": "gaseosa",
+              "weight": "3898"
+            },
+            "users_by_n_brands": {
+              "1": "479",
+              "2": "1455",
+              "3": "4002"
+            }
+          }
+        },
+        {
+          "id": "E5",
+          "title": "bytes escaneados ≤ límite del workgroup",
+          "status": "OK",
+          "detail": "26.5 MB en 5 consultas; la mayor 17.6 MB (límite 1 GiB) · ≈ 0.00029 USD (mínimo 10 MB por consulta)",
+          "data": {
+            "scanned_bytes": 26487514,
+            "queries": 5,
+            "usd": 0.000288
+          }
+        },
+        {
+          "id": "E6",
+          "title": "latencia de las consultas de ejemplo frente al KPI de < 3 s (§4)",
+          "status": "OK",
+          "detail": "la más lenta 602 ms (total, con la cola de Athena); motor: pares-de-hashtags-mas-frecuentes 407 ms, usuarios-por-numero-de-marcas 463 ms",
+          "data": {
+            "worst_ms": 602
+          }
+        }
+      ]
+    },
+    "F": {
+      "title": "Segunda corrida dentro del workflow: idempotencia (aristas incluidas) y costo",
+      "status": "OK",
+      "started_at": "2026-10-27T12:28:38.082117+00:00",
+      "finished_at": "2026-10-27T12:32:36.952839+00:00",
+      "steps": [
+        {
+          "id": "F1",
+          "title": "Curated antes de la segunda corrida",
+          "status": "OK",
+          "detail": "189 objetos · reporte manual-20261027T122724Z-a4105f3a (trusted-to-curated@1.1) · Athena: fact_posts 221629, edges_user_brand 15395 (Σ 233395), edges_hashtag_cooccurrence 136 (Σ 44578) · horario DISABLED",
+          "data": {
+            "objects": 189,
+            "counts": {
+              "fact": 221629,
+              "pares_ub": 15395,
+              "peso_ub": 233395,
+              "pares_ht": 136,
+              "peso_ht": 44578
+            },
+            "schedule": "DISABLED"
+          }
+        },
+        {
+          "id": "F2",
+          "title": "corrida del workflow",
+          "status": "OK",
+          "detail": "wr_50a17310f24724767f8bfb7d131b03ea50036493c0199549a2759ffb4a395e73: COMPLETED · ta-job-raw-to-trusted SUCCEEDED (87 s) → ta-job-trusted-to-curated SUCCEEDED (27 s)",
+          "data": {
+            "run_id": "wr_50a17310f24724767f8bfb7d131b03ea50036493c0199549a2759ffb4a395e73",
+            "job_runs": {
+              "ta-job-raw-to-trusted": "jr_4088f3c338965c2aec324a081512e9b29a3d133ec106694d4e6056b48f7f181a",
+              "ta-job-trusted-to-curated": "jr_5cbe633f989df9ce70317e17c85f85980c02c2c602b1499ac0cb3383d3ef7c38"
+            },
+            "durations": [
+              87,
+              27
+            ]
+          }
+        },
+        {
+          "id": "F3",
+          "title": "reporte de la segunda corrida: nada cambió (aristas incluidas)",
+          "status": "OK",
+          "detail": "corrida wr_50a17310f24724767f8bfb7d131b03ea50036493c0199549a2759ffb4a395e73 · archivos cambiados 0 · escritos 0 · borrados 0 · mismos sha256 que la corrida anterior en 189 archivos (2 de aristas) · menciones 233395 · coocurrencias 44578 · Trusted de la misma corrida: 221629 filas (coincide: True)",
+          "data": {
+            "report": {
+              "bucket": "ta-dev-648617469176-lake",
+              "checks": {
+                "dim_date_continuous": {
+                  "expected": 181,
+                  "observed": 181,
+                  "ok": true
+                },
+                "edges_hashtag_a_lt_b": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "edges_hashtag_weight_eq_pairs": {
+                  "expected": 44578,
+                  "observed": 44578,
+                  "ok": true
+                },
+                "edges_user_brand_weight_eq_mentions": {
+                  "expected": 233395,
+                  "observed": 233395,
+                  "ok": true
+                },
+                "emotion_n_posts_eq_rows_with_emotion": {
+                  "expected": 156366,
+                  "observed": 156366,
+                  "ok": true
+                },
+                "fact_rows_eq_trusted_rows": {
+                  "expected": 221629,
+                  "observed": 221629,
+                  "ok": true
+                },
+                "fk_brand_in_dim_brand": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "fk_date_key_in_dim_date": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "fk_edge_brand_in_dim_brand": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "fk_edge_user_in_dim_user": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "fk_source_in_dim_source": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "trend_n_posts_eq_rows_with_brand": {
+                  "expected": 221629,
+                  "observed": 221629,
+                  "ok": true
+                },
+                "trend_rows_without_sentiment": {
+                  "expected": 65263,
+                  "observed": 65263,
+                  "ok": true
+                },
+                "trend_sentiment_eq_rows_with_sentiment": {
+                  "expected": 156366,
+                  "observed": 156366,
+                  "ok": true
+                },
+                "unique_event_id": {
+                  "expected": 0,
+                  "observed": 0,
+                  "ok": true
+                },
+                "user_n_posts_eq_rows_with_user": {
+                  "expected": 221629,
+                  "observed": 221629,
+                  "ok": true
+                }
+              },
+              "conciliation": {
+                "formula": "fact_posts = Trusted; sumas de agg_* y dim_user = conteos de fact_posts; Σ weight de las aristas = menciones y pares de hashtags de Trusted; llaves foráneas en sus dimensiones (checks)",
+                "ok": true
+              },
+              "counts": {
+                "brands": {
+                  "pepsi": 65328,
+                  "postobon": 100116,
+                  "sprite": 56185
+                },
+                "cooccurrences": 44578,
+                "dt_mismatch": 0,
+                "duplicate_event_ids": 0,
+                "fact_rows": 221629,
+                "hashtags_distinct": 25,
+                "mentions": 233395,
+                "mentions_by_brand": {
+                  "pepsi": 69434,
+                  "postobon": 103436,
+                  "sprite": 60525
+                },
+                "nlp_missing": 65263,
+                "nlp_missing_by_origin": {
+                  "stream": 65263
+                },
+                "rows_by_hashtag_count": {
+                  "0": 132578,
+                  "1": 55725,
+                  "2": 27700,
+                  "3": 5626
+                },
+                "rows_with_repeated_brands": 0,
+                "rows_with_repeated_hashtags": 0,
+                "rows_without_brand": 0,
+                "rows_without_brands": 0,
+                "rows_without_user": 0,
+                "unknown_brands": [],
+                "unknown_emotion_labels": 0,
+                "unknown_sentiment_labels": 0,
+                "with_emotion": 156366,
+                "with_sentiment": 156366
+              },
+              "cpu_seconds": 12.8,
+              "dry_run": false,
+              "duration_s": 12.8,
+              "environment": {
+                "boto3": "1.21.21",
+                "botocore": "1.24.21",
+                "pyarrow": "7.0.0",
+                "python": "3.9.10"
+              },
+              "finished_at": "2026-10-27T12:31:58.128Z",
+              "input": {
+                "by_origin": {
+                  "historical": 50000,
+                  "stream": 171629
+                },
+                "by_source": {
+                  "facebook": 73890,
+                  "instagram": 73946,
+                  "reddit": 73793
+                },
+                "bytes": 67447599,
+                "dt_max": "2026-10-24",
+                "dt_min": "2026-04-27",
+                "objects": 543,
+                "partitions": 543,
+                "prefix": "trusted/posts/",
+                "read_seconds": 4.8,
+                "rows": 221629,
+                "skipped_examples": [],
+                "skipped_objects": 0,
+                "trusted_report": "quality/2026-10-27/raw_to_trusted/wr_50a17310f24724767f8bfb7d131b03ea50036493c0199549a2759ffb4a395e73.json",
+                "trusted_rows_expected": "221629",
+                "trusted_rows_match": true
+              },
+              "job": "ta-job-trusted-to-curated",
+              "job_run_id": null,
+              "peak_rss_mb": 473.6,
+              "previous_report": "manual-20261027T122724Z-a4105f3a",
+              "report_key": "quality/2026-10-27/trusted_to_curated/wr_50a17310f24724767f8bfb7d131b03ea50036493c0199549a2759ffb4a395e73.json",
+              "run_id": "wr_50a17310f24724767f8bfb7d131b03ea50036493c0199549a2759ffb4a395e73",
+              "schema": "ta-trusted-to-curated-report@1",
+              "started_at": "2026-10-27T12:31:45.344Z",
+              "tables": {
+                "agg_emotion_by_brand_hour": {
+                  "bytes": 100423,
+                  "files": 1,
+                  "files_changed": 0,
+                  "rows": 39954
+                },
+                "agg_trend_daily": {
+                  "bytes": 12825,
+                  "files": 1,
+                  "files_changed": 0,
+                  "rows": 543
+                },
+                "dim_brand": {
+                  "bytes": 1183,
+                  "files": 1,
+                  "files_changed": 0,
+                  "rows": 3
+                },
+                "dim_date": {
+                  "bytes": 5150,
+                  "files": 1,
+                  "files_changed": 0,
+                  "rows": 181
+                },
+                "dim_source": {
+                  "bytes": 1323,
+                  "files": 1,
+                  "files_changed": 0,
+                  "rows": 3
+                },
+                "dim_user": {
+                  "bytes": 496763,
+                  "files": 1,
+                  "files_changed": 0,
+                  "rows": 5936
+                },
+                "edges_hashtag_cooccurrence": {
+                  "bytes": 2288,
+                  "files": 1,
+                  "files_changed": 0,
+                  "rows": 136
+                },
+                "edges_user_brand": {
+                  "bytes": 416831,
+                  "files": 1,
+                  "files_changed": 0,
+                  "rows": 15395
+                },
+                "fact_posts": {
+                  "bytes": 17443558,
+                  "files": 181,
+                  "files_changed": 0,
+                  "rows": 221629
+                }
+              },
+              "transform_seconds": 6.9,
+              "version": "trusted-to-curated@1.1",
+              "workflow": "ta-wf-raw-to-curated",
+              "workflow_run_id": "wr_50a17310f24724767f8bfb7d131b03ea50036493c0199549a2759ffb4a395e73",
+              "output": {
+                "bytes": 18480344,
+                "files_changed": 0,
+                "files_removed": 0,
+                "objects": 189,
+                "objects_deleted": 0,
+                "objects_unchanged": 189,
+                "objects_written": 0,
+                "prefix": "curated/",
+                "stale_objects": 0,
+                "tables": [
+                  "fact_posts",
+                  "dim_date",
+                  "dim_source",
+                  "dim_brand",
+                  "dim_user",
+                  "agg_emotion_by_brand_hour",
+                  "agg_trend_daily",
+                  "edges_user_brand",
+                  "edges_hashtag_cooccurrence"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": "F4",
+          "title": "mismos objetos y tamaños en curated/ (nueve tablas)",
+          "status": "OK",
+          "detail": "189 → 189 objetos",
+          "data": {}
+        },
+        {
+          "id": "F5",
+          "title": "Athena: mismas filas y pesos",
+          "status": "OK",
+          "detail": "{'fact': 221629, 'pares_ub': 15395, 'peso_ub': 233395, 'pares_ht': 136, 'peso_ht': 44578} → {'fact': 221629, 'pares_ub': 15395, 'peso_ub': 233395, 'pares_ht': 136, 'peso_ht': 44578}",
+          "data": {}
+        },
+        {
+          "id": "F6",
+          "title": "propiedades de la corrida (para el 5.2)",
+          "status": "OK",
+          "detail": "ta_trusted_report = quality/2026-10-27/raw_to_trusted/wr_50a17310f24724767f8bfb7d131b03ea50036493c0199549a2759ffb4a395e73.json · ta_trusted_rows = 221629 · ta_curated_report = quality/2026-10-27/trusted_to_curated/wr_50a17310f24724767f8bfb7d131b03ea50036493c0199549a2759ffb4a395e73.json · ta_curated_rows = 221629 · ta_curated_files_changed = 0",
+          "data": {
+            "properties": {
+              "ta_validacion": "4.4",
+              "ta_curated_files_changed": "0",
+              "ta_trusted_report": "quality/2026-10-27/raw_to_trusted/wr_50a17310f24724767f8bfb7d131b03ea50036493c0199549a2759ffb4a395e73.json",
+              "ta_trusted_partitions_changed": "0",
+              "ta_curated_rows": "221629",
+              "ta_curated_report": "quality/2026-10-27/trusted_to_curated/wr_50a17310f24724767f8bfb7d131b03ea50036493c0199549a2759ffb4a395e73.json",
+              "ta_trusted_rows": "221629"
+            }
+          }
+        },
+        {
+          "id": "F7",
+          "title": "sin marcas nuevas, nada en curso, horario sin cambios",
+          "status": "OK",
+          "detail": "curated/_ta_placeholder/: 0 → 0 · corridas en curso: ninguna · horario DISABLED → DISABLED (al terminar: python project/scripts/validate_4_4.py on --yes)",
+          "data": {}
+        },
+        {
+          "id": "F8",
+          "title": "costo con lo medido (4.2 + 4.3/4.4, horario cada hora)",
+          "status": "OK",
+          "detail": "ta-job-raw-to-trusted: 87 s × 1 DPU + S3 ≈ 0.01874 USD · ta-job-trusted-to-curated (con aristas): 27 s × 0.0625 DPU (mínimo 60 s) + S3 (≈ 543 GET, 0 PUT de datos) ≈ 0.00074 USD → ≈ 0.0195 USD por corrida del workflow; con el horario cada hora ≈ 0.467 USD/día, ≈ 14.02 USD/mes (KMS con bucket key y logs aparte, sin comprobar en la factura)",
+          "data": {
+            "usd_per_run": 0.01948,
+            "usd_per_day": 0.4674,
+            "usd_per_month": 14.02,
+            "trusted_usd": 0.01874,
+            "curated_usd": 0.00074,
+            "execution_s": [
+              87,
+              27
+            ]
+          }
+        }
+      ]
+    },
+    "on": {
+      "title": "Encender el horario del lakehouse (estado normal, decisión del usuario)",
+      "status": "OK",
+      "started_at": "2026-10-27T12:32:48.394714+00:00",
+      "finished_at": "2026-10-27T12:32:52.911188+00:00",
+      "steps": [
+        {
+          "id": "N1",
+          "title": "encender el horario",
+          "status": "OK",
+          "detail": "DISABLED → ENABLED; se apaga con: python project/scripts/validate_4_4.py off",
+          "data": {}
+        },
+        {
+          "id": "N2",
+          "title": "definición del horario intacta",
+          "status": "OK",
+          "detail": "ENABLED · rate(1 hour) · UTC · reintentos 0",
+          "data": {
+            "schedule": "ENABLED",
+            "usd_per_day": 0.4674
+          }
         }
       ]
     }
   },
-  "updated_at": "2026-10-27T12:01:03.386168+00:00"
+  "updated_at": "2026-10-27T12:33:01.795384+00:00"
 }

@@ -1,6 +1,6 @@
 # TrendAnalyzer · Historias de Usuario (HU)
 
-> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.39** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
+> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.40** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
 > Cada HU tiene un ID **HU-000**, su fase/lote de `ARCHITECTURE.md` §7, responsable, sprint y criterios de aceptación verificables.
 
 ---
@@ -83,7 +83,7 @@ Criterios de aceptación: lista verificable.
 | **E5 · Lakehouse en AWS** | | | | | | |
 | HU-026 | Capa Trusted | 4 · 4.2 | C | Must | 2 | ✅ |
 | HU-027 | Capa Curated (modelo estrella) | 4 · 4.3 | C | Must | 2 | ✅ |
-| HU-028 | Tablas de aristas | 4 · 4.4 | C | Should | 2 | 🟨 |
+| HU-028 | Tablas de aristas | 4 · 4.4 | C | Should | 2 | ✅ |
 | HU-029 | Orquestación horaria | 4 · 4.1 | M | Must | 2 | ✅ |
 | HU-030 | Consulta SQL para analistas | 4 · 4.3 | C | Must | 2 | ✅ |
 | **E6 · Calidad y gobernanza** | | | | | | |
@@ -599,6 +599,8 @@ Criterios de aceptación: lista verificable.
 - `edges_user_brand` con peso igual al número de menciones.
 - `edges_hashtag_cooccurrence` con pares de hashtags y frecuencia.
 - Ambas son consultables desde Athena.
+
+*Cerrada en v2.40* (entregada en v2.39; `ARCHITECTURE.md` §3.23, ADR-27; `docs/validation/validation-4-4.md`, validada el 27-oct-2026 sobre `462fdce`): en S3, `curated/edges_user_brand/` y `curated/edges_hashtag_cooccurrence/` escritas por `ta-job-trusted-to-curated` 1.1 en Glue (24 s a 0,0625 DPU, 457 MB de pico) con el esquema del contrato; **15.395 pares usuario–marca que suman 233.395 menciones** (= Σ `cardinality(brands)` en Athena) y **136 pares de 25 hashtags que suman 44.578 coocurrencias** (= recalculadas desde `ta_trusted.posts`); en Athena, las dos tablas consultables, recalculadas sin diferencias, sin llaves huérfanas ni pares fuera de orden, y dos consultas de ejemplo en 0,6 s (E1–E6); una segunda corrida en el workflow no cambió ningún archivo.
 
 **Estado (v2.39, 🟨):** entregado, pendiente de la validación en la nube (`docs/validation/validation-4-4.md`, `scripts/validate_4_4.py`; `ARCHITECTURE.md` §3.23, ADR-27). Por criterio: *`edges_user_brand` con peso = número de menciones*: la escribe `ta-job-trusted-to-curated` (versión 1.1) con `weight` = filas del usuario cuyo `brands` contiene la marca, cada marca una vez por fila (las comparativas cuentan para sus dos marcas); D6, E1 y, en local, L1 y L4 (15.395 pares, 233.395 menciones = Σ `cardinality(brands)`); *`edges_hashtag_cooccurrence` con pares de hashtags y frecuencia*: `weight` = filas con los dos hashtags, `hashtag_a < hashtag_b` (D6, E2, E3; en local 136 pares de 25 hashtags, 44.578 coocurrencias); *consultables desde Athena*: E1–E4 (dos consultas de ejemplo de análisis de relaciones). En local, las dos tablas recalculadas aparte con pyarrow coinciden.
 

@@ -1,6 +1,6 @@
 # TrendAnalyzer · ARCHITECTURE
 
-> Documento maestro de arquitectura y contratos. **Versión vigente: 2.43.**
+> Documento maestro de arquitectura y contratos. **Versión vigente: 2.44.**
 > Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md) · Plan por fases, trazabilidad HU y estado: [`PLAN.md`](PLAN.md) · Historias de usuario: `HU.md` · Visión general: `README.md`.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 
@@ -2154,7 +2154,7 @@ Reutiliza de `ops/validate41.py` `json_lines`, `s3_keys`, `services_status`; de 
 
 ### 3.25 Catálogo, linaje y gobernanza (Lote 5.3)
 
-> Entregado en **v2.43** (HU-034, HU-035, HU-036). Rutas relativas a `project/` salvo las de `docs/`. **ADR-29.** **Decisión del usuario (27-oct-2026):** el linaje de HU-035 es un **documento y un diagrama hechos a mano, sin *dbt docs*** (el proyecto no usa dbt desde el 4.3; cierra ADR-10). Lo demás lo decidió el lote (ADR-29). No cambia datos, jobs, IAM, el horario ni el esquema de ninguna tabla: `contracts/` solo cambia **comentarios** de las tres DDL de Athena (`schema_version` sigue en `"1.0"`) y Terraform solo la descripción y los comentarios de las 11 tablas de Glue.
+> Entregado en **v2.43** y **cerrado en v2.44** ✅ (HU-034, HU-035, HU-036): validado el 27-oct-2026 con `validate_5_3.py` sobre `main` = `4a48a61` (A, B, L, C, D, G y `status` en OK; C0 en AVISO solo por la cuenta raíz; cifras en «Cierre» abajo). Rutas relativas a `project/` salvo las de `docs/`. **ADR-29.** **Decisión del usuario (27-oct-2026):** el linaje de HU-035 es un **documento y un diagrama hechos a mano, sin *dbt docs*** (el proyecto no usa dbt desde el 4.3; cierra ADR-10). Lo demás lo decidió el lote (ADR-29). No cambia datos, jobs, IAM, el horario ni el esquema de ninguna tabla: `contracts/` solo cambia **comentarios** de las tres DDL de Athena (`schema_version` sigue en `"1.0"`) y Terraform solo la descripción y los comentarios de las 11 tablas de Glue.
 
 **Qué entrega.**
 
@@ -2187,6 +2187,8 @@ Reglas (`catalog_problems`, prueba y L1): descripción de tabla ≥ 40 y ≤ 2.0
 **Costo.** 0 por hora: 11 `UpdateTable` y las lecturas de Glue entran en el millón gratuito; D3 es una consulta de Athena a `information_schema` (mínimo de 10 MB ≈ 0,00005 USD).
 
 > **Estado de la verificación (v2.43, antes de entregar):** WSL, `ta-streaming` (Python 3.11.17). `src/lakehouse`: **132 passed**; `test_ops_validate53.py`: **20 passed**; `contracts/tests` 18; `src/dq` (ta-streaming) 3; `test_ops_validate51.py` 24; `test_enriched_contract.py` sin fallas con las DDL comentadas. `ruff --select F,E9` y `py_compile` sin errores; `terraform fmt -check` OK. `python -m lakehouse.catalog_spec --check`: al día y completo. **`terraform plan -target=module.glue_catalog`** contra el estado real: **0 a crear, 11 a cambiar, 0 a destruir**, solo `description`, `partition_keys` y `storage_descriptor` (comentarios). Con el árbol de trabajo (antes del commit): `validate_5_3.py preflight` OK (7), `tests` OK (5: 132, 20, 18, 3, 24), `local` OK (6: 108 columnas, 44 rutas), **`controls` OK (7, en la nube, solo lectura)**: S3 con los 4 bloqueos, SSE-KMS con *bucket key* y Deny sin TLS; 16 casos de IAM como se esperaba; GCS del lake uniforme, `enforced`, `raw/` y `dlq/` a 30 días y sin miembros públicos; `ta-hmac-key` solo con `sa-dataflow`. `glue`: D1 OK (esquema = DDL) y D2/D3 en FALLA **porque falta aplicar** (Glue tiene las descripciones del 4.1); comprobado de paso que `information_schema.columns` de Athena expone la columna `comment` (D3 corrió). `terraform` sin `--apply`: C2 OK, C3 AVISO. **No** se aplicó: falta el OK del usuario.
+
+> **Cierre (v2.44).** Validado el 27-oct-2026 sobre `main` = `4a48a61` (WSL, `ta-streaming`, perfil `default` y `gcloud` con sesión), con el OK del usuario para el `apply` y el horario **encendido** todo el tiempo (no hizo falta apagarlo). A OK (7), B OK (5: 132, 20, 18, 3, 24), L OK (6: 11 tablas, 108 columnas, 44 rutas). **C:** plan 0/11/0 solo de documentación, **`Apply complete! Resources: 0 added, 11 changed, 0 destroyed.`** y plan posterior **`No changes`** (C0 en AVISO por la cuenta raíz). **D OK (3):** las 11 tablas con el esquema de las DDL; **11 descripciones y 108 comentarios en Glue = DDL**; Athena `information_schema.columns` devuelve las **108 columnas con su comentario y clase de privacidad** (13.519 bytes escaneados, 1,9 s de motor; se cobra el mínimo de 10 MB ≈ 0,00005 USD). **G OK (7):** S3 con los 4 bloqueos, SSE-KMS con *bucket key* y Deny sin TLS; 16 casos de IAM; GCS uniforme, `enforced`, `raw/` y `dlq/` a 30 días, sin miembros públicos (solo roles heredados del proyecto y las service accounts del lote 1.3/3.2); `ta-hmac-key` solo con `sa-dataflow`. `status` OK (11 de 11; horario `ENABLED`). Evidencia en `project/evidencia/validacion_5_3.json` (sin correos ni secretos). **Comprobado solo en la nube:** que Glue acepta los comentarios con tildes y corchetes, que Athena los expone en `information_schema.columns.comment` y que el cambio no deja deriva.
 
 #### 3.25.1 Interfaces del lote (cómo usar cada pieza sin leer el código)
 
@@ -3072,7 +3074,7 @@ infra/
 │
 ├── docs/
 │   ├── ARCHITECTURE.md                    <- este archivo: arquitectura y contratos (versión vigente)
-│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.43)
+│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.44)
 │   ├── PLAN.md                            <- fases y lotes, matriz HU y estado del proyecto
 │   ├── HU.md                              <- historias de usuario (HU-001 a HU-048)
 │   ├── ACTIVE_SERVICES.md                 <- encender, comprobar y apagar lo que cobra (on.py, off.py, status.py)

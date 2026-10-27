@@ -1,0 +1,744 @@
+{
+  "lote": "5.3",
+  "hu": [
+    "HU-034",
+    "HU-035",
+    "HU-036"
+  ],
+  "parts": {
+    "A": {
+      "title": "Preflight del código y de lo encendido",
+      "status": "OK",
+      "started_at": "2026-10-27T14:08:47.674201+00:00",
+      "finished_at": "2026-10-27T14:08:55.902814+00:00",
+      "steps": [
+        {
+          "id": "A1",
+          "title": "Python y dependencias",
+          "status": "OK",
+          "detail": "Python 3.11.17; boto3 y pytest",
+          "data": {}
+        },
+        {
+          "id": "A2",
+          "title": "los 14 archivos del lote",
+          "status": "OK",
+          "detail": "10 de project/ y 4 de docs/",
+          "data": {}
+        },
+        {
+          "id": "A3",
+          "title": "archivos de lotes anteriores que usa",
+          "status": "OK",
+          "detail": "3 presentes",
+          "data": {}
+        },
+        {
+          "id": "A4",
+          "title": "tables.json y docs/CATALOG.md al día; catálogo completo",
+          "status": "OK",
+          "detail": "las 11 tablas descritas y cada columna con su clase de privacidad",
+          "data": {}
+        },
+        {
+          "id": "A5",
+          "title": "herramientas",
+          "status": "OK",
+          "detail": "terraform, aws, gcloud, bash",
+          "data": {}
+        },
+        {
+          "id": "A6",
+          "title": "horario ta-wf-raw-to-curated-cada-hora",
+          "status": "OK",
+          "detail": "ENABLED (ENABLED es el estado normal; este lote no necesita apagarlo: los jobs no leen el catálogo y el apply solo cambia descripciones)",
+          "data": {
+            "schedule": "ENABLED"
+          }
+        },
+        {
+          "id": "A7",
+          "title": "GCP y local (services.status)",
+          "status": "OK",
+          "detail": "local: nada encendido\nGCP simulador: apagado · terraform.tfvars simulator_running = False\nGCP Dataflow: ningún job activo",
+          "data": {}
+        }
+      ]
+    },
+    "B": {
+      "title": "Pruebas",
+      "status": "OK",
+      "started_at": "2026-10-27T14:08:56.181022+00:00",
+      "finished_at": "2026-10-27T14:09:06.073175+00:00",
+      "steps": [
+        {
+          "id": "B1",
+          "title": "pytest src/lakehouse (catálogo con descripciones)",
+          "status": "OK",
+          "detail": "132 passed, 0 skipped, 0 failed (esperado 132 passed, 0 skipped)",
+          "data": {
+            "passed": 132,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B2",
+          "title": "pytest test_ops_validate53.py",
+          "status": "OK",
+          "detail": "20 passed, 0 skipped, 0 failed (esperado 20 passed, 0 skipped)",
+          "data": {
+            "passed": 20,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B3",
+          "title": "pytest contracts/tests (las DDL con comentarios)",
+          "status": "OK",
+          "detail": "18 passed, 0 skipped, 0 failed (esperado 18 passed, 0 skipped)",
+          "data": {
+            "passed": 18,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B4",
+          "title": "pytest src/dq en ta-streaming (identidad de HU-032 sobre el catálogo)",
+          "status": "OK",
+          "detail": "3 passed, 0 skipped, 0 failed (esperado 3 passed, 0 skipped)",
+          "data": {
+            "passed": 3,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B5",
+          "title": "regresión: test_ops_validate51.py (su parser de DDL)",
+          "status": "OK",
+          "detail": "24 passed, 0 skipped, 0 failed (esperado 24 passed, 0 skipped)",
+          "data": {
+            "passed": 24,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        }
+      ]
+    },
+    "L": {
+      "title": "Catálogo, diccionario, linaje y gobernanza (sin nube)",
+      "status": "OK",
+      "started_at": "2026-10-27T14:09:06.289869+00:00",
+      "finished_at": "2026-10-27T14:09:06.378000+00:00",
+      "steps": [
+        {
+          "id": "L1",
+          "title": "catálogo de las DDL (HU-034)",
+          "status": "OK",
+          "detail": "11 tablas con descripción; 108 columnas (con particiones) con descripción y clase: anonimizado 5, cuasi_identificador 8, texto_libre 3, sin_dato_personal 92; anonimizadas: ta_raw.posts_raw.user_hash, ta_trusted.posts.user_hash, ta_curated.fact_posts.user_hash, ta_curated.dim_user.user_hash, ta_curated.edges_user_brand.user_hash",
+          "data": {
+            "summary": {
+              "tables": 11,
+              "columns": 108,
+              "by_class": {
+                "anonimizado": 5,
+                "cuasi_identificador": 8,
+                "texto_libre": 3,
+                "sin_dato_personal": 92
+              },
+              "anonymized": [
+                "ta_raw.posts_raw.user_hash",
+                "ta_trusted.posts.user_hash",
+                "ta_curated.fact_posts.user_hash",
+                "ta_curated.dim_user.user_hash",
+                "ta_curated.edges_user_brand.user_hash"
+              ]
+            }
+          }
+        },
+        {
+          "id": "L2",
+          "title": "tables.json (Terraform) y docs/CATALOG.md = las DDL",
+          "status": "OK",
+          "detail": "los dos generados al día (python -m lakehouse.catalog_spec --check)",
+          "data": {}
+        },
+        {
+          "id": "L3",
+          "title": "linaje (HU-035): diagrama y cada columna del catálogo",
+          "status": "OK",
+          "detail": "diagrama Mermaid de extremo a extremo y las 108 columnas de las 11 tablas en el linaje por columna",
+          "data": {}
+        },
+        {
+          "id": "L4",
+          "title": "rutas citadas en los documentos existen",
+          "status": "OK",
+          "detail": "44 rutas project/… y docs/… verificadas",
+          "data": {}
+        },
+        {
+          "id": "L5",
+          "title": "gobernanza (HU-036): DAMA-DMBOK, Ley 1581 y datos sintéticos",
+          "status": "OK",
+          "detail": "las 11 áreas de DAMA-DMBOK, anonimización, acceso restringido a raw/, minimización y la declaración de datos sintéticos con sus tres limitaciones",
+          "data": {}
+        },
+        {
+          "id": "L6",
+          "title": "documentos sin datos personales ni secretos (repo público)",
+          "status": "OK",
+          "detail": "sin correos, llaves de AWS, URLs prefirmadas ni hashes de 64 hex",
+          "data": {}
+        }
+      ]
+    },
+    "C": {
+      "title": "Terraform (descripciones y comentarios del catálogo de Glue)",
+      "status": "AVISO",
+      "started_at": "2026-10-27T14:09:06.598032+00:00",
+      "finished_at": "2026-10-27T14:11:08.178504+00:00",
+      "steps": [
+        {
+          "id": "C0",
+          "title": "identidad de AWS",
+          "status": "AVISO",
+          "detail": "arn:aws:iam::648617469176:root (cuenta raíz: sirve para aplicar)",
+          "data": {}
+        },
+        {
+          "id": "C0b",
+          "title": "backend.hcl y terraform.tfvars de infra/aws",
+          "status": "OK",
+          "detail": "presentes (no se versionan)",
+          "data": {}
+        },
+        {
+          "id": "C1",
+          "title": "bash infra/validate.sh",
+          "status": "OK",
+          "detail": "\u001b[32m\u001b[1mSuccess!\u001b[0m The configuration is valid.\n\u001b[0m\n== validate: aws/environments/dev ==\n\u001b[32m\u001b[1mSuccess!\u001b[0m The configuration is valid.\n\u001b[0m\nOK",
+          "data": {}
+        },
+        {
+          "id": "C2a",
+          "title": "terraform init",
+          "status": "OK",
+          "detail": "If you ever set or change modules or backend configuration for Terraform,\nrerun this command to reinitialize your working directory. If you forget, other\ncommands will detect it and remind you to do so if necessary.\u001b[0m",
+          "data": {}
+        },
+        {
+          "id": "C2",
+          "title": "plan (-target=module.glue_catalog)",
+          "status": "OK",
+          "detail": "0 a crear, 11 a cambiar, 0 a destruir, 0 a reemplazar (esperado: las 11 tablas, solo descripción y comentarios; nada a crear ni a destruir)",
+          "data": {
+            "create": [],
+            "update": [
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_curated.agg_emotion_by_brand_hour\"]",
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_curated.agg_trend_daily\"]",
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_curated.dim_brand\"]",
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_curated.dim_date\"]",
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_curated.dim_source\"]",
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_curated.dim_user\"]",
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_curated.edges_hashtag_cooccurrence\"]",
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_curated.edges_user_brand\"]",
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_curated.fact_posts\"]",
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_raw.posts_raw\"]",
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_trusted.posts\"]"
+            ],
+            "delete": [],
+            "replace": [],
+            "diffs": {
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_curated.agg_emotion_by_brand_hour\"]": [
+                "description: 'Conteos de emocion por marca / fuente / hora (formato largo).' → 'Conteos de emoción por hora UTC, marca principal, red social y emoción (formato largo). Solo cuenta las filas con em…",
+                "storage_descriptor.0.columns.0.comment: 'UTC, truncado a la hora' → '[sin_dato_personal] Inicio de la hora (UTC, truncado a la hora)'",
+                "storage_descriptor.0.columns.1.comment: '' → '[sin_dato_personal] Marca principal (brand_primary)'",
+                "storage_descriptor.0.columns.2.comment: '' → '[sin_dato_personal] Red social simulada'",
+                "storage_descriptor.0.columns.3.comment: '' → '[sin_dato_personal] Emoción predicha'",
+                "storage_descriptor.0.columns.4.comment: '' → '[sin_dato_personal] Comentarios de esa hora, marca, red y emoción'"
+              ],
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_curated.agg_trend_daily\"]": [
+                "description: 'Volumen y sentimiento diario por marca. avg_sentiment: misma definicion que BigQuery trend_windows (con signo en [-1… → 'Volumen y sentimiento diario por marca principal. n_posts cuenta todas las filas; los conteos por sentimiento y avg_…",
+                "storage_descriptor.0.columns.0.comment: '' → '[sin_dato_personal] Día UTC'",
+                "storage_descriptor.0.columns.1.comment: '' → '[sin_dato_personal] Marca principal (brand_primary)'",
+                "storage_descriptor.0.columns.2.comment: '' → '[sin_dato_personal] Comentarios del día y la marca (también los que no tienen NLP)'",
+                "storage_descriptor.0.columns.3.comment: '' → '[sin_dato_personal] Comentarios con sentimiento negative'",
+                "storage_descriptor.0.columns.4.comment: '' → '[sin_dato_personal] Comentarios con sentimiento neutral'",
+                "storage_descriptor.0.columns.5.comment: '' → '[sin_dato_personal] Comentarios con sentimiento positive'",
+                "storage_descriptor.0.columns.6.comment: '' → '[sin_dato_personal] Media de +score (positive), -score (negative) y 0 (neutral), en [-1, 1]; como trend_windows'"
+              ],
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_curated.dim_brand\"]": [
+                "description: '' → 'Dimensión marca: las marcas de brands.yaml (propia y competidores), más cualquier marca de los datos que no esté (co…",
+                "storage_descriptor.0.columns.0.comment: 'clave canonica de brands.yaml (postobon, pepsi, sprite)' → '[sin_dato_personal] Clave canónica de brands.yaml (postobon, pepsi, sprite); llave'",
+                "storage_descriptor.0.columns.1.comment: '' → '[sin_dato_personal] Nombre para mostrar de la marca'",
+                "storage_descriptor.0.columns.2.comment: 'propia | competidor' → '[sin_dato_personal] Papel de la marca para el análisis: propia | competidor'"
+              ],
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_curated.dim_date\"]": [
+                "description: '' → 'Dimensión calendario: un día por fila, continuo desde el primer hasta el último dt de fact_posts.'",
+                "storage_descriptor.0.columns.0.comment: 'yyyymmdd' → '[sin_dato_personal] Día como entero yyyymmdd (llave)'",
+                "storage_descriptor.0.columns.1.comment: '' → '[sin_dato_personal] Fecha del día (UTC)'",
+                "storage_descriptor.0.columns.2.comment: '' → '[sin_dato_personal] Año'",
+                "storage_descriptor.0.columns.3.comment: '' → '[sin_dato_personal] Mes (1-12)'",
+                "storage_descriptor.0.columns.4.comment: '' → '[sin_dato_personal] Día del mes (1-31)'",
+                "storage_descriptor.0.columns.5.comment: '' → '[sin_dato_personal] Semana ISO 8601 (1-53)'",
+                "storage_descriptor.0.columns.6.comment: '1 = lunes ... 7 = domingo' → '[sin_dato_personal] Día de la semana: 1 = lunes ... 7 = domingo'",
+                "storage_descriptor.0.columns.7.comment: '' → '[sin_dato_personal] Verdadero en sábado y domingo'"
+              ],
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_curated.dim_source\"]": [
+                "description: '' → 'Dimensión red social: las tres fuentes simuladas con su nombre visible y su mezcla de publicaciones y comentarios.'",
+                "storage_descriptor.0.columns.0.comment: 'reddit | facebook | instagram' → '[sin_dato_personal] Red social simulada (llave): reddit | facebook | instagram'",
+                "storage_descriptor.0.columns.1.comment: '' → '[sin_dato_personal] Nombre para mostrar en los tableros'",
+                "storage_descriptor.0.columns.2.comment: 'descripcion de la mezcla de kind (§3.3)' → '[sin_dato_personal] Mezcla de kind de la fuente (§3.3), p. ej. post 30% · comment 70%'"
+              ],
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_curated.dim_user\"]": [
+                "description: 'Solo user_hash: nunca handle ni user_id.' → 'Dimensión autor seudonimizado: una fila por user_hash con su actividad. Solo user_hash: nunca handle ni user_id.'",
+                "storage_descriptor.0.columns.0.comment: '' → '[anonimizado] Autor seudonimizado (HMAC-SHA256 en hex de user_id); llave'",
+                "storage_descriptor.0.columns.1.comment: '' → '[cuasi_identificador] Primer comentario del autor (mínimo event_time, UTC)'",
+                "storage_descriptor.0.columns.2.comment: '' → '[cuasi_identificador] Último comentario del autor (máximo event_time, UTC)'",
+                "storage_descriptor.0.columns.3.comment: '' → '[cuasi_identificador] Comentarios del autor en fact_posts'",
+                "storage_descriptor.0.columns.4.comment: '' → '[cuasi_identificador] Máximo de seguidores observado para el autor'"
+              ],
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_curated.edges_hashtag_cooccurrence\"]": [
+                "description: 'Co-ocurrencia de hashtags; arista no dirigida, siempre hashtag_a < hashtag_b.' → 'Coocurrencia de hashtags: arista no dirigida, siempre hashtag_a < hashtag_b; weight = comentarios con los dos.'",
+                "storage_descriptor.0.columns.0.comment: '' → '[sin_dato_personal] Primer hashtag del par (forma canónica; el menor por punto de código)'",
+                "storage_descriptor.0.columns.1.comment: '' → '[sin_dato_personal] Segundo hashtag del par (siempre mayor que hashtag_a)'",
+                "storage_descriptor.0.columns.2.comment: '' → '[sin_dato_personal] Comentarios que contienen los dos hashtags'"
+              ],
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_curated.edges_user_brand\"]": [
+                "description: 'Arista usuario -> marca; weight = numero de menciones.' → 'Arista usuario -> marca para análisis de relaciones: una fila por par (user_hash, marca); weight = número de mencion…",
+                "storage_descriptor.0.columns.0.comment: '' → '[anonimizado] Autor seudonimizado (HMAC-SHA256 en hex de user_id); llave a dim_user'",
+                "storage_descriptor.0.columns.1.comment: '' → '[sin_dato_personal] Marca mencionada; llave a dim_brand'",
+                "storage_descriptor.0.columns.2.comment: '' → '[sin_dato_personal] Comentarios del autor que mencionan la marca (cada marca una vez por comentario)'"
+              ],
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_curated.fact_posts\"]": [
+                "description: 'Un registro por post. Grano = event_id.' → 'Hechos: un registro por comentario de Trusted (grano = event_id), con sus llaves a las dimensiones, el engagement y …",
+                "partition_keys.0.comment: '' → '[sin_dato_personal] Día UTC de event_time (partición dt=, AAAA-MM-DD)'",
+                "storage_descriptor.0.columns.0.comment: '' → '[sin_dato_personal] Identificador del comentario (UUID del simulador); grano de la tabla'",
+                "storage_descriptor.0.columns.1.comment: '' → '[sin_dato_personal] Día UTC de event_time como entero yyyymmdd; llave a dim_date.date_key'",
+                "storage_descriptor.0.columns.2.comment: '' → '[sin_dato_personal] Origen del dato: stream | historical'",
+                "storage_descriptor.0.columns.3.comment: '' → '[sin_dato_personal] Red social simulada; llave a dim_source.source'",
+                "storage_descriptor.0.columns.4.comment: '' → '[sin_dato_personal] Marca principal (la primera de brands); llave a dim_brand.brand'",
+                "storage_descriptor.0.columns.5.comment: '' → '[sin_dato_personal] Todas las marcas mencionadas (claves de brands.yaml)'",
+                "storage_descriptor.0.columns.6.comment: '' → '[anonimizado] Autor seudonimizado (HMAC-SHA256 en hex de user_id); llave a dim_user.user_hash'",
+                "storage_descriptor.0.columns.7.comment: '' → '[sin_dato_personal] Instante en que se publicó el comentario (UTC)'",
+                "storage_descriptor.0.columns.8.comment: '' → '[sin_dato_personal] Me gusta, normalizados según la red'",
+                "storage_descriptor.0.columns.9.comment: '' → '[sin_dato_personal] Veces compartido (solo Facebook)'",
+                "… y 6 más"
+              ],
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_raw.posts_raw\"]": [
+                "description: 'ta_raw.posts_raw · ARCHITECTURE.md §5.7 Capa Raw: Parquet+Snappy tal como llega a S3 (ya anonimizado), stream (expor… → 'Capa Raw (bronce): una fila por comentario simulado de redes sociales, tal como llega a S3 desde GCP (stream, export…",
+                "partition_keys.0.comment: '' → '[sin_dato_personal] Partición de S3 origin=: stream | historical'",
+                "partition_keys.1.comment: '' → '[sin_dato_personal] Partición de S3 source=: reddit | facebook | instagram'",
+                "partition_keys.2.comment: '' → '[sin_dato_personal] Partición de S3 dt=: día UTC (AAAA-MM-DD); en el stream, el de proceso; en el histórico, el de e…",
+                "partition_keys.3.comment: '' → '[sin_dato_personal] Partición de S3 hr=: hora UTC (00-23), con el mismo criterio que part_dt'",
+                "storage_descriptor.0.columns.0.comment: '' → '[sin_dato_personal] Identificador del evento (UUID del simulador); clave de deduplicación'",
+                "storage_descriptor.0.columns.1.comment: '' → '[sin_dato_personal] Origen del dato: stream (simulador en vivo) | historical (carga histórica)'",
+                "storage_descriptor.0.columns.2.comment: '' → '[sin_dato_personal] Red social simulada: reddit | facebook | instagram'",
+                "storage_descriptor.0.columns.3.comment: '' → '[sin_dato_personal] Nombre y versión del generador de comentarios (ta-verify@* = centinela de validación)'",
+                "storage_descriptor.0.columns.4.comment: '' → '[sin_dato_personal] Instante en que se publicó el comentario (UTC)'",
+                "storage_descriptor.0.columns.5.comment: '' → '[sin_dato_personal] Instante en que el simulador o el loader lo emitió (UTC)'",
+                "storage_descriptor.0.columns.6.comment: '' → '[sin_dato_personal] Instante en que Dataflow (o el loader) lo enriqueció (UTC)'",
+                "… y 17 más"
+              ],
+              "module.glue_catalog.aws_glue_catalog_table.this[\"ta_trusted.posts\"]": [
+                "description: 'ta_trusted.posts · ARCHITECTURE.md §5.7 Capa Trusted: union stream + historico, deduplicado por event_id, tipos corr… → 'Capa Trusted (plata): una fila por comentario (event_id único), unión de stream e histórico. La reconstruye entera c…",
+                "partition_keys.0.comment: '' → '[sin_dato_personal] Red social simulada (partición source=): reddit | facebook | instagram'",
+                "partition_keys.1.comment: '' → '[sin_dato_personal] Día UTC de event_time (partición dt=, AAAA-MM-DD)'",
+                "storage_descriptor.0.columns.0.comment: '' → '[sin_dato_personal] Identificador del evento (UUID del simulador); único en esta tabla'",
+                "storage_descriptor.0.columns.1.comment: '' → '[sin_dato_personal] Origen del dato: stream (simulador en vivo) | historical (carga histórica)'",
+                "storage_descriptor.0.columns.2.comment: '' → '[sin_dato_personal] Nombre y versión del generador de comentarios'",
+                "storage_descriptor.0.columns.3.comment: '' → '[sin_dato_personal] Instante en que se publicó el comentario (UTC); nunca nulo'",
+                "storage_descriptor.0.columns.4.comment: '' → '[sin_dato_personal] Instante en que el simulador o el loader lo emitió (UTC)'",
+                "storage_descriptor.0.columns.5.comment: '' → '[sin_dato_personal] Instante en que Dataflow (o el loader) lo enriqueció (UTC)'",
+                "storage_descriptor.0.columns.6.comment: '' → '[anonimizado] Autor seudonimizado: HMAC-SHA256 en hex (64) de user_id con la llave ta-hmac-key; mismo usuario, mismo…",
+                "storage_descriptor.0.columns.7.comment: '' → '[cuasi_identificador] Seguidores del autor al publicar (puede ser nulo)'",
+                "storage_descriptor.0.columns.8.comment: '' → '[texto_libre] Texto original del comentario, sin cambios (sintético)'",
+                "… y 15 más"
+              ]
+            }
+          }
+        },
+        {
+          "id": "C3",
+          "title": "apply",
+          "status": "OK",
+          "detail": "lake_bucket_arn = \"arn:aws:s3:::ta-dev-648617469176-lake\"\nlakehouse_schedule_name = \"ta-wf-raw-to-curated-cada-hora\"\nlakehouse_scheduler_role_arn = \"arn:aws:iam::648617469176:role/ta-lakehouse-scheduler-role\"\nquicksight_role_arn = \"arn:aws:iam::648617469176:role/ta-quicksight-role\"",
+          "data": {}
+        },
+        {
+          "id": "C3b",
+          "title": "plan tras aplicar (sin deriva)",
+          "status": "OK",
+          "detail": "No changes",
+          "data": {
+            "create": [],
+            "update": [],
+            "delete": [],
+            "replace": [],
+            "diffs": {}
+          }
+        }
+      ]
+    },
+    "D": {
+      "title": "Descripciones en Glue y lo que ve Athena (solo lectura)",
+      "status": "OK",
+      "started_at": "2026-10-27T14:11:08.388183+00:00",
+      "finished_at": "2026-10-27T14:11:19.067877+00:00",
+      "steps": [
+        {
+          "id": "D1",
+          "title": "las 11 tablas en Glue con el esquema de las DDL",
+          "status": "OK",
+          "detail": "11 tablas en ta_raw, ta_trusted, ta_curated: columnas, tipos, particiones, ubicación y proyección = DDL",
+          "data": {}
+        },
+        {
+          "id": "D2",
+          "title": "descripción de cada tabla y comentario de cada columna = DDL (HU-034)",
+          "status": "OK",
+          "detail": "11 descripciones y 108 comentarios (con clase de privacidad) iguales a las DDL",
+          "data": {
+            "differences": 0
+          }
+        },
+        {
+          "id": "D3",
+          "title": "comentarios visibles en Athena (information_schema.columns)",
+          "status": "OK",
+          "detail": "108 columnas, 108 con comentario y clase de privacidad · 13519 bytes escaneados, 1918 ms de motor",
+          "data": {
+            "query_id": "2cc2a5a5-d5cd-429f-a20c-df5006c3ef5b",
+            "rows": 108,
+            "scanned_bytes": 13519,
+            "engine_ms": 1918
+          }
+        }
+      ]
+    },
+    "G": {
+      "title": "Controles de acceso y cifrado de GOVERNANCE.md (solo lectura en AWS y GCP)",
+      "status": "OK",
+      "started_at": "2026-10-27T14:11:19.288953+00:00",
+      "finished_at": "2026-10-27T14:11:43.007338+00:00",
+      "steps": [
+        {
+          "id": "G1",
+          "title": "S3 ta-dev-648617469176-lake: bloqueo total de acceso público",
+          "status": "OK",
+          "detail": "los 4 bloqueos activos",
+          "data": {}
+        },
+        {
+          "id": "G2",
+          "title": "S3: cifrado por defecto SSE-KMS con bucket key",
+          "status": "OK",
+          "detail": "aws:kms con llave y bucket key",
+          "data": {}
+        },
+        {
+          "id": "G3",
+          "title": "S3: la política niega todo sin TLS",
+          "status": "OK",
+          "detail": "Deny con aws:SecureTransport = false",
+          "data": {}
+        },
+        {
+          "id": "G4",
+          "title": "IAM simulado: quién lee y escribe raw/, trusted/ y curated/",
+          "status": "OK",
+          "detail": "16 casos como se esperaba: raw/ lo escriben solo sus dos productores (sin leer ni borrar), Glue lo lee sin escribirlo y QuickSight solo lee curated/",
+          "data": {
+            "cases": [
+              {
+                "role": "ta-gcp-exporter-role",
+                "case": "escribe raw/origin=stream/",
+                "action": "s3:PutObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/raw/origin=stream/source=reddit/dt=2026-10-22/hr=10/part-20261022T100000Z-p000.parquet",
+                "context": {},
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-gcp-exporter-role_ta-gcp-exporter-role-s3"
+                ],
+                "ok": true
+              },
+              {
+                "role": "ta-gcp-exporter-role",
+                "case": "lee raw/origin=stream/",
+                "action": "s3:GetObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/raw/origin=stream/source=reddit/dt=2026-10-22/hr=10/part-20261022T100000Z-p000.parquet",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "role": "ta-gcp-exporter-role",
+                "case": "borra raw/origin=stream/",
+                "action": "s3:DeleteObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/raw/origin=stream/source=reddit/dt=2026-10-22/hr=10/part-20261022T100000Z-p000.parquet",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "role": "ta-gcp-exporter-role",
+                "case": "escribe raw/origin=historical/",
+                "action": "s3:PutObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/raw/origin=historical/source=reddit/dt=2026-05-01/hr=03/part-historical-s3101-20260501T03.parquet",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "role": "ta-gcp-exporter-role",
+                "case": "lee curated/",
+                "action": "s3:GetObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/curated/fact_posts/dt=2026-10-22/part-00000.parquet",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "role": "ta-historical-loader",
+                "case": "escribe raw/origin=historical/",
+                "action": "s3:PutObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/raw/origin=historical/source=reddit/dt=2026-05-01/hr=03/part-historical-s3101-20260501T03.parquet",
+                "context": {},
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-historical-loader_ta-historical-loader-s3"
+                ],
+                "ok": true
+              },
+              {
+                "role": "ta-historical-loader",
+                "case": "lee raw/origin=historical/",
+                "action": "s3:GetObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/raw/origin=historical/source=reddit/dt=2026-05-01/hr=03/part-historical-s3101-20260501T03.parquet",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "role": "ta-historical-loader",
+                "case": "borra raw/origin=historical/",
+                "action": "s3:DeleteObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/raw/origin=historical/source=reddit/dt=2026-05-01/hr=03/part-historical-s3101-20260501T03.parquet",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "role": "ta-historical-loader",
+                "case": "escribe raw/origin=stream/",
+                "action": "s3:PutObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/raw/origin=stream/source=reddit/dt=2026-10-22/hr=10/part-20261022T100000Z-p000.parquet",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "role": "ta-glue-role",
+                "case": "lee raw/",
+                "action": "s3:GetObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/raw/origin=stream/source=reddit/dt=2026-10-22/hr=10/part-20261022T100000Z-p000.parquet",
+                "context": {},
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-glue-role_ta-glue-role-lake"
+                ],
+                "ok": true
+              },
+              {
+                "role": "ta-glue-role",
+                "case": "escribe raw/",
+                "action": "s3:PutObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/raw/origin=stream/source=reddit/dt=2026-10-22/hr=10/part-20261022T100000Z-p000.parquet",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "role": "ta-glue-role",
+                "case": "borra raw/",
+                "action": "s3:DeleteObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/raw/origin=historical/source=reddit/dt=2026-05-01/hr=03/part-historical-s3101-20260501T03.parquet",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "role": "ta-glue-role",
+                "case": "escribe trusted/",
+                "action": "s3:PutObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/trusted/posts/source=reddit/dt=2026-10-22/part-00000.parquet",
+                "context": {},
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-glue-role_ta-glue-role-lake"
+                ],
+                "ok": true
+              },
+              {
+                "role": "ta-quicksight-role",
+                "case": "lee curated/",
+                "action": "s3:GetObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/curated/fact_posts/dt=2026-10-22/part-00000.parquet",
+                "context": {},
+                "expected": "allowed",
+                "decision": "allowed",
+                "matched": [
+                  "role_ta-quicksight-role_ta-quicksight-role-athena"
+                ],
+                "ok": true
+              },
+              {
+                "role": "ta-quicksight-role",
+                "case": "lee raw/",
+                "action": "s3:GetObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/raw/origin=stream/source=reddit/dt=2026-10-22/hr=10/part-20261022T100000Z-p000.parquet",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              },
+              {
+                "role": "ta-quicksight-role",
+                "case": "lee trusted/",
+                "action": "s3:GetObject",
+                "resource": "arn:aws:s3:::ta-dev-648617469176-lake/trusted/posts/source=reddit/dt=2026-10-22/part-00000.parquet",
+                "context": {},
+                "expected": "denied",
+                "decision": "implicitDeny",
+                "matched": [],
+                "ok": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "G5",
+          "title": "GCS project-0568d9ba-848f-413c-88b-ta-lake: acceso uniforme, sin acceso público, raw/ y dlq/ a 30 días",
+          "status": "OK",
+          "detail": "uniforme, enforced, expiran {'dlq/': 30, 'raw/': 30}",
+          "data": {
+            "uniform": true,
+            "public_access_prevention": "enforced",
+            "expires": {
+              "dlq/": 30,
+              "raw/": 30
+            }
+          }
+        },
+        {
+          "id": "G6",
+          "title": "GCS del lake: sin miembros públicos",
+          "status": "OK",
+          "detail": "ningún allUsers ni allAuthenticatedUsers · roles/storage.legacyBucketOwner: projectEditor:project-0568d9ba-848f-413c-88b, projectOwner:project-0568d9ba-848f-413c-88b; roles/storage.legacyBucketReader: projectViewer:project-0568d9ba-848f-413c-88b; roles/storage.legacyObjectOwner: projectEditor:project-0568d9ba-848f-413c-88b, projectOwner:project-0568d9ba-848f-413c-88b; roles/storage.legacyObjectReader: projectViewer:project-0568d9ba-848f-413c-88b; roles/storage.objectAdmin: serviceAccount:sa-dataflow; roles/storage.objectUser: serviceAccount:sa-exporter; roles/storage.objectViewer: serviceAccount:sa-exporter",
+          "data": {
+            "roles": {
+              "roles/storage.legacyBucketOwner": [
+                "projectEditor:project-0568d9ba-848f-413c-88b",
+                "projectOwner:project-0568d9ba-848f-413c-88b"
+              ],
+              "roles/storage.legacyBucketReader": [
+                "projectViewer:project-0568d9ba-848f-413c-88b"
+              ],
+              "roles/storage.legacyObjectOwner": [
+                "projectEditor:project-0568d9ba-848f-413c-88b",
+                "projectOwner:project-0568d9ba-848f-413c-88b"
+              ],
+              "roles/storage.legacyObjectReader": [
+                "projectViewer:project-0568d9ba-848f-413c-88b"
+              ],
+              "roles/storage.objectAdmin": [
+                "serviceAccount:sa-dataflow"
+              ],
+              "roles/storage.objectUser": [
+                "serviceAccount:sa-exporter"
+              ],
+              "roles/storage.objectViewer": [
+                "serviceAccount:sa-exporter"
+              ]
+            }
+          }
+        },
+        {
+          "id": "G7",
+          "title": "Secret Manager ta-hmac-key: solo sa-dataflow lo lee",
+          "status": "OK",
+          "detail": "secretAccessor: serviceAccount:sa-dataflow; otros roles en el secreto: ninguno (los dueños del proyecto también pueden, por herencia)",
+          "data": {
+            "roles": {
+              "roles/secretmanager.secretAccessor": [
+                "serviceAccount:sa-dataflow"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "status": {
+      "title": "Estado del catálogo de Glue (solo lectura)",
+      "status": "OK",
+      "started_at": "2026-10-27T14:11:43.227352+00:00",
+      "finished_at": "2026-10-27T14:11:48.117925+00:00",
+      "steps": [
+        {
+          "id": "S1",
+          "title": "tablas de Glue con las descripciones de las DDL",
+          "status": "OK",
+          "detail": "11 de 11",
+          "data": {}
+        },
+        {
+          "id": "S2",
+          "title": "horario ta-wf-raw-to-curated-cada-hora",
+          "status": "OK",
+          "detail": "ENABLED (estado normal: ENABLED; este lote no lo toca)",
+          "data": {
+            "schedule": "ENABLED"
+          }
+        }
+      ]
+    }
+  },
+  "updated_at": "2026-10-27T14:11:48.117975+00:00"
+}

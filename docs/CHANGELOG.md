@@ -1,10 +1,20 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.43**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.44**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.44 · desde v2.43
+
+**Lote que lo motiva:** Lote 5.3 (HU-034, HU-035, HU-036) · cierre
+
+| Área | Cambio |
+|---|---|
+| Lote 5.3 | **Cerrado** ✅: validado el 27-oct-2026 con `validate_5_3.py` sobre `main` = `4a48a61`, con el OK del usuario para el `apply` y el horario encendido. A 7 OK, B 5 OK (132, 20, 18, 3, 24), L 6 OK; **C: apply «0 added, 11 changed, 0 destroyed» y plan posterior sin cambios** (C0 en AVISO por la cuenta raíz); **D 3 OK** (11 descripciones y 108 comentarios en Glue = DDL; Athena expone los 108 comentarios en `information_schema.columns`); **G 7 OK** (S3 privado, SSE-KMS y TLS; 16 casos de IAM; GCS uniforme, sin acceso público, `raw/` y `dlq/` a 30 días; `ta-hmac-key` solo con `sa-dataflow`); `status` 2 OK. |
+| Evidencia | `project/evidencia/validacion_5_3.json` (sin correos ni secretos; miembros de IAM enmascarados). |
+| Documento | §3.25 con «Cierre»; `GOVERNANCE.md` §6 con los resultados de G1–G7; «Cierre» de `validation-5-3.md`; PLAN.md §3 (5.3 ✅); HU.md (HU-034, HU-035 y HU-036 ✅); cabeceras a 2.44. |
 
 ## v2.43 · desde v2.42
 

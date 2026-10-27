@@ -189,7 +189,20 @@ python project/scripts/validate_5_3.py status
 
 ## Cierre
 
-*Pendiente de la validación en la nube (v2.44).*
+**Cerrado en v2.44** (27-oct-2026, WSL; `main` = `4a48a61`; `ta-streaming`, perfil `default` y `gcloud` con sesión; OK del
+usuario para el `apply`; horario `ENABLED` todo el tiempo).
+
+| Parte | Resultado |
+|---|---|
+| A · Preflight | OK (7): Python 3.11.17; 14 archivos; catálogo al día; `terraform`, `aws`, `gcloud`, `bash`; horario `ENABLED`; nada cobra |
+| B · Pruebas | OK (5): B1 132, B2 20, B3 18, B4 3, B5 24 |
+| L · Local | OK (6): 11 tablas, 108 columnas (anonimizado 5, cuasi_identificador 8, texto_libre 3, sin_dato_personal 92); 108 columnas en el linaje; 44 rutas; 11 áreas de DAMA-DMBOK; sin fugas |
+| C · Terraform | AVISO solo por C0 (cuenta raíz): plan **0/11/0** solo de documentación; `Apply complete! Resources: 0 added, 11 changed, 0 destroyed.`; plan posterior `No changes` |
+| D · Glue y Athena | OK (3): esquema = DDL; **11 descripciones y 108 comentarios = DDL**; `information_schema.columns` con las 108 columnas comentadas (13.519 bytes, 1,9 s) |
+| G · Controles | OK (7): G1–G3 bucket de S3; G4 16 casos de IAM; G5–G6 bucket de GCS; G7 `ta-hmac-key` solo con `sa-dataflow` |
+| `status` | OK (2): 11 de 11 tablas descritas; horario `ENABLED` |
+
+Cifras también en `ARCHITECTURE.md` §3.25, `GOVERNANCE.md` §6 y `CHANGELOG.md` v2.44. Nada quedó encendido de más.
 
 ## Problemas frecuentes
 

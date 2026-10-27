@@ -132,12 +132,14 @@ que exista en otro lugar).
 
 ## 6. Controles verificados (`validate_5_3.py controls`)
 
+Verificado el 27-oct-2026 (cierre del 5.3, `main` = `4a48a61`; evidencia en `project/evidencia/validacion_5_3.json`):
+
 | Paso | Control | Resultado |
 |---|---|---|
-| G1 | S3 del lake: bloqueo total de acceso público | *pendiente de la validación* |
-| G2 | S3 del lake: cifrado por defecto SSE-KMS con *bucket key* | *pendiente de la validación* |
-| G3 | S3 del lake: la política niega todo sin TLS (`aws:SecureTransport`) | *pendiente de la validación* |
-| G4 | IAM (simulado): quién puede leer y escribir `raw/`, `trusted/` y `curated/` | *pendiente de la validación* |
-| G5 | GCS del lake: acceso uniforme, prevención de acceso público y `raw/`/`dlq/` a 30 días | *pendiente de la validación* |
-| G6 | GCS del lake: sin miembros públicos (`allUsers`, `allAuthenticatedUsers`) | *pendiente de la validación* |
-| G7 | Secret Manager `ta-hmac-key`: solo `sa-dataflow` como `secretAccessor` | *pendiente de la validación* |
+| G1 | S3 del lake: bloqueo total de acceso público | ✅ los 4 bloqueos activos |
+| G2 | S3 del lake: cifrado por defecto SSE-KMS con *bucket key* | ✅ `aws:kms` con la llave del lake y *bucket key* |
+| G3 | S3 del lake: la política niega todo sin TLS (`aws:SecureTransport`) | ✅ `Deny` con `aws:SecureTransport = false` |
+| G4 | IAM (simulado): quién puede leer y escribir `raw/`, `trusted/` y `curated/` | ✅ 16 casos como se esperaba (los productores solo escriben su prefijo de `raw/`, sin leer ni borrar; Glue lee `raw/` sin escribirlo; QuickSight solo lee `curated/`) |
+| G5 | GCS del lake: acceso uniforme, prevención de acceso público y `raw/`/`dlq/` a 30 días | ✅ uniforme, `enforced`, `raw/` y `dlq/` expiran a 30 días |
+| G6 | GCS del lake: sin miembros públicos (`allUsers`, `allAuthenticatedUsers`) | ✅ ninguno; solo los roles heredados del proyecto (dueños, editores, lectores) y las service accounts del proyecto |
+| G7 | Secret Manager `ta-hmac-key`: solo `sa-dataflow` como `secretAccessor` | ✅ solo `sa-dataflow` (los dueños del proyecto también, por herencia) |

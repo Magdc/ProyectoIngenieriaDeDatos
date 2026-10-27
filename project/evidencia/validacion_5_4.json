@@ -1,0 +1,438 @@
+{
+  "lote": "5.4",
+  "hu": [
+    "HU-048"
+  ],
+  "parts": {
+    "A": {
+      "title": "Preflight del código y de lo encendido",
+      "status": "OK",
+      "started_at": "2026-10-27T16:22:22.811128+00:00",
+      "finished_at": "2026-10-27T16:22:33.904196+00:00",
+      "steps": [
+        {
+          "id": "A1",
+          "title": "Python y dependencias",
+          "status": "OK",
+          "detail": "Python 3.11.17; Pub/Sub, BigQuery, GCS, boto3, pyarrow, jsonschema y Beam",
+          "data": {}
+        },
+        {
+          "id": "A2",
+          "title": "los 9 archivos del lote y 7 que reutiliza",
+          "status": "OK",
+          "detail": "presentes",
+          "data": {}
+        },
+        {
+          "id": "A3",
+          "title": "herramientas",
+          "status": "OK",
+          "detail": "gcloud, aws, bash",
+          "data": {}
+        },
+        {
+          "id": "A4",
+          "title": "proyecto de GCP y ADC",
+          "status": "OK",
+          "detail": "project-0568d9ba-848f-413c-88b · ADC presente",
+          "data": {}
+        },
+        {
+          "id": "A5",
+          "title": "GCP: Dataflow, simulador e imagen de NLP",
+          "status": "OK",
+          "detail": "Dataflow: apagado · simulador: apagado · imagen NLP: us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/dataflow-nlp:20261022224102",
+          "data": {
+            "dataflow": [],
+            "simulator": false,
+            "nlp_image": "us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/dataflow-nlp:20261022224102"
+          }
+        },
+        {
+          "id": "A6",
+          "title": "exportador ta-gcs-to-s3-cada-15-min",
+          "status": "OK",
+          "detail": "PAUSED (estado normal: PAUSED; la prueba ejecuta el job a mano, sin el Scheduler)",
+          "data": {}
+        },
+        {
+          "id": "A7",
+          "title": "horario ta-wf-raw-to-curated-cada-hora",
+          "status": "OK",
+          "detail": "ENABLED (estado normal: ENABLED; la prueba arranca una corrida a mano y espera si hay otra)",
+          "data": {}
+        }
+      ]
+    },
+    "B": {
+      "title": "Pruebas",
+      "status": "OK",
+      "started_at": "2026-10-27T16:22:34.780179+00:00",
+      "finished_at": "2026-10-27T16:22:53.308707+00:00",
+      "steps": [
+        {
+          "id": "B1",
+          "title": "pytest src/smoke (pipeline falso)",
+          "status": "OK",
+          "detail": "11 passed, 0 skipped, 0 failed (esperado 11 passed, 0 skipped)",
+          "data": {
+            "passed": 11,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B2",
+          "title": "pytest test_ops_validate54.py",
+          "status": "OK",
+          "detail": "14 passed, 0 skipped, 0 failed (esperado 14 passed, 0 skipped)",
+          "data": {
+            "passed": 14,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B3",
+          "title": "pytest contracts/tests",
+          "status": "OK",
+          "detail": "18 passed, 0 skipped, 0 failed (esperado 18 passed, 0 skipped)",
+          "data": {
+            "passed": 18,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B4",
+          "title": "regresión: test_ops_validate53.py (leak_problems)",
+          "status": "OK",
+          "detail": "20 passed, 0 skipped, 0 failed (esperado 20 passed, 0 skipped)",
+          "data": {
+            "passed": 20,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        }
+      ]
+    },
+    "L": {
+      "title": "Los eventos de la prueba frente al contrato (sin nube)",
+      "status": "OK",
+      "started_at": "2026-10-27T16:22:53.828879+00:00",
+      "finished_at": "2026-10-27T16:22:55.333138+00:00",
+      "steps": [
+        {
+          "id": "L1",
+          "title": "centinela y calentamiento cumplen el contrato",
+          "status": "OK",
+          "detail": "centinela a58557e3-e45b-5899-a595-1007dc7f578f (comment-gen@1.0, reddit): contrato ok, 1 mensaje con atributos ['event_id', 'origin', 'schema_version', 'source'] · calentamiento ta-verify@2.1 (Trusted descarta 'ta-verify@*'): contrato ok",
+          "data": {
+            "plan": {
+              "event": "smoke_plan",
+              "source": "reddit",
+              "seq": 1793118174,
+              "event_id": "a58557e3-e45b-5899-a595-1007dc7f578f",
+              "generator": "comment-gen@1.0",
+              "event_time": "2026-10-27T16:22:50.103Z",
+              "messages": 1,
+              "attributes": [
+                "event_id",
+                "origin",
+                "schema_version",
+                "source"
+              ],
+              "contract": "ok",
+              "warmup_event_id": "dc149729-a34a-5435-84eb-b81206555fa1",
+              "warmup_generator": "ta-verify@2.1",
+              "warmup_contract": "ok",
+              "objectives_s": {
+                "bigquery": 60,
+                "gcs_enriched": 900,
+                "s3_raw": 300,
+                "trusted": 900,
+                "curated": 600
+              }
+            }
+          }
+        },
+        {
+          "id": "L2",
+          "title": "objetivos de latencia = §5.12",
+          "status": "OK",
+          "detail": "bigquery ≤ 60 s desde published; gcs_enriched ≤ 900 s desde published; s3_raw ≤ 300 s desde gcs_enriched; trusted ≤ 900 s desde s3_raw; curated ≤ 600 s desde trusted",
+          "data": {}
+        }
+      ]
+    },
+    "P": {
+      "title": "Preparar: descartar el atraso de ta-raw-*-df y encender Dataflow con NLP",
+      "status": "OK",
+      "started_at": "2026-10-27T16:22:55.796015+00:00",
+      "finished_at": "2026-10-27T16:23:51.801554+00:00",
+      "steps": [
+        {
+          "id": "P1",
+          "title": "seek de ta-raw-*-df a ahora",
+          "status": "OK",
+          "detail": "3 suscripciones movidas a 2026-10-27T16:22:57Z: lo publicado antes queda descartado",
+          "data": {
+            "seek_time": "2026-10-27T16:22:57Z"
+          }
+        },
+        {
+          "id": "P2",
+          "title": "dataflow_job.sh start",
+          "status": "OK",
+          "detail": "lanzado con us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/dataflow-nlp:20261022224102",
+          "data": {
+            "nlp_image": "us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/dataflow-nlp:20261022224102"
+          }
+        },
+        {
+          "id": "P3",
+          "title": "Dataflow en Running",
+          "status": "OK",
+          "detail": "ta-stream-dev (2026-10-27_09_23_26-4213968076598262329)",
+          "data": {
+            "job": "2026-10-27_09_23_26-4213968076598262329",
+            "started_at": "2026-10-27T16:23:51.797069+00:00"
+          }
+        }
+      ]
+    },
+    "E": {
+      "title": "Prueba de humo de extremo a extremo (scripts/smoke_e2e.py run)",
+      "status": "OK",
+      "started_at": "2026-10-27T16:23:52.275300+00:00",
+      "finished_at": "2026-10-27T16:35:53.239652+00:00",
+      "steps": [
+        {
+          "id": "E1",
+          "title": "calentamiento (ta-verify@2.1) hasta BigQuery",
+          "status": "OK",
+          "detail": "229.1 s (incluye la carga de los modelos de NLP; Trusted lo descarta)",
+          "data": {
+            "warmup": {
+              "event_id": "fc0bf4e6-ff33-5a5d-bb07-2defa864126a",
+              "generator": "ta-verify@2.1",
+              "ok": true,
+              "latency_s": 229.1
+            }
+          }
+        },
+        {
+          "id": "E2",
+          "title": "BigQuery posts_enriched",
+          "status": "OK",
+          "detail": "19.1 s (objetivo 60 s, desde published); 19.1 s desde la publicación · 1 fila(s) en posts_enriched",
+          "data": {
+            "stage": {
+              "stage": "bigquery",
+              "from": "published",
+              "objective_s": 60,
+              "available_at": "2026-10-27T16:28:08.324Z",
+              "detected_at": "2026-10-27T16:28:08.324Z",
+              "latency_s": 19.1,
+              "since_publish_s": 19.1,
+              "ok": true,
+              "detail": "1 fila(s) en posts_enriched",
+              "rows": 1
+            }
+          }
+        },
+        {
+          "id": "E3",
+          "title": "GCS enriched/",
+          "status": "OK",
+          "detail": "175.1 s (objetivo 900 s, desde published); 175.1 s desde la publicación · enriched/source=reddit/dt=2026-10-27/hr=16/part-20261027T162500Z-p000.parquet",
+          "data": {
+            "stage": {
+              "stage": "gcs_enriched",
+              "from": "published",
+              "objective_s": 900,
+              "available_at": "2026-10-27T16:30:44.393Z",
+              "detected_at": "2026-10-27T16:30:57.507Z",
+              "latency_s": 175.1,
+              "since_publish_s": 175.1,
+              "ok": true,
+              "detail": "enriched/source=reddit/dt=2026-10-27/hr=16/part-20261027T162500Z-p000.parquet",
+              "object": "enriched/source=reddit/dt=2026-10-27/hr=16/part-20261027T162500Z-p000.parquet",
+              "bytes": 9687
+            }
+          }
+        },
+        {
+          "id": "E4",
+          "title": "S3 raw/origin=stream/",
+          "status": "OK",
+          "detail": "78.6 s (objetivo 300 s, desde gcs_enriched); 253.7 s desde la publicación · raw/origin=stream/source=reddit/dt=2026-10-27/hr=16/part-20261027T162500Z-p000.parquet (mismos bytes que enriched/)",
+          "data": {
+            "stage": {
+              "stage": "s3_raw",
+              "from": "gcs_enriched",
+              "objective_s": 300,
+              "available_at": "2026-10-27T16:32:03.000Z",
+              "detected_at": "2026-10-27T16:32:23.781Z",
+              "latency_s": 78.6,
+              "since_publish_s": 253.7,
+              "ok": true,
+              "detail": "raw/origin=stream/source=reddit/dt=2026-10-27/hr=16/part-20261027T162500Z-p000.parquet (mismos bytes que enriched/)",
+              "object": "raw/origin=stream/source=reddit/dt=2026-10-27/hr=16/part-20261027T162500Z-p000.parquet",
+              "same_bytes_as_gcs": true,
+              "exporter_runs": [
+                {
+                  "ok": true,
+                  "seconds": 85.7,
+                  "detail": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "E5",
+          "title": "ta_trusted.posts (Athena)",
+          "status": "OK",
+          "detail": "149.1 s (objetivo 900 s, desde s3_raw); 402.8 s desde la publicación · ta-job-raw-to-trusted SUCCEEDED; Athena ve la fila",
+          "data": {
+            "stage": {
+              "stage": "trusted",
+              "from": "s3_raw",
+              "objective_s": 900,
+              "available_at": "2026-10-27T16:34:32.081Z",
+              "detected_at": "2026-10-27T16:35:50.065Z",
+              "latency_s": 149.1,
+              "since_publish_s": 402.8,
+              "ok": true,
+              "detail": "ta-job-raw-to-trusted SUCCEEDED; Athena ve la fila",
+              "workflow_run": "wr_126df504ac11674b91c7551edc1b614539ef1e4599ddac010a44998e6657e1e5"
+            }
+          }
+        },
+        {
+          "id": "E6",
+          "title": "ta_curated.fact_posts (Athena)",
+          "status": "OK",
+          "detail": "62.4 s (objetivo 600 s, desde trusted); 465.2 s desde la publicación · ta-job-trusted-to-curated SUCCEEDED; Athena ve la fila",
+          "data": {
+            "stage": {
+              "stage": "curated",
+              "from": "trusted",
+              "objective_s": 600,
+              "available_at": "2026-10-27T16:35:34.485Z",
+              "detected_at": "2026-10-27T16:35:52.644Z",
+              "latency_s": 62.4,
+              "since_publish_s": 465.2,
+              "ok": true,
+              "detail": "ta-job-trusted-to-curated SUCCEEDED; Athena ve la fila",
+              "workflow_run": "wr_126df504ac11674b91c7551edc1b614539ef1e4599ddac010a44998e6657e1e5"
+            }
+          }
+        },
+        {
+          "id": "E7",
+          "title": "sin user_id ni handle después de Dataflow; mismo user_hash",
+          "status": "OK",
+          "detail": "revisadas: bigquery, curated, gcs_enriched, s3_raw, trusted; problemas: ninguno; user_hash igual en 5 etapas: True",
+          "data": {}
+        },
+        {
+          "id": "E8",
+          "title": "informe para HU-044/HU-045 sin datos personales",
+          "status": "OK",
+          "detail": "smoke_e2e_5_4.json y smoke_e2e_5_4.md · centinela 4e2712e1-0004-56bc-8606-209103050e96 · total 465.2 s · resultado OK",
+          "data": {
+            "event_id": "4e2712e1-0004-56bc-8606-209103050e96",
+            "total_s": 465.2,
+            "ok": true
+          }
+        }
+      ]
+    },
+    "O": {
+      "title": "Apagado: Dataflow drenado, exportador en pausa, horario encendido",
+      "status": "OK",
+      "started_at": "2026-10-27T16:35:53.790867+00:00",
+      "finished_at": "2026-10-27T16:39:23.723329+00:00",
+      "steps": [
+        {
+          "id": "O1",
+          "title": "Dataflow apagado",
+          "status": "OK",
+          "detail": "ningún job activo · encendido ≈ 0.26 h ≈ 0.07 USD",
+          "data": {
+            "hours": 0.26
+          }
+        },
+        {
+          "id": "O2",
+          "title": "exportador ta-gcs-to-s3-cada-15-min",
+          "status": "OK",
+          "detail": "PAUSED",
+          "data": {}
+        },
+        {
+          "id": "O3",
+          "title": "simulador",
+          "status": "OK",
+          "detail": "apagado",
+          "data": {}
+        },
+        {
+          "id": "O4",
+          "title": "horario ta-wf-raw-to-curated-cada-hora",
+          "status": "OK",
+          "detail": "ENABLED",
+          "data": {}
+        },
+        {
+          "id": "O5",
+          "title": "suscripciones temporales ta-verify-*",
+          "status": "OK",
+          "detail": "ninguna",
+          "data": {}
+        }
+      ]
+    },
+    "status": {
+      "title": "Estado (solo lectura)",
+      "status": "OK",
+      "started_at": "2026-10-27T16:39:25.519203+00:00",
+      "finished_at": "2026-10-27T16:39:29.878242+00:00",
+      "steps": [
+        {
+          "id": "S1",
+          "title": "Dataflow",
+          "status": "OK",
+          "detail": "apagado",
+          "data": {}
+        },
+        {
+          "id": "S2",
+          "title": "exportador y horario del lakehouse",
+          "status": "OK",
+          "detail": "exportador PAUSED (normal: PAUSED) · horario ENABLED (normal: ENABLED)",
+          "data": {}
+        },
+        {
+          "id": "S3",
+          "title": "última prueba de humo",
+          "status": "OK",
+          "detail": "smoke-20261027T162356Z: OK · centinela 4e2712e1-0004-56bc-8606-209103050e96 · total 465.2 s",
+          "data": {}
+        }
+      ]
+    }
+  },
+  "updated_at": "2026-10-27T16:39:29.878324+00:00"
+}

@@ -1,10 +1,21 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.45**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.46**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.46 · desde v2.45
+
+**Lote que lo motiva:** Lote 5.4 (HU-048) · cierre · **Fase 5 cerrada**
+
+| Área | Cambio |
+|---|---|
+| Lote 5.4 | **Cerrado** ✅: validado el 27-oct-2026 con `validate_5_4.py` sobre `main` = `1f1fedc`, con el OK del usuario para la nube. A 7, B 4 (11, 14, 18, 20), L 2, **P 3** (*seek* de `ta-raw-*-df` a 16:22:57Z; Dataflow con NLP en Running), **E 8** (centinela `4e2712e1-0004-56bc-8606-209103050e96`: BigQuery 19,1 s, GCS 175,1 s, S3 78,6 s con los mismos bytes, Trusted 149,1 s, Curated 62,4 s; **465,2 s de la publicación a `fact_posts`**; identidad limpia en las 5 etapas), **O 5** (Dataflow drenado, ≈ 0,07 USD; exportador `PAUSED`; horario `ENABLED`), `status` 3, todo OK. |
+| Evidencia | `project/evidencia/validacion_5_4.json` y `smoke_e2e_5_4.{json,md}` (insumo de HU-044 y HU-045; sin datos personales). |
+| Fase 5 | Cerrada: 5.1 (v2.36), 5.2 (v2.42), 5.3 (v2.44) y 5.4 (v2.46). |
+| Documento | §3.26 con «Cierre»; «Cierre» de `validation-5-4.md`; PLAN.md §3 (5.4 ✅, Fase 5 ✅); HU.md (HU-048 ✅); cabeceras a 2.46. |
 
 ## v2.45 · desde v2.44
 

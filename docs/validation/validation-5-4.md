@@ -156,7 +156,21 @@ Raw; Trusted lo descarta).
 
 ## Cierre
 
-*Pendiente de la validación en la nube (v2.46).*
+**Cerrado en v2.46** (27-oct-2026, WSL; `main` = `1f1fedc`; `ta-streaming`, ADC de GCP y perfil `default`; con el OK
+del usuario para la nube).
+
+| Parte | Resultado |
+|---|---|
+| A · Preflight | OK (7): dependencias; 9 + 7 archivos; ADC; Dataflow y simulador apagados, imagen `dataflow-nlp:20261022224102`; exportador `PAUSED`; horario `ENABLED` |
+| B · Pruebas | OK (4): B1 11, B2 14, B3 18, B4 20 |
+| L · Local | OK (2): centinela y calentamiento válidos; objetivos = §5.12 |
+| P · Preparar | OK (3): *seek* de las 3 suscripciones a 16:22:57Z; Dataflow `2026-10-27_09_23_26-4213968076598262329` con NLP en Running |
+| E · Prueba de humo | OK (8): `smoke-20261027T162356Z`, centinela `4e2712e1-0004-56bc-8606-209103050e96`. Calentamiento 229,1 s; **BigQuery 19,1 s** (≤ 60); **GCS 175,1 s** (≤ 900); **S3 78,6 s** desde GCS (≤ 300; mismos bytes); **Trusted 149,1 s** desde S3 (≤ 900); **Curated 62,4 s** desde Trusted (≤ 600); **total 465,2 s**; identidad limpia en las 5 etapas; informe sin datos personales |
+| O · Apagado | OK (5): Dataflow drenado (≈ 0,26 h ≈ 0,07 USD); exportador `PAUSED`; simulador apagado; horario `ENABLED`; sin `ta-verify-*` |
+| `status` | OK (3) |
+
+Cifras también en `ARCHITECTURE.md` §3.26, `CHANGELOG.md` v2.46 y `project/evidencia/smoke_e2e_5_4.md`. Nada quedó
+encendido.
 
 ## Problemas frecuentes
 

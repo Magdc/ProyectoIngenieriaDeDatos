@@ -1,6 +1,6 @@
 # TrendAnalyzer · ARCHITECTURE
 
-> Documento maestro de arquitectura y contratos. **Versión vigente: 2.45.**
+> Documento maestro de arquitectura y contratos. **Versión vigente: 2.46.**
 > Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md) · Plan por fases, trazabilidad HU y estado: [`PLAN.md`](PLAN.md) · Historias de usuario: `HU.md` · Visión general: `README.md`.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 
@@ -2240,7 +2240,7 @@ Reutiliza de `ops/validate41.py` `Ctx`, `athena_query`, `simulate`, `account_id`
 
 ### 3.26 Prueba de humo de extremo a extremo (Lote 5.4)
 
-> Entregado en **v2.45** (HU-048). Rutas relativas a `project/`. **ADR-30.** **Decisiones del usuario (27-oct-2026):** (1) el centinela es un **comentario simulado normal** (`generator = comment-gen@1.0`), no un `ta-verify@*`: así atraviesa Trusted (que descarta los centinelas de los verificadores, §3.21) y llega a `fact_posts` sin tocar ningún job; deja **una fila sintética más por corrida** en Trusted y Curated, con su `event_id` en la evidencia; (2) para validarla se autorizan el *seek* del atraso viejo de `ta-raw-*-df` (~73.600 mensajes del 24-oct, irreversible), encender Dataflow con NLP (≈ 0,25 USD/h) hasta drenarlo, una ejecución del exportador y una corrida del workflow; el simulador queda apagado. No cambia infraestructura, IAM, contratos ni horarios.
+> Entregado en **v2.45** y **cerrado en v2.46** ✅ (HU-048): validado el 27-oct-2026 con `validate_5_4.py` sobre `main` = `1f1fedc` (A, B, L, P, E, O y `status` en OK; **465 s de la publicación a `fact_posts`**; cifras en «Cierre» abajo). Rutas relativas a `project/`. **ADR-30.** **Decisiones del usuario (27-oct-2026):** (1) el centinela es un **comentario simulado normal** (`generator = comment-gen@1.0`), no un `ta-verify@*`: así atraviesa Trusted (que descarta los centinelas de los verificadores, §3.21) y llega a `fact_posts` sin tocar ningún job; deja **una fila sintética más por corrida** en Trusted y Curated, con su `event_id` en la evidencia; (2) para validarla se autorizan el *seek* del atraso viejo de `ta-raw-*-df` (~73.600 mensajes del 24-oct, irreversible), encender Dataflow con NLP (≈ 0,25 USD/h) hasta drenarlo, una ejecución del exportador y una corrida del workflow; el simulador queda apagado. No cambia infraestructura, IAM, contratos ni horarios.
 
 **Flujo.**
 
@@ -2272,6 +2272,19 @@ smoke_e2e.py run ─(precondición: un job ta-stream-dev-* activo)
 **Costo de una validación** (estimado): Dataflow ≈ 0,25 USD/h × (arranque 5–10 min + prueba 15–30 min + drenado ≤ 15 min) ≈ 0,2–0,3 USD; exportador ≈ 0,0016 USD; workflow ≈ 0,0196 USD; BigQuery y Athena < 1 centavo.
 
 > **Estado de la verificación (v2.45, antes de entregar):** WSL, `ta-streaming` (Python 3.11.17). `src/smoke`: **11 passed**; `test_ops_validate54.py`: **14 passed**; `contracts/tests` 18; `test_ops_validate53.py` 20. `ruff --select F,E9` y `py_compile` sin errores. `smoke_e2e.py plan`: centinela y calentamiento válidos contra `contracts/envelope.v1.schema.json` (1 mensaje con los 4 atributos de §5.3). **Sin comprobar hasta la validación en la nube:** las latencias reales; que una ejecución manual del exportador tome el archivo nuevo (watermark con solape de 1 h, §3.18) y si exporta además archivos viejos de `enriched/` no exportados; que el *seek* deje las suscripciones sin atraso; el tiempo de drenado con NLP.
+
+> **Cierre (v2.46).** Validado el 27-oct-2026 sobre `main` = `1f1fedc` (WSL, `ta-streaming`, ADC de GCP y perfil `default`), con el OK del usuario para la nube. A OK (7), B OK (4: 11, 14, 18, 20), L OK (2). **P OK (3):** *seek* de `ta-raw-{reddit,facebook,instagram}-df` a 2026-10-27T16:22:57Z; Dataflow `ta-stream-dev` (`2026-10-27_09_23_26-4213968076598262329`) con `dataflow-nlp:20261022224102`, en Running en < 1 min de lanzado. **E OK (8)**, corrida `smoke-20261027T162356Z`, centinela `4e2712e1-0004-56bc-8606-209103050e96` (Reddit, `comment-gen@1.0`):
+>
+> | Etapa | Latencia (desde) | Objetivo | Desde la publicación |
+> |---|---|---|---|
+> | Calentamiento `ta-verify@2.1` → BigQuery | 229,1 s (incluye arrancar los workers y cargar el NLP) | — | — |
+> | BigQuery `posts_enriched` | **19,1 s** (publicación) | 60 s | 19,1 s |
+> | GCS `enriched/` (`part-20261027T162500Z-p000.parquet`, 9.687 bytes) | **175,1 s** (publicación) | 900 s | 175,1 s |
+> | S3 `raw/origin=stream/` (mismos bytes que GCS; exportador 85,7 s) | **78,6 s** (GCS) | 300 s | 253,7 s |
+> | `ta_trusted.posts` (corrida `wr_126df5…` arrancada por la prueba) | **149,1 s** (S3) | 900 s | 402,8 s |
+> | `ta_curated.fact_posts` | **62,4 s** (Trusted) | 600 s | **465,2 s** |
+>
+> E7: sin `user_id` ni `handle` (columnas ni `payload`) en las 5 etapas y el mismo `user_hash`; E8: informe `evidencia/smoke_e2e_5_4.{json,md}` sin datos personales. **O OK (5):** Dataflow drenado en ~3,5 min (encendido ≈ 0,26 h ≈ 0,07 USD), exportador `PAUSED`, simulador apagado, horario `ENABLED`, sin `ta-verify-*`. `status` OK (3). **Comprobado solo en la nube:** el *seek* dejó las suscripciones sin atraso (el calentamiento llegó en 229 s, no detrás de ~73.600 mensajes); una ejecución manual del exportador toma el archivo nuevo; el drenado con NLP terminó solo. **Sigue sin comprobar:** si esa ejecución exportó además archivos viejos de `enriched/` (el informe no lo registra; `export_done` en los logs del job lo diría). Efecto en el lake (esperado, sin contar): +1 fila en Trusted y Curated (el centinela) y +1 centinela `ta-verify@2.1` en Raw.
 
 #### 3.26.1 Interfaces del lote (cómo usar cada pieza sin leer el código)
 
@@ -3150,7 +3163,7 @@ infra/
 │
 ├── docs/
 │   ├── ARCHITECTURE.md                    <- este archivo: arquitectura y contratos (versión vigente)
-│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.45)
+│   ├── CHANGELOG.md                       <- historial de versiones (v2.2 → v2.46)
 │   ├── PLAN.md                            <- fases y lotes, matriz HU y estado del proyecto
 │   ├── HU.md                              <- historias de usuario (HU-001 a HU-048)
 │   ├── ACTIVE_SERVICES.md                 <- encender, comprobar y apagar lo que cobra (on.py, off.py, status.py)

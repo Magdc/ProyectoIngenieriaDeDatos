@@ -1,0 +1,114 @@
+{
+  "run_id": "smoke-20261027T162356Z",
+  "source": "reddit",
+  "seq": 1793118236,
+  "started_at": "2026-10-27T16:23:56.564Z",
+  "objectives_s": {
+    "bigquery": 60,
+    "gcs_enriched": 900,
+    "s3_raw": 300,
+    "trusted": 900,
+    "curated": 600
+  },
+  "trigger": true,
+  "dataflow": [
+    "ta-stream-dev"
+  ],
+  "warmup": {
+    "event_id": "fc0bf4e6-ff33-5a5d-bb07-2defa864126a",
+    "generator": "ta-verify@2.1",
+    "ok": true,
+    "latency_s": 229.1
+  },
+  "event_id": "4e2712e1-0004-56bc-8606-209103050e96",
+  "generator": "comment-gen@1.0",
+  "event_time": "2026-10-27T16:27:45.812Z",
+  "published_at": "2026-10-27T16:27:49.268Z",
+  "stages": [
+    {
+      "stage": "bigquery",
+      "from": "published",
+      "objective_s": 60,
+      "available_at": "2026-10-27T16:28:08.324Z",
+      "detected_at": "2026-10-27T16:28:08.324Z",
+      "latency_s": 19.1,
+      "since_publish_s": 19.1,
+      "ok": true,
+      "detail": "1 fila(s) en posts_enriched",
+      "rows": 1
+    },
+    {
+      "stage": "gcs_enriched",
+      "from": "published",
+      "objective_s": 900,
+      "available_at": "2026-10-27T16:30:44.393Z",
+      "detected_at": "2026-10-27T16:30:57.507Z",
+      "latency_s": 175.1,
+      "since_publish_s": 175.1,
+      "ok": true,
+      "detail": "enriched/source=reddit/dt=2026-10-27/hr=16/part-20261027T162500Z-p000.parquet",
+      "object": "enriched/source=reddit/dt=2026-10-27/hr=16/part-20261027T162500Z-p000.parquet",
+      "bytes": 9687
+    },
+    {
+      "stage": "s3_raw",
+      "from": "gcs_enriched",
+      "objective_s": 300,
+      "available_at": "2026-10-27T16:32:03.000Z",
+      "detected_at": "2026-10-27T16:32:23.781Z",
+      "latency_s": 78.6,
+      "since_publish_s": 253.7,
+      "ok": true,
+      "detail": "raw/origin=stream/source=reddit/dt=2026-10-27/hr=16/part-20261027T162500Z-p000.parquet (mismos bytes que enriched/)",
+      "object": "raw/origin=stream/source=reddit/dt=2026-10-27/hr=16/part-20261027T162500Z-p000.parquet",
+      "same_bytes_as_gcs": true,
+      "exporter_runs": [
+        {
+          "ok": true,
+          "seconds": 85.7,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "stage": "trusted",
+      "from": "s3_raw",
+      "objective_s": 900,
+      "available_at": "2026-10-27T16:34:32.081Z",
+      "detected_at": "2026-10-27T16:35:50.065Z",
+      "latency_s": 149.1,
+      "since_publish_s": 402.8,
+      "ok": true,
+      "detail": "ta-job-raw-to-trusted SUCCEEDED; Athena ve la fila",
+      "workflow_run": "wr_126df504ac11674b91c7551edc1b614539ef1e4599ddac010a44998e6657e1e5"
+    },
+    {
+      "stage": "curated",
+      "from": "trusted",
+      "objective_s": 600,
+      "available_at": "2026-10-27T16:35:34.485Z",
+      "detected_at": "2026-10-27T16:35:52.644Z",
+      "latency_s": 62.4,
+      "since_publish_s": 465.2,
+      "ok": true,
+      "detail": "ta-job-trusted-to-curated SUCCEEDED; Athena ve la fila",
+      "workflow_run": "wr_126df504ac11674b91c7551edc1b614539ef1e4599ddac010a44998e6657e1e5"
+    }
+  ],
+  "identity": {
+    "checked": [
+      "bigquery",
+      "curated",
+      "gcs_enriched",
+      "s3_raw",
+      "trusted"
+    ],
+    "problems": {},
+    "same_user_hash": true,
+    "stages_with_user_hash": 5
+  },
+  "total_s": 465.2,
+  "finished_at": "2026-10-27T16:35:52.644Z",
+  "ok": true,
+  "exit_code": 0
+}

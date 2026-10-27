@@ -93,7 +93,7 @@ Criterios de aceptación: lista verificable.
 | HU-034 | Catálogo de datos | 5 · 5.3 | A | Must | 2 | ✅ |
 | HU-035 | Linaje de datos | 5 · 5.3 | A | Must | 2 | ✅ |
 | HU-036 | Cumplimiento normativo y DAMA-DMBOK | 5 · 5.3 | A | Must | 2 | ✅ |
-| HU-048 | Prueba de humo end-to-end | 5 · 5.4 | A | Must | 2 | 🟨 |
+| HU-048 | Prueba de humo end-to-end | 5 · 5.4 | A | Must | 2 | ✅ |
 | **E7 · Serving y alertas** | | | | | | |
 | HU-037 | Dashboard de tendencias y sentimiento | 6 · 6.1 | C | Must | Final | ⬜ |
 | HU-038 | Vista de relaciones | 6 · 6.1 | C | Should | Final | ⬜ |
@@ -754,7 +754,7 @@ Criterios de aceptación: lista verificable.
 - Comprueba que el evento no contiene `handle` ni `user_id` en ningún punto posterior a Dataflow.
 - Los resultados se guardan como evidencia para el informe (HU-044) y el ensayo (HU-045).
 
-**Estado (v2.45, 🟨):** entregado, pendiente de la validación en la nube (`docs/validation/validation-5-4.md`, `scripts/validate_5_4.py`; `ARCHITECTURE.md` §3.26, ADR-30). Por criterio: *emite un evento centinela con `event_id` conocido*: un comentario normal `comment-gen@1.0` con semilla reservada 990048 (decisión del usuario; llega a `fact_posts`), tras un calentamiento `ta-verify@2.1` (L1, E2); *verifica BigQuery (< 1 min), `enriched/`, `raw/origin=stream/` y `ta_curated.fact_posts` en Athena*: E2, E3, E4, E6 (más `ta_trusted.posts`, E5); *latencia por etapa y falla si excede el objetivo*: objetivos de §5.12 (E2–E6); *sin `handle` ni `user_id` después de Dataflow*: E7; *evidencia*: `evidencia/smoke_e2e_5_4.{json,md}` (E8).
+**Estado (v2.46, ✅):** cerrado; validado el 27-oct-2026 sobre `main` = `1f1fedc` (`docs/validation/validation-5-4.md`, `scripts/validate_5_4.py`; `ARCHITECTURE.md` §3.26, ADR-30): centinela `4e2712e1-0004-56bc-8606-209103050e96` en BigQuery a los 19,1 s y en `fact_posts` a los 465,2 s, todas las etapas dentro de su objetivo. Por criterio: *emite un evento centinela con `event_id` conocido*: un comentario normal `comment-gen@1.0` con semilla reservada 990048 (decisión del usuario; llega a `fact_posts`), tras un calentamiento `ta-verify@2.1` (L1, E2); *verifica BigQuery (< 1 min), `enriched/`, `raw/origin=stream/` y `ta_curated.fact_posts` en Athena*: E2, E3, E4, E6 (más `ta_trusted.posts`, E5); *latencia por etapa y falla si excede el objetivo*: objetivos de §5.12 (E2–E6); *sin `handle` ni `user_id` después de Dataflow*: E7; *evidencia*: `evidencia/smoke_e2e_5_4.{json,md}` (E8).
 
 ---
 

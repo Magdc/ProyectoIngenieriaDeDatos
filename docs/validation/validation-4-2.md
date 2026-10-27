@@ -96,7 +96,8 @@ duplicadas 2 + descartadas 0`, E1 `221629 filas · 221629 event_id distintos · 
 | F | D hecho | GCP | 1 corrida del workflow (el job + el marcador del 4.3; ≈ 0,01–0,02 USD) |
 
 **Estado de ahorro del lote:** nada queda encendido. El horario `ta-wf-raw-to-curated-cada-hora` sigue
-`DISABLED` (este lote no lo enciende); Trusted (~67 MB en S3) y los reportes en `quality/` quedan guardados
+`DISABLED` (este lote no lo enciende; *v2.36: tras el cierre, el usuario decidió dejarlo encendido cada hora;
+si vuelve a validar, el `off` de esta guía lo deshabilita: al terminar, `python project/scripts/validate_4_1.py on`*); Trusted (~67 MB en S3) y los reportes en `quality/` quedan guardados
 (centavos al mes).
 
 ---
@@ -282,6 +283,8 @@ de `quality/`. **No** borre `trusted/posts/`: el Lote 4.3 y el cierre del 5.1 lo
 
 ## Después de esta validación
 
+*(Hecho en v2.36: los dos puntos de abajo.)*
+
 - **Cierre del 5.1** (profiling real de Trusted): `python project/scripts/validate_5_1.py trusted` ya encuentra
   objetos en `trusted/posts/` y perfila el Trusted real (esperado: lo mismo que L3).
 - **Cierre del 4.2 (v2.36):** anotar en `ARCHITECTURE.md` §3.21 la versión de pyarrow de Glue (D4), el tiempo y
@@ -289,18 +292,24 @@ de `quality/`. **No** borre `trusted/posts/`: el Lote 4.3 y el cierre del 5.1 lo
 
 ## Cierre
 
-*Pendiente de la validación del maestro.*
+**Cerrado en v2.36** (26-oct-2026, WSL, perfil `default` de la cuenta 648617469176; `main` = `0bc0fbf`). Lo corrió
+el maestro del lote.
 
 | Parte | Resultado |
 |---|---|
-| A · Preflight | |
-| B · Pruebas | |
-| L · Local | (antes de entregar: L1 221.629 escritas en 543 particiones, L2 sin cambios, L3 54/54 reglas) |
-| C · Terraform | |
-| D · Corrida real | |
-| E · Athena | |
-| F · Idempotencia y costo | |
-| `off` / `status` | |
+| A · Preflight | OK (8); A6 horario `DISABLED` y nada en curso |
+| B · Pruebas | OK: B1 90 sin omitidas, B2 30, B3 18, B4 48, B5 52 |
+| L · Local | OK: L1 221.629 escritas en 543 particiones, 26,7 s y 811 MB de pico (Python 3.11); L2 sin cambios; L3 54/54 reglas |
+| C · Terraform | AVISO solo por C0 (cuenta raíz): C2 0 a crear, 2 a cambiar, 0 a destruir; C3 «Apply complete! Resources: 0 added, 2 changed, 0 destroyed.»; C3b sin cambios |
+| D · Corrida real | OK (8): `jr_00bee93d…` `SUCCEEDED`, 92 s a 1 DPU; `glue_job_done` con lectura de S3 de 41,5 s, total 78,1 s, pico 582,2 MB, **Python 3.9.10, pyarrow 7.0.0, boto3 1.21.21**; conciliación 221.637 = 221.629 + 6 + 2 + 0; 65.263 sin NLP conservadas; 1 pareja de copias que difiere en algo más que `process_time`; 543 objetos y 221.629 filas en S3 (facebook 73.890, instagram 73.946, reddit 73.793), `dt` 2026-04-27 → 2026-10-24, 67.447.599 bytes; `_ta_placeholder` 0 → 0; esquema = contrato. El reporte de la corrida suelta quedó como `manual-…` (Glue no pasa `--JOB_RUN_ID` a Python shell) |
+| E · Athena | OK (5): 221.629 filas y `event_id` distintos, duplicados 0 %; por fuente y origen = el reporte; 0 centinelas, 0 `dt` ≠ `DATE(event_time)`, 0 `text_clean` malos, 65.263 sin NLP; DQ-58 221.629 / 221.635 = 0,99997; 62,9 MB en 4 consultas (≈ 0,00031 USD) |
+| F · Idempotencia y costo | OK (8): `wr_a6272beb…` `COMPLETED`, `raw_to_trusted` 90 s → marcador `trusted_to_curated` 18 s; 0 particiones cambiadas, mismos sha256, 543 → 543 objetos, Athena 221.629 → 221.629; propiedades `ta_trusted_*` presentes; F8 ≈ 0,0196 USD por corrida (job 0,011, marcador 0,00046, S3 0,0081) → ≈ 0,47 USD/día y ≈ 14,1 USD/mes con el horario cada hora |
+| `off` / `status` | OK (5) / OK (4): horario `DISABLED`, nada en curso; `trusted/posts/` con 543 objetos y el último reporte |
+
+Después del cierre, **por decisión del usuario el horario quedó encendido cada hora** (`validate_4_1.py on --yes`,
+22:55 UTC). Con el horario encendido, A6 y `status` S1 de este validador dan AVISO (esperado) y su `off` lo
+deshabilita: tras volver a validar, `python project/scripts/validate_4_1.py on`. Cifras también en
+`ARCHITECTURE.md` §3.21 y `CHANGELOG.md` v2.36.
 
 ## Problemas frecuentes
 

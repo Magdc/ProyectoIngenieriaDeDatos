@@ -4,8 +4,8 @@
  "layer": "raw",
  "table": "ta_raw.posts_raw",
  "source_uri": "s3://ta-dev-648617469176-lake/raw/ (caché local)",
- "generated_at": "2026-10-26T15:43:21Z",
- "as_of": "2026-10-26T15:40:24Z",
+ "generated_at": "2026-10-26T22:45:13Z",
+ "as_of": "2026-10-26T22:38:45Z",
  "contract": {
   "columns": [
    "event_id",
@@ -19628,9 +19628,9 @@
   "bucket": "ta-dev-648617469176-lake",
   "prefix": "raw/",
   "cache_root": "/root/.cache/trendanalyzer/quality/s3/ta-dev-648617469176-lake",
-  "started_at": "2026-10-26T15:40:13Z",
-  "finished_at": "2026-10-26T15:40:18Z",
-  "duration_s": 4.8,
+  "started_at": "2026-10-26T22:38:25Z",
+  "finished_at": "2026-10-26T22:38:36Z",
+  "duration_s": 10.6,
   "objects": 13257,
   "bytes": 182734247,
   "to_download": 0,
@@ -21249,8 +21249,8 @@
  ],
  "dq_results_preview": [
   {
-   "run_id": "profiling-raw-20261026T154321Z",
-   "run_ts": "2026-10-26T15:43:21Z",
+   "run_id": "profiling-raw-20261026T224513Z",
+   "run_ts": "2026-10-26T22:45:13Z",
    "layer": "raw",
    "table_name": "ta_raw.posts_raw",
    "suite": "profiling_5_1",
@@ -21265,8 +21265,8 @@
    }
   },
   {
-   "run_id": "profiling-raw-20261026T154321Z",
-   "run_ts": "2026-10-26T15:43:21Z",
+   "run_id": "profiling-raw-20261026T224513Z",
+   "run_ts": "2026-10-26T22:45:13Z",
    "layer": "raw",
    "table_name": "ta_raw.posts_raw",
    "suite": "profiling_5_1",
@@ -21281,8 +21281,8 @@
    }
   },
   {
-   "run_id": "profiling-raw-20261026T154321Z",
-   "run_ts": "2026-10-26T15:43:21Z",
+   "run_id": "profiling-raw-20261026T224513Z",
+   "run_ts": "2026-10-26T22:45:13Z",
    "layer": "raw",
    "table_name": "ta_raw.posts_raw",
    "suite": "profiling_5_1",
@@ -21297,8 +21297,8 @@
    }
   },
   {
-   "run_id": "profiling-raw-20261026T154321Z",
-   "run_ts": "2026-10-26T15:43:21Z",
+   "run_id": "profiling-raw-20261026T224513Z",
+   "run_ts": "2026-10-26T22:45:13Z",
    "layer": "raw",
    "table_name": "ta_raw.posts_raw",
    "suite": "profiling_5_1",
@@ -21313,8 +21313,8 @@
    }
   },
   {
-   "run_id": "profiling-raw-20261026T154321Z",
-   "run_ts": "2026-10-26T15:43:21Z",
+   "run_id": "profiling-raw-20261026T224513Z",
+   "run_ts": "2026-10-26T22:45:13Z",
    "layer": "raw",
    "table_name": "ta_raw.posts_raw",
    "suite": "profiling_5_1",
@@ -21329,8 +21329,8 @@
    }
   },
   {
-   "run_id": "profiling-raw-20261026T154321Z",
-   "run_ts": "2026-10-26T15:43:21Z",
+   "run_id": "profiling-raw-20261026T224513Z",
+   "run_ts": "2026-10-26T22:45:13Z",
    "layer": "raw",
    "table_name": "ta_raw.posts_raw",
    "suite": "profiling_5_1",
@@ -21345,8 +21345,8 @@
    }
   },
   {
-   "run_id": "profiling-raw-20261026T154321Z",
-   "run_ts": "2026-10-26T15:43:21Z",
+   "run_id": "profiling-raw-20261026T224513Z",
+   "run_ts": "2026-10-26T22:45:13Z",
    "layer": "raw",
    "table_name": "ta_raw.posts_raw",
    "suite": "profiling_5_1",
@@ -21361,8 +21361,8 @@
    }
   },
   {
-   "run_id": "profiling-raw-20261026T154321Z",
-   "run_ts": "2026-10-26T15:43:21Z",
+   "run_id": "profiling-raw-20261026T224513Z",
+   "run_ts": "2026-10-26T22:45:13Z",
    "layer": "raw",
    "table_name": "ta_raw.posts_raw",
    "suite": "profiling_5_1",
@@ -21421,5 +21421,5 @@
    "no_cumple": 1
   }
  },
- "duration_s": 176.6
+ "duration_s": 388.0
 }

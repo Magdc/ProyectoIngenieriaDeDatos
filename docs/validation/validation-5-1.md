@@ -135,7 +135,7 @@ python project/scripts/validate_5_1.py trusted
 
 Necesita la parte C (usa la caché y `profiling_raw_5_1.json`). Mira si `s3://…/trusted/posts/` tiene objetos:
 
-**Mientras no exista Trusted (hoy, hasta el Lote 4.2):**
+**Mientras no exista Trusted (hasta el Lote 4.2; desde v2.36 Trusted existe y D perfila el real):**
 
 | Paso | Qué hace | Esperado |
 |---|---|---|
@@ -231,7 +231,18 @@ corrida sobre un commit de `main`.
 24 + 18 + 23, C 9 OK con 221.637 filas en 177 s, D en AVISO solo por D1) y, tras fusionar en `main`, A y B
 de nuevo en OK. Sigue 🟨 hasta el profiling real de Trusted (pasos de arriba, tras el Lote 4.2).
 
-Cifras y hallazgos en `ARCHITECTURE.md` §3.20 y `CHANGELOG.md` (v2.33 y v2.34).
+**Cerrado en v2.36** (26-oct-2026, WSL, perfil `default`; `validate_5_1.py all` sobre `main` = `0bc0fbf`, código 0),
+tras la validación del Lote 4.2. Lo corrió el maestro.
+
+| Parte | Resultado |
+|---|---|
+| A · Preflight | OK (7): Python 3.11.17, pyarrow 25.0.1, 18 archivos del lote, capas = `contracts/athena`, caché fuera del repo, nada encendido |
+| B · Pruebas | OK: B1 165 sin omitidas, B2 24, B3 18, B4 23 |
+| C · Raw | OK (9): 13.257 objetos ya en caché, 0 por bajar; 221.637 filas perfiladas en 388 s; completitud y anonimización 1,0; 55 de 56 reglas de Raw (DQ-63 no cumple en Raw por los 6 centinelas, esperado); evidencia sin datos personales; C9 §5.10 = código (63 reglas) |
+| D · Trusted | **OK (5) con el Trusted real**: D1 543 objetos; D2 `sync` (67,4 MB); D3 profiling en 534 s → `profiling_trusted_5_1.{json,md}`; D4 221.629 filas, `dt = DATE(event_time)` en todas, unicidad 1,0, DQ-58 cumple (221.629 / 221.635), `text_clean` perfilado; D6 evidencia sin datos personales. En el informe: completitud, unicidad y anonimización 1,0, duplicados 0; anomalías 0 de error, 1 aviso (`nlp_ausente`, las 65.263 filas conservadas por decisión del usuario), 14 informativas; **54/54 reglas de Trusted** |
+| Apagado | Nada que apagar |
+
+Cifras y hallazgos en `ARCHITECTURE.md` §3.20 y `CHANGELOG.md` (v2.33, v2.34 y v2.36).
 
 ## Problemas frecuentes
 

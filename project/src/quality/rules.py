@@ -102,7 +102,8 @@ RULES: tuple[Rule, ...] = (
          sql_fail=("process_time >= from_iso8601_timestamp('" + NLP_SINCE_TEXT + "') AND (sentiment_label IS NULL OR sentiment_score IS NULL "
                    "OR emotion_label IS NULL OR emotion_score IS NULL OR nlp_model_version IS NULL)"),
          why="Criterio de verify_enriched --expect-nlp (§3.15). Medido: 65.264 filas del stream procesadas antes de "
-             "NLP_SINCE (jobs sin NLP) tienen el NLP nulo; después, 0"),
+             "NLP_SINCE (jobs sin NLP) tienen el NLP nulo; después, 0. Trusted las conserva con NLP nulo (65.263: la otra "
+             "era un centinela), decisión del usuario (Lote 4.2, §3.21)"),
     # --- unicidad y duplicados ---
     Rule("DQ-14", RAW, "event_id", "metric:unicidad", "expect_column_proportion_of_unique_values_to_be_between", {"min_value": 0.99},
          None, "≥ 99 %", "unicidad", "error", sql_fail=None, why="KPI de §5.10 en Raw (antes de deduplicar)"),
@@ -204,9 +205,11 @@ RULES: tuple[Rule, ...] = (
     Rule("DQ-55", TRUSTED, "source", "not_null:source_partition", "expect_column_values_to_not_be_null", {}, 1.0, "100 %", "completitud",
          "error", sql_fail=_nn("source")),
     Rule("DQ-56", TRUSTED, "text_clean", "not_null:text_clean", "expect_column_values_to_not_be_null", {}, 1.0, "100 %", "completitud",
-         "error", sql_fail=_nn("text_clean"), why="A confirmar con el Lote 4.2 (qué hace la limpieza)"),
+         "error", sql_fail=_nn("text_clean"),
+         why="text_clean = regla text-clean@1 del Lote 4.2 (§5.7): nunca es nulo si text no lo es"),
     Rule("DQ-57", TRUSTED, "text_clean", "text_clean:not_longer", "custom (SQL)", {}, 1.0, "100 %", "otro", "warning",
-         sql_fail="length(text_clean) > length(text)", why="A confirmar con el Lote 4.2"),
+         sql_fail="length(text_clean) > length(text)",
+         why="text-clean@1 (§5.7) solo quita caracteres o los reemplaza por un espacio: nunca alarga el texto"),
     Rule("DQ-58", TRUSTED, "*", "metric:rows_vs_raw", "custom (SQL): filas de Trusted frente a event_id distintos de Raw", {}, None,
          "entre 99 % y 100 % de los event_id distintos de Raw", "duplicados", "error",
          why="Trusted une ambos orígenes sin duplicar; puede descartar filas que no cumplan reglas (§5.7). Comparar la misma foto de Raw"),
@@ -226,7 +229,8 @@ RULES: tuple[Rule, ...] = (
          why="Vigilancia; la precisión formal (matriz de confusión) es HU-033"),
     Rule("DQ-63", BOTH, "generator", "set:generator", "expect_column_values_to_be_in_set", {"value_set": ["comment-gen@1.0"]}, 1.0,
          "100 %", "otro", "warning", sql_fail="generator <> 'comment-gen@1.0'",
-         why="Medido: 6 filas de ta-verify@2.1 (centinela de verify_streaming, §3.13) en Raw stream; Trusted debería excluirlas (a confirmar con el 4.2)"),
+         why="Medido: 6 filas de ta-verify@2.1 (centinela de verify_streaming, §3.13) en Raw stream; el Lote 4.2 descarta todo "
+             "generator ta-verify@* en Trusted (decisión del usuario, §3.21)"),
 )
 
 RULES_BY_ID: dict[str, Rule] = {r.id: r for r in RULES}

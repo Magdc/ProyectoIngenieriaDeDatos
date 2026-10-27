@@ -148,8 +148,8 @@
     "status": {
       "title": "Estado del lakehouse y de Trusted (solo lectura)",
       "status": "OK",
-      "started_at": "2026-10-26T18:58:31.106166+00:00",
-      "finished_at": "2026-10-26T18:58:39.557661+00:00",
+      "started_at": "2026-10-26T22:37:38.185385+00:00",
+      "finished_at": "2026-10-26T22:37:51.958935+00:00",
       "steps": [
         {
           "id": "S1",
@@ -169,7 +169,7 @@
           "id": "S3",
           "title": "Trusted y su último reporte",
           "status": "OK",
-          "detail": "trusted/posts/: 0 objetos · sin reporte en quality/_latest/raw_to_trusted.json (el job todavía no corrió)",
+          "detail": "trusted/posts/: 543 objetos · último reporte wr_a6272beb3a0df4fab11b21b9a17d311bd0c0c637fa13aba5dc1306817aa42795 (2026-10-26T22:34:56.672Z): 221629 filas, 543 particiones",
           "data": {}
         },
         {
@@ -184,8 +184,8 @@
     "C": {
       "title": "Terraform (script y capacidad de ta-job-raw-to-trusted)",
       "status": "AVISO",
-      "started_at": "2026-10-26T19:07:25.600825+00:00",
-      "finished_at": "2026-10-26T19:08:42.886668+00:00",
+      "started_at": "2026-10-26T22:22:22.755877+00:00",
+      "finished_at": "2026-10-26T22:26:02.497503+00:00",
       "steps": [
         {
           "id": "C0",
@@ -243,16 +243,22 @@
         {
           "id": "C3",
           "title": "apply",
-          "status": "AVISO",
-          "detail": "sin --apply: no se aplicó (repita con --apply)",
+          "status": "OK",
+          "detail": "lake_bucket_arn = \"arn:aws:s3:::ta-dev-648617469176-lake\"\nlakehouse_schedule_name = \"ta-wf-raw-to-curated-cada-hora\"\nlakehouse_scheduler_role_arn = \"arn:aws:iam::648617469176:role/ta-lakehouse-scheduler-role\"\nquicksight_role_arn = \"arn:aws:iam::648617469176:role/ta-quicksight-role\"",
           "data": {}
         },
         {
           "id": "C3b",
           "title": "plan tras aplicar (sin deriva)",
-          "status": "OMITIDO",
-          "detail": "pendiente del apply",
-          "data": {}
+          "status": "OK",
+          "detail": "No changes",
+          "data": {
+            "create": [],
+            "update": [],
+            "delete": [],
+            "replace": [],
+            "diffs": {}
+          }
         }
       ]
     },
@@ -450,7 +456,686 @@
           }
         }
       ]
+    },
+    "D": {
+      "title": "Corrida real de ta-job-raw-to-trusted y conciliación Raw → Trusted",
+      "status": "OK",
+      "started_at": "2026-10-26T22:26:17.831454+00:00",
+      "finished_at": "2026-10-26T22:31:07.797457+00:00",
+      "steps": [
+        {
+          "id": "D1",
+          "title": "ta-job-raw-to-trusted: Python shell 3.9, 1 DPU, script de S3 = repo",
+          "status": "OK",
+          "detail": "pythonshell 3.9 · 1 DPU (16 GB) · library-set analytics · script de S3 idéntico al repo",
+          "data": {}
+        },
+        {
+          "id": "D2",
+          "title": "Raw antes de la corrida",
+          "status": "OK",
+          "detail": "stream 1155 objetos y 171637 filas · histórico 12102 objetos y 50000 filas · total 221637",
+          "data": {
+            "raw": {
+              "stream": {
+                "objects": 1155,
+                "rows": 171637,
+                "by_source": {
+                  "facebook": {
+                    "objects": 385,
+                    "rows": 57224
+                  },
+                  "instagram": {
+                    "objects": 385,
+                    "rows": 57281
+                  },
+                  "reddit": {
+                    "objects": 385,
+                    "rows": 57132
+                  }
+                },
+                "error_count": 0,
+                "seconds": 15.1
+              },
+              "historical": {
+                "objects": 12102,
+                "rows": 50000,
+                "by_source": {
+                  "facebook": {
+                    "objects": 4030,
+                    "rows": 16667
+                  },
+                  "instagram": {
+                    "objects": 4031,
+                    "rows": 16666
+                  },
+                  "reddit": {
+                    "objects": 4041,
+                    "rows": 16667
+                  }
+                },
+                "error_count": 0,
+                "seconds": 139.2
+              }
+            },
+            "placeholders_before": 0
+          }
+        },
+        {
+          "id": "D3",
+          "title": "corrida del job",
+          "status": "OK",
+          "detail": "jr_00bee93d0ecd7f5b7ca596bfc9690acb74a647c3b55a0654c9e76f3497b46dc5: SUCCEEDED · 92 s de ejecución · 1.0 DPU",
+          "data": {
+            "job_run_id": "jr_00bee93d0ecd7f5b7ca596bfc9690acb74a647c3b55a0654c9e76f3497b46dc5",
+            "execution_s": 92,
+            "max_capacity": 1.0,
+            "state": "SUCCEEDED"
+          }
+        },
+        {
+          "id": "D4",
+          "title": "línea glue_job_done en /aws-glue/python-jobs/output",
+          "status": "OK",
+          "detail": "leídas 221637 · escritas 221629 · 543 particiones · lectura 41.5 s · total 78.1 s · pico de memoria 582.2 MB · Python 3.9.10, pyarrow 7.0.0, boto3 1.21.21",
+          "data": {
+            "done": {
+              "bytes_written": 67447599,
+              "conciliation_ok": true,
+              "dry_run": false,
+              "dt_max": "2026-10-24",
+              "dt_min": "2026-04-27",
+              "duplicate_groups_with_other_differences": 1,
+              "duplicates_removed": 2,
+              "duration_s": 78.1,
+              "environment": {
+                "boto3": "1.21.21",
+                "botocore": "1.24.21",
+                "pyarrow": "7.0.0",
+                "python": "3.9.10"
+              },
+              "event": "glue_job_done",
+              "input_by_origin": {
+                "historical": {
+                  "bytes": 130868781,
+                  "objects": 12102,
+                  "rows": 50000
+                },
+                "stream": {
+                  "bytes": 51865466,
+                  "objects": 1155,
+                  "rows": 171637
+                }
+              },
+              "input_objects": 13257,
+              "job": "ta-job-raw-to-trusted",
+              "lote": "4.2",
+              "nlp_missing": 65263,
+              "nlp_missing_since_nlp_since": 0,
+              "objects_deleted": 0,
+              "partitions": 543,
+              "partitions_changed": 543,
+              "peak_rss_mb": 582.2,
+              "read_seconds": 41.5,
+              "rejected": 0,
+              "report": "quality/2026-10-26/raw_to_trusted/manual-20261026T222916Z-9347df5f.json",
+              "rows_read": 221637,
+              "rows_written": 221629,
+              "rows_written_by_origin": {
+                "historical": 50000,
+                "stream": 171629
+              },
+              "run_id": "manual-20261026T222916Z-9347df5f",
+              "sentinels": 6,
+              "skipped_objects": 0,
+              "text_clean_empty": 0,
+              "time": "2026-10-26T22:30:34.499Z",
+              "transform_seconds": 31.2,
+              "version": "raw-to-trusted@1.0",
+              "workflow_run_id": null
+            }
+          }
+        },
+        {
+          "id": "D5",
+          "title": "reporte de la corrida en quality/",
+          "status": "OK",
+          "detail": "quality/2026-10-26/raw_to_trusted/manual-20261026T222916Z-9347df5f.json y quality/_latest/raw_to_trusted.json (corrida manual-20261026T222916Z-9347df5f, esquema ta-raw-to-trusted-report@1)",
+          "data": {
+            "report": {
+              "bucket": "ta-dev-648617469176-lake",
+              "conciliation": {
+                "formula": "rows_read = rows_written + rejected + sentinels + duplicates_removed",
+                "ok": true
+              },
+              "counts": {
+                "duplicates": {
+                  "event_ids": 2,
+                  "groups_with_other_differences": 1,
+                  "rows_removed": 2
+                },
+                "nlp_missing": {
+                  "by_origin": {
+                    "stream": 65263
+                  },
+                  "partial_rows": 0,
+                  "rows": 65263,
+                  "since_nlp_since": 0
+                },
+                "rejected": {
+                  "dt_before_projection": 0,
+                  "invalid_source": 0,
+                  "null_event_id": 0,
+                  "null_event_time": 0,
+                  "total": 0
+                },
+                "rows_read": 221637,
+                "rows_written": 221629,
+                "rows_written_by_origin": {
+                  "historical": 50000,
+                  "stream": 171629
+                },
+                "sentinels": {
+                  "event_ids": 6,
+                  "generators": {
+                    "ta-verify@2.1": 6
+                  },
+                  "rows": 6
+                },
+                "text_clean": {
+                  "empty": 0,
+                  "null": 0
+                }
+              },
+              "dry_run": false,
+              "duration_s": 78.1,
+              "environment": {
+                "boto3": "1.21.21",
+                "botocore": "1.24.21",
+                "pyarrow": "7.0.0",
+                "python": "3.9.10"
+              },
+              "finished_at": "2026-10-26T22:30:34.400Z",
+              "input": {
+                "by_origin": {
+                  "historical": {
+                    "bytes": 130868781,
+                    "objects": 12102,
+                    "rows": 50000
+                  },
+                  "stream": {
+                    "bytes": 51865466,
+                    "objects": 1155,
+                    "rows": 171637
+                  }
+                },
+                "bytes": 182734247,
+                "objects": 13257,
+                "prefixes": [
+                  "raw/origin=stream/",
+                  "raw/origin=historical/"
+                ],
+                "read_seconds": 41.5,
+                "skipped_examples": [],
+                "skipped_objects": 0
+              },
+              "job": "ta-job-raw-to-trusted",
+              "job_run_id": null,
+              "peak_rss_mb": 582.2,
+              "previous_report": null,
+              "report_key": "quality/2026-10-26/raw_to_trusted/manual-20261026T222916Z-9347df5f.json",
+              "run_id": "manual-20261026T222916Z-9347df5f",
+              "schema": "ta-raw-to-trusted-report@1",
+              "started_at": "2026-10-26T22:29:16.336Z",
+              "text_clean_rule": "text-clean@1",
+              "transform_seconds": 31.2,
+              "version": "raw-to-trusted@1.0",
+              "workflow": null,
+              "workflow_run_id": null,
+              "output": {
+                "by_source": {
+                  "facebook": {
+                    "partitions": 181,
+                    "rows": 73890
+                  },
+                  "instagram": {
+                    "partitions": 181,
+                    "rows": 73946
+                  },
+                  "reddit": {
+                    "partitions": 181,
+                    "rows": 73793
+                  }
+                },
+                "bytes": 67447599,
+                "dt_max": "2026-10-24",
+                "dt_min": "2026-04-27",
+                "objects_deleted": 0,
+                "objects_written": 543,
+                "partitions": 543,
+                "partitions_changed": 543,
+                "partitions_removed": 0,
+                "prefix": "trusted/posts/",
+                "stale_objects": 0
+              }
+            }
+          }
+        },
+        {
+          "id": "D6",
+          "title": "conciliación Raw → Trusted",
+          "status": "OK",
+          "detail": "Raw 221637 (pies de S3) = leídas 221637 = escritas 221629 + centinelas 6 + duplicadas 2 + descartadas 0\nsin NLP conservadas 65263 (desde NLP_SINCE: 0) · copias que difieren en algo más que process_time: 1",
+          "data": {
+            "rows_read": 221637,
+            "rejected": 0,
+            "sentinels": 6,
+            "duplicates": 2,
+            "rows_written": 221629
+          }
+        },
+        {
+          "id": "D7",
+          "title": "trusted/posts/ en S3 (filas, layout, sin marcas nuevas)",
+          "status": "OK",
+          "detail": "543 objetos (543 particiones en el reporte), 221629 filas en los pies · por fuente {'facebook': 73890, 'instagram': 73946, 'reddit': 73793} · dt 2026-04-27 → 2026-10-24 · 67447599 bytes · trusted/_ta_placeholder/: 0 → 0 objetos",
+          "data": {
+            "s3": {
+              "objects": 543,
+              "rows": 221629,
+              "by_source": {
+                "facebook": {
+                  "objects": 181,
+                  "rows": 73890
+                },
+                "instagram": {
+                  "objects": 181,
+                  "rows": 73946
+                },
+                "reddit": {
+                  "objects": 181,
+                  "rows": 73793
+                }
+              },
+              "error_count": 0,
+              "seconds": 7.0
+            },
+            "layout": []
+          }
+        },
+        {
+          "id": "D8",
+          "title": "esquema de un Parquet de Trusted = contrato",
+          "status": "OK",
+          "detail": "trusted/posts/source=instagram/dt=2026-05-06/part-00000.parquet: 24 columnas en el orden de contracts/athena/posts.sql, timestamp[ms, UTC], int64, list<string>, text_clean (60 filas)",
+          "data": {}
+        }
+      ]
+    },
+    "E": {
+      "title": "Athena: ta_trusted.posts",
+      "status": "OK",
+      "started_at": "2026-10-26T22:31:08.444307+00:00",
+      "finished_at": "2026-10-26T22:32:35.682654+00:00",
+      "steps": [
+        {
+          "id": "E1",
+          "title": "duplicados < 1 % (KPI de §5.10, DQ-48/DQ-49)",
+          "status": "OK",
+          "detail": "221629 filas · 221629 event_id distintos · duplicados 0.0000% · el reporte del job dice 221629 escritas",
+          "data": {
+            "rows": 221629,
+            "event_ids": 221629,
+            "duplicates_ratio": 0.0
+          }
+        },
+        {
+          "id": "E2",
+          "title": "por fuente y origen (particiones visibles)",
+          "status": "OK",
+          "detail": "facebook/historical: 16667 filas en 180 días (2026-04-27 → 2026-10-23); facebook/stream: 57223 filas en 4 días (2026-10-21 → 2026-10-24); instagram/historical: 16666 filas en 180 días (2026-04-27 → 2026-10-23); instagram/stream: 57280 filas en 4 días (2026-10-21 → 2026-10-24); reddit/historical: 16667 filas en 180 días (2026-04-27 → 2026-10-23); reddit/stream: 57126 filas en 4 días (2026-10-21 → 2026-10-24)",
+          "data": {
+            "rows": [
+              {
+                "source": "facebook",
+                "origin": "historical",
+                "filas": "16667",
+                "dts": "180",
+                "desde": "2026-04-27",
+                "hasta": "2026-10-23"
+              },
+              {
+                "source": "facebook",
+                "origin": "stream",
+                "filas": "57223",
+                "dts": "4",
+                "desde": "2026-10-21",
+                "hasta": "2026-10-24"
+              },
+              {
+                "source": "instagram",
+                "origin": "historical",
+                "filas": "16666",
+                "dts": "180",
+                "desde": "2026-04-27",
+                "hasta": "2026-10-23"
+              },
+              {
+                "source": "instagram",
+                "origin": "stream",
+                "filas": "57280",
+                "dts": "4",
+                "desde": "2026-10-21",
+                "hasta": "2026-10-24"
+              },
+              {
+                "source": "reddit",
+                "origin": "historical",
+                "filas": "16667",
+                "dts": "180",
+                "desde": "2026-04-27",
+                "hasta": "2026-10-23"
+              },
+              {
+                "source": "reddit",
+                "origin": "stream",
+                "filas": "57126",
+                "dts": "4",
+                "desde": "2026-10-21",
+                "hasta": "2026-10-24"
+              }
+            ]
+          }
+        },
+        {
+          "id": "E3",
+          "title": "reglas de Trusted (DQ-13, DQ-54, DQ-56, DQ-57, DQ-63, claves)",
+          "status": "OK",
+          "detail": "0 centinelas · 0 dt ≠ DATE(event_time) · 0 text_clean nulos o más largos que text · 0 claves nulas · 65263 filas sin NLP conservadas (= reporte; 0 desde 2026-10-22T23:00:00Z)",
+          "data": {
+            "counts": {
+              "centinelas": 0,
+              "dt_distinto": 0,
+              "text_clean_nulo": 0,
+              "text_clean_mas_largo": 0,
+              "clave_nula": 0,
+              "sin_nlp": 65263,
+              "sin_nlp_desde": 0
+            }
+          }
+        },
+        {
+          "id": "E4",
+          "title": "filas de Trusted / event_id distintos de Raw (DQ-58: 0,99–1)",
+          "status": "OK",
+          "detail": "221629 / 221635 = 0.99997",
+          "data": {
+            "ratio": 0.9999729284634647,
+            "raw_distinct": 221635
+          }
+        },
+        {
+          "id": "E5",
+          "title": "bytes escaneados ≤ límite del workgroup",
+          "status": "OK",
+          "detail": "62.9 MB en 4 consultas (≈ 0.00031 USD; mínimo 10 MB por consulta)",
+          "data": {
+            "scanned_bytes": 62874374
+          }
+        }
+      ]
+    },
+    "F": {
+      "title": "Segunda corrida dentro del workflow: idempotencia y costo",
+      "status": "OK",
+      "started_at": "2026-10-26T22:32:36.117835+00:00",
+      "finished_at": "2026-10-26T22:36:46.292783+00:00",
+      "steps": [
+        {
+          "id": "F1",
+          "title": "Trusted antes de la segunda corrida",
+          "status": "OK",
+          "detail": "543 objetos · reporte manual-20261026T222916Z-9347df5f · 221629 filas en Athena",
+          "data": {
+            "objects": 543,
+            "rows": 221629
+          }
+        },
+        {
+          "id": "F2",
+          "title": "corrida del workflow",
+          "status": "OK",
+          "detail": "wr_a6272beb3a0df4fab11b21b9a17d311bd0c0c637fa13aba5dc1306817aa42795: COMPLETED · ta-job-raw-to-trusted SUCCEEDED (90 s) → ta-job-trusted-to-curated SUCCEEDED (18 s; marcador de posición hasta el 4.3)",
+          "data": {
+            "run_id": "wr_a6272beb3a0df4fab11b21b9a17d311bd0c0c637fa13aba5dc1306817aa42795",
+            "job_runs": {
+              "ta-job-raw-to-trusted": "jr_b55aafe44800792a268d054d5cfda62a390478a0fbd7407d8c8378d943e7f90a",
+              "ta-job-trusted-to-curated": "jr_2a673a946bc09f44c8e11c1e954a0302399a60844fcbb12001566500d6088c1e"
+            },
+            "durations": [
+              90,
+              18
+            ]
+          }
+        },
+        {
+          "id": "F3",
+          "title": "reporte de la segunda corrida: nada cambió",
+          "status": "OK",
+          "detail": "corrida wr_a6272beb3a0df4fab11b21b9a17d311bd0c0c637fa13aba5dc1306817aa42795 · particiones cambiadas 0 · borradas 0 · mismos sha256 que la corrida anterior en 543 archivos · escritas 221629",
+          "data": {
+            "report": {
+              "bucket": "ta-dev-648617469176-lake",
+              "conciliation": {
+                "formula": "rows_read = rows_written + rejected + sentinels + duplicates_removed",
+                "ok": true
+              },
+              "counts": {
+                "duplicates": {
+                  "event_ids": 2,
+                  "groups_with_other_differences": 1,
+                  "rows_removed": 2
+                },
+                "nlp_missing": {
+                  "by_origin": {
+                    "stream": 65263
+                  },
+                  "partial_rows": 0,
+                  "rows": 65263,
+                  "since_nlp_since": 0
+                },
+                "rejected": {
+                  "dt_before_projection": 0,
+                  "invalid_source": 0,
+                  "null_event_id": 0,
+                  "null_event_time": 0,
+                  "total": 0
+                },
+                "rows_read": 221637,
+                "rows_written": 221629,
+                "rows_written_by_origin": {
+                  "historical": 50000,
+                  "stream": 171629
+                },
+                "sentinels": {
+                  "event_ids": 6,
+                  "generators": {
+                    "ta-verify@2.1": 6
+                  },
+                  "rows": 6
+                },
+                "text_clean": {
+                  "empty": 0,
+                  "null": 0
+                }
+              },
+              "dry_run": false,
+              "duration_s": 78.6,
+              "environment": {
+                "boto3": "1.21.21",
+                "botocore": "1.24.21",
+                "pyarrow": "7.0.0",
+                "python": "3.9.10"
+              },
+              "finished_at": "2026-10-26T22:34:56.672Z",
+              "input": {
+                "by_origin": {
+                  "historical": {
+                    "bytes": 130868781,
+                    "objects": 12102,
+                    "rows": 50000
+                  },
+                  "stream": {
+                    "bytes": 51865466,
+                    "objects": 1155,
+                    "rows": 171637
+                  }
+                },
+                "bytes": 182734247,
+                "objects": 13257,
+                "prefixes": [
+                  "raw/origin=stream/",
+                  "raw/origin=historical/"
+                ],
+                "read_seconds": 43.3,
+                "skipped_examples": [],
+                "skipped_objects": 0
+              },
+              "job": "ta-job-raw-to-trusted",
+              "job_run_id": null,
+              "peak_rss_mb": 577.7,
+              "previous_report": "manual-20261026T222916Z-9347df5f",
+              "report_key": "quality/2026-10-26/raw_to_trusted/wr_a6272beb3a0df4fab11b21b9a17d311bd0c0c637fa13aba5dc1306817aa42795.json",
+              "run_id": "wr_a6272beb3a0df4fab11b21b9a17d311bd0c0c637fa13aba5dc1306817aa42795",
+              "schema": "ta-raw-to-trusted-report@1",
+              "started_at": "2026-10-26T22:33:38.100Z",
+              "text_clean_rule": "text-clean@1",
+              "transform_seconds": 31.5,
+              "version": "raw-to-trusted@1.0",
+              "workflow": "ta-wf-raw-to-curated",
+              "workflow_run_id": "wr_a6272beb3a0df4fab11b21b9a17d311bd0c0c637fa13aba5dc1306817aa42795",
+              "output": {
+                "by_source": {
+                  "facebook": {
+                    "partitions": 181,
+                    "rows": 73890
+                  },
+                  "instagram": {
+                    "partitions": 181,
+                    "rows": 73946
+                  },
+                  "reddit": {
+                    "partitions": 181,
+                    "rows": 73793
+                  }
+                },
+                "bytes": 67447599,
+                "dt_max": "2026-10-24",
+                "dt_min": "2026-04-27",
+                "objects_deleted": 0,
+                "objects_written": 543,
+                "partitions": 543,
+                "partitions_changed": 0,
+                "partitions_removed": 0,
+                "prefix": "trusted/posts/",
+                "stale_objects": 0
+              }
+            }
+          }
+        },
+        {
+          "id": "F4",
+          "title": "mismos objetos y tamaños en trusted/posts/",
+          "status": "OK",
+          "detail": "543 → 543 objetos",
+          "data": {}
+        },
+        {
+          "id": "F5",
+          "title": "Athena: mismas filas, sin duplicar",
+          "status": "OK",
+          "detail": "221629 → 221629 filas · 221629 event_id distintos",
+          "data": {}
+        },
+        {
+          "id": "F6",
+          "title": "propiedades de la corrida para el 4.3",
+          "status": "OK",
+          "detail": "ta_trusted_report = quality/2026-10-26/raw_to_trusted/wr_a6272beb3a0df4fab11b21b9a17d311bd0c0c637fa13aba5dc1306817aa42795.json · ta_trusted_rows = 221629 · ta_trusted_partitions_changed = 0",
+          "data": {
+            "properties": {
+              "ta_validacion": "4.2",
+              "ta_trusted_report": "quality/2026-10-26/raw_to_trusted/wr_a6272beb3a0df4fab11b21b9a17d311bd0c0c637fa13aba5dc1306817aa42795.json",
+              "ta_trusted_partitions_changed": "0",
+              "ta_trusted_rows": "221629"
+            }
+          }
+        },
+        {
+          "id": "F7",
+          "title": "limpieza y estado de ahorro",
+          "status": "OK",
+          "detail": "marcas del marcador de posición borradas: 1 · corridas en curso: ninguna · horario DISABLED",
+          "data": {}
+        },
+        {
+          "id": "F8",
+          "title": "costo con lo medido",
+          "status": "OK",
+          "detail": "ta-job-raw-to-trusted: 90 s × 1 DPU × 0.44 USD/DPU-h (mínimo 60 s) ≈ 0.01100 USD · ta-job-trusted-to-curated ≈ 0.00046 · S3 (≈ 13257 GET y 543 PUT) ≈ 0.00811 → ≈ 0.0196 USD por corrida del workflow; con el horario encendido ≈ 0.470 USD/día (≈ 14.09 USD/mes; KMS con bucket key y logs aparte, sin comprobar en la factura)",
+          "data": {
+            "usd_per_run": 0.01957,
+            "usd_per_day": 0.4696,
+            "glue_usd": 0.011,
+            "s3_usd": 0.00811,
+            "execution_s": 90
+          }
+        }
+      ]
+    },
+    "off": {
+      "title": "Apagado (estado de ahorro del lakehouse)",
+      "status": "OK",
+      "started_at": "2026-10-26T22:37:01.037642+00:00",
+      "finished_at": "2026-10-26T22:37:37.654188+00:00",
+      "steps": [
+        {
+          "id": "O1",
+          "title": "deshabilitar el horario",
+          "status": "OK",
+          "detail": "estado DISABLED",
+          "data": {}
+        },
+        {
+          "id": "O2",
+          "title": "corridas y job runs",
+          "status": "OK",
+          "detail": "nada en curso",
+          "data": {}
+        },
+        {
+          "id": "O3",
+          "title": "horarios de prueba de F8",
+          "status": "OK",
+          "detail": "ninguno",
+          "data": {}
+        },
+        {
+          "id": "O4",
+          "title": "marcas de los marcadores de posición",
+          "status": "OK",
+          "detail": "0 borradas",
+          "data": {}
+        },
+        {
+          "id": "O5",
+          "title": "status.py (lo demás que cobra)",
+          "status": "OK",
+          "detail": "local: Docker no responde\nGCP simulador: apagado · terraform.tfvars simulator_running = False\nGCP Dataflow: ningún job activo",
+          "data": {}
+        }
+      ]
     }
   },
-  "updated_at": "2026-10-26T19:08:42.886785+00:00"
+  "updated_at": "2026-10-26T22:37:51.959053+00:00"
 }

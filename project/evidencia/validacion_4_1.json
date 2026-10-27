@@ -1109,9 +1109,24 @@
           "data": {}
         }
       ]
+    },
+    "on": {
+      "title": "Encender el horario del lakehouse",
+      "status": "OK",
+      "started_at": "2026-10-26T22:55:12.272372+00:00",
+      "finished_at": "2026-10-26T22:55:17.074424+00:00",
+      "steps": [
+        {
+          "id": "N1",
+          "title": "encender el horario",
+          "status": "OK",
+          "detail": "DISABLED → ENABLED; se apaga con: python project/scripts/validate_4_1.py off",
+          "data": {}
+        }
+      ]
     }
   },
-  "updated_at": "2026-10-26T16:09:24.455594+00:00",
+  "updated_at": "2026-10-26T22:55:17.074511+00:00",
   "temp_schedules": [
     {
       "name": "ta-wf-raw-to-curated-validacion-20261026153616",

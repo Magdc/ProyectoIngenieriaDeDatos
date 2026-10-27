@@ -7,8 +7,8 @@
     "A": {
       "title": "Preflight del código",
       "status": "OK",
-      "started_at": "2026-10-26T16:09:24.610049+00:00",
-      "finished_at": "2026-10-26T16:09:30.200148+00:00",
+      "started_at": "2026-10-26T22:37:52.319351+00:00",
+      "finished_at": "2026-10-26T22:38:00.937184+00:00",
       "steps": [
         {
           "id": "A1",
@@ -49,7 +49,7 @@
           "id": "A6",
           "title": "caché local fuera del repo",
           "status": "OK",
-          "detail": "/root/.cache/trendanalyzer/quality · libre 1019.3 GB",
+          "detail": "/root/.cache/trendanalyzer/quality · libre 1018.4 GB",
           "data": {
             "cache": "/root/.cache/trendanalyzer/quality"
           }
@@ -72,8 +72,8 @@
     "B": {
       "title": "Pruebas",
       "status": "OK",
-      "started_at": "2026-10-26T16:09:30.368688+00:00",
-      "finished_at": "2026-10-26T16:09:39.187007+00:00",
+      "started_at": "2026-10-26T22:38:00.950100+00:00",
+      "finished_at": "2026-10-26T22:38:23.038725+00:00",
       "steps": [
         {
           "id": "B1",
@@ -128,8 +128,8 @@
     "C": {
       "title": "Raw: caché de S3 y profiling real",
       "status": "OK",
-      "started_at": "2026-10-26T15:40:12.500629+00:00",
-      "finished_at": "2026-10-26T15:43:22.205764+00:00",
+      "started_at": "2026-10-26T22:38:23.046457+00:00",
+      "finished_at": "2026-10-26T22:45:15.083977+00:00",
       "steps": [
         {
           "id": "C1",
@@ -164,7 +164,7 @@
           "id": "C4",
           "title": "profile --layer raw",
           "status": "OK",
-          "detail": "13257 archivos, 221637 filas en 176.6 s → profiling_raw_5_1.json, profiling_raw_5_1.md",
+          "detail": "13257 archivos, 221637 filas en 388.0 s → profiling_raw_5_1.json, profiling_raw_5_1.md",
           "data": {}
         },
         {
@@ -238,64 +238,49 @@
     },
     "D": {
       "title": "Trusted: real si existe; si no, simulado con el contrato de §5.7",
-      "status": "AVISO",
-      "started_at": "2026-10-26T15:43:22.210411+00:00",
-      "finished_at": "2026-10-26T15:47:38.651104+00:00",
+      "status": "OK",
+      "started_at": "2026-10-26T22:45:15.095115+00:00",
+      "finished_at": "2026-10-26T22:54:31.272154+00:00",
       "steps": [
         {
           "id": "D1",
           "title": "trusted/posts/ en S3",
-          "status": "AVISO",
-          "detail": "vacío: Trusted no existe todavía (lo crea el Lote 4.2). Se valida la herramienta con un Trusted simulado; el profiling real de Trusted queda pendiente",
+          "status": "OK",
+          "detail": "543 objetos: se perfila el Trusted real",
           "data": {
-            "objects": 0,
-            "pending": "Lote 4.2"
+            "objects": 543
           }
         },
         {
           "id": "D2",
-          "title": "Trusted simulado desde Raw",
+          "title": "sincronizar trusted/posts/",
           "status": "OK",
-          "detail": "543 archivos, 221635 event_id distintos de 221637 filas de Raw",
+          "detail": "  source=facebook: 181 objetos, 23.1 MB\n  source=instagram: 181 objetos, 21.9 MB\n  source=reddit: 181 objetos, 22.4 MB",
           "data": {}
         },
         {
           "id": "D3",
-          "title": "profile --layer trusted sobre el simulado",
+          "title": "profile --layer trusted (real)",
           "status": "OK",
-          "detail": "221635 filas en 220.3 s → profiling_trusted_synth_5_1.json",
+          "detail": "  stream/reddit: 57126 filas\n  KPI *: completitud 1.0, unicidad 1.0, duplicados 0.0, anonimización 1.0\n  KPI historical: completitud 1.0, unicidad 1.0, duplicados 0.0, anonimización 1.0\n  KPI stream: completitud 1.0, unicidad 1.0, duplicados 0.0, anonimización 1.0\n  anomalías: {'error': 0, 'warning': 1, 'info': 14}\n  reglas: {'cumple': 54}",
           "data": {}
         },
         {
           "id": "D4",
-          "title": "contrato de Trusted en el profiling (simulado)",
+          "title": "contrato de Trusted en el profiling",
           "status": "OK",
-          "detail": "221635 filas; dt = DATE(event_time) en todas: True; unicidad 1.0; DQ-58 filas frente a Raw: {'*': {'trusted_rows': 221635, 'raw_distinct': 221635}} → cumple; text_clean perfilado: True",
+          "detail": "221629 filas; dt = DATE(event_time) en todas: True; unicidad 1.0; DQ-58 filas frente a Raw: {'*': {'trusted_rows': 221629, 'raw_distinct': 221635}} → cumple; text_clean perfilado: True",
           "data": {}
-        },
-        {
-          "id": "D5",
-          "title": "detecta los 4 defectos inyectados",
-          "status": "OK",
-          "detail": "duplicate_event_id: detectado, dt_mismatch: detectado, null_text_clean: detectado, identity_column: detectado",
-          "data": {
-            "detected": {
-              "duplicate_event_id": true,
-              "dt_mismatch": true,
-              "null_text_clean": true,
-              "identity_column": true
-            }
-          }
         },
         {
           "id": "D6",
           "title": "evidencia de Trusted sin datos personales",
           "status": "OK",
-          "detail": "sin user_hash ni user_id",
+          "detail": "ok",
           "data": {}
         }
       ]
     }
   },
-  "updated_at": "2026-10-26T16:09:39.187082+00:00"
+  "updated_at": "2026-10-26T22:54:31.272929+00:00"
 }

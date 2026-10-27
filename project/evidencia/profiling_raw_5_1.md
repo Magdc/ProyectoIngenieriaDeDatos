@@ -1,6 +1,6 @@
 # Profiling de Raw · `ta_raw.posts_raw` (Lote 5.1, HU-031)
 
-> Generado por `ta-profiler@1.0` el 2026-10-26T15:43:21Z (referencia `as_of` 2026-10-26T15:40:24Z) desde `s3://ta-dev-648617469176-lake/raw/ (caché local)` en 176.6 s. Solo agregados: sin `user_hash`, `event_id` ni textos completos. Detalle en el JSON del mismo nombre; definiciones en `docs/ARCHITECTURE.md` §3.20.
+> Generado por `ta-profiler@1.0` el 2026-10-26T22:45:13Z (referencia `as_of` 2026-10-26T22:38:45Z) desde `s3://ta-dev-648617469176-lake/raw/ (caché local)` en 388.0 s. Solo agregados: sin `user_hash`, `event_id` ni textos completos. Detalle en el JSON del mismo nombre; definiciones en `docs/ARCHITECTURE.md` §3.20.
 
 ## 1. Resumen
 

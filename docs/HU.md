@@ -1,6 +1,6 @@
 # TrendAnalyzer · Historias de Usuario (HU)
 
-> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.35** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
+> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.36** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
 > Cada HU tiene un ID **HU-000**, su fase/lote de `ARCHITECTURE.md` §7, responsable, sprint y criterios de aceptación verificables.
 
 ---
@@ -81,13 +81,13 @@ Criterios de aceptación: lista verificable.
 | HU-024 | Carga histórica (full load) | 3 · 3.1 | A | Must | 2 | ✅ |
 | HU-025 | Exportación GCS → S3 | 3 · 3.2 | M | Must | 2 | ✅ |
 | **E5 · Lakehouse en AWS** | | | | | | |
-| HU-026 | Capa Trusted | 4 · 4.2 | C | Must | 2 | 🟨 |
+| HU-026 | Capa Trusted | 4 · 4.2 | C | Must | 2 | ✅ |
 | HU-027 | Capa Curated (modelo estrella) | 4 · 4.3 | C | Must | 2 | ⬜ |
 | HU-028 | Tablas de aristas | 4 · 4.4 | C | Should | 2 | ⬜ |
 | HU-029 | Orquestación horaria | 4 · 4.1 | M | Must | 2 | ✅ |
 | HU-030 | Consulta SQL para analistas | 4 · 4.3 | C | Must | 2 | ⬜ |
 | **E6 · Calidad y gobernanza** | | | | | | |
-| HU-031 | Profiling de datos | 5 · 5.1 | A | Must | 2 | 🟨 |
+| HU-031 | Profiling de datos | 5 · 5.1 | A | Must | 2 | ✅ |
 | HU-032 | Reglas de calidad y KPIs | 5 · 5.2 | A | Must | 2 | ⬜ |
 | HU-033 | Precisión del NLP | 5 · 5.2 | A | Could | 2 | ⬜ |
 | HU-034 | Catálogo de datos | 5 · 5.3 | A | Must | 2 | ⬜ |
@@ -565,6 +565,8 @@ Criterios de aceptación: lista verificable.
 - Duplicados < 1% medidos en Trusted.
 - El job es idempotente: sobrescribe las particiones `dt`, de modo que reejecutarlo no duplica datos.
 
+*Cerrada en v2.36* (entregada en v2.35; `ARCHITECTURE.md` §3.21; `docs/validation/validation-4-2.md`, validada por el maestro el 26-oct-2026): en S3, **221.629 filas** en 543 particiones de `ta_trusted.posts` desde 221.637 de Raw (6 centinelas y 2 duplicadas fuera, conciliado con los pies de S3); en Athena 221.629 `event_id` distintos (**duplicados 0 %**), 0 centinelas, 0 `dt` ≠ `DATE(event_time)` y 0 `text_clean` malos; una segunda corrida dentro del workflow no cambió ninguna partición (mismos sha256). El profiling real del 5.1 sobre ese Trusted da 54/54 reglas. El job corre en Glue en ~90 s a 1 DPU.
+
 **Estado (v2.35, 🟨):** entregado, pendiente de la validación del maestro (`docs/validation/validation-4-2.md`, `scripts/validate_4_2.py`; `ARCHITECTURE.md` §3.21). Por criterio: *une los dos orígenes* en `ta_trusted.posts` (D6–D7, E2); *deduplica por `event_id`* (la fila de menor `process_time`), *corrige tipos* al contrato de `contracts/athena/posts.sql` y *limpia el texto* (`text_clean`, regla `text-clean@1` de §5.7) (D8, E3); *reglas de calidad*: aplica las de Trusted que dependen del job (centinelas `ta-verify@*` fuera, claves no nulas, `dt = DATE(event_time)`, `text_clean`; las filas sin NLP se conservan con NLP nulo por decisión del usuario) y las cuenta en un reporte por corrida en `quality/`; las suites de Great Expectations de HU-032 son del Lote 5.2; *duplicados < 1 % en Trusted* con Athena (E1; se espera 0); *idempotente*: reconstruye cada partición `dt` y una segunda corrida deja los mismos objetos con los mismos bytes (F3–F5). En local con los datos reales: 221.637 filas de Raw → 221.629 en Trusted (6 centinelas y 2 duplicadas fuera), 543 particiones, 0 duplicados.
 
 ### HU-027 · Capa Curated (modelo estrella)
@@ -607,7 +609,7 @@ Criterios de aceptación: lista verificable.
 - El workflow ejecuta en orden `ta-job-raw-to-trusted` y `ta-job-trusted-to-curated`.
 - Los fallos quedan registrados en CloudWatch.
 
-*Cerrada en v2.34* (entregada en v2.32; `ARCHITECTURE.md` §3.19; `docs/validation/validation-4-1.md`, parte F en OK: 11 de 11). El disparo `rate(1 hour)` es un horario de **EventBridge Scheduler** que llama `glue:StartWorkflowRun`; se crea **deshabilitado** (estado de ahorro) y lo enciende el equipo con `validate_4_1.py on` cuando existan los jobs reales (4.2 y 4.3; hasta entonces son marcadores de posición). F4 comprueba el orden de los dos jobs, F6–F7 que un fallo provocado detiene la corrida y queda en CloudWatch (`/aws/events/ta-glue-job-fallos` y `/aws-glue/python-jobs/error`) y F8 que un horario de prueba con el mismo rol arranca el workflow.
+*Cerrada en v2.34* (entregada en v2.32; `ARCHITECTURE.md` §3.19; `docs/validation/validation-4-1.md`, parte F en OK: 11 de 11). El disparo `rate(1 hour)` es un horario de **EventBridge Scheduler** que llama `glue:StartWorkflowRun`; se crea **deshabilitado** (estado de ahorro) y lo enciende el equipo con `validate_4_1.py on` cuando existan los jobs reales (4.2 y 4.3; hasta entonces son marcadores de posición). F4 comprueba el orden de los dos jobs, F6–F7 que un fallo provocado detiene la corrida y queda en CloudWatch (`/aws/events/ta-glue-job-fallos` y `/aws-glue/python-jobs/error`) y F8 que un horario de prueba con el mismo rol arranca el workflow. *(v2.36)* Encendido cada hora por decisión del usuario desde el 26-oct-2026 22:55 UTC, con el job real del 4.2 y el marcador del 4.3 (≈ 14,1 USD/mes, `ARCHITECTURE.md` §3.19).
 
 ### HU-030 · Consulta SQL para analistas
 
@@ -643,6 +645,8 @@ Criterios de aceptación: lista verificable.
 - Las conclusiones alimentan las reglas de HU-032.
 
 **Estado (v2.34, 🟨):** validado en Raw sobre `main` (`validate_5_1.py all`, código 0). Raw perfilado con datos reales (los dos orígenes y las tres fuentes; `evidencia/profiling_raw_5_1.{json,md}`) y reglas propuestas en `ARCHITECTURE.md` §5.10 (DQ-01…DQ-63). Falta el profiling real de Trusted, que depende del Lote 4.2 (HU-026); la herramienta ya está lista y probada con un Trusted simulado (§3.20). *(v2.35)* El 4.2 está entregado: sobre su salida en local con los datos reales, Trusted cumple las 54 reglas (§3.21); el profiling real de S3 espera a su corrida en AWS.
+
+*Cerrada en v2.36* (`ARCHITECTURE.md` §3.20; `docs/validation/validation-5-1.md`; `validate_5_1.py all` sobre `main` = `0bc0fbf`, código 0): además de Raw, profiling real del **Trusted** de S3 escrito por el 4.2 (543 archivos, 221.629 filas; completitud, unicidad y anonimización 1,0, duplicados 0; 0 anomalías de error; 54/54 reglas de Trusted; `dt = DATE(event_time)` en todas; evidencia `evidencia/profiling_trusted_5_1.{json,md}` sin datos personales).
 
 ### HU-032 · Reglas de calidad y KPIs
 

@@ -2,10 +2,10 @@
 
 Guía para dejar encendido lo necesario mientras se validan lotes y apagar lo que cobra al terminar.
 
-Todos los comandos se corren **desde la carpeta `project/`** del repo, uno por línea. Antes de empezar, en cada terminal:
+Los comandos van uno por línea, en WSL y con `~/.venvs/ta-streaming` activo. **Desde dónde se corren** depende de cómo empiezan: los `bash scripts/…` y `terraform -chdir=infra/…` (secciones 1 a 3), **desde la carpeta `project/`**; los `python project/scripts/…` (`on.py`, `off.py`, `status.py` y los `validate_*.py`), **desde la raíz del repo**. Antes de empezar, en cada terminal:
 
 ```
-cd /mnt/c/Users/frank/Documents/baul/uni/2026-2/ProyectoDatos/repo_personal/project
+cd /mnt/c/Users/frank/Documents/baul/uni/2026-2/ProyectoDatos/repo_personal/project   # o la raíz, sin /project
 source ~/.venvs/ta-streaming/bin/activate
 ```
 
@@ -43,7 +43,7 @@ Cómo se protege la nube:
 
 **El exportador del Lote 3.2 no está en estos tres comandos todavía** (queda para el Lote 7.3): su Scheduler se crea en pausa y se ve, enciende y apaga con `validate_3_2.py status` / `off` (sección 2.7).
 
-**Tampoco el horario del lakehouse de AWS (Lote 4.1):** se crea deshabilitado y se ve, enciende y apaga con `validate_4_1.py status` / `on` / `off` (sección 2.8).
+**Tampoco el horario del lakehouse de AWS (Lote 4.1):** se crea deshabilitado y se ve, enciende y apaga con `validate_4_1.py status` / `on` / `off` (sección 2.8). **Desde v2.36 está ENCENDIDO cada hora por decisión del usuario** (≈ 14,1 USD/mes): `off.py` no lo apaga.
 
 Un día típico:
 
@@ -71,8 +71,8 @@ El primero va por la mañana; el segundo, al terminar el día. Al cerrar la sema
 | AWS | Rol `ta-gcp-exporter-role` y objetos de `raw/origin=stream/` (Lote 3.2) | Rol gratis; objetos, centavos | **Nunca** |
 | GCP | Cloud Build (imagen `gcs-to-s3`, Lote 3.2) | Centavos por construcción | Termina solo |
 | AWS | Catálogo de Glue (`ta_raw`, `ta_trusted`, `ta_curated`), workgroup `ta-analytics`, roles, regla de fallos y grupos de logs (Lote 4.1) | Prácticamente 0 (el catálogo entra en el millón gratuito de Glue; logs, centavos) | **Nunca** |
-| AWS | Horario `ta-wf-raw-to-curated-cada-hora` (EventBridge Scheduler) y el workflow de Glue que arranca (Lote 4.1) | **Deshabilitado (por defecto): 0.** Encendido con los marcadores de posición del 4.1: ≈ 0,0009 USD por corrida, **≈ 0,022 USD/día** (2 jobs Python shell de 0,0625 DPU, mínimo 1 min cada uno); con los jobs reales de 4.2/4.3, más (fila siguiente) | Se apaga con `validate_4_1.py off` o `validate_4_2.py off` (2.8). Encenderlo lo decide el equipo |
-| AWS | Job `ta-job-raw-to-trusted` (Lote 4.2, 1 DPU): cada corrida reconstruye `trusted/posts/` | Solo cuando corre: Glue 0,44 USD/DPU-h por segundo, mínimo 1 min (≥ 0,0073 USD) + S3 ≈ 0,008 USD (13.257 GET y ~545 PUT; KMS con *bucket key*, despreciable) → **≈ 0,015–0,023 USD por corrida** (*estimado*; `validate_4_2.py rerun` F8 lo mide). Con el horario encendido cada hora, **≈ 0,4–0,55 USD/día (≈ 11–17 USD/mes)**. La validación del 4.2 corre el job dos veces (≈ 0,05 USD con Athena y los conteos de S3). Trusted guardado: ~67 MB, centavos al mes | Termina solo (~1–3 min). Si quedó corriendo: `validate_4_2.py off` |
+| AWS | Horario `ta-wf-raw-to-curated-cada-hora` (EventBridge Scheduler) y el workflow de Glue que arranca (Lote 4.1) | **ENCENDIDO cada hora desde el 26-oct-2026 22:55 UTC (decisión del usuario, v2.36).** Cada corrida: el job real del 4.2 (fila siguiente) + el marcador `ta-job-trusted-to-curated` (0,0625 DPU, ≈ 0,00046 USD) → **≈ 0,0196 USD por corrida, ≈ 0,47 USD/día, ≈ 14,1 USD/mes** (medido en F8 del 4.2; KMS y logs aparte, sin comprobar en la factura). Con el exportador en pausa, cada corrida reescribe el mismo Trusted. *(Antes: deshabilitado por defecto; con los marcadores del 4.1, ≈ 0,022 USD/día.)* | Se apaga con `python project/scripts/validate_4_1.py off` (o `validate_4_2.py off`) y se vuelve a encender con `validate_4_1.py on` (2.8). Ojo: el `off` de las validaciones lo deshabilita; después, vuelva a `on` |
+| AWS | Job `ta-job-raw-to-trusted` (Lote 4.2, 1 DPU): cada corrida reconstruye `trusted/posts/` | Medido (v2.36): **90–92 s cobrados × 1 DPU ≈ 0,011 USD** + S3 ≈ 0,0081 USD (13.257 GET y 543 PUT; KMS con *bucket key*, despreciable) → **≈ 0,019 USD por corrida**. Con el horario encendido corre 24 veces al día (fila anterior). Trusted guardado: 67 MB, centavos al mes | Termina solo (~1,5 min de ejecución cobrada, más el arranque de Glue). Si quedó corriendo: `validate_4_2.py off` |
 | AWS | Consultas de Athena en `ta-analytics` | 5 USD/TB escaneado, mínimo 10 MB por consulta (≈ 0,00005 USD); límite de 1 GiB por consulta | Termina sola |
 | AWS → local | Profiling de calidad (Lote 5.1): `profile_data.py sync` copia `raw/` del lake a `~/.cache/trendanalyzer/quality` (solo lectura) | Primera vez: ~13.300 GET y unos LIST (≈ 0,01 USD con las llamadas a KMS) y ~0,18 GB de salida de AWS (dentro de los 100 GB gratuitos al mes; sin comprobar en la factura). Después solo LIST. No deja nada encendido | No hace falta; `python project/scripts/validate_5_1.py clean` borra la caché local (~0,25 GB) |
 
@@ -336,13 +336,13 @@ Sin el stream encendido no hay nada nuevo en `enriched/`: con el Scheduler encen
 
 ### 2.8 Lakehouse de AWS: horario del workflow de Glue (Lote 4.1)
 
-El horario `ta-wf-raw-to-curated-cada-hora` (EventBridge Scheduler, `rate(1 hour)`) arranca el workflow `ta-wf-raw-to-curated` (Raw → Trusted → Curated). Se crea **deshabilitado** y Terraform no toca ese estado. Mientras los jobs sean los marcadores de posición del 4.1 no producen Trusted ni Curated: encenderlo solo sirve para probar. *(Lote 4.2)* El primer job ya es real: cada corrida reconstruye Trusted entero con 1 DPU y cuesta ≈ 0,015–0,023 USD (≈ 11–17 USD/mes con el horario cada hora; ver §0): no lo encienda sin que el equipo lo decida. Una corrida suelta del job, sin el workflow: `aws glue start-job-run --job-name ta-job-raw-to-trusted --region us-east-1`; el estado de Trusted y su último reporte: `python project/scripts/validate_4_2.py status`. Desde la raíz del repo, en WSL con el perfil de AWS:
+El horario `ta-wf-raw-to-curated-cada-hora` (EventBridge Scheduler, `rate(1 hour)`) arranca el workflow `ta-wf-raw-to-curated` (Raw → Trusted → Curated). Se crea **deshabilitado** y Terraform no toca ese estado. *(Lote 4.2)* El primer job ya es real: cada corrida reconstruye Trusted entero con 1 DPU. **Estado vigente (v2.36): ENCENDIDO cada hora** por decisión del usuario, desde el 26-oct-2026 22:55 UTC: ≈ 0,0196 USD por corrida, **≈ 0,47 USD/día y ≈ 14,1 USD/mes** (medido en F8 del 4.2; ver §0). Hasta el 4.3, el segundo job es el marcador y deja una marca de ~1 KB por hora en `curated/_ta_placeholder/` (`off` las borra). Ojo: el `off` de cualquier validación (`validate_4_1.py off`, `validate_4_2.py off`) **deshabilita** el horario; si el equipo lo quiere encendido, vuelva a `on` después. Y `validate_4_1.py on` muestra el costo de los marcadores del 4.1 (≈ 0,022 USD/día), no el real. Una corrida suelta del job, sin el workflow: `aws glue start-job-run --job-name ta-job-raw-to-trusted --region us-east-1`; el estado de Trusted y su último reporte: `python project/scripts/validate_4_2.py status`. Desde la raíz del repo, en WSL con el perfil de AWS:
 
 ```
 python project/scripts/validate_4_1.py status
 ```
 
-Muestra el estado del horario (`DISABLED` = ahorro), las corridas y job runs en curso y los horarios de prueba que hayan quedado.
+Muestra el estado del horario (`DISABLED` = ahorro; hoy, por decisión del usuario, `ENABLED`, que el validador marca como AVISO), las corridas y job runs en curso y los horarios de prueba que hayan quedado.
 
 Encender (pide confirmación y muestra el costo por día):
 
@@ -465,6 +465,7 @@ Si en el paso 6 falla algo, se aísla el lote culpable sin rehacer la sesión. P
 | Local: no llegan datos tras reiniciar el portátil | Docker Desktop cerrado o los contenedores se detuvieron | Abrir Docker Desktop y `bash scripts/local_dataflow.sh up` |
 | El Scheduler del exportador quedó `ENABLED` sin querer | Se reanudó para una prueba | `python project/scripts/validate_3_2.py off` (2.7) |
 | `on.py`/`off.py` se niegan por cambios del exportador en el plan de GCP | Hay archivos del Lote 3.2 o una imagen nueva sin aplicar | Terminar la parte C/E de `validation-3-2.md` y repetir |
-| El horario del lakehouse quedó `ENABLED` sin querer | Se encendió para una prueba | `python project/scripts/validate_4_1.py off` (2.8) |
-| Aparecen objetos en `trusted/_ta_placeholder/` o `curated/_ta_placeholder/` | El workflow corrió con los marcadores de posición del 4.1 (a mano o con el horario) | `python project/scripts/validate_4_1.py off` los borra; no son datos |
+| El horario del lakehouse quedó `ENABLED` sin querer | Se encendió para una prueba. *(Desde v2.36 `ENABLED` es el estado decidido por el usuario: no es un error)* | Si hay que apagarlo: `python project/scripts/validate_4_1.py off` (2.8) |
+| El horario del lakehouse quedó `DISABLED` tras una validación | El `off` de `validate_4_1.py`/`validate_4_2.py` lo deshabilita | Si el equipo lo quiere encendido (estado vigente): `python project/scripts/validate_4_1.py on` |
+| Aparecen objetos en `trusted/_ta_placeholder/` o `curated/_ta_placeholder/` | El workflow corrió con los marcadores de posición del 4.1 (a mano o con el horario). Desde el 4.2 solo aparecen en `curated/_ta_placeholder/` (una por hora con el horario encendido) | `python project/scripts/validate_4_1.py off` los borra (y deshabilita el horario); no son datos |
 | `off.py` dice "simulador: sin cambios" pero `status.py` lo sigue mostrando `ENCENDIDO` | El servicio existe en GCP pero no en el estado de Terraform (`terraform -chdir=infra/gcp/environments/dev state list \| grep module.simulator` no muestra nada), así que con `simulator_running = false` no hay nada que borrar (visto en v2.31) | Con `simulator_running = false`: `gcloud run services delete ta-stream-simulator --region us-central1 --quiet`. Terraform queda alineado y `on.py` lo vuelve a crear; el cursor sigue en GCS |

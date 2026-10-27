@@ -76,8 +76,8 @@
     "B": {
       "title": "Pruebas",
       "status": "OK",
-      "started_at": "2026-10-27T04:26:10.665926+00:00",
-      "finished_at": "2026-10-27T04:26:22.719688+00:00",
+      "started_at": "2026-10-27T04:27:39.872366+00:00",
+      "finished_at": "2026-10-27T04:27:52.397361+00:00",
       "steps": [
         {
           "id": "B1",
@@ -379,8 +379,8 @@
     "status": {
       "title": "Estado del lakehouse y de Curated (solo lectura)",
       "status": "OK",
-      "started_at": "2026-10-27T04:14:28.595310+00:00",
-      "finished_at": "2026-10-27T04:14:37.868536+00:00",
+      "started_at": "2026-10-27T04:29:07.100302+00:00",
+      "finished_at": "2026-10-27T04:29:16.580550+00:00",
       "steps": [
         {
           "id": "S1",
@@ -402,7 +402,7 @@
           "id": "S3",
           "title": "Curated y su último reporte",
           "status": "OK",
-          "detail": "curated/: 187 objetos {'fact_posts': 181, 'dim_date': 1, 'dim_source': 1, 'dim_brand': 1, 'dim_user': 1, 'agg_emotion_by_brand_hour': 1, 'agg_trend_daily': 1} · último reporte wr_77faf078dfcac378a2513013365efd5b1799bda670b5c33b8672f9394386ba54 (2026-10-27T04:13:53.944Z): fact_posts 221629 filas, 0 archivos cambiados",
+          "detail": "curated/: 187 objetos {'fact_posts': 181, 'dim_date': 1, 'dim_source': 1, 'dim_brand': 1, 'dim_user': 1, 'agg_emotion_by_brand_hour': 1, 'agg_trend_daily': 1} · último reporte wr_6ad349e6b1b6e6437922bb198acb9ee67168976b653daeeab2fe93acea00f0b8 (2026-10-27T04:18:29.786Z): fact_posts 221629 filas, 0 archivos cambiados",
           "data": {}
         },
         {
@@ -873,8 +873,8 @@
     "E": {
       "title": "Athena: ta_curated (Listo cuando, conciliación, consultas guardadas)",
       "status": "OK",
-      "started_at": "2026-10-27T04:17:59.553881+00:00",
-      "finished_at": "2026-10-27T04:19:12.165292+00:00",
+      "started_at": "2026-10-27T04:27:52.629682+00:00",
+      "finished_at": "2026-10-27T04:29:06.898024+00:00",
       "steps": [
         {
           "id": "E1",
@@ -970,7 +970,7 @@
           "id": "E6",
           "title": "las 5 consultas guardadas de Curated (HU-030)",
           "status": "OK",
-          "detail": "ta-curated-posts-por-origen: 6 filas, 8.0 MB, 1128 ms; ta-curated-tendencia-diaria: 90 filas, 0.0 MB, 1008 ms; ta-curated-emociones-por-hora-bogota: 469 filas, 0.2 MB, 1154 ms; ta-curated-semana-vs-fin-de-semana: 6 filas, 1.2 MB, 2064 ms; ta-curated-precision-nlp: 9 filas, 0.2 MB, 1404 ms",
+          "detail": "ta-curated-posts-por-origen: 6 filas, 8.0 MB, 1100 ms; ta-curated-tendencia-diaria: 90 filas, 0.0 MB, 1004 ms; ta-curated-emociones-por-hora-bogota: 469 filas, 0.2 MB, 1348 ms; ta-curated-semana-vs-fin-de-semana: 6 filas, 1.2 MB, 1235 ms; ta-curated-precision-nlp: 9 filas, 0.2 MB, 1168 ms",
           "data": {
             "queries": [
               {
@@ -978,40 +978,40 @@
                 "state": "SUCCEEDED",
                 "rows": 6,
                 "scanned_bytes": 8043288,
-                "engine_ms": 918,
-                "total_ms": 1128
+                "engine_ms": 987,
+                "total_ms": 1100
               },
               {
                 "name": "ta-curated-tendencia-diaria",
                 "state": "SUCCEEDED",
                 "rows": 90,
                 "scanned_bytes": 12997,
-                "engine_ms": 833,
-                "total_ms": 1008
+                "engine_ms": 805,
+                "total_ms": 1004
               },
               {
                 "name": "ta-curated-emociones-por-hora-bogota",
                 "state": "SUCCEEDED",
                 "rows": 469,
                 "scanned_bytes": 161737,
-                "engine_ms": 962,
-                "total_ms": 1154
+                "engine_ms": 1159,
+                "total_ms": 1348
               },
               {
                 "name": "ta-curated-semana-vs-fin-de-semana",
                 "state": "SUCCEEDED",
                 "rows": 6,
                 "scanned_bytes": 1150826,
-                "engine_ms": 1664,
-                "total_ms": 2064
+                "engine_ms": 1062,
+                "total_ms": 1235
               },
               {
                 "name": "ta-curated-precision-nlp",
                 "state": "SUCCEEDED",
                 "rows": 9,
                 "scanned_bytes": 166425,
-                "engine_ms": 1230,
-                "total_ms": 1404
+                "engine_ms": 1002,
+                "total_ms": 1168
               }
             ]
           }
@@ -1031,9 +1031,9 @@
           "id": "E8",
           "title": "latencia de las consultas guardadas frente al KPI de < 3 s (§4)",
           "status": "OK",
-          "detail": "la más lenta 2064 ms (total, con la cola de Athena); motor: ta-curated-posts-por-origen 918 ms, ta-curated-tendencia-diaria 833 ms, ta-curated-emociones-por-hora-bogota 962 ms, ta-curated-semana-vs-fin-de-semana 1664 ms, ta-curated-precision-nlp 1230 ms",
+          "detail": "la más lenta 1348 ms (total, con la cola de Athena); motor: ta-curated-posts-por-origen 987 ms, ta-curated-tendencia-diaria 805 ms, ta-curated-emociones-por-hora-bogota 1159 ms, ta-curated-semana-vs-fin-de-semana 1062 ms, ta-curated-precision-nlp 1002 ms",
           "data": {
-            "worst_ms": 2064
+            "worst_ms": 1348
           }
         }
       ]
@@ -1358,5 +1358,5 @@
       ]
     }
   },
-  "updated_at": "2026-10-27T04:26:22.719817+00:00"
+  "updated_at": "2026-10-27T04:29:16.580625+00:00"
 }

@@ -1,10 +1,27 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.40**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.41**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.41 · desde v2.40
+
+**Lote que lo motiva:** Lote 5.2 (HU-032, HU-033) · entrega
+
+| Área | Cambio |
+|---|---|
+| Lote 5.2 | Entregado: el paquete `src/dq/` (`catalog`, `frames`, `suites`, `run`, `nlp`, `cli`, `conftest`, `requirements.txt` y 13 + 3 pruebas), `scripts/run_dq.py`, `scripts/validate_5_2.py`, `src/ops/validate52.py` (20 pruebas en `src/ops/tests/test_ops_validate52.py`), `docs/validation/validation-5-2.md` y la evidencia `project/evidencia/precision_nlp_5_2.md`. Detalle en **§3.24** e interfaces en **§3.24.1** (con «Para el siguiente lote»: 5.3, 5.4 y 6.1). |
+| Decisiones del usuario (27-oct-2026) | (1) **Great Expectations de verdad** (GX 1.24.1), sin dbt; (2) **a demanda** desde WSL, no en el horario de Glue; (3) **Raw, Trusted y Curated**. Nueva **ADR-28**: venv propio `~/.venvs/ta-gx`, copia local del lake con pandas, reglas de §5.10 llevadas a GX como `native`, `flag` (la comprobación por fila del 5.1) o `metric` (`row_condition`), 14 reglas nuevas de Curated (DQ-64…DQ-77), resultados en `dq_results` (streaming insert con ADC) y en `quality/{día}/ge/{run_id}/`, sin datos de filas. |
+| Verificación en local con datos reales | `validate_5_2.py local`: **239 comprobaciones, 238 OK, 0 errores** (único aviso: DQ-63 en Raw stream, los 6 centinelas); KPI de HU-032 en Trusted (stream e histórico): completitud 1,0, unicidad 1,0, duplicados 0, anonimización 1,0 (Raw: duplicados 1,2 × 10⁻⁵ en el stream; Curated: 1,0 en los tres); DQ-58 0,99997 / 1,0; latencia p95 del stream 5,38 s; acuerdo del NLP 0,920 / 0,918; Curated = lo recalculado con pandas (DQ-72…DQ-76: 0 filas distintas); **NLP (HU-033): 109.365 filas, accuracy 0,9197, F1 macro 0,9167**; 81 s y 2,4 GB de pico; salidas sin `user_hash`, `event_id` ni textos. |
+| Validador | `validate_5_2.py preflight / venv / tests / sync / local / publish / status`: A 8 OK, B 5 OK (13 en `ta-gx`, 20, 3 en `ta-streaming`, 18, 165 de regresión de `src/quality`), S 2 OK, L 6 OK; `status` en AVISO (nada publicado aún). **No** se publicó en S3 ni en BigQuery (parte P, con el OK del usuario). |
+| HU-032 «test en CI» | `src/dq/tests/test_dq_identity.py`: ninguna tabla de las DDL de Athena, de BigQuery ni de las capas en código tiene `handle`/`user_id` (corre sin GX, en los dos venvs; el repo no tiene CI). |
+| Corrección durante la verificación | El objeto «carpeta» `curated/` (Terraform, HU-007) hacía fallar `quality.s3sync.sync_prefix` del 5.1: `run_dq.py sync` lo filtra (`dq.cli.NoFolders`), sin cambiar el 5.1. |
+| Contratos | `contracts/` **sin cambios**. §5.5 (`dq_results`: lo escribe también `run_dq.py`), §5.7 (layout `quality/{día}/ge/{run_id}/` y `quality/_latest/ge/summary.json`), §5.10 (el catálogo corre con GX; las reglas de Curated están en §3.24.1 porque la tabla de §5.10 la compara el 5.1 con DQ-01…DQ-63), §5.11, §5.12 (parámetros de la calidad); ADR-28. |
+| Documento | Nueva §3.24 con §3.24.1; notas en §0, §5.5, §5.7, §5.10, §5.11, §5.12, §6 y §9 (ADR-28); PLAN.md §1 (5.2 sin dbt) y §3 (5.2 🟨, Fase 5); HU.md (HU-032 y HU-033 🟨, con el estado por criterio); nueva `docs/validation/validation-5-2.md`; cabeceras a 2.41. |
+| Correcciones de documentación | `PLAN.md` §1 y HU-032 dicen «tests dbt»: anotados (sin dbt desde el 4.3, decisión del usuario; el 5.2 usa GE). |
+| Pendiente | Parte P (publicar en `quality/` y `dq_results`) con el OK del usuario y el cierre (v2.42). Siguen los abiertos de v2.40. |
 
 ## v2.40 · desde v2.39
 

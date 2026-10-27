@@ -1,0 +1,9 @@
+# Venv del Lote 5.2 (~/.venvs/ta-gx, Python 3.11): Great Expectations no va en ~/.venvs/ta-streaming (ADR-28).
+# uv venv --python 3.11 ~/.venvs/ta-gx && uv pip install --python ~/.venvs/ta-gx/bin/python -r project/src/dq/requirements.txt
+great_expectations==1.24.1
+pandas==3.1.0
+pyarrow==25.0.1
+PyYAML>=6,<7
+boto3>=1.40,<2
+google-cloud-bigquery==3.46.2
+pytest>=8,<10

@@ -1,6 +1,6 @@
 # TrendAnalyzer · Historias de Usuario (HU)
 
-> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.40** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
+> Backlog completo del proyecto, alineado con `ARCHITECTURE.md` **v2.41** (en `docs/`) (fuentes simuladas **Reddit, Facebook e Instagram** alimentadas por un **generador de comentarios** en Python; GCP + AWS).
 > Cada HU tiene un ID **HU-000**, su fase/lote de `ARCHITECTURE.md` §7, responsable, sprint y criterios de aceptación verificables.
 
 ---
@@ -88,8 +88,8 @@ Criterios de aceptación: lista verificable.
 | HU-030 | Consulta SQL para analistas | 4 · 4.3 | C | Must | 2 | ✅ |
 | **E6 · Calidad y gobernanza** | | | | | | |
 | HU-031 | Profiling de datos | 5 · 5.1 | A | Must | 2 | ✅ |
-| HU-032 | Reglas de calidad y KPIs | 5 · 5.2 | A | Must | 2 | ⬜ |
-| HU-033 | Precisión del NLP | 5 · 5.2 | A | Could | 2 | ⬜ |
+| HU-032 | Reglas de calidad y KPIs | 5 · 5.2 | A | Must | 2 | 🟨 |
+| HU-033 | Precisión del NLP | 5 · 5.2 | A | Could | 2 | 🟨 |
 | HU-034 | Catálogo de datos | 5 · 5.3 | A | Must | 2 | ⬜ |
 | HU-035 | Linaje de datos | 5 · 5.3 | A | Must | 2 | ⬜ |
 | HU-036 | Cumplimiento normativo y DAMA-DMBOK | 5 · 5.3 | A | Must | 2 | ⬜ |
@@ -674,6 +674,8 @@ Criterios de aceptación: lista verificable.
 - Resultados escritos en BigQuery `dq_results` y en `s3://…/quality/`.
 - Un test en CI falla si existen columnas `handle` o `user_id`.
 
+**Estado (v2.41, 🟨):** entregado, pendiente de publicar (`docs/validation/validation-5-2.md`, parte P; `ARCHITECTURE.md` §3.24, ADR-28). Por criterio: *suites de Great Expectations según §5.10*: GX 1.24.1 con las 63 reglas del 5.1 y 14 de Curated (**sin tests dbt**: el proyecto no usa dbt desde el 4.3, decisión del usuario); *KPI*: en Trusted (stream e histórico) completitud 1,0, unicidad 1,0, duplicados 0 y anonimización 1,0 (también en Raw y Curated), medido en local con los datos reales; *resultados en `dq_results` y en `s3://…/quality/`*: `run_dq.py run --publish s3,bq` (parte P, pendiente); *test en CI de `handle`/`user_id`*: `src/dq/tests/test_dq_identity.py` (sin GX; corre en `ta-streaming` y en el venv de GX; el repo no tiene CI: es una prueba de pytest) y, en los datos, DQ-02 y DQ-65.
+
 ### HU-033 · Precisión del NLP
 
 | Épica | Fase · Lote | Responsable | Prioridad | Sprint | Depende de |
@@ -688,6 +690,8 @@ Criterios de aceptación: lista verificable.
 - `label_sentiment` se usa solo para evaluación, nunca como feature ni como respuesta del pipeline.
 - Se declara la limitación: comentarios de plantillas y modelos entrenados en tweets hacen que las métricas sean optimistas.
 - Resultados incluidos como insumo del informe.
+
+**Estado (v2.41, 🟨):** entregado (`ARCHITECTURE.md` §3.24, `src/dq/nlp.py`). Sobre `ta_curated.fact_posts` (copia local, 27-oct-2026): **109.365** filas con `label_sentiment` y `sentiment_label`, **accuracy 0,9197**, F1 macro 0,9167, matriz de confusión y precisión, recall y F1 por clase; distribución de `emotion_label` (sin verdad de referencia); la limitación declarada en el informe. `label_sentiment` solo se usa para evaluar. Informe: `project/evidencia/precision_nlp_5_2.md` (insumo del informe del curso) y, al publicar, `quality/{día}/ge/{run_id}/nlp_precision.{json,md}` y la fila `NLP[accuracy]` de `dq_results`.
 ### HU-034 · Catálogo de datos
 
 | Épica | Fase · Lote | Responsable | Prioridad | Sprint | Depende de |

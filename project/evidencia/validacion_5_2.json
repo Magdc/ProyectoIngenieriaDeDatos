@@ -1,0 +1,732 @@
+{
+  "lote": "5.2",
+  "hu": [
+    "HU-032",
+    "HU-033"
+  ],
+  "parts": {
+    "A": {
+      "title": "Preflight del código, del venv de GX, de la caché y de las credenciales",
+      "status": "OK",
+      "started_at": "2026-10-27T13:11:38.854275+00:00",
+      "finished_at": "2026-10-27T13:11:51.684494+00:00",
+      "steps": [
+        {
+          "id": "A1",
+          "title": "Python de ta-streaming",
+          "status": "OK",
+          "detail": "Python 3.11.17",
+          "data": {}
+        },
+        {
+          "id": "A2",
+          "title": "los 15 archivos del lote",
+          "status": "OK",
+          "detail": "15 presentes",
+          "data": {}
+        },
+        {
+          "id": "A3",
+          "title": "archivos de lotes anteriores que usa",
+          "status": "OK",
+          "detail": "14 presentes",
+          "data": {}
+        },
+        {
+          "id": "A4",
+          "title": "venv de Great Expectations (/root/.venvs/ta-gx/bin/python)",
+          "status": "OK",
+          "detail": "great_expectations 1.24.1, pandas 3.1.0, pyarrow 25.0.1",
+          "data": {
+            "versions": {
+              "gx": "1.24.1",
+              "pandas": "3.1.0",
+              "pyarrow": "25.0.1"
+            }
+          }
+        },
+        {
+          "id": "A5",
+          "title": "copia local del lake (caché)",
+          "status": "OK",
+          "detail": "/root/.cache/trendanalyzer/quality/s3/ta-dev-648617469176-lake: raw, trusted y curated",
+          "data": {}
+        },
+        {
+          "id": "A6",
+          "title": "herramientas",
+          "status": "OK",
+          "detail": "aws, uv",
+          "data": {}
+        },
+        {
+          "id": "A7",
+          "title": "GCP para dq_results (ADC y proyecto)",
+          "status": "OK",
+          "detail": "proyecto project-0568d9ba-848f-413c-88b · ADC presente · tabla ta_stream.dq_results",
+          "data": {}
+        },
+        {
+          "id": "A8",
+          "title": "lo que cobra (services.status)",
+          "status": "OK",
+          "detail": "local: nada encendido\nGCP simulador: apagado · terraform.tfvars simulator_running = False\nGCP Dataflow: ningún job activo",
+          "data": {}
+        }
+      ]
+    },
+    "B": {
+      "title": "Pruebas",
+      "status": "OK",
+      "started_at": "2026-10-27T13:16:57.245762+00:00",
+      "finished_at": "2026-10-27T13:17:14.204229+00:00",
+      "steps": [
+        {
+          "id": "B1",
+          "title": "pytest src/dq (venv de GX)",
+          "status": "OK",
+          "detail": "13 passed, 0 skipped, 0 failed (esperado 13 passed, 0 skipped)",
+          "data": {
+            "passed": 13,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B2",
+          "title": "pytest test_ops_validate52.py",
+          "status": "OK",
+          "detail": "20 passed, 0 skipped, 0 failed (esperado 20 passed, 0 skipped)",
+          "data": {
+            "passed": 20,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B3",
+          "title": "pytest src/dq en ta-streaming (prueba de CI de identidad, sin GX)",
+          "status": "OK",
+          "detail": "3 passed, 0 skipped, 0 failed (esperado 3 passed, 0 skipped)",
+          "data": {
+            "passed": 3,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B4",
+          "title": "pytest contracts/tests",
+          "status": "OK",
+          "detail": "18 passed, 0 skipped, 0 failed (esperado 18 passed, 0 skipped)",
+          "data": {
+            "passed": 18,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B5",
+          "title": "regresión: pytest src/quality (catálogo y comprobaciones del 5.1)",
+          "status": "OK",
+          "detail": "165 passed, 0 skipped, 0 failed (esperado 165 passed, 0 skipped)",
+          "data": {
+            "passed": 165,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        }
+      ]
+    },
+    "S": {
+      "title": "Copia local de Raw, Trusted y Curated (solo lee S3)",
+      "status": "OK",
+      "started_at": "2026-10-27T13:15:04.535269+00:00",
+      "finished_at": "2026-10-27T13:15:16.996462+00:00",
+      "steps": [
+        {
+          "id": "S1",
+          "title": "sync",
+          "status": "OK",
+          "detail": "raw: 13257 objetos, 0 bajados · trusted: 543 objetos, 0 bajados · curated: 189 objetos, 0 bajados",
+          "data": {
+            "sync": {
+              "raw": {
+                "event": "dq_sync",
+                "layer": "raw",
+                "bucket": "ta-dev-648617469176-lake",
+                "prefix": "raw/",
+                "cache_root": "/root/.cache/trendanalyzer/quality/s3/ta-dev-648617469176-lake",
+                "started_at": "2026-10-27T13:15:05Z",
+                "finished_at": "2026-10-27T13:15:10Z",
+                "duration_s": 5.0,
+                "objects": 13257,
+                "bytes": 182734247,
+                "to_download": 0,
+                "downloaded": 0,
+                "downloaded_bytes": 0,
+                "skipped_same_size": 13257,
+                "failed": 0,
+                "stale_local": 0,
+                "dry_run": false,
+                "by_prefix": {
+                  "origin=historical/source=facebook": {
+                    "objects": 4030,
+                    "bytes": 45580344
+                  },
+                  "origin=historical/source=instagram": {
+                    "objects": 4031,
+                    "bytes": 42890444
+                  },
+                  "origin=historical/source=reddit": {
+                    "objects": 4041,
+                    "bytes": 42397993
+                  },
+                  "origin=stream/source=facebook": {
+                    "objects": 385,
+                    "bytes": 17860434
+                  },
+                  "origin=stream/source=instagram": {
+                    "objects": 385,
+                    "bytes": 16606523
+                  },
+                  "origin=stream/source=reddit": {
+                    "objects": 385,
+                    "bytes": 17398509
+                  }
+                },
+                "ok": true,
+                "failures": []
+              },
+              "trusted": {
+                "event": "dq_sync",
+                "layer": "trusted",
+                "bucket": "ta-dev-648617469176-lake",
+                "prefix": "trusted/posts/",
+                "cache_root": "/root/.cache/trendanalyzer/quality/s3/ta-dev-648617469176-lake",
+                "started_at": "2026-10-27T13:15:10Z",
+                "finished_at": "2026-10-27T13:15:10Z",
+                "duration_s": 0.2,
+                "objects": 543,
+                "bytes": 67447599,
+                "to_download": 0,
+                "downloaded": 0,
+                "downloaded_bytes": 0,
+                "skipped_same_size": 543,
+                "failed": 0,
+                "stale_local": 0,
+                "dry_run": false,
+                "by_prefix": {
+                  "source=facebook": {
+                    "objects": 181,
+                    "bytes": 23096651
+                  },
+                  "source=instagram": {
+                    "objects": 181,
+                    "bytes": 21904636
+                  },
+                  "source=reddit": {
+                    "objects": 181,
+                    "bytes": 22446312
+                  }
+                },
+                "ok": true,
+                "failures": []
+              },
+              "curated": {
+                "event": "dq_sync",
+                "layer": "curated",
+                "bucket": "ta-dev-648617469176-lake",
+                "prefix": "curated/",
+                "cache_root": "/root/.cache/trendanalyzer/quality/s3/ta-dev-648617469176-lake",
+                "started_at": "2026-10-27T13:15:10Z",
+                "finished_at": "2026-10-27T13:15:10Z",
+                "duration_s": 0.1,
+                "objects": 189,
+                "bytes": 18480344,
+                "to_download": 0,
+                "downloaded": 0,
+                "downloaded_bytes": 0,
+                "skipped_same_size": 189,
+                "failed": 0,
+                "stale_local": 0,
+                "dry_run": false,
+                "by_prefix": {
+                  "(raíz)": {
+                    "objects": 189,
+                    "bytes": 18480344
+                  }
+                },
+                "ok": true,
+                "failures": []
+              }
+            }
+          }
+        },
+        {
+          "id": "S2",
+          "title": "segundo sync (no debe bajar nada)",
+          "status": "OK",
+          "detail": "raw: 13257 objetos, 0 bajados · trusted: 543 objetos, 0 bajados · curated: 189 objetos, 0 bajados",
+          "data": {
+            "sync": {
+              "raw": {
+                "event": "dq_sync",
+                "layer": "raw",
+                "bucket": "ta-dev-648617469176-lake",
+                "prefix": "raw/",
+                "cache_root": "/root/.cache/trendanalyzer/quality/s3/ta-dev-648617469176-lake",
+                "started_at": "2026-10-27T13:15:11Z",
+                "finished_at": "2026-10-27T13:15:16Z",
+                "duration_s": 5.0,
+                "objects": 13257,
+                "bytes": 182734247,
+                "to_download": 0,
+                "downloaded": 0,
+                "downloaded_bytes": 0,
+                "skipped_same_size": 13257,
+                "failed": 0,
+                "stale_local": 0,
+                "dry_run": false,
+                "by_prefix": {
+                  "origin=historical/source=facebook": {
+                    "objects": 4030,
+                    "bytes": 45580344
+                  },
+                  "origin=historical/source=instagram": {
+                    "objects": 4031,
+                    "bytes": 42890444
+                  },
+                  "origin=historical/source=reddit": {
+                    "objects": 4041,
+                    "bytes": 42397993
+                  },
+                  "origin=stream/source=facebook": {
+                    "objects": 385,
+                    "bytes": 17860434
+                  },
+                  "origin=stream/source=instagram": {
+                    "objects": 385,
+                    "bytes": 16606523
+                  },
+                  "origin=stream/source=reddit": {
+                    "objects": 385,
+                    "bytes": 17398509
+                  }
+                },
+                "ok": true,
+                "failures": []
+              },
+              "trusted": {
+                "event": "dq_sync",
+                "layer": "trusted",
+                "bucket": "ta-dev-648617469176-lake",
+                "prefix": "trusted/posts/",
+                "cache_root": "/root/.cache/trendanalyzer/quality/s3/ta-dev-648617469176-lake",
+                "started_at": "2026-10-27T13:15:16Z",
+                "finished_at": "2026-10-27T13:15:16Z",
+                "duration_s": 0.2,
+                "objects": 543,
+                "bytes": 67447599,
+                "to_download": 0,
+                "downloaded": 0,
+                "downloaded_bytes": 0,
+                "skipped_same_size": 543,
+                "failed": 0,
+                "stale_local": 0,
+                "dry_run": false,
+                "by_prefix": {
+                  "source=facebook": {
+                    "objects": 181,
+                    "bytes": 23096651
+                  },
+                  "source=instagram": {
+                    "objects": 181,
+                    "bytes": 21904636
+                  },
+                  "source=reddit": {
+                    "objects": 181,
+                    "bytes": 22446312
+                  }
+                },
+                "ok": true,
+                "failures": []
+              },
+              "curated": {
+                "event": "dq_sync",
+                "layer": "curated",
+                "bucket": "ta-dev-648617469176-lake",
+                "prefix": "curated/",
+                "cache_root": "/root/.cache/trendanalyzer/quality/s3/ta-dev-648617469176-lake",
+                "started_at": "2026-10-27T13:15:16Z",
+                "finished_at": "2026-10-27T13:15:16Z",
+                "duration_s": 0.1,
+                "objects": 189,
+                "bytes": 18480344,
+                "to_download": 0,
+                "downloaded": 0,
+                "downloaded_bytes": 0,
+                "skipped_same_size": 189,
+                "failed": 0,
+                "stale_local": 0,
+                "dry_run": false,
+                "by_prefix": {
+                  "(raíz)": {
+                    "objects": 189,
+                    "bytes": 18480344
+                  }
+                },
+                "ok": true,
+                "failures": []
+              }
+            }
+          }
+        }
+      ]
+    },
+    "L": {
+      "title": "Suites de Great Expectations sobre la copia local (sin publicar)",
+      "status": "OK",
+      "started_at": "2026-10-27T13:18:10.700502+00:00",
+      "finished_at": "2026-10-27T13:19:23.542750+00:00",
+      "steps": [
+        {
+          "id": "L1",
+          "title": "corrida de las suites (Great Expectations)",
+          "status": "OK",
+          "detail": "239 comprobaciones, 238 OK · errores 0 · avisos 1 · 71.5 s · GX 1.24.1 · KPI: raw/stream unicidad 0.999988, raw/stream anonimizacion 1, raw/stream completitud 1, raw/stream duplicados 1.16525e-05, raw/historical unicidad 1, raw/historical anonimizacion 1, raw/historical completitud 1, raw/historical duplicados 0, trusted/stream unicidad 1, trusted/stream anonimizacion 1, trusted/stream completitud 1, trusted/stream duplicados 0, trusted/historical unicidad 1, trusted/historical anonimizacion 1, trusted/historical completitud 1, trusted/historical duplicados 0, curated/* anonimizacion 1, curated/* completitud 1, curated/* unicidad 1",
+          "data": {
+            "run_id": "dq-20261027T131811Z-4e48c2",
+            "rows": 239,
+            "passed": 238,
+            "duration_s": 71.5,
+            "great_expectations": "1.24.1",
+            "suites": {
+              "ge_raw_posts": {
+                "checks": 96,
+                "passed": 95,
+                "failed_error": 0,
+                "failed_warning": 1
+              },
+              "ge_raw_posts_metrics": {
+                "checks": 13,
+                "passed": 13,
+                "failed_error": 0,
+                "failed_warning": 0
+              },
+              "ge_trusted_posts": {
+                "checks": 94,
+                "passed": 94,
+                "failed_error": 0,
+                "failed_warning": 0
+              },
+              "ge_trusted_posts_metrics": {
+                "checks": 14,
+                "passed": 14,
+                "failed_error": 0,
+                "failed_warning": 0
+              },
+              "ge_curated_metrics": {
+                "checks": 10,
+                "passed": 10,
+                "failed_error": 0,
+                "failed_warning": 0
+              },
+              "ge_curated_fact_posts": {
+                "checks": 6,
+                "passed": 6,
+                "failed_error": 0,
+                "failed_warning": 0
+              },
+              "ge_curated_edges_user_brand": {
+                "checks": 2,
+                "passed": 2,
+                "failed_error": 0,
+                "failed_warning": 0
+              },
+              "ge_curated_edges_hashtag_cooccurrence": {
+                "checks": 2,
+                "passed": 2,
+                "failed_error": 0,
+                "failed_warning": 0
+              },
+              "nlp_precision_5_2": {
+                "checks": 2,
+                "passed": 2,
+                "failed_error": 0,
+                "failed_warning": 0
+              }
+            },
+            "skipped": []
+          }
+        },
+        {
+          "id": "L2",
+          "title": "KPI de HU-032 (completitud ≥ 95 %, unicidad ≥ 99 %, duplicados < 1 % en Trusted, anonimización 100 %)",
+          "status": "OK",
+          "detail": "raw/stream unicidad 0.9999883475008302 (≥ 0.99); raw/stream anonimizacion 1.0 (= 1); raw/stream completitud 1.0 (≥ 0.95); raw/stream duplicados 1.1652499169759434e-05 (< 0.01); raw/historical unicidad 1.0 (≥ 0.99); raw/historical anonimizacion 1.0 (= 1); raw/historical completitud 1.0 (≥ 0.95); raw/historical duplicados 0.0 (< 0.01); trusted/stream unicidad 1.0 (≥ 0.99); trusted/stream anonimizacion 1.0 (= 1); trusted/stream completitud 1.0 (≥ 0.95); trusted/stream duplicados 0.0 (< 0.01); trusted/historical unicidad 1.0 (≥ 0.99); trusted/historical anonimizacion 1.0 (= 1); trusted/historical completitud 1.0 (≥ 0.95); trusted/historical duplicados 0.0 (< 0.01); curated/* anonimizacion 1.0 (= 1); curated/* completitud 1.0 (≥ 0.95); curated/* unicidad 1.0 (≥ 0.99)",
+          "data": {
+            "kpis": [
+              {
+                "layer": "raw",
+                "origin": "stream",
+                "kpi": "unicidad",
+                "rule": "DQ-14",
+                "observed": 0.9999883475008302,
+                "target": "≥ 0.99",
+                "passed": true
+              },
+              {
+                "layer": "raw",
+                "origin": "stream",
+                "kpi": "anonimizacion",
+                "rule": "DQ-02",
+                "observed": 1.0,
+                "target": "= 1",
+                "passed": true
+              },
+              {
+                "layer": "raw",
+                "origin": "stream",
+                "kpi": "completitud",
+                "rule": "DQ-05",
+                "observed": 1.0,
+                "target": "≥ 0.95",
+                "passed": true
+              },
+              {
+                "layer": "raw",
+                "origin": "stream",
+                "kpi": "duplicados",
+                "rule": "DQ-15",
+                "observed": 1.1652499169759434e-05,
+                "target": "< 0.01",
+                "passed": true
+              },
+              {
+                "layer": "raw",
+                "origin": "historical",
+                "kpi": "unicidad",
+                "rule": "DQ-14",
+                "observed": 1.0,
+                "target": "≥ 0.99",
+                "passed": true
+              },
+              {
+                "layer": "raw",
+                "origin": "historical",
+                "kpi": "anonimizacion",
+                "rule": "DQ-02",
+                "observed": 1.0,
+                "target": "= 1",
+                "passed": true
+              },
+              {
+                "layer": "raw",
+                "origin": "historical",
+                "kpi": "completitud",
+                "rule": "DQ-05",
+                "observed": 1.0,
+                "target": "≥ 0.95",
+                "passed": true
+              },
+              {
+                "layer": "raw",
+                "origin": "historical",
+                "kpi": "duplicados",
+                "rule": "DQ-15",
+                "observed": 0.0,
+                "target": "< 0.01",
+                "passed": true
+              },
+              {
+                "layer": "trusted",
+                "origin": "stream",
+                "kpi": "unicidad",
+                "rule": "DQ-49",
+                "observed": 1.0,
+                "target": "≥ 0.99",
+                "passed": true
+              },
+              {
+                "layer": "trusted",
+                "origin": "stream",
+                "kpi": "anonimizacion",
+                "rule": "DQ-02",
+                "observed": 1.0,
+                "target": "= 1",
+                "passed": true
+              },
+              {
+                "layer": "trusted",
+                "origin": "stream",
+                "kpi": "completitud",
+                "rule": "DQ-05",
+                "observed": 1.0,
+                "target": "≥ 0.95",
+                "passed": true
+              },
+              {
+                "layer": "trusted",
+                "origin": "stream",
+                "kpi": "duplicados",
+                "rule": "DQ-48",
+                "observed": 0.0,
+                "target": "< 0.01",
+                "passed": true
+              },
+              {
+                "layer": "trusted",
+                "origin": "historical",
+                "kpi": "unicidad",
+                "rule": "DQ-49",
+                "observed": 1.0,
+                "target": "≥ 0.99",
+                "passed": true
+              },
+              {
+                "layer": "trusted",
+                "origin": "historical",
+                "kpi": "anonimizacion",
+                "rule": "DQ-02",
+                "observed": 1.0,
+                "target": "= 1",
+                "passed": true
+              },
+              {
+                "layer": "trusted",
+                "origin": "historical",
+                "kpi": "completitud",
+                "rule": "DQ-05",
+                "observed": 1.0,
+                "target": "≥ 0.95",
+                "passed": true
+              },
+              {
+                "layer": "trusted",
+                "origin": "historical",
+                "kpi": "duplicados",
+                "rule": "DQ-48",
+                "observed": 0.0,
+                "target": "< 0.01",
+                "passed": true
+              },
+              {
+                "layer": "curated",
+                "origin": null,
+                "kpi": "anonimizacion",
+                "rule": "DQ-65",
+                "observed": 1.0,
+                "target": "= 1",
+                "passed": true
+              },
+              {
+                "layer": "curated",
+                "origin": null,
+                "kpi": "completitud",
+                "rule": "DQ-67",
+                "observed": 1.0,
+                "target": "≥ 0.95",
+                "passed": true
+              },
+              {
+                "layer": "curated",
+                "origin": null,
+                "kpi": "unicidad",
+                "rule": "DQ-66",
+                "observed": 1.0,
+                "target": "≥ 0.99",
+                "passed": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "L3",
+          "title": "avisos (warning) registrados",
+          "status": "OK",
+          "detail": "1 avisos: DQ-63[origin=stream] ta_raw.posts_raw",
+          "data": {
+            "warnings": [
+              "DQ-63[origin=stream] ta_raw.posts_raw"
+            ],
+            "unexpected": []
+          }
+        },
+        {
+          "id": "L4",
+          "title": "salidas sin user_hash ni event_id",
+          "status": "OK",
+          "detail": "16 archivos en /root/.cache/trendanalyzer/quality/dq_runs/dq-20261027T131811Z-4e48c2 sin hex de 64 ni UUID",
+          "data": {}
+        },
+        {
+          "id": "L5",
+          "title": "precisión del NLP (HU-033)",
+          "status": "OK",
+          "detail": "109365 filas evaluadas · accuracy 0.9197 · F1 macro 0.9167 · informe en project/evidencia/precision_nlp_5_2.md",
+          "data": {
+            "nlp": {
+              "evaluated": 109365,
+              "accuracy": 0.9196909431719471,
+              "macro_f1": 0.9166735606549006
+            }
+          }
+        },
+        {
+          "id": "L6",
+          "title": "cifras frente a las del 27-oct",
+          "status": "OK",
+          "detail": "221637 filas de Raw, 221629 de Trusted, 221629 de fact_posts",
+          "data": {
+            "seen": {
+              "rows": 239,
+              "passed": 238,
+              "nlp_evaluated": 109365,
+              "raw_rows": 221637,
+              "trusted_rows": 221629,
+              "fact_rows": 221629
+            }
+          }
+        }
+      ]
+    },
+    "status": {
+      "title": "Última corrida de calidad (solo lectura)",
+      "status": "AVISO",
+      "started_at": "2026-10-27T13:13:48.145125+00:00",
+      "finished_at": "2026-10-27T13:13:54.930631+00:00",
+      "steps": [
+        {
+          "id": "S1",
+          "title": "s3://…/quality/_latest/ge/summary.json",
+          "status": "AVISO",
+          "detail": "sin corridas publicadas (python project/scripts/validate_5_2.py publish)",
+          "data": {
+            "run_id": null
+          }
+        },
+        {
+          "id": "S2",
+          "title": "BigQuery ta_stream.dq_results: últimas corridas del 5.2",
+          "status": "AVISO",
+          "detail": "ninguna",
+          "data": {
+            "runs": []
+          }
+        }
+      ]
+    }
+  },
+  "updated_at": "2026-10-27T13:19:23.543082+00:00"
+}

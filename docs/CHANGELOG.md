@@ -1,10 +1,22 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.41**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.42**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.42 · desde v2.41
+
+**Lote que lo motiva:** Lote 5.2 (HU-032, HU-033) · cierre
+
+| Área | Cambio |
+|---|---|
+| Cierre del Lote 5.2 | Validado el 27-oct-2026 con `docs/validation/validation-5-2.md` sobre `main` = `fdc5d9b`: A OK (8), B OK (5), S OK (2), L OK (6), **P OK (6)** y `status` OK (2). Nada quedó encendido. |
+| Publicación | Corrida `dq-20261027T132041Z-e284f0`: **239 comprobaciones de Great Expectations, 238 OK, 0 errores** (único aviso: DQ-63 en Raw stream), 73,6 s; **S3**: 16 objetos en `quality/2026-10-27/ge/dq-20261027T132041Z-e284f0/` (12 resultados de GX, `dq_results.json`, `summary.json`, `nlp_precision.{json,md}`) y `quality/_latest/ge/summary.json`; **BigQuery**: 239 filas en `ta_stream.dq_results` sin errores (raw 109, trusted 108, curated 22; 70 con KPI); ≈ 0,0001 USD. El *streaming insert* acepta `details` como texto JSON (comprobado). |
+| KPI y NLP | Los de v2.41, confirmados en la corrida publicada: KPI de HU-032 cumplidos en Raw, Trusted y Curated; NLP accuracy 0,9197 (umbral 0,88) y F1 macro 0,9167. |
+| Documento | §3.24 (cerrado; nota «Cierre»); PLAN.md §3 (5.2 ✅; Fase 5 sigue 🟨 con 5.3 y 5.4); HU.md (HU-032 y HU-033 ✅); tabla «Cierre» y lo esperado de P4/P5 en `validation-5-2.md`; evidencia `validacion_5_2.json`; cabeceras a 2.42. |
+| Abierto, sin bloquear | Los de v2.40 (linaje de HU-035 sin *dbt docs*, límite de 1 GiB a confirmar, exportador en pausa, regla de expiración de `quality/`); `dq_results` sin expiración (~240 filas por corrida publicada). |
 
 ## v2.41 · desde v2.40
 

@@ -1,6 +1,6 @@
 # TrendAnalyzer · ARCHITECTURE
 
-> Documento maestro de arquitectura y contratos. **Versión vigente: 2.41.**
+> Documento maestro de arquitectura y contratos. **Versión vigente: 2.42.**
 > Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md) · Plan por fases, trazabilidad HU y estado: [`PLAN.md`](PLAN.md) · Historias de usuario: `HU.md` · Visión general: `README.md`.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 
@@ -80,7 +80,7 @@ El README menciona **Firestore, Cloud SQL, Neptune y Dataplex**, que **no están
 
 ### 1.4 Historial de cambios
 
-Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.41), la más reciente primero. Este documento describe siempre la versión vigente (2.38).
+Movido a [`CHANGELOG.md`](CHANGELOG.md): una entrada por versión (v2.2 → v2.42), la más reciente primero. Este documento describe siempre la versión vigente (2.38).
 
 ---
 
@@ -2025,7 +2025,7 @@ Reutiliza de `ops/validate43.py` `check_job`, `run_local_job`, `local_trusted_ro
 
 ### 3.24 Calidad de datos con Great Expectations (Lote 5.2)
 
-> Entregado en **v2.41** 🟨 (HU-032, HU-033), pendiente de publicar en S3 y BigQuery (`docs/validation/validation-5-2.md`, parte P). Rutas relativas a `project/`. **ADR-28.** **Decisiones del usuario (27-oct-2026):** (1) **Great Expectations de verdad** (GX 1.x), no SQL suelto: es lo que pide HU-032 (los «tests dbt» no van: sin dbt desde el 4.3); (2) **a demanda**, desde WSL con las credenciales del desarrollador (no en el horario de Glue); (3) las **tres capas**: Raw, Trusted y Curated. No cambia infraestructura, IAM, contratos ni el horario: escribe en `s3://…/quality/` y en la tabla `dq_results` que ya existían (§5.5, §5.7).
+> Entregado en **v2.41** y **cerrado en v2.42** ✅ (HU-032, HU-033): validado el 27-oct-2026 con `validate_5_2.py` sobre `main` = `fdc5d9b` (A, B, S, L, P y `status` en OK; cifras en «Cierre» abajo). Rutas relativas a `project/`. **ADR-28.** **Decisiones del usuario (27-oct-2026):** (1) **Great Expectations de verdad** (GX 1.x), no SQL suelto: es lo que pide HU-032 (los «tests dbt» no van: sin dbt desde el 4.3); (2) **a demanda**, desde WSL con las credenciales del desarrollador (no en el horario de Glue); (3) las **tres capas**: Raw, Trusted y Curated. No cambia infraestructura, IAM, contratos ni el horario: escribe en `s3://…/quality/` y en la tabla `dq_results` que ya existían (§5.5, §5.7).
 
 **Flujo.**
 
@@ -2071,6 +2071,8 @@ s3://{lake}/{raw/, trusted/posts/, curated/}  ─(run_dq.py sync: ListObjectsV2 
 | Privacidad | Las salidas no tienen `user_hash`, `event_id` ni textos (formato `SUMMARY` con 0 ejemplos, `value_set` de `user_hash` reemplazada por su tamaño, sin los `id` de GX); comprobado por L4 y por `test_salidas_sin_datos_de_filas` |
 
 > **Estado de la verificación (v2.41, antes de entregar):** WSL; venv `ta-gx` (Python 3.11.17, GX 1.24.1, pandas 3.1.0, pyarrow 25.0.1) y `ta-streaming` (Python 3.11.17). `src/dq` en `ta-gx`: **13 passed**; en `ta-streaming`: 3 passed (las de GX no se recogen); `test_ops_validate52.py`: **20 passed**; regresión `src/quality` 165, `contracts/tests` 18. Lint: `ruff --select F,E9` y `py_compile` sin errores. `validate_5_2.py preflight` OK (8), `tests` OK (5), `sync` OK (2; 0 bajados), `local` OK (6) y `status` en AVISO (aún nada publicado). Corrección durante la verificación: el objeto «carpeta» `curated/` (Terraform, HU-007) hacía fallar `quality.s3sync.sync_prefix` (intentaba bajarlo como archivo): el CLI lo filtra (`dq.cli.NoFolders`), sin cambiar el código del 5.1. **No** se publicó en S3 ni en BigQuery. **Por confirmar en la validación (parte P):** que el *streaming insert* acepta las filas (`details` como texto JSON, como `verify_trends.py`), el layout en `quality/` y la consulta de conteo en BigQuery.
+
+> **Cierre (v2.42).** Validado el 27-oct-2026 sobre `main` = `fdc5d9b` (WSL; `ta-streaming` y `ta-gx`; perfil `default` y ADC de GCP). A OK (8), B OK (5: 13, 20, 3, 18, 165), S OK (2: 0 bajados), L OK (6). **P OK (6)**: corrida publicada `dq-20261027T132041Z-e284f0` con **239 comprobaciones, 238 OK, 0 errores** (único aviso: DQ-63 en Raw stream) y los KPI de HU-032 cumplidos (como en L); **S3**: 16 objetos en `s3://ta-dev-648617469176-lake/quality/2026-10-27/ge/dq-20261027T132041Z-e284f0/` (12 resultados de GX, `dq_results.json`, `summary.json`, `nlp_precision.{json,md}`) más `quality/_latest/ge/summary.json` (17 PUT ≈ 0,0001 USD); **BigQuery**: 239 filas insertadas en `ta_stream.dq_results` sin errores y consultadas por `run_id` y partición: `raw` 109 (108 OK, 31 con KPI), `trusted` 108 (108 OK, 34 con KPI), `curated` 22 (22 OK, 5 con KPI); `status` 2 OK. **Comprobado solo en la nube:** el *streaming insert* acepta `details` como texto JSON en la columna `JSON`; la consulta con `PARSE_DATE` sobre la partición `DATE(run_ts)`; el layout de `quality/{día}/ge/{run_id}/`.
 
 #### 3.24.1 Interfaces del lote (cómo usar cada pieza sin leer el código)
 

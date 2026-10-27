@@ -163,8 +163,8 @@ python project/scripts/validate_5_2.py publish    # pide confirmación (--yes la
 | Paso | Esperado |
 |---|---|
 | P1–P3 | Como L1–L3 |
-| P4 | `s3://ta-dev-648617469176-lake/quality/{día}/ge/{run_id}/: 20 objetos (21 subidos con el resumen de _latest) · quality/_latest/ge/summary.json → {run_id}` |
-| P5 | `insertadas 239 (errores 0); consultadas 239: curated 22 (…), raw 109 (…), trusted 108 (…)` |
+| P4 | `s3://ta-dev-648617469176-lake/quality/{día}/ge/{run_id}/: 16 objetos (17 subidos con el resumen de _latest) · quality/_latest/ge/summary.json → {run_id}` (12 resultados de GX: Raw y Trusted × 2 orígenes × filas/métricas, y 4 de Curated; `dq_results.json`, `summary.json`, `nlp_precision.{json,md}`) |
+| P5 | `insertadas 239 (errores 0); consultadas 239: curated 22 (22 OK, 5 con KPI); raw 109 (108 OK, 31 con KPI); trusted 108 (108 OK, 34 con KPI)` |
 | P6 | Costo de centavos |
 
 Manual:
@@ -184,7 +184,18 @@ bq query --use_legacy_sql=false 'SELECT layer, COUNT(*) n, COUNTIF(passed) ok FR
 
 ## Cierre
 
-*(Se completa en v2.42 con las cifras de P.)*
+**Cerrado en v2.42** (27-oct-2026, WSL; `main` = `fdc5d9b`; `ta-streaming` y `ta-gx`; perfil `default` y ADC de GCP).
+
+| Parte | Resultado |
+|---|---|
+| A · Preflight | OK (8): GX 1.24.1, pandas 3.1.0, pyarrow 25.0.1; caché con las tres capas; proyecto de GCP y ADC presentes; nada cobra |
+| B · Pruebas | OK (5): B1 13, B2 20, B3 3, B4 18, B5 165 |
+| S · Sync | OK (2): raw 13.257, trusted 543, curated 189 objetos; 0 bajados en los dos |
+| L · Local | OK (6): **239 comprobaciones, 238 OK, 0 errores** (aviso: DQ-63 en Raw stream, los 6 centinelas); KPI de HU-032 cumplidos; salidas sin `user_hash` ni `event_id`; **NLP: 109.365 filas, accuracy 0,9197, F1 macro 0,9167**; 221.637 / 221.629 / 221.629 filas |
+| P · Publicación | OK (6): `dq-20261027T132041Z-e284f0`, 239 comprobaciones, 238 OK, 0 errores, 73,6 s; **16 objetos** en `quality/2026-10-27/ge/dq-20261027T132041Z-e284f0/` + `quality/_latest/ge/summary.json`; **239 filas en `ta_stream.dq_results`** sin errores (raw 109, trusted 108, curated 22); ≈ 0,0001 USD |
+| `status` | OK (2): el resumen de `_latest` y la corrida en BigQuery |
+
+Cifras también en `ARCHITECTURE.md` §3.24 y `CHANGELOG.md` v2.42. Nada quedó encendido.
 
 ## Problemas frecuentes
 

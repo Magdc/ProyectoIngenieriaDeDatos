@@ -703,30 +703,352 @@
     },
     "status": {
       "title": "Última corrida de calidad (solo lectura)",
-      "status": "AVISO",
-      "started_at": "2026-10-27T13:13:48.145125+00:00",
-      "finished_at": "2026-10-27T13:13:54.930631+00:00",
+      "status": "OK",
+      "started_at": "2026-10-27T13:22:07.013781+00:00",
+      "finished_at": "2026-10-27T13:22:10.822244+00:00",
       "steps": [
         {
           "id": "S1",
           "title": "s3://…/quality/_latest/ge/summary.json",
-          "status": "AVISO",
-          "detail": "sin corridas publicadas (python project/scripts/validate_5_2.py publish)",
+          "status": "OK",
+          "detail": "dq-20261027T132041Z-e284f0 · 239 comprobaciones, 238 OK · errores 0 · avisos ['DQ-63[origin=stream] ta_raw.posts_raw']",
           "data": {
-            "run_id": null
+            "run_id": "dq-20261027T132041Z-e284f0"
           }
         },
         {
           "id": "S2",
           "title": "BigQuery ta_stream.dq_results: últimas corridas del 5.2",
-          "status": "AVISO",
-          "detail": "ninguna",
+          "status": "OK",
+          "detail": "dq-20261027T132041Z-e284f0 239 filas (238 OK)",
           "data": {
-            "runs": []
+            "runs": [
+              {
+                "run_id": "dq-20261027T132041Z-e284f0",
+                "run_ts": "2026-10-27 13:20:41+00:00",
+                "n": 239,
+                "ok": 238
+              }
+            ]
           }
+        }
+      ]
+    },
+    "P": {
+      "title": "Corrida publicada: s3://…/quality/ y BigQuery dq_results",
+      "status": "OK",
+      "started_at": "2026-10-27T13:20:40.934092+00:00",
+      "finished_at": "2026-10-27T13:22:06.734963+00:00",
+      "steps": [
+        {
+          "id": "P1",
+          "title": "corrida de las suites (Great Expectations)",
+          "status": "OK",
+          "detail": "239 comprobaciones, 238 OK · errores 0 · avisos 1 · 73.6 s · GX 1.24.1 · KPI: raw/stream unicidad 0.999988, raw/stream anonimizacion 1, raw/stream completitud 1, raw/stream duplicados 1.16525e-05, raw/historical unicidad 1, raw/historical anonimizacion 1, raw/historical completitud 1, raw/historical duplicados 0, trusted/stream unicidad 1, trusted/stream anonimizacion 1, trusted/stream completitud 1, trusted/stream duplicados 0, trusted/historical unicidad 1, trusted/historical anonimizacion 1, trusted/historical completitud 1, trusted/historical duplicados 0, curated/* anonimizacion 1, curated/* completitud 1, curated/* unicidad 1",
+          "data": {
+            "run_id": "dq-20261027T132041Z-e284f0",
+            "rows": 239,
+            "passed": 238,
+            "duration_s": 73.6,
+            "great_expectations": "1.24.1",
+            "suites": {
+              "ge_raw_posts": {
+                "checks": 96,
+                "passed": 95,
+                "failed_error": 0,
+                "failed_warning": 1
+              },
+              "ge_raw_posts_metrics": {
+                "checks": 13,
+                "passed": 13,
+                "failed_error": 0,
+                "failed_warning": 0
+              },
+              "ge_trusted_posts": {
+                "checks": 94,
+                "passed": 94,
+                "failed_error": 0,
+                "failed_warning": 0
+              },
+              "ge_trusted_posts_metrics": {
+                "checks": 14,
+                "passed": 14,
+                "failed_error": 0,
+                "failed_warning": 0
+              },
+              "ge_curated_metrics": {
+                "checks": 10,
+                "passed": 10,
+                "failed_error": 0,
+                "failed_warning": 0
+              },
+              "ge_curated_fact_posts": {
+                "checks": 6,
+                "passed": 6,
+                "failed_error": 0,
+                "failed_warning": 0
+              },
+              "ge_curated_edges_user_brand": {
+                "checks": 2,
+                "passed": 2,
+                "failed_error": 0,
+                "failed_warning": 0
+              },
+              "ge_curated_edges_hashtag_cooccurrence": {
+                "checks": 2,
+                "passed": 2,
+                "failed_error": 0,
+                "failed_warning": 0
+              },
+              "nlp_precision_5_2": {
+                "checks": 2,
+                "passed": 2,
+                "failed_error": 0,
+                "failed_warning": 0
+              }
+            },
+            "skipped": []
+          }
+        },
+        {
+          "id": "P2",
+          "title": "KPI de HU-032 (completitud ≥ 95 %, unicidad ≥ 99 %, duplicados < 1 % en Trusted, anonimización 100 %)",
+          "status": "OK",
+          "detail": "raw/stream unicidad 0.9999883475008302 (≥ 0.99); raw/stream anonimizacion 1.0 (= 1); raw/stream completitud 1.0 (≥ 0.95); raw/stream duplicados 1.1652499169759434e-05 (< 0.01); raw/historical unicidad 1.0 (≥ 0.99); raw/historical anonimizacion 1.0 (= 1); raw/historical completitud 1.0 (≥ 0.95); raw/historical duplicados 0.0 (< 0.01); trusted/stream unicidad 1.0 (≥ 0.99); trusted/stream anonimizacion 1.0 (= 1); trusted/stream completitud 1.0 (≥ 0.95); trusted/stream duplicados 0.0 (< 0.01); trusted/historical unicidad 1.0 (≥ 0.99); trusted/historical anonimizacion 1.0 (= 1); trusted/historical completitud 1.0 (≥ 0.95); trusted/historical duplicados 0.0 (< 0.01); curated/* anonimizacion 1.0 (= 1); curated/* completitud 1.0 (≥ 0.95); curated/* unicidad 1.0 (≥ 0.99)",
+          "data": {
+            "kpis": [
+              {
+                "layer": "raw",
+                "origin": "stream",
+                "kpi": "unicidad",
+                "rule": "DQ-14",
+                "observed": 0.9999883475008302,
+                "target": "≥ 0.99",
+                "passed": true
+              },
+              {
+                "layer": "raw",
+                "origin": "stream",
+                "kpi": "anonimizacion",
+                "rule": "DQ-02",
+                "observed": 1.0,
+                "target": "= 1",
+                "passed": true
+              },
+              {
+                "layer": "raw",
+                "origin": "stream",
+                "kpi": "completitud",
+                "rule": "DQ-05",
+                "observed": 1.0,
+                "target": "≥ 0.95",
+                "passed": true
+              },
+              {
+                "layer": "raw",
+                "origin": "stream",
+                "kpi": "duplicados",
+                "rule": "DQ-15",
+                "observed": 1.1652499169759434e-05,
+                "target": "< 0.01",
+                "passed": true
+              },
+              {
+                "layer": "raw",
+                "origin": "historical",
+                "kpi": "unicidad",
+                "rule": "DQ-14",
+                "observed": 1.0,
+                "target": "≥ 0.99",
+                "passed": true
+              },
+              {
+                "layer": "raw",
+                "origin": "historical",
+                "kpi": "anonimizacion",
+                "rule": "DQ-02",
+                "observed": 1.0,
+                "target": "= 1",
+                "passed": true
+              },
+              {
+                "layer": "raw",
+                "origin": "historical",
+                "kpi": "completitud",
+                "rule": "DQ-05",
+                "observed": 1.0,
+                "target": "≥ 0.95",
+                "passed": true
+              },
+              {
+                "layer": "raw",
+                "origin": "historical",
+                "kpi": "duplicados",
+                "rule": "DQ-15",
+                "observed": 0.0,
+                "target": "< 0.01",
+                "passed": true
+              },
+              {
+                "layer": "trusted",
+                "origin": "stream",
+                "kpi": "unicidad",
+                "rule": "DQ-49",
+                "observed": 1.0,
+                "target": "≥ 0.99",
+                "passed": true
+              },
+              {
+                "layer": "trusted",
+                "origin": "stream",
+                "kpi": "anonimizacion",
+                "rule": "DQ-02",
+                "observed": 1.0,
+                "target": "= 1",
+                "passed": true
+              },
+              {
+                "layer": "trusted",
+                "origin": "stream",
+                "kpi": "completitud",
+                "rule": "DQ-05",
+                "observed": 1.0,
+                "target": "≥ 0.95",
+                "passed": true
+              },
+              {
+                "layer": "trusted",
+                "origin": "stream",
+                "kpi": "duplicados",
+                "rule": "DQ-48",
+                "observed": 0.0,
+                "target": "< 0.01",
+                "passed": true
+              },
+              {
+                "layer": "trusted",
+                "origin": "historical",
+                "kpi": "unicidad",
+                "rule": "DQ-49",
+                "observed": 1.0,
+                "target": "≥ 0.99",
+                "passed": true
+              },
+              {
+                "layer": "trusted",
+                "origin": "historical",
+                "kpi": "anonimizacion",
+                "rule": "DQ-02",
+                "observed": 1.0,
+                "target": "= 1",
+                "passed": true
+              },
+              {
+                "layer": "trusted",
+                "origin": "historical",
+                "kpi": "completitud",
+                "rule": "DQ-05",
+                "observed": 1.0,
+                "target": "≥ 0.95",
+                "passed": true
+              },
+              {
+                "layer": "trusted",
+                "origin": "historical",
+                "kpi": "duplicados",
+                "rule": "DQ-48",
+                "observed": 0.0,
+                "target": "< 0.01",
+                "passed": true
+              },
+              {
+                "layer": "curated",
+                "origin": null,
+                "kpi": "anonimizacion",
+                "rule": "DQ-65",
+                "observed": 1.0,
+                "target": "= 1",
+                "passed": true
+              },
+              {
+                "layer": "curated",
+                "origin": null,
+                "kpi": "completitud",
+                "rule": "DQ-67",
+                "observed": 1.0,
+                "target": "≥ 0.95",
+                "passed": true
+              },
+              {
+                "layer": "curated",
+                "origin": null,
+                "kpi": "unicidad",
+                "rule": "DQ-66",
+                "observed": 1.0,
+                "target": "≥ 0.99",
+                "passed": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "P3",
+          "title": "avisos (warning) registrados",
+          "status": "OK",
+          "detail": "1 avisos: DQ-63[origin=stream] ta_raw.posts_raw",
+          "data": {
+            "warnings": [
+              "DQ-63[origin=stream] ta_raw.posts_raw"
+            ],
+            "unexpected": []
+          }
+        },
+        {
+          "id": "P4",
+          "title": "S3: resultados de GX, dq_results.json, resumen e informe del NLP",
+          "status": "OK",
+          "detail": "s3://ta-dev-648617469176-lake/quality/2026-10-27/ge/dq-20261027T132041Z-e284f0/: 16 objetos (17 subidos con el resumen de _latest) · quality/_latest/ge/summary.json → dq-20261027T132041Z-e284f0",
+          "data": {
+            "objects": 16
+          }
+        },
+        {
+          "id": "P5",
+          "title": "BigQuery ta_stream.dq_results: filas de la corrida",
+          "status": "OK",
+          "detail": "insertadas 239 (errores 0); consultadas 239: curated 22 (22 OK, 5 con KPI); raw 109 (108 OK, 31 con KPI); trusted 108 (108 OK, 34 con KPI)",
+          "data": {
+            "by_layer": [
+              {
+                "layer": "curated",
+                "n": 22,
+                "ok": 22,
+                "kpi_rows": 5
+              },
+              {
+                "layer": "raw",
+                "n": 109,
+                "ok": 108,
+                "kpi_rows": 31
+              },
+              {
+                "layer": "trusted",
+                "n": 108,
+                "ok": 108,
+                "kpi_rows": 34
+              }
+            ]
+          }
+        },
+        {
+          "id": "P6",
+          "title": "costo",
+          "status": "OK",
+          "detail": "S3 ≈ 17 PUT ≈ 0.00009 USD · BigQuery streaming insert de 239 filas (~0,1 MB) ≈ 0,000005 USD y una consulta de < 10 MB (primer TB del mes gratis) · lectura de S3 solo en sync",
+          "data": {}
         }
       ]
     }
   },
-  "updated_at": "2026-10-27T13:19:23.543082+00:00"
+  "updated_at": "2026-10-27T13:22:10.822313+00:00"
 }

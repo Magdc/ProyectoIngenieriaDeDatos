@@ -7,7 +7,8 @@
 # ta-wf-raw-to-curated con sus dos jobs (marcadores de posición hasta los lotes 4.2 y 4.3), el
 # horario de EventBridge Scheduler (DESHABILITADO: estado de ahorro) y la regla que guarda los
 # fallos de los jobs en CloudWatch Logs. Lote 4.2 (§3.21): ta-job-raw-to-trusted es el job real y
-# corre con 1 DPU.
+# corre con 1 DPU. Lote 4.3 (§3.22): ta-job-trusted-to-curated es el job real (0,0625 DPU) y hay
+# cinco consultas guardadas sobre Curated (HU-030).
 
 locals {
   lakehouse_databases = {
@@ -39,8 +40,10 @@ locals {
     {
       key         = "trusted_to_curated"
       name        = "ta-job-trusted-to-curated"
-      description = "Trusted → Curated (HU-027, Lote 4.3). En el 4.1, marcador de posición."
+      description = "Trusted → Curated (HU-027, Lote 4.3): fact_posts, dimensiones y agregados."
       script_path = "${local.lakehouse_src}/glue_jobs/trusted_to_curated.py"
+      # Lote 4.3 (§3.22, ADR-26): la capacidad por defecto del módulo, 0,0625 DPU (1 GB). Pico medido
+      # en local con Python 3.9 y pyarrow 7: ~0,43 GB con el Trusted de hoy. glue_job_settings la cambia.
       arguments = {
         "--ta_input_prefix"  = "trusted/"
         "--ta_output_prefix" = "curated/"
@@ -70,6 +73,32 @@ locals {
       database    = "ta_raw"
       description = "Sentimiento por marca y origen en los últimos 7 días (poda de particiones)"
       query       = replace(file("${local.lakehouse_src}/queries/raw_sentimiento_7_dias.sql"), "\r\n", "\n")
+    }
+    # Lote 4.3 (HU-030, §3.22.1): consultas de ejemplo sobre Curated.
+    "ta-curated-posts-por-origen" = {
+      database    = "ta_curated"
+      description = "Filas de fact_posts por origen y fuente (Listo cuando de la Fase 4)"
+      query       = replace(file("${local.lakehouse_src}/queries/curated_posts_por_origen.sql"), "\r\n", "\n")
+    }
+    "ta-curated-tendencia-diaria" = {
+      database    = "ta_curated"
+      description = "Volumen y sentimiento diario por marca, últimos 30 días con datos"
+      query       = replace(file("${local.lakehouse_src}/queries/curated_tendencia_diaria.sql"), "\r\n", "\n")
+    }
+    "ta-curated-emociones-por-hora-bogota" = {
+      database    = "ta_curated"
+      description = "Emociones por marca y hora del día en America/Bogota, últimos 7 días con datos"
+      query       = replace(file("${local.lakehouse_src}/queries/curated_emociones_por_hora_bogota.sql"), "\r\n", "\n")
+    }
+    "ta-curated-semana-vs-fin-de-semana" = {
+      database    = "ta_curated"
+      description = "Volumen y sentimiento por marca entre semana y en fin de semana (poda por dt)"
+      query       = replace(file("${local.lakehouse_src}/queries/curated_semana_vs_fin_de_semana.sql"), "\r\n", "\n")
+    }
+    "ta-curated-precision-nlp" = {
+      database    = "ta_curated"
+      description = "Matriz de confusión del NLP frente a label_sentiment (HU-033)"
+      query       = replace(file("${local.lakehouse_src}/queries/curated_precision_nlp.sql"), "\r\n", "\n")
     }
   }
 }

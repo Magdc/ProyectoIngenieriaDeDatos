@@ -249,20 +249,23 @@ def read_json_object(ctx: Ctx, bucket: str, key: str) -> dict[str, Any] | None:
     return data if isinstance(data, dict) else None
 
 
-def get_job(ctx: Ctx) -> dict[str, Any]:
-    res = ctx.aws("glue", "get-job", "--job-name", JOB)
+# (v2.37) ``job`` (por defecto el del 4.2) deja reutilizar estas piezas con otro job (validate43.py).
+
+
+def get_job(ctx: Ctx, job: str = JOB) -> dict[str, Any]:
+    res = ctx.aws("glue", "get-job", "--job-name", job)
     return (parse_json(res.out) or {}).get("Job") or {} if res.ok else {}
 
 
-def get_job_run(ctx: Ctx, run_id: str) -> dict[str, Any]:
-    res = ctx.aws("glue", "get-job-run", "--job-name", JOB, "--run-id", run_id)
+def get_job_run(ctx: Ctx, run_id: str, job: str = JOB) -> dict[str, Any]:
+    res = ctx.aws("glue", "get-job-run", "--job-name", job, "--run-id", run_id)
     return (parse_json(res.out) or {}).get("JobRun") or {} if res.ok else {}
 
 
-def wait_job_run(ctx: Ctx, part: Part, run_id: str, timeout_s: float = 2400) -> dict[str, Any]:
+def wait_job_run(ctx: Ctx, part: Part, run_id: str, timeout_s: float = 2400, job: str = JOB) -> dict[str, Any]:
     waited, jr = 0.0, {}
     while waited <= timeout_s:
-        jr = get_job_run(ctx, run_id)
+        jr = get_job_run(ctx, run_id, job)
         state = jr.get("JobRunState")
         if state in ("SUCCEEDED", "FAILED", "STOPPED", "TIMEOUT", "ERROR", "EXPIRED"):
             return jr
@@ -274,8 +277,8 @@ def wait_job_run(ctx: Ctx, part: Part, run_id: str, timeout_s: float = 2400) -> 
     return jr
 
 
-def start_job_run(ctx: Ctx, arguments: dict[str, str], part: Part) -> tuple[str | None, str, int]:
-    """StartJobRun con el workflow y los jobs libres y reintento ante ConcurrentRunsExceededException."""
+def start_job_run(ctx: Ctx, arguments: dict[str, str], part: Part, job: str = JOB) -> tuple[str | None, str, int]:
+    """StartJobRun de ``job`` con el workflow y los jobs libres y reintento ante ConcurrentRunsExceededException."""
     busy = v41.wait_idle(ctx, part)
     if busy:
         return None, f"el workflow sigue con corridas en curso: {', '.join(busy)}", 0
@@ -286,7 +289,7 @@ def start_job_run(ctx: Ctx, arguments: dict[str, str], part: Part) -> tuple[str 
         waited += 15
     res = Result(1, "", "")
     for attempt in range(1, v41.CONCURRENT_TRIES + 1):
-        res = ctx.aws("glue", "start-job-run", "--job-name", JOB, "--arguments", json.dumps(arguments))
+        res = ctx.aws("glue", "start-job-run", "--job-name", job, "--arguments", json.dumps(arguments))
         run_id = (parse_json(res.out) or {}).get("JobRunId") if res.ok else None
         if run_id:
             return run_id, "", attempt

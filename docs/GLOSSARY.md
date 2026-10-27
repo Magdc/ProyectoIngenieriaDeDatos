@@ -382,7 +382,7 @@ Todo se guarda en **Parquet + Snappy**.
 **Rol en TrendAnalyzer:** mueve los datos entre capas, orquestado por el workflow `ta-wf-raw-to-curated`:
 
 - `ta-job-raw-to-trusted`: une stream e histórico, deduplica por `event_id`, corrige tipos y limpia texto.
-- `ta-job-trusted-to-curated`: construye el modelo analítico (con Glue o dbt).
+- `ta-job-trusted-to-curated`: construye el modelo analítico (hechos, dimensiones y agregados). *(v2.37: con Glue Python, sin dbt; `ARCHITECTURE.md` §3.22.)*
 
 Es idempotente: **sobrescribe las particiones `dt`** en lugar de añadir.
 
@@ -548,7 +548,7 @@ Es idempotente: **sobrescribe las particiones `dt`** en lugar de añadir.
 
 **Qué es:** herramienta para transformar datos con SQL de manera versionada, con tests y documentación automática.
 
-**Rol en TrendAnalyzer:** construye el modelo Curated (`dbt-athena`) y sus pruebas. Sus *docs* generan el **linaje** de datos, que es el reemplazo de OpenLineage.
+**Rol en TrendAnalyzer:** construye el modelo Curated (`dbt-athena`) y sus pruebas. Sus *docs* generan el **linaje** de datos, que es el reemplazo de OpenLineage. *(v2.37: el usuario decidió construir Curated con Glue Python, sin dbt (`ARCHITECTURE.md` §3.22, ADR-26); el linaje sin dbt docs queda a decidir, ADR-10.)*
 
 ### Prueba de humo end-to-end (`smoke_e2e.py`)
 

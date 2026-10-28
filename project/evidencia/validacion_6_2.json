@@ -207,9 +207,9 @@
     },
     "C": {
       "title": "Terraform (sa-alerts, notificador, push, canales y política)",
-      "status": "AVISO",
-      "started_at": "2026-10-28T00:24:51.472948+00:00",
-      "finished_at": "2026-10-28T00:26:03.906755+00:00",
+      "status": "OK",
+      "started_at": "2026-10-28T00:29:24.062020+00:00",
+      "finished_at": "2026-10-28T00:30:57.709109+00:00",
       "steps": [
         {
           "id": "C0",
@@ -270,9 +270,32 @@
         {
           "id": "C3",
           "title": "apply",
-          "status": "AVISO",
-          "detail": "sin --apply: no se aplicó (repita con --apply)",
+          "status": "OK",
+          "detail": "  \"reddit\" = \"ta-raw-reddit\"\n}\ntrend_windows_latest_view = \"project-0568d9ba-848f-413c-88b.ta_stream.trend_windows_latest\"\ntrend_windows_table = \"project-0568d9ba-848f-413c-88b:ta_stream.trend_windows\"",
           "data": {}
+        },
+        {
+          "id": "C4",
+          "title": "plan después del apply",
+          "status": "OK",
+          "detail": "sin cambios",
+          "data": {
+            "create": [],
+            "update": [],
+            "delete": [],
+            "replace": [],
+            "diffs": {}
+          }
+        },
+        {
+          "id": "C5",
+          "title": "recursos reales (servicio, invocadores, push, permisos y política)",
+          "status": "OK",
+          "detail": "ta-alert-notifier listo y privado (solo sa-alerts invoca) · push ta-alerts-notifier con ID token de sa-alerts · sa-dataflow publica en ta-alerts · ta-alerta-tendencia con 1 correo(s) + Pub/Sub (límite de 300 s por incidente)",
+          "data": {
+            "notifier_url": "https://ta-alert-notifier-kyu3kofmtq-uc.a.run.app",
+            "image": "us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/alert-notifier:h-e9a8dab903df"
+          }
         }
       ]
     },
@@ -596,5 +619,5 @@
       ]
     }
   },
-  "updated_at": "2026-10-28T00:26:03.906885+00:00"
+  "updated_at": "2026-10-28T00:30:57.709301+00:00"
 }

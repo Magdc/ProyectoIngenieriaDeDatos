@@ -211,7 +211,7 @@ correcciones de abajo, con el OK del usuario para la nube (apply y validación c
 | B | OK: 20, 6, 151 y 12 passed, 0 omitidas |
 | L | OK (4): alerta de 569 bytes, ola de 150 comentarios sin errores de envelope, parámetros = §5.12, contexto de la imagen de 8 archivos |
 | D | OK: `alert-notifier:h-e9a8dab903df` en 39 s, 11 pruebas dentro de la imagen |
-| C | OK tras dos correcciones: 10 recursos creados (8 + 2 después de crear el agente de Cloud Monitoring); plan limpio; recursos reales comprobados. Queda 1 cambio en el lugar por aplicar (texto del correo, abajo) |
+| C | OK tras dos correcciones: 10 recursos creados (8 + 2 después de crear el agente de Cloud Monitoring); plan limpio; recursos reales comprobados. Después, 1 cambio en el lugar aplicado con el OK del usuario (texto del correo, abajo) y plan limpio |
 | E | OK en la segunda corrida: publicación → log del notificador 0,8 s → notificación 28,5 s (la primera vez, con la política recién creada, 139 s); asunto «[ALERT - Warning] TrendAnalyzer: volume_up de postobon en instagram». E6 (buzón): sin confirmar |
 | P | OK: *seek* a 22:24:36 UTC; simulador y `ta-stream-dev` con NLP y `alerts_config` activa |
 | F | OK (10), segunda corrida (la primera quedó cortada al terminar la sesión, sin dejar suscripciones). Ola a las 23:39:54 UTC; 5 ventanas con `is_alert` (z de volumen 9,28 → 3,63); 2 mensajes de la ola (`volume_up`, `sentiment_down`) y 3 naturales; **fin de la ventana → Dataflow 63,9 s → `ta-alerts` 64,6 s → notificador 69,0 s → notificación 159,8 s**; 1 mensaje por tipo aunque alertaron 5 ventanas (logs `trend_alert_suppressed` en el job) |
@@ -225,8 +225,8 @@ alerta**.
 **Hallazgos (corregidos en v2.49 o v2.50):** el agente de notificaciones de Cloud Monitoring no se crea con el canal
 (C0c lo crea); `scaling` a nivel de servicio (ignorado); `severity` fuera del `jsonPayload` (E3); `data` de gcloud en
 base64 URL-safe (F9 vio 1 notificación de 7); `pull` vacío de ~20 s (la observación duró 34 min); y el texto del correo,
-que prometía «como máximo un correo cada 5 min»: cambiado en el módulo a «un correo por alerta», **pendiente de
-aplicar** con `validate_6_2.py terraform --apply` (1 recurso, la política, en el lugar).
+que prometía «como máximo un correo cada 5 min»: cambiado en el módulo a «un correo por alerta» y **aplicado**
+con `validate_6_2.py terraform --apply` (1 recurso, la política, en el lugar; plan limpio y C5 OK después).
 
 **Sin comprobar:** que el correo llegue al buzón (el validador no lo puede leer; sale en el mismo incidente que la copia
 de Pub/Sub, que sí se midió); la plantilla Flex con la rama de alertas (no se reconstruyó).

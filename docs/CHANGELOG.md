@@ -1,10 +1,20 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.52**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.53**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.53 · desde v2.52
+
+**Lote que lo motiva:** Lote 6.3 (HU-040) · cierre. **Fase 6 cerrada.**
+
+| Área | Cambio |
+|---|---|
+| Validación en la nube | Con el OK del usuario (29-oct-2026), sobre `main` = `0511e44`: **D** imagen `stream-simulator:h-6fae173050de` en Cloud Build (100 s, 137 pruebas dentro); **P** *seek*, simulador nuevo (Terraform: solo el servicio) y Dataflow con NLP; **S 5/5** (imagen desplegada, IAM sin acceso público, **403 sin token**, 200 con token, 400 con los problemas); **F 13/13**: ola `postobon`/`negative` ×3 de 5 min en Instagram → `volume_up` y `sentiment_down`, **fin de la ventana → notificación en 106,9 s** (≈ 3,4 min desde el `POST`), cadencia ×2,88 con 62 % marcados y el tráfico normal igual, fin por `expired` con 258 eventos forzados; **O** Dataflow drenado y simulador apagado (≈ 1,35 h ≈ 0,47 USD). `status` OK. |
+| Estado | `simulator_image` queda en `h-6fae173050de` (el simulador trae el escenario la próxima vez que se encienda). Nada encendido: exportador `PAUSED`, horario del lakehouse `ENABLED`, notificador escalado a cero. |
+| Documento | ARCHITECTURE §3.29 («Cierre»); `docs/DEMO.md` con los tiempos medidos; `validation-6-3.md` («Cierre»); PLAN.md §3 (6.3 ✅, **Fase 6 ✅**); HU.md (HU-040 ✅); evidencia `project/evidencia/validacion_6_3.json`; cabeceras a 2.53. |
 
 ## v2.52 · desde v2.51
 

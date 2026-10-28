@@ -1,6 +1,6 @@
 # TrendAnalyzer · ARCHITECTURE
 
-> Documento maestro de arquitectura y contratos. **Versión vigente: 2.52.**
+> Documento maestro de arquitectura y contratos. **Versión vigente: 2.53.**
 > Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md) · Plan por fases, trazabilidad HU y estado: [`PLAN.md`](PLAN.md) · Historias de usuario: `HU.md` · Visión general: `README.md`.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 
@@ -2529,7 +2529,7 @@ Dataflow ta-stream-dev (rama de tendencias del 2.4, §3.16)
 
 ### 3.29 Escenario de demo (Lote 6.3)
 
-> Entregado en **v2.52** (HU-040). Rutas relativas a `project/`; guion en `docs/DEMO.md`; validación paso a paso en `docs/validation/validation-6-3.md` y automática con `scripts/validate_6_3.py`. **ADR-33.** Implementa §3.7 sin cambiar el envelope (`sim.scenario` ya existía, §5.2), el pipeline, los contratos ni la infraestructura: cambia el código del simulador (imagen nueva, la misma variable `simulator_image`) y suma un cliente.
+> Entregado en **v2.52** y **cerrado en v2.53** ✅ (HU-040): ola real medida el 29-oct-2026 con `validate_6_3.py flow` (`POST` → alerta de volumen y de sentimiento → notificación 106,9 s después del fin de la ventana); cifras en «Cierre» abajo. Rutas relativas a `project/`; guion en `docs/DEMO.md`; validación paso a paso en `docs/validation/validation-6-3.md` y automática con `scripts/validate_6_3.py`. **ADR-33.** Implementa §3.7 sin cambiar el envelope (`sim.scenario` ya existía, §5.2), el pipeline, los contratos ni la infraestructura: cambia el código del simulador (imagen nueva, la misma variable `simulator_image`) y suma un cliente.
 
 **Qué entrega.**
 
@@ -2566,6 +2566,8 @@ demo_scenario.py start ──(ID token de gcloud)──► Cloud Run ta-stream-s
 **Pruebas** (sin red): `src/common src/simulator` **137** (lo que corre la etapa `test` de la imagen; 19 nuevas en `test_scenario.py` y 2 en `test_app.py`), `src/demo` **9**, `test_ops_validate63.py` **10**.
 
 > **Estado de la verificación (v2.52, al entregar):** WSL, `ta-streaming` (Python 3.11.17). **A OK** (6: Dataflow y simulador apagados, `simulator_image` = `stream-simulator:20261020-213231`, notificador y política del 6.2 presentes), **B OK** (137, 9, 10), **L OK** (L1: 750 eventos en tiempo virtual, 30,8/min antes → 88,6/min durante (×2,88) → 30,6/min después; 299 marcados (67 %, esperado 67 %), todos `postobon`/`negative`; tráfico normal 30,8 → 28,8/min; 0 errores de contrato; terminó por `expired` · L2: los 10 pasos de la API con el código esperado). Regresión: `src/alerts src/smoke` 31, `test_ops_validate62.py` + `test_ops_services.py` 47, `src/historical/tests` 142. ruff (E, F, W) y `py_compile` sin errores. **Pendiente (con el OK del usuario):** D (imagen), P, S, F (la ola real y su alerta) y O en la nube.
+
+> **Cierre (v2.53).** Validado el 29-oct-2026 (WSL, `ta-streaming`) sobre `main` = `0511e44`, con el OK del usuario para la nube. A, B y L como en el «Estado» de arriba. **D OK:** `stream-simulator:h-6fae173050de` (123 archivos) construida en Cloud Build en 100 s, con **137 pruebas dentro de la imagen**; `simulator_image` pasó de `20261020-213231` a esa etiqueta. **P OK:** *seek* de `ta-raw-*-df` a 00:17:37 UTC; Terraform solo creó el servicio del simulador; Dataflow `2026-10-28_17_19_15-14648965928001110752` con NLP en Running. **S OK (5):** imagen desplegada = `terraform.tfvars`; IAM sin enlaces públicos; **sin token, 403** del *frontend*; con token, 200; `POST` inválido, 400 con los 2 problemas. **F OK (13):** baseline de `postobon`/`instagram` listo a las 01:20 UTC (primera ventana 00:14); tras 2 min de cadencia normal, **`demo/postobon-negative/20261029T012221Z`** (×3, 01:22:21–01:27:21 UTC); F4: 5 ventanas con `is_alert` de volumen (z máx. 7,5) y 5 de sentimiento; F5: **`volume_up` y `sentiment_down`** de esa clave, 0 de otras, 0 inválidos; F6: «171 posts frente a una media de 67,2 (+154 %, z = 6,4) en la ventana 01:19–01:24 UTC»; **F7: fin de la ventana → Dataflow 40,8 s → `ta-alerts` 41,6 s → notificador 45,6 s → notificación 106,9 s** (≈ 3 min 26 s desde el `POST`); F8: 5 ventanas → 1 `volume_up` (*cooldown*); F9: sin alertas naturales en la observación, 2 notificaciones de la política; F10: terminó por `expired` a las 01:27:21 con 258 eventos forzados; **F11: 702 eventos en `ta-raw-instagram`, 29,0/min antes → 83,4/min durante (×2,88) → 30,3/min después; 258 marcados (62 %, esperado 67 %, dentro de ± 10 pp), todos `postobon`/`negative`/`comment-gen@1.0`, ninguno fuera del escenario; tráfico normal 29,0 → 31,8/min**; F12: un `scenario_start` y un `scenario_end` en Cloud Logging. **O OK:** Dataflow drenado y simulador apagado (≈ 1,35 h ≈ 0,47 USD, estimado), sin `ta-verify-*`. `status` OK (3). El correo en el buzón no se comprobó (como en el 6.2: la copia de Pub/Sub de cada notificación sí se midió). Sin hallazgos que corregir.
 
 #### 3.29.1 Interfaces del lote (cómo usar cada pieza sin leer el código)
 

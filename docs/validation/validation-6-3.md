@@ -167,6 +167,26 @@ La del 6.2 (`validate62.part_off`): O1 Dataflow drenado y simulador apagado, con
 | S2 | `simulator_image` = la etiqueta del código actual |
 | S3 | La última ola medida: ×m y segundos hasta la notificación |
 
+## Cierre
+
+**Lote 6.3 cerrado (v2.53).** Validado el 29-oct-2026 en WSL (`ta-streaming`) sobre `main` = `0511e44`, con el OK del
+usuario para la nube.
+
+| Parte | Resultado |
+|---|---|
+| A · Preflight | OK (6): dependencias; 12 + 7 archivos; ADC; Dataflow y simulador apagados; notificador y política del 6.2 |
+| B · Pruebas | OK (3): B1 137, B2 9, B3 10 |
+| L · Local | OK (2): ×2,88 con m = 3, 67 % marcados, tráfico normal igual, 0 errores de contrato, fin por `expired`; API 10/10 |
+| D · Imagen | OK (3): `stream-simulator:h-6fae173050de` (123 archivos) en Cloud Build en 100 s, con 137 pruebas dentro; `simulator_image` actualizada |
+| P · Preparar | OK (2): *seek* a 00:17:37 UTC; Terraform creó solo el servicio del simulador; Dataflow `2026-10-28_17_19_15-14648965928001110752` con NLP |
+| S · Acceso | OK (5): imagen desplegada = `terraform.tfvars`; IAM sin enlaces públicos; **403 sin token**; 200 con token; 400 con los 2 problemas |
+| F · Escenario real | OK (13): baseline listo a las 01:20 UTC; `demo/postobon-negative/20261029T012221Z` (×3, 01:22:21–01:27:21); 5 ventanas con `is_alert` de volumen (z máx. 7,5) y 5 de sentimiento; `volume_up` y `sentiment_down`; «171 posts frente a una media de 67,2 (+154 %, z = 6,4)»; **fin de la ventana → Dataflow 40,8 s → `ta-alerts` 41,6 s → notificador 45,6 s → notificación 106,9 s**; 1 mensaje por tipo (*cooldown*); 258 eventos forzados y fin por `expired`; en `ta-raw-instagram` 29,0 → 83,4 → 30,3 eventos/min (×2,88), 62 % marcados, todos `postobon`/`negative`/`comment-gen@1.0`; logs `scenario_start` y `scenario_end` |
+| O · Apagado | OK (2): Dataflow drenado y simulador apagado (≈ 1,35 h ≈ 0,47 USD); sin `ta-verify-*` |
+| `status` | OK (3) |
+
+Cifras también en `ARCHITECTURE.md` §3.29, `CHANGELOG.md` v2.53 y `project/evidencia/validacion_6_3.json`. Nada quedó
+encendido; el correo en el buzón no se comprobó (el validador mide la copia de Pub/Sub de cada notificación).
+
 ## Problemas frecuentes
 
 | Síntoma | Qué hacer |

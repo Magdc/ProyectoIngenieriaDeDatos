@@ -32,7 +32,7 @@ Con un job de Dataflow recién lanzado **no hay alertas durante ≈ 66 min**: el
 | 0:30 | `python project/scripts/demo_scenario.py start` | «Forzamos una crisis: durante 5 minutos, triple de comentarios en Instagram, dos de cada tres negativos sobre Postobón.» |
 | 0:31 | Mostrar la respuesta (`scenario_started`: nombre, marca, ×3, fin) | «El endpoint no es público: Cloud Run exige el ID token de una cuenta autorizada.» |
 | 2:00 | Repetir la consulta de BigQuery: las ventanas nuevas traen cientos de posts y sentimiento negativo, con `is_alert = true` | «Dataflow calcula el z-score contra la última hora: el volumen se dispara y el sentimiento se hunde.» |
-| 3:00–4:30 | Abrir el correo (o el incidente en Cloud Monitoring) | «Del fin de la ventana a la notificación, menos de 5 minutos (en la validación del 6.2: 160 s).» |
+| 3:00–4:30 | Abrir el correo (o el incidente en Cloud Monitoring) | «Del fin de la ventana a la notificación, menos de 5 minutos.» En la validación del 6.3 (29-oct-2026): 106,9 s desde el fin de la ventana, ≈ 3 min 26 s desde el `start` |
 | 5:30 | `python project/scripts/demo_scenario.py status`: `active` vacío, `last.reason = expired` y cuántos eventos se forzaron | «El escenario termina solo; los eventos quedaron marcados en `sim.scenario`.» |
 | después | El tablero de QuickSight muestra la ola en la siguiente hora: horario del lakehouse y refresco de SPICE, ambos cada hora | «La misma ola llega al lakehouse de AWS y al tablero; la ruta lenta es por diseño.» |
 

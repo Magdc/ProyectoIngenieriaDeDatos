@@ -98,7 +98,7 @@ Criterios de aceptación: lista verificable.
 | HU-037 | Dashboard de tendencias y sentimiento | 6 · 6.1 | C | Must | Final | ✅ |
 | HU-038 | Vista de relaciones | 6 · 6.1 | C | Should | Final | ✅ |
 | HU-039 | Alertas de cambios en la conversación | 6 · 6.2 | C | Should | Final | ✅ |
-| HU-040 | Escenarios de demo | 6 · 6.3 | A | Could | Final | ⬜ |
+| HU-040 | Escenarios de demo | 6 · 6.3 | A | Could | Final | ✅ |
 | **E8 · DataOps** | | | | | | |
 | HU-041 | CI/CD | 7 · 7.1 | M | Must | Final | ⬜ |
 | HU-042 | Observabilidad | 7 · 7.2 | M | Must | Final | ⬜ |

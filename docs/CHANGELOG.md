@@ -1,10 +1,23 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.50**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.51**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.51 · desde v2.50
+
+**Lo que lo motiva:** pedido del usuario (28-oct-2026): actualizar `on.py`, `off.py` y `status.py` para que el dato viaje de punta a punta. Adelanta parte del Lote 7.3 (HU-043) sin cerrarlo.
+
+| Área | Cambio |
+|---|---|
+| `on.py` | Antes del simulador y Dataflow, **reanuda el exportador** (`ta-gcs-to-s3-cada-15-min`) y **habilita el horario del lakehouse** si estaba deshabilitado (`update-schedule` con la definición entera, como `validate41`). Al terminar, muestra la latencia esperada por capa. `--stream-only` vuelve al comportamiento anterior. |
+| `off.py` | Después de drenar y apagar el simulador, **pausa el exportador**. Si estaba encendido y Dataflow ya drenó, antes hace una última corrida (`gcloud run jobs execute ta-gcs-to-s3 --wait`, esperando a la programada que siga en curso), así lo que quedó en GCS llega a S3. El horario del lakehouse se deja encendido (decisión del usuario de v2.36); `--lakehouse` lo deshabilita. `--no-final-export` y `--stream-only` evitan la última corrida o no tocan el exportador. |
+| `status.py` | Nuevas líneas: exportador, alertas (notificador y política), horario del lakehouse, QuickSight (días de prueba y el comando para darse de baja) y **«Flujo de punta a punta»**: `COMPLETO` con la latencia por capa, o `CORTADO en …` con lo que falta. El lakehouse encendido y QuickSight en prueba no llevan las marcas `ENCENDIDO`/`(cobra)` que buscan los validadores; el exportador encendido sí. Tarda unos 20 s. |
+| Código | `src/ops/services.py`: `exporter_state`/`exporter_set`/`exporter_running`/`exporter_final_run`, `lakehouse_schedule`/`lakehouse_set` y `schedule_update_input`, `flow_on`/`flow_off`, `flow_summary`, `alerts_line`, `quicksight_line`. `cloud_on` y `cloud_off` no cambian (los usa `validate62`). 12 pruebas nuevas en `test_ops_services.py` (35); `src/ops/tests` entero: 450 OK. |
+| Comprobación | `status.py` contra la nube real (solo lectura): exportador `PAUSED`, alertas listas con la política activa, lakehouse `ENABLED`, QuickSight en prueba hasta ≈ 26-nov-2026 y «CORTADO en simulador; también apagado: Dataflow, exportador». `on.py` y `off.py` **no se corrieron** contra la nube: encender cuesta ≈ 8,6 USD/día. |
+| Documento | `ACTIVE_SERVICES.md` («Atajo», notas del exportador y del lakehouse, §3.4); §0 y §3.18 de ARCHITECTURE; PLAN.md §3 (nota en 7.3); cabeceras a 2.51. |
 
 ## v2.50 · desde v2.49
 

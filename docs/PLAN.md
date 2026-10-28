@@ -177,7 +177,7 @@ Cada **lote** es una petición mía de tamaño razonable: yo entrego un conjunto
 | **7 · CI/CD y costos** | ⬜ | M | HU-041 a HU-043 | |
 | 7.1 | ⬜ | M | HU-041 | |
 | 7.2 | ⬜ | M | HU-042 | |
-| 7.3 | ⬜ | M | HU-043 | |
+| 7.3 | ⬜ | M | HU-043 | Adelanto en v2.51 (sin cerrar el lote): `on.py`, `off.py` y `status.py` cubren también el exportador GCS → S3, el horario del lakehouse, las alertas y QuickSight, y `status.py` dice hasta dónde llega un dato nuevo. Faltan las alertas de presupuesto ampliadas, las etiquetas por componente y las políticas de ciclo de vida de HU-043 |
 | **8 · Informe** | ⬜ | Todos | HU-044, HU-045 | |
 | 8.1 | ⬜ | Todos | HU-044, HU-045 | |
 | **★ Sprint Final** | ⬜ | | HU-037 a HU-045 | |

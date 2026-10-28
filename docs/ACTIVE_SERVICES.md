@@ -23,15 +23,20 @@ python project/scripts/off.py
 
 | Comando | Qué hace |
 |---|---|
-| `status.py` | Solo lee: qué hay encendido en local y en GCP, y qué cobra. |
-| `on.py` | Local (emulador, simulador y `dataflow-local`) **y** GCP (simulador en Cloud Run y job de Dataflow). Espera a que el job esté en *Running*. |
+| `status.py` | Solo lee: qué hay encendido en local, GCP y AWS, y qué cobra. *(v2.51)* También muestra el exportador, las alertas, el horario del lakehouse y QuickSight (días de prueba). La última línea, **«Flujo de punta a punta»**, dice si un dato nuevo llega al tablero (`COMPLETO`, con la latencia de cada capa) o dónde se corta (`CORTADO en …`). Tarda unos 20 s. |
+| `on.py` | Local (emulador, simulador y `dataflow-local`) **y** GCP (simulador en Cloud Run y job de Dataflow). Espera a que el job esté en *Running*. *(v2.51)* Antes del simulador, también **reanuda el exportador** GCS → S3 (cada 15 min) y **habilita el horario del lakehouse** si estaba deshabilitado. Con eso el dato viaja solo hasta el tablero. |
 | `on.py local` / `on.py cloud` | Solo una de las dos partes. |
 | `on.py --restart-job` | Si ya hay un job, lo drena y lanza uno nuevo. Úsalo tras copiar código nuevo del pipeline. |
 | `on.py --nlp off` | Lanza el job sin NLP. Con `auto` (por defecto), usa la última imagen `dataflow-nlp` publicada si existe, y si no la hay, lanza sin NLP. |
-| `off.py` | Solo **lo que cobra**: drena Dataflow, apaga el simulador de Cloud Run y borra las suscripciones temporales `ta-verify-*`. Lo local queda encendido. |
+| `on.py --stream-only` | *(v2.51)* Solo simulador y Dataflow, como antes de v2.51: no toca el exportador ni el horario del lakehouse. |
+| `off.py` | Solo **lo que cobra**: drena Dataflow, apaga el simulador de Cloud Run y borra las suscripciones temporales `ta-verify-*`. Lo local queda encendido. *(v2.51)* Después **pausa el exportador**. Si estaba encendido y Dataflow ya terminó de drenar, antes hace una última corrida (`gcloud run jobs execute ta-gcs-to-s3 --wait`), así lo que quedó en GCS llega a S3 y Glue lo lleva a Curated en su próxima hora. El horario del lakehouse **se deja como está** (encendido es el estado normal). |
 | `off.py --keep-simulator` | Apaga solo Dataflow; deja el simulador para seguir mañana. |
 | `off.py all` | También apaga lo local. |
 | `off.py --force` | Si el job sigue drenando a los 15 min, lo cancela. |
+| `off.py --lakehouse` | *(v2.51)* También deshabilita el horario del lakehouse (≈ 0,47 USD/día). Con el exportador en pausa, cada corrida rehace el mismo Curated. `on.py` lo vuelve a habilitar. |
+| `off.py --no-final-export` / `--stream-only` | *(v2.51)* Pausa el exportador sin la última corrida / no toca el exportador. |
+
+Costo con todo encendido (`on.py`): ≈ 6 USD/día de Dataflow + 2 del simulador + 0,16 del exportador + 0,47 del lakehouse ≈ **8,6 USD/día**. Las alertas y el notificador no cobran en reposo. Latencia de un dato nuevo: BigQuery ~20 s; S3 ≤ 25 min (archivo de 5 min en GCS y exportador cada 15); Curated ≤ 1 h 30 min (Glue cada hora); tablero ≤ 2 h 30 min (SPICE cada hora); alertas < 5 min.
 
 Antes de actuar, `on.py` y `off.py` muestran lo que van a hacer y piden confirmación. `--yes` la omite.
 
@@ -41,9 +46,9 @@ Cómo se protege la nube:
 - Los recursos de cada lote nuevo se aplican a mano, como en 2.3.
 - Nunca borran topics, buckets, BigQuery, el secreto ni imágenes.
 
-**El exportador del Lote 3.2 no está en estos tres comandos todavía** (queda para el Lote 7.3): su Scheduler se crea en pausa y se ve, enciende y apaga con `validate_3_2.py status` / `off` (sección 2.7).
+*(v2.51)* **El exportador del Lote 3.2 ya está en estos tres comandos.** Su Scheduler se crea en pausa. `on.py` lo reanuda, `off.py` lo pausa y `status.py` lo muestra. `validate_3_2.py status` / `off` siguen sirviendo (sección 2.7). *(Antes de v2.51 no estaba: quedaba para el Lote 7.3.)*
 
-**Tampoco el horario del lakehouse de AWS (Lote 4.1):** se crea deshabilitado y se ve, enciende y apaga con `validate_4_1.py status` / `on` / `off` (sección 2.8). **Desde v2.36 está ENCENDIDO cada hora por decisión del usuario** (≈ 14,1 USD/mes; *v2.38: ≈ 14,1 USD/mes medido con los dos jobs reales, 4.2 y 4.3*): `off.py` no lo apaga. Encendido es el estado normal: tras validar, `validate_4_3.py on --yes`.
+**El horario del lakehouse de AWS (Lote 4.1)** se crea deshabilitado. **Desde v2.36 está ENCENDIDO cada hora por decisión del usuario** (≈ 14,1 USD/mes; *v2.38: ≈ 14,1 USD/mes medido con los dos jobs reales, 4.2 y 4.3*). `off.py` no lo apaga salvo con `--lakehouse`. *(v2.51)* `on.py` lo habilita si estaba deshabilitado y `status.py` lo muestra. Encendido es el estado normal: tras validar, `validate_4_3.py on --yes` (o `on.py`). Los validadores lo siguen viendo, encendiendo y apagando con `status` / `on` / `off` (sección 2.8).
 
 Un día típico:
 
@@ -443,6 +448,8 @@ docker ps --filter name=ta-hist-nlp --format "{{.Names}}"
 gcloud scheduler jobs describe ta-gcs-to-s3-cada-15-min --location us-central1 --format="value(state)"
 aws scheduler get-schedule --name ta-wf-raw-to-curated-cada-hora --region us-east-1 --query State --output text
 ```
+
+*(v2.51)* `python project/scripts/status.py` muestra lo mismo, salvo el contenedor `ta-hist-nlp`. Cloud Build solo aparece si hay una construcción en curso.
 
 Esperado: las cuatro primeras salidas vacías (o sin `ta-stream-simulator` en la segunda), `PAUSED` en la quinta (o `NOT_FOUND` si el job del Lote 3.2 todavía no se creó) y `DISABLED` en la sexta (o `ResourceNotFoundException` si el Lote 4.1 todavía no se aplicó). Lo que queda creado (topics, buckets, BigQuery, secreto, imagen) cuesta centavos al mes y **no** se borra: perder el secreto cambiaría todos los `user_hash`.
 

@@ -10,7 +10,18 @@ Qué hace cada parte:
   ``ta-dataflow-nlp-local:local`` existe). Gratis. ``off.py`` no lo apaga salvo que se pida
   (``off.py local`` u ``off.py all``).
 * **cloud**: simulador en Cloud Run (``simulator_running`` en ``terraform.tfvars`` + un
-  ``apply`` **vigilado**) y el job de Dataflow ``ta-stream-{ENV}``. Es lo único que cobra.
+  ``apply`` **vigilado**) y el job de Dataflow ``ta-stream-{ENV}``. Es lo que más cobra.
+* **flujo** *(v2.51)*: lo que lleva el dato de GCS al tablero. El Scheduler del exportador
+  ``ta-gcs-to-s3-cada-15-min`` (Lote 3.2) y el horario del lakehouse
+  ``ta-wf-raw-to-curated-cada-hora`` (Lote 4.1). ``on.py cloud`` reanuda los dos.
+  ``off.py`` pausa el exportador después de una última corrida que lleva a S3 lo que quedó en
+  GCS, y deja el horario del lakehouse como está, encendido por decisión del usuario; con
+  ``--lakehouse`` lo deshabilita. ``--stream-only`` vuelve al comportamiento anterior, solo
+  simulador y Dataflow. ``cloud_on`` y ``cloud_off`` no cambian, porque los reutiliza
+  ``validate62``.
+
+``status.py`` muestra además las alertas (Lote 6.2), QuickSight (Lote 6.1) y una línea
+«Flujo de punta a punta» que dice hasta dónde llega hoy un dato nuevo.
 
 Seguridad:
 
@@ -32,6 +43,7 @@ import sys
 import tempfile
 import time
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Sequence
 
@@ -40,6 +52,20 @@ TF_DIR = PROJECT_DIR / "infra" / "gcp" / "environments" / "dev"
 TFVARS = TF_DIR / "terraform.tfvars"
 COMPOSE_BASE = ["-f", "docker-compose.yml", "-f", "docker-compose.dataflow.yml"]
 LOCAL_NLP_IMAGE = "ta-dataflow-nlp-local:local"
+
+EXPORTER_JOB = "ta-gcs-to-s3"
+EXPORTER_SCHEDULER = "ta-gcs-to-s3-cada-15-min"
+AWS_REGION = "us-east-1"
+AWS_ENV = {"AWS_PAGER": ""}
+LAKEHOUSE_SCHEDULE = "ta-wf-raw-to-curated-cada-hora"
+ALERT_NOTIFIER = "ta-alert-notifier"
+ALERT_POLICY = "ta-alerta-tendencia"
+#: Costos medidos en USD/día (ACTIVE_SERVICES §0): exportador v2.31, lakehouse v2.38. Solo se muestran.
+EXPORTER_USD_DAY = "0,16"
+LAKEHOUSE_USD_DAY = "0,47"
+#: Lo que tarda un dato nuevo en llegar a cada capa con todo encendido.
+#: Archivo de 5 min en GCS, exportador cada 15 min, Glue cada hora y SPICE cada hora.
+FLOW_LATENCY = "BigQuery ~20 s · S3 ≤ 25 min · Curated ≤ 1 h 30 min · tablero ≤ 2 h 30 min · alertas < 5 min"
 
 _SIM_RE = re.compile(r"^(?P<lead>\s*simulator_running\s*=\s*)(?P<val>true|false)\b(?P<rest>.*)$", re.M)
 
@@ -486,6 +512,216 @@ def cloud_off(run: Runner, s: Settings, say: Report, keep_simulator: bool = Fals
         say(f"AVISO: {n} construcción(es) de Cloud Build en curso; terminan solas")
 
 
+# --------------------------------------------------------------------------- #
+# Flujo GCS → S3 → Glue: exportador (Lote 3.2) y horario del lakehouse (Lote 4.1)
+# --------------------------------------------------------------------------- #
+
+
+def _json(text: str):
+    try:
+        return json.loads(text or "null")
+    except ValueError:
+        return None
+
+
+def exporter_state(run: Runner, s: Settings) -> str | None:
+    """``ENABLED``, ``PAUSED``, ``NO_EXISTE`` o ``None`` (sin dato) del Scheduler del exportador."""
+    res = run(["gcloud", "scheduler", "jobs", "describe", EXPORTER_SCHEDULER, "--location", s.region,
+               "--project", s.project, "--format=value(state)"])
+    if not res.ok:
+        return "NO_EXISTE" if "NOT_FOUND" in res.err + res.out else None
+    return res.out.strip() or None
+
+
+def exporter_running(run: Runner, s: Settings) -> list[str]:
+    """Ejecuciones del job del exportador sin ``completionTime`` (siguen en curso)."""
+    res = run(["gcloud", "run", "jobs", "executions", "list", f"--job={EXPORTER_JOB}", "--region", s.region,
+               "--project", s.project, "--limit=10", "--format=json"])
+    items = _json(res.out) if res.ok else None
+    running = []
+    for e in items if isinstance(items, list) else []:
+        if not ((e.get("status") or {}).get("completionTime") or e.get("completionTime")):
+            running.append(str((e.get("metadata") or {}).get("name") or e.get("name") or "?").rsplit("/", 1)[-1])
+    return running
+
+
+def exporter_set(run: Runner, s: Settings, enabled: bool) -> tuple[str | None, str | None]:
+    """Reanuda o pausa el Scheduler (Terraform ignora ese campo: no deja deriva). ``(antes, después)``."""
+    want = "ENABLED" if enabled else "PAUSED"
+    before = exporter_state(run, s)
+    if before in ("NO_EXISTE", want):
+        return before, before
+    res = run(["gcloud", "scheduler", "jobs", "resume" if enabled else "pause", EXPORTER_SCHEDULER,
+               "--location", s.region, "--project", s.project])
+    after = exporter_state(run, s)
+    if after != want:
+        raise OpsError(f"no se pudo {'reanudar' if enabled else 'pausar'} {EXPORTER_SCHEDULER} (quedó {after}):\n"
+                       + (res.err.strip() or res.out.strip())[-600:])
+    return before, after
+
+
+def exporter_final_run(run: Runner, s: Settings, say: Report, timeout_s: int = 900) -> None:
+    """Una última corrida, ya drenado Dataflow, para que lo que quedó en GCS llegue a S3.
+
+    Espera antes a la corrida programada que siga en curso. El watermark se escribe con
+    ``if_generation_match``, así que dos corridas a la vez no lo dañan, pero una sola es más clara."""
+    deadline = time.time() + timeout_s
+    while exporter_running(run, s):
+        if time.time() >= deadline:
+            say("AVISO: sigue una corrida del exportador tras 15 min; la última corrida queda para el próximo on.py")
+            return
+        time.sleep(15)
+    res = run(["gcloud", "run", "jobs", "execute", EXPORTER_JOB, "--region", s.region, "--project", s.project, "--wait"],
+              capture=False)
+    if res.ok:
+        say("exportador: última corrida OK (lo que quedó en GCS ya está en S3; Glue lo lleva a Curated en su próxima hora)")
+    else:
+        say(f"AVISO: la última corrida del exportador falló; lo pendiente sale en el próximo on.py "
+            f"(o: gcloud run jobs execute {EXPORTER_JOB} --region {s.region} --wait)")
+
+
+def schedule_update_input(schedule: dict, state: str) -> dict:
+    """Lo que ``aws scheduler update-schedule`` necesita para cambiar solo el estado.
+
+    La API reemplaza la definición entera: lo que se omite vuelve al valor por defecto (por ejemplo,
+    185 reintentos). Es la misma función que ``validate41.schedule_update_input``."""
+    keys = ("Name", "GroupName", "ScheduleExpression", "ScheduleExpressionTimezone", "FlexibleTimeWindow", "Target",
+            "Description", "StartDate", "EndDate", "KmsKeyArn", "ActionAfterCompletion")
+    out = {k: schedule[k] for k in keys if schedule.get(k) not in (None, "")}
+    out["State"] = state
+    return out
+
+
+def lakehouse_schedule(run: Runner) -> tuple[str | None, dict]:
+    """Estado (``ENABLED``, ``DISABLED``, ``NO_EXISTE`` o ``None``) y definición del horario del lakehouse."""
+    res = run(["aws", "scheduler", "get-schedule", "--name", LAKEHOUSE_SCHEDULE, "--region", AWS_REGION,
+               "--output", "json"], env=AWS_ENV)
+    if not res.ok:
+        return ("NO_EXISTE" if "ResourceNotFoundException" in res.err + res.out else None), {}
+    data = _json(res.out)
+    data = data if isinstance(data, dict) else {}
+    return data.get("State"), data
+
+
+def lakehouse_set(run: Runner, enabled: bool) -> tuple[str | None, str | None]:
+    """Habilita o deshabilita el horario sin tocar el resto de su definición. ``(antes, después)``."""
+    want = "ENABLED" if enabled else "DISABLED"
+    before, data = lakehouse_schedule(run)
+    if before in ("NO_EXISTE", want):
+        return before, before
+    if before is None:
+        raise OpsError(f"no se pudo leer el horario {LAKEHOUSE_SCHEDULE}; revise las credenciales de AWS en WSL:\n"
+                       f"  aws scheduler get-schedule --name {LAKEHOUSE_SCHEDULE} --region {AWS_REGION}")
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "schedule.json"
+        path.write_text(json.dumps(schedule_update_input(data, want)), encoding="utf-8")
+        res = run(["aws", "scheduler", "update-schedule", "--cli-input-json", f"file://{path}",
+                   "--region", AWS_REGION, "--output", "json"], env=AWS_ENV)
+    after, _ = lakehouse_schedule(run)
+    if after != want:
+        raise OpsError(f"no se pudo poner {LAKEHOUSE_SCHEDULE} en {want} (quedó {after}):\n"
+                       + (res.err.strip() or res.out.strip())[-600:])
+    return before, after
+
+
+def _change(before: str | None, after: str | None) -> str:
+    return f"ya estaba {after}" if before == after else f"{before or 'sin dato'} → {after}"
+
+
+def flow_on(run: Runner, s: Settings, say: Report) -> None:
+    """Reanuda el exportador y habilita el horario del lakehouse (lo que lleva el dato al tablero)."""
+    before, after = exporter_set(run, s, True)
+    if after == "NO_EXISTE":
+        say("exportador: no existe (Lote 3.2 sin aplicar); el dato se queda en GCS")
+    else:
+        say(f"exportador: {_change(before, after)} (cada 15 min, ≈ {EXPORTER_USD_DAY} USD/día)")
+    before, after = lakehouse_set(run, True)
+    if after == "NO_EXISTE":
+        say("lakehouse: el horario no existe (Lote 4.1 sin aplicar); el dato se queda en S3 Raw")
+    else:
+        say(f"lakehouse: horario {_change(before, after)} (cada hora, ≈ {LAKEHOUSE_USD_DAY} USD/día)")
+
+
+def flow_off(run: Runner, s: Settings, say: Report, final_export: bool = True, lakehouse: bool = False) -> None:
+    """Pausa el exportador (con una última corrida si estaba encendido) y, si se pide, el lakehouse."""
+    before, after = exporter_set(run, s, False)
+    if after == "NO_EXISTE":
+        say("exportador: no existe (Lote 3.2 sin aplicar)")
+    else:
+        say(f"exportador: {_change(before, after)}")
+    if final_export and before == "ENABLED":
+        if active_jobs(run, s):
+            say("exportador: Dataflow sigue drenando; lo que falta sale en la primera corrida del próximo on.py")
+        else:
+            exporter_final_run(run, s, say)
+    if lakehouse:
+        before, after = lakehouse_set(run, False)
+        say(f"lakehouse: horario {_change(before, after)}")
+    else:
+        state, _ = lakehouse_schedule(run)
+        say(f"lakehouse: horario {state or 'sin dato'}; se deja como está (off.py --lakehouse lo deshabilita)")
+
+
+# --------------------------------------------------------------------------- #
+# Estado
+# --------------------------------------------------------------------------- #
+
+
+def flow_summary(simulator: bool, dataflow: bool, exporter: str | None, lakehouse: str | None) -> str:
+    """Hasta dónde llega hoy un dato nuevo: simulador → Pub/Sub → Dataflow → GCS → S3 → Glue → tablero."""
+    links = [
+        ("simulador", simulator, "no entra dato nuevo"),
+        ("Dataflow", dataflow, "el dato se queda en Pub/Sub"),
+        ("exportador", exporter == "ENABLED", "llega a BigQuery, GCS y alertas, no a AWS"),
+        ("horario del lakehouse", lakehouse == "ENABLED", "llega a S3 Raw, no a Curated ni al tablero"),
+    ]
+    missing = [(name, reach) for name, on, reach in links if not on]
+    if not missing:
+        return f"Flujo de punta a punta: COMPLETO ({FLOW_LATENCY})"
+    first, reach = missing[0]
+    others = [name for name, _r in missing[1:]]
+    return (f"Flujo de punta a punta: CORTADO en {first} ({reach})"
+            + (f"; también apagado: {', '.join(others)}" if others else ""))
+
+
+def alerts_line(run: Runner, s: Settings) -> str:
+    res = run(["gcloud", "run", "services", "describe", ALERT_NOTIFIER, "--region", s.region,
+               "--project", s.project, "--format=value(status.url)"])
+    if not (res.ok and res.out.strip()):
+        return "GCP alertas: sin notificador (Lote 6.2 sin aplicar)"
+    pol = run(["gcloud", "monitoring", "policies", "list", "--project", s.project,
+               f'--filter=displayName="{ALERT_POLICY}"', "--format=value(enabled)"])
+    enabled = pol.out.strip().lower() if pol.ok else ""
+    policy = {"true": "política activa", "false": "política DESACTIVADA"}.get(enabled, "política sin dato")
+    return f"GCP alertas: {ALERT_NOTIFIER} listo (escala a cero) · {policy} · solo hay alertas con Dataflow"
+
+
+def quicksight_line(run: Runner, now: datetime | None = None) -> str:
+    """Suscripción de QuickSight y días de prueba (Lote 6.1). Después de la prueba, cobra por usuario."""
+    ident = run(["aws", "sts", "get-caller-identity", "--query", "Account", "--output", "text"], env=AWS_ENV)
+    account = ident.out.strip() if ident.ok else ""
+    if not account.isdigit():
+        return "AWS QuickSight: sin dato (¿credenciales de AWS?)"
+    res = run(["aws", "quicksight", "describe-account-subscription", "--aws-account-id", account,
+               "--region", AWS_REGION, "--output", "json"], env=AWS_ENV)
+    if not res.ok:
+        return "AWS QuickSight: sin suscripción" if "ResourceNotFoundException" in res.err + res.out else "AWS QuickSight: sin dato"
+    info = (_json(res.out) or {}).get("AccountInfo") or {}
+    sub = info.get("AccountSubscriptionStatus") or "?"
+    if sub == "UNSUBSCRIBED":
+        return "AWS QuickSight: UNSUBSCRIBED (no cobra)"
+    try:
+        from ops.validate61 import trial_end  # tarde: validate61 importa este módulo
+        end = trial_end()
+    except Exception:  # noqa: BLE001 - el estado solo informa
+        return f"AWS QuickSight: {sub}"
+    left = (end - (now or datetime.now(timezone.utc))).days
+    unsubscribe = "python project/scripts/validate_6_1.py unsubscribe --confirm-unsubscribe"
+    if left >= 0:
+        return f"AWS QuickSight: {sub} · prueba gratis hasta ≈ {end:%Y-%m-%d} ({left} días); al terminar el proyecto: {unsubscribe}"
+    return f"AWS QuickSight: {sub} (cobra) por usuario desde ≈ {end:%Y-%m-%d}; si ya no se usa: {unsubscribe}"
+
+
 def status(run: Runner, s: Settings | None) -> list[str]:
     lines = []
     if docker_ok(run):
@@ -511,12 +747,28 @@ def status(run: Runner, s: Settings | None) -> list[str]:
             lines.append(f"GCP Dataflow: {j.get('name')} {j.get('state') or j.get('currentState')} (cobra) · {j.get('id')}")
     else:
         lines.append("GCP Dataflow: ningún job activo")
+    exporter = exporter_state(run, s)
+    lines.append("GCP exportador: " + {
+        "ENABLED": f"ENCENDIDO (cobra) · {EXPORTER_SCHEDULER} cada 15 min, ≈ {EXPORTER_USD_DAY} USD/día",
+        "PAUSED": f"en pausa ({EXPORTER_SCHEDULER} PAUSED)",
+        "NO_EXISTE": "no existe (Lote 3.2 sin aplicar)",
+    }.get(exporter or "", f"sin dato ({exporter})" if exporter else "sin dato"))
+    lines.append(alerts_line(run, s))
+    lakehouse, _ = lakehouse_schedule(run)
+    lines.append("AWS lakehouse: " + {
+        "ENABLED": f"horario {LAKEHOUSE_SCHEDULE} ENABLED (cada hora, ≈ {LAKEHOUSE_USD_DAY} USD/día; estado normal)",
+        "DISABLED": f"horario {LAKEHOUSE_SCHEDULE} DISABLED (ahorro; on.py lo habilita)",
+        "NO_EXISTE": "el horario no existe (Lote 4.1 sin aplicar)",
+    }.get(lakehouse or "", "sin dato (¿credenciales de AWS?)"))
+    lines.append(quicksight_line(run))
     subs = verify_subscriptions(run, s)
     builds = ongoing_builds(run, s)
     if subs:
         lines.append(f"GCP suscripciones temporales: {', '.join(subs)}")
     if builds:
         lines.append(f"GCP Cloud Build: {builds} en curso")
+    running = any(str(j.get("state") or j.get("currentState")).lower().endswith("running") for j in jobs)
+    lines.append(flow_summary(bool(url), running, exporter, lakehouse))
     return lines
 
 
@@ -538,9 +790,16 @@ def _parse(argv: list[str], action: str):
                        help="NLP del Lote 2.3: auto (si hay imagen), on u off")
         p.add_argument("--restart-job", action="store_true", help="drena el job activo y lanza uno nuevo (tras copiar código)")
         p.add_argument("--no-wait", action="store_true", help="no esperar a que el job esté en Running")
+        p.add_argument("--stream-only", action="store_true",
+                       help="solo simulador y Dataflow: no reanuda el exportador ni habilita el horario del lakehouse")
     else:
         p.add_argument("--keep-simulator", action="store_true", help="apaga Dataflow pero deja el simulador")
         p.add_argument("--force", action="store_true", help="cancela el job si sigue drenando tras 15 min")
+        p.add_argument("--stream-only", action="store_true", help="solo Dataflow y simulador: no pausa el exportador")
+        p.add_argument("--no-final-export", action="store_true",
+                       help="pausa el exportador sin la última corrida que lleva a S3 lo que quedó en GCS")
+        p.add_argument("--lakehouse", action="store_true",
+                       help=f"también deshabilita el horario del lakehouse de AWS (≈ {LAKEHOUSE_USD_DAY} USD/día)")
     p.add_argument("--region", default=os.environ.get("GCP_REGION", "us-central1"))
     p.add_argument("--env", default=os.environ.get("ENV", "dev"))
     return p.parse_args(argv)
@@ -564,16 +823,26 @@ def main(action: str, argv: list[str] | None = None, run: Runner | None = None) 
             nlp=getattr(args, "nlp", "auto"), yes=args.yes,
             wait=not getattr(args, "no_wait", False), force=getattr(args, "force", False),
         )
+        flow = cloud and not args.stream_only
         plan = []
         if args.target in ("all", "local"):
             plan.append("local: " + ("emulador, simulador y dataflow-local" if action == "on" else "apagar todo (down-all)"))
         if cloud:
             if action == "on":
                 plan.append(f"GCP ({s.project}): simulador en Cloud Run y job {s.job_prefix} (~2 USD/día + ~0,25 USD/h)")
+                if flow:
+                    plan.append(f"GCP: reanudar el exportador GCS → S3 cada 15 min (≈ {EXPORTER_USD_DAY} USD/día)")
+                    plan.append(f"AWS: horario del lakehouse cada hora (≈ {LAKEHOUSE_USD_DAY} USD/día; "
+                                "normalmente ya está encendido)")
             else:
                 plan.append(f"GCP ({s.project}): drenar {s.job_prefix}"
                             + ("" if getattr(args, "keep_simulator", False) else ", apagar el simulador")
                             + " y borrar suscripciones ta-verify-*")
+                if flow:
+                    plan.append("GCP: pausar el exportador" + ("" if args.no_final_export else
+                                ", tras una última corrida que lleva a S3 lo que quede en GCS"))
+                    plan.append("AWS: deshabilitar el horario del lakehouse" if args.lakehouse else
+                                "AWS: el horario del lakehouse se deja como está (--lakehouse lo deshabilita)")
         check_line_endings()
         print(("Encender:" if action == "on" else "Apagar:"))
         for line in plan:
@@ -585,11 +854,17 @@ def main(action: str, argv: list[str] | None = None, run: Runner | None = None) 
         if action == "on":
             if args.target in ("all", "local"):
                 local_on(run, s, say)
+            if flow:
+                flow_on(run, s, say)  # primero: es rápido y falla pronto si faltan las credenciales de AWS
             if cloud:
                 cloud_on(run, s, say, restart_job=args.restart_job)
+            if flow:
+                say(f"con todo encendido: {FLOW_LATENCY}")
         else:
             if cloud:
                 cloud_off(run, s, say, keep_simulator=args.keep_simulator)
+            if flow:
+                flow_off(run, s, say, final_export=not args.no_final_export, lakehouse=args.lakehouse)
             if args.target in ("all", "local"):
                 local_off(run, s, say)
         print("\nEstado:")

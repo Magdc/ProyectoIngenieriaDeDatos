@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Apaga los servicios que cobran (y lo local si se pide). Ver docs/ACTIVE_SERVICES.md.
+"""Apaga lo que cobra: Dataflow, el simulador y el exportador (y lo local si se pide).
+
+Ver docs/ACTIVE_SERVICES.md.
 
 Uso (desde la raíz del repo o desde project/, con ~/.venvs/ta-streaming activo):
 
-    python project/scripts/on.py [all|local|cloud] [--nlp auto|on|off] [--restart-job] [--yes]
-    python project/scripts/off.py [all|local|cloud] [--keep-simulator] [--force] [--yes]
+    python project/scripts/on.py [all|local|cloud] [--nlp auto|on|off] [--restart-job] [--stream-only] [--yes]
+    python project/scripts/off.py [all|local|cloud] [--keep-simulator] [--force] [--stream-only]
+                                  [--no-final-export] [--lakehouse] [--yes]
     python project/scripts/status.py
 """
 

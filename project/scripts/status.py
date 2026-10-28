@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Muestra qué está encendido, en local y en GCP (solo lectura).
+"""Muestra qué está encendido en local, GCP y AWS, y hasta dónde llega hoy un dato nuevo (solo lectura).
 
 Uso (desde la raíz del repo o desde project/, con ~/.venvs/ta-streaming activo):
 
-    python project/scripts/on.py [all|local|cloud] [--nlp auto|on|off] [--restart-job] [--yes]
-    python project/scripts/off.py [all|local|cloud] [--keep-simulator] [--force] [--yes]
+    python project/scripts/on.py [all|local|cloud] [--nlp auto|on|off] [--restart-job] [--stream-only] [--yes]
+    python project/scripts/off.py [all|local|cloud] [--keep-simulator] [--force] [--stream-only]
+                                  [--no-final-export] [--lakehouse] [--yes]
     python project/scripts/status.py
 """
 

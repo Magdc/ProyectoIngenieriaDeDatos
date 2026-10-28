@@ -1,0 +1,18 @@
+# Pre-commit (Lote 7.1, HU-041; §5.12 «Secretos»): gitleaks sobre lo que se va a commitear y formato de Terraform.
+# Instalación (una vez por clon):  python -m pip install pre-commit && pre-commit install
+# A mano, sobre todo el árbol:     pre-commit run --all-files
+# La CI corre lo mismo (gitleaks sobre el historial y terraform fmt -check), así que un commit hecho sin el hook
+# igual se revisa en el push.
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.28.0
+    hooks:
+      - id: gitleaks
+  - repo: local
+    hooks:
+      - id: terraform-fmt
+        name: terraform fmt -check
+        entry: terraform fmt -check -recursive project/infra
+        language: system
+        pass_filenames: false
+        files: \.tf$

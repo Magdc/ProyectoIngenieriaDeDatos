@@ -1,10 +1,24 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.53**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.54**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.54 · desde v2.53
+
+**Lote que lo motiva:** Lote 7.1 (HU-041) · entrega
+
+| Área | Cambio |
+|---|---|
+| Decisión (adoptada por defecto, a confirmar; ADR-34) | La CI corre **sin credenciales de nube**. El CD (publicar imágenes y `terraform plan` contra la nube) queda escrito con OIDC y **apagado** hasta que el usuario decida confiar en el repositorio público y subir los `tfvars` como secretos. |
+| Lote 7.1 | `.github/workflows/ci.yml` (PR, push a `main` y a mano; `contents: read`): `pytest` (contratos, identidad y suite completa con `project/requirements-ci.txt`), `terraform` (`infra/validate.sh`, Terraform 1.16.6), `images` (etapa `test` de `simulator`, `exporter` y `alerts`), `secretos` (gitleaks v8.28.0 sobre todo el historial y ningún `terraform.tfvars` versionado). `.github/workflows/cd.yml` (Cloud Build y `plan -refresh=false -lock=false` de las dos nubes con OIDC; trabajos con `if: vars.TA_CD_ENABLED == 'true'`). `.pre-commit-config.yaml` (gitleaks y `terraform fmt`), `.gitleaks.toml`, `.gitleaksignore`. Modo `test` en `build_{simulator,exporter,alerts}_image.sh`. |
+| Infraestructura | Módulos `infra/gcp/modules/github_cd` (pool `ta-github`, proveedor `github` solo para este repositorio en `main`, `sa-github-cd`) e `infra/aws/modules/github_cd_role` (proveedor OIDC opcional y rol `ta-github-cd` con `ViewOnlyAccess` y lectura del estado), con `count = 0` (`github_cd_enabled = false`). Plan de las dos raíces: **sin cambios**. |
+| Pruebas corregidas | `test_flex_template.py` dejaba `GCP_PROJECT=p` puesto y `test_stream_pipeline.py` fallaba en la suite completa (leía la llave HMAC de Secret Manager). Las tres de `publish` de `test_ops_validate52.py` dependían de `terraform.tfvars`, que no se versiona. |
+| Hallazgo de seguridad | gitleaks encontró en el historial público un **token de Mastodon** (`fuente_datos/tanteo_fuentes.py`, commit `6b25e2f`, 25-ago-2026). Hay que **revocarlo** (lo hace el usuario); reescribir el historial es decisión suya. Riesgo agregado en §9. |
+| Validación | `scripts/validate_7_1.py` → `src/ops/validate71.py` (9 pruebas): `preflight`, `tests`, `local`, `emulate`, `plan`, `github`, `status`. Guía `docs/validation/validation-7-1.md` (con «Activar el CD»). Corridas al entregar: A 3, B 9, L 9 (las tres imágenes con 137, 96 y 11 pruebas dentro), **E** en `python:3.11` limpio (contratos 18, identidad 12, suite 1.644 passed y 4 omitidas, 8,7 min) y **C** (plan sin cambios en las dos nubes). Pendiente: G (la CI en GitHub tras el push). |
+| Documento | ARCHITECTURE §3.30 y §3.30.1, §0, §5.12 («Contratos en CI», «Secretos»), §6, ADR-34, §9 (riesgo); PLAN.md §3 (7.1 🟨); cabeceras a 2.54. |
 
 ## v2.53 · desde v2.52
 

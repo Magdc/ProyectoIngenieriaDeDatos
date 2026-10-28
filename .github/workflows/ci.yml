@@ -1,0 +1,102 @@
+# CI de TrendAnalyzer (Lote 7.1, HU-041; ARCHITECTURE.md §3.30). Sin credenciales de nube: corre en cada PR, en
+# cada push a main y a mano. La publicación de imágenes y el `terraform plan` contra la nube están en cd.yml.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+  TERRAFORM_VERSION: "1.16.6"
+  GITLEAKS_IMAGE: ghcr.io/gitleaks/gitleaks:v8.28.0
+
+jobs:
+  pytest:
+    name: pytest (contratos, identidad y suite completa)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: project
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            project/requirements-ci.txt
+            project/src/streaming/requirements.txt
+            project/src/simulator/requirements.txt
+            project/src/simulator/constraints.txt
+      - name: Dependencias
+        run: python -m pip install -r requirements-ci.txt
+      - name: Contratos (HU-001)
+        run: python -m pytest contracts/tests -q -p no:cacheprovider
+      - name: "Identidad: sin handle ni user_id después de Dataflow"
+        run: >-
+          python -m pytest -q -p no:cacheprovider -k "identidad or hmac"
+          src/streaming/tests/test_enriched_row.py src/dq/tests/test_dq_identity.py src/smoke/tests/test_smoke_e2e.py
+      - name: Suite completa
+        run: python -m pytest -q -p no:cacheprovider -rs
+
+  terraform:
+    name: terraform fmt y validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Terraform
+        run: |
+          curl -fsSLo /tmp/tf.zip "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
+          sudo unzip -o -q /tmp/tf.zip terraform -d /usr/local/bin
+          terraform version
+      - name: fmt -check y validate (sin backend ni credenciales)
+        run: bash project/infra/validate.sh
+
+  images:
+    name: imagen ${{ matrix.image }} (pruebas dentro)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [simulator, exporter, alerts]
+    steps:
+      - uses: actions/checkout@v5
+      - name: docker build --target test
+        run: bash project/scripts/build_${{ matrix.image }}_image.sh test
+
+  secrets:
+    name: secretos (gitleaks y tfvars)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: gitleaks sobre todo el historial
+        run: >-
+          docker run --rm -v "$GITHUB_WORKSPACE:/repo"
+          -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0='*'
+          "$GITLEAKS_IMAGE" git /repo --no-banner --redact
+          --config /repo/.gitleaks.toml --gitleaks-ignore-path /repo/.gitleaksignore
+      - name: terraform.tfvars fuera del repositorio
+        run: |
+          if git ls-files | grep -E '(^|/)terraform\.tfvars$|\.auto\.tfvars$'; then
+            echo "hay archivos tfvars versionados" >&2
+            exit 1
+          fi
+          git check-ignore -q project/infra/gcp/environments/dev/terraform.tfvars
+          git check-ignore -q project/infra/aws/environments/dev/terraform.tfvars
+          echo "terraform.tfvars y *.auto.tfvars: ignorados y sin versionar"

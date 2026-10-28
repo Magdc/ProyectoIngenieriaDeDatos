@@ -104,6 +104,8 @@ def sandbox(tmp_path, monkeypatch):
     monkeypatch.setattr(v, "on_windows", lambda: False)
     monkeypatch.setattr(v, "EVIDENCE_DIR", tmp_path / "evidencia")
     monkeypatch.setattr(v, "NLP_EVIDENCE", tmp_path / "evidencia" / "precision_nlp_5_2.md")
+    # El proyecto sale de terraform.tfvars, que no se versiona: sin esto, publish falla en la CI (Lote 7.1).
+    monkeypatch.setattr(v, "gcp_project", lambda ctx: getattr(ctx.options, "gcp_project", None) or "proj-ci")
     folder = tmp_path / "dq_runs" / RUN_ID
     (folder / "ge").mkdir(parents=True)
     (folder / "summary.json").write_text(json.dumps({"run_id": RUN_ID, "ok": True}))

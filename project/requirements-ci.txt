@@ -1,0 +1,11 @@
+# Dependencias de la CI (Lote 7.1, HU-041): las que necesitan las pruebas sin nube de project/src y
+# project/contracts, con las mismas versiones que ~/.venvs/ta-streaming (Python 3.11). Sin NLP (torch) ni
+# Great Expectations: esas pruebas se omiten solas o tienen su propio entorno (src/dq/requirements.txt).
+#   python -m pip install -r project/requirements-ci.txt
+-c src/simulator/constraints.txt
+-r src/streaming/requirements.txt
+-r src/simulator/requirements.txt
+google-cloud-bigquery==3.46.2
+boto3==1.43.118
+pyarrow==25.0.1
+pytest==9.1.1

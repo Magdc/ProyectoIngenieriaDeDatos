@@ -7,11 +7,18 @@
 #
 #   cloudbuild (por defecto): construye en Cloud Build; no necesita Docker local.
 #   docker: construye con el Docker local y hace push (requiere `gcloud auth configure-docker`).
+#   test (Lote 7.1, CI): solo la etapa `test` con el Docker local; no publica ni necesita GCP_PROJECT.
 #   tag: por defecto, el commit corto de git (o la fecha y hora si no hay git).
 set -euo pipefail
 
 MODE="${1:-cloudbuild}"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [ "$MODE" = "test" ]; then
+  cd "$PROJECT_DIR"
+  docker build -f src/simulator/Dockerfile --target test -t stream-simulator-test .
+  echo "pruebas de la imagen OK (no se publica)"
+  exit 0
+fi
 : "${GCP_PROJECT:?Define GCP_PROJECT (p. ej. project-0568d9ba-848f-413c-88b)}"
 REGION="${GCP_REGION:-us-central1}"
 REPO="${TA_ARTIFACT_REPO:-ta-images}"
@@ -37,7 +44,7 @@ case "$MODE" in
     docker push "$IMAGE"
     ;;
   *)
-    echo "Modo desconocido: $MODE (usa cloudbuild o docker)" >&2
+    echo "Modo desconocido: $MODE (usa cloudbuild, docker o test)" >&2
     exit 2
     ;;
 esac

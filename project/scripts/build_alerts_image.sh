@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Construye, prueba y publica la imagen del notificador de alertas (Lote 6.2, ARCHITECTURE.md §3.28).
 #
-#   bash scripts/build_alerts_image.sh [cloudbuild|docker] [--tag ETIQUETA] [--dry-run]
+#   bash scripts/build_alerts_image.sh [cloudbuild|docker|test] [--tag ETIQUETA] [--dry-run]
+#
+# test (Lote 7.1, CI): solo construye la etapa `test` con el Docker local (las pruebas corren dentro);
+# no publica nada ni necesita GCP_PROJECT.
 #
 # Imagen: {GCP_REGION}-docker.pkg.dev/{GCP_PROJECT}/ta-images/alert-notifier:{etiqueta} y :latest.
 # Etiqueta por defecto: h-{huella sha256 de los archivos de la imagen, 12 hex}: cambiar el código
@@ -17,7 +20,7 @@ tag=""
 dry=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    cloudbuild|docker) mode="$1" ;;
+    cloudbuild|docker|test) mode="$1" ;;
     --tag) tag="${2:?falta la etiqueta}"; shift ;;
     --dry-run) dry=1 ;;
     -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
@@ -29,7 +32,7 @@ done
 project="${GCP_PROJECT:-$(gcloud config get-value project 2>/dev/null || true)}"
 region="${GCP_REGION:-us-central1}"
 repo="${TA_ARTIFACT_REPOSITORY:-ta-images}"
-if [[ -z "$project" ]]; then
+if [[ -z "$project" && "$mode" != "test" ]]; then
   echo "error: defina GCP_PROJECT (o gcloud config set project …)" >&2
   exit 2
 fi
@@ -68,6 +71,11 @@ if [[ "$dry" == 1 ]]; then
 fi
 
 start=$(date +%s)
+if [[ "$mode" == "test" ]]; then
+  docker build --target test -t alert-notifier-test "$ctx"
+  echo "pruebas de la imagen OK en $(( $(date +%s) - start )) s (no se publica)"
+  exit 0
+fi
 if [[ "$mode" == "cloudbuild" ]]; then
   gcloud builds submit "$ctx" \
     --project "$project" \

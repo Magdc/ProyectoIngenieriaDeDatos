@@ -1,0 +1,99 @@
+# CD de TrendAnalyzer (Lote 7.1, HU-041; ARCHITECTURE.md §3.30, ADR-34): publica las imágenes en Artifact
+# Registry y corre `terraform plan` contra la nube, sin llaves (OIDC de GitHub → GCP y AWS).
+#
+# APAGADO hasta que el dueño del repositorio decida activarlo (no corre nada mientras falte la variable):
+#   1. terraform apply con github_cd_enabled = true en infra/gcp y en infra/aws (crea el pool ta-github,
+#      sa-github-cd y el rol ta-github-cd; solo aceptan este repositorio en la rama main).
+#   2. Variables del repositorio (Settings → Secrets and variables → Actions → Variables): TA_CD_ENABLED = true,
+#      TA_GCP_PROJECT, TA_GCP_WIF_PROVIDER y TA_GCP_CD_SA (outputs github_cd_* de infra/gcp), TA_AWS_CD_ROLE
+#      (output github_cd_role_arn de infra/aws).
+#   3. Secretos del repositorio TA_GCP_TFVARS y TA_AWS_TFVARS: el contenido de terraform.tfvars y de los
+#      *.auto.tfvars de cada raíz (llevan el correo de las alertas: por eso son secretos y no van al repo).
+# Guía completa en docs/validation/validation-7-1.md («Activar el CD»).
+name: CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "project/src/common/**"
+      - "project/src/simulator/**"
+      - "project/src/exporter/**"
+      - "project/src/alerts/**"
+      - "project/infra/**"
+      - ".github/workflows/cd.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: cd
+  cancel-in-progress: false
+
+env:
+  TERRAFORM_VERSION: "1.16.6"
+
+jobs:
+  images:
+    name: publicar imágenes (Cloud Build)
+    if: vars.TA_CD_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      GCP_PROJECT: ${{ vars.TA_GCP_PROJECT }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.TA_GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.TA_GCP_CD_SA }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: stream-simulator
+        run: bash project/scripts/build_simulator_image.sh cloudbuild
+      - name: gcs-to-s3
+        run: bash project/scripts/build_exporter_image.sh cloudbuild
+      - name: alert-notifier
+        run: bash project/scripts/build_alerts_image.sh cloudbuild
+
+  plan:
+    name: terraform plan (${{ matrix.cloud }})
+    if: vars.TA_CD_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        cloud: [gcp, aws]
+    defaults:
+      run:
+        working-directory: project/infra/${{ matrix.cloud }}/environments/dev
+    steps:
+      - uses: actions/checkout@v5
+      - name: Terraform
+        working-directory: .
+        run: |
+          curl -fsSLo /tmp/tf.zip "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
+          sudo unzip -o -q /tmp/tf.zip terraform -d /usr/local/bin
+      - if: matrix.cloud == 'gcp'
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.TA_GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.TA_GCP_CD_SA }}
+      - if: matrix.cloud == 'aws'
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.TA_AWS_CD_ROLE }}
+          aws-region: us-east-1
+      - name: tfvars (secretos del repositorio)
+        env:
+          TFVARS: ${{ matrix.cloud == 'gcp' && secrets.TA_GCP_TFVARS || secrets.TA_AWS_TFVARS }}
+        run: |
+          umask 077
+          printf '%s\n' "$TFVARS" > ci.auto.tfvars
+      - name: plan (sin refresco ni candado; solo lectura)
+        run: |
+          cp backend.hcl.example backend.hcl
+          terraform init -input=false -backend-config=backend.hcl
+          terraform plan -input=false -lock=false -refresh=false -no-color

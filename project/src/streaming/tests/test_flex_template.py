@@ -128,9 +128,12 @@ def test_main_trabaja_desde_src_como_dataflow_job_sh(monkeypatch, tmp_path):
     monkeypatch.setattr(flex_main.runpy, "run_module", fake_run_module)
     monkeypatch.setattr(_sys, "argv", ["flex_main.py", "--project=p", "--region=r",
                                        "--template_location=gs://b/job_object", "--nlp_container_image=img:1"])
-    monkeypatch.delenv("TA_NLP_IMAGE", raising=False)
-    monkeypatch.delenv("GCP_PROJECT", raising=False)
-    monkeypatch.delenv("GCP_REGION", raising=False)
+    # main() escribe estas variables: setenv antes de delenv deja registrado que no existían, así pytest las borra
+    # al terminar. Con solo delenv(raising=False) no se registra nada y GCP_PROJECT=p seguía puesto para las pruebas
+    # siguientes (test_stream_pipeline leía entonces la llave HMAC de Secret Manager; visto en la CI, Lote 7.1).
+    for name in ("TA_NLP_IMAGE", "GCP_PROJECT", "GCP_REGION"):
+        monkeypatch.setenv(name, "")
+        monkeypatch.delenv(name)
     flex_main.main()
     assert seen["name"] == "streaming.pipeline" and seen["run_name"] == "__main__"
     assert seen["cwd"] == str(flex_main.SRC_DIR) and (flex_main.SRC_DIR / "streaming").is_dir()

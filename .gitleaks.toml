@@ -1,0 +1,10 @@
+# gitleaks (Lote 7.1, HU-041): las reglas por defecto más las excepciones revisadas a mano.
+# Lo usan el pre-commit (.pre-commit-config.yaml) y la CI (.github/workflows/ci.yml).
+title = "TrendAnalyzer"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Llaves falsas con las que las pruebas comprueban el detector de fugas del Lote 5.3"
+paths = ['''project/src/ops/tests/test_ops_validate53\.py''']

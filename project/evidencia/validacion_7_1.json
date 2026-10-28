@@ -1,0 +1,236 @@
+{
+  "lote": "7.1",
+  "hu": [
+    "HU-041"
+  ],
+  "parts": {
+    "A": {
+      "title": "Preflight del código y de las herramientas",
+      "status": "OK",
+      "started_at": "2026-10-29T04:27:58.516186+00:00",
+      "finished_at": "2026-10-29T04:27:59.588038+00:00",
+      "steps": [
+        {
+          "id": "A1",
+          "title": "los 13 archivos del lote",
+          "status": "OK",
+          "detail": "presentes",
+          "data": {}
+        },
+        {
+          "id": "A2",
+          "title": "herramientas",
+          "status": "OK",
+          "detail": "docker, terraform, git",
+          "data": {}
+        },
+        {
+          "id": "A3",
+          "title": "Docker en marcha",
+          "status": "OK",
+          "detail": "servidor 29.7.2",
+          "data": {}
+        }
+      ]
+    },
+    "B": {
+      "title": "Pruebas",
+      "status": "OK",
+      "started_at": "2026-10-29T04:28:00.176109+00:00",
+      "finished_at": "2026-10-29T04:28:02.064027+00:00",
+      "steps": [
+        {
+          "id": "B1",
+          "title": "pytest test_ops_validate71.py",
+          "status": "OK",
+          "detail": "9 passed, 0 skipped, 0 failed (esperado 9)",
+          "data": {
+            "passed": 9,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        }
+      ]
+    },
+    "L": {
+      "title": "Workflows, pre-commit, Terraform, gitleaks, tfvars e imágenes (sin nube)",
+      "status": "OK",
+      "started_at": "2026-10-29T04:28:02.659459+00:00",
+      "finished_at": "2026-10-29T04:30:00.578893+00:00",
+      "steps": [
+        {
+          "id": "L1",
+          "title": "ci.yml: PR y push a main, pytest, contratos, identidad, Terraform, imágenes, gitleaks y tfvars",
+          "status": "OK",
+          "detail": "trabajos: pytest, terraform, images, secrets",
+          "data": {
+            "jobs": [
+              "pytest",
+              "terraform",
+              "images",
+              "secrets"
+            ]
+          }
+        },
+        {
+          "id": "L2",
+          "title": "cd.yml: imágenes y plan con OIDC, apagado sin TA_CD_ENABLED",
+          "status": "OK",
+          "detail": "trabajos: images, plan (se saltan hasta que el usuario active el CD)",
+          "data": {}
+        },
+        {
+          "id": "L3",
+          "title": "pre-commit: gitleaks y terraform fmt",
+          "status": "OK",
+          "detail": "2 hooks",
+          "data": {}
+        },
+        {
+          "id": "L4",
+          "title": "terraform fmt -check y validate de las 4 raíces (con los módulos del CD)",
+          "status": "OK",
+          "detail": "OK",
+          "data": {}
+        },
+        {
+          "id": "L5",
+          "title": "gitleaks sobre todo el historial (con .gitleaksignore)",
+          "status": "OK",
+          "detail": "0 hallazgos nuevos; 2 revisados a mano en .gitleaksignore (uno es un token de Mastodon del 25-ago-2026 que hay que revocar: ver §3.30)",
+          "data": {
+            "ignored": 2
+          }
+        },
+        {
+          "id": "L6",
+          "title": "terraform.tfvars y *.auto.tfvars ignorados y sin versionar",
+          "status": "OK",
+          "detail": "ninguno versionado; los dos terraform.tfvars ignorados",
+          "data": {}
+        },
+        {
+          "id": "L7s",
+          "title": "imagen simulator: etapa test (pruebas dentro, sin publicar)",
+          "status": "OK",
+          "detail": "? pruebas dentro en 5 s",
+          "data": {
+            "passed": null,
+            "seconds": 5
+          }
+        },
+        {
+          "id": "L7e",
+          "title": "imagen exporter: etapa test (pruebas dentro, sin publicar)",
+          "status": "OK",
+          "detail": "? pruebas dentro en 2 s",
+          "data": {
+            "passed": null,
+            "seconds": 2
+          }
+        },
+        {
+          "id": "L7a",
+          "title": "imagen alerts: etapa test (pruebas dentro, sin publicar)",
+          "status": "OK",
+          "detail": "? pruebas dentro en 2 s",
+          "data": {
+            "passed": null,
+            "seconds": 2
+          }
+        }
+      ]
+    },
+    "C": {
+      "title": "terraform plan con el CD apagado (no debe cambiar nada)",
+      "status": "OK",
+      "started_at": "2026-10-29T04:30:01.262592+00:00",
+      "finished_at": "2026-10-29T04:31:03.107407+00:00",
+      "steps": [
+        {
+          "id": "C1",
+          "title": "plan de infra/gcp: sin cambios (github_cd_enabled = false)",
+          "status": "OK",
+          "detail": "0 a crear, 0 a cambiar, 0 a destruir",
+          "data": {
+            "create": [],
+            "update": [],
+            "delete": [],
+            "replace": []
+          }
+        },
+        {
+          "id": "C2",
+          "title": "plan de infra/aws: sin cambios (github_cd_enabled = false)",
+          "status": "OK",
+          "detail": "0 a crear, 0 a cambiar, 0 a destruir",
+          "data": {
+            "create": [],
+            "update": [],
+            "delete": [],
+            "replace": []
+          }
+        }
+      ]
+    },
+    "E": {
+      "title": "La CI de pytest en un contenedor python:3.11 limpio (sin venv ni credenciales)",
+      "status": "OK",
+      "started_at": "2026-10-29T04:47:08.254197+00:00",
+      "finished_at": "2026-10-29T04:55:54.078571+00:00",
+      "steps": [
+        {
+          "id": "E1",
+          "title": "contratos (HU-001)",
+          "status": "OK",
+          "detail": "18 passed, 0 skipped, 0 failed",
+          "data": {
+            "passed": 18,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "E2",
+          "title": "identidad: sin handle ni user_id",
+          "status": "OK",
+          "detail": "12 passed, 0 skipped, 0 failed",
+          "data": {
+            "passed": 12,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 25
+          }
+        },
+        {
+          "id": "E3",
+          "title": "suite completa",
+          "status": "OK",
+          "detail": "1644 passed, 4 skipped, 0 failed",
+          "data": {
+            "passed": 1644,
+            "failed": 0,
+            "skipped": 4,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "E4",
+          "title": "tiempo de la emulación (instalar + pytest)",
+          "status": "OK",
+          "detail": "8.7 min",
+          "data": {
+            "seconds": 522
+          }
+        }
+      ]
+    }
+  },
+  "updated_at": "2026-10-29T04:55:54.078862+00:00"
+}

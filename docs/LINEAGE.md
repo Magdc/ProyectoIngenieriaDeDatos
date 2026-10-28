@@ -35,7 +35,7 @@ flowchart LR
     RAW -->|"ta-job-raw-to-trusted (cada hora)"| TR[("ta_trusted.posts")]
     TR -->|"ta-job-trusted-to-curated (cada hora)"| CUR[("ta_curated: fact_posts, 4 dimensiones,<br/>2 agregados, 2 aristas")]
     CUR --> ATH["Athena ta-analytics<br/>consultas guardadas"]
-    ATH --> QS["QuickSight (Lote 6.1, previsto)"]
+    ATH --> QS["QuickSight · ta-tablero-tendencias (Lote 6.1, SPICE)"]
   end
   GENR -->|"solo enriched/ sale de GCP"| EXP
   subgraph DQ["Calidad a demanda (WSL)"]
@@ -66,7 +66,7 @@ job de Dataflow por la suscripción `ta-dlq-df` para escribir `dlq_events`. El e
 | 8 | Trusted | `project/src/lakehouse/glue_jobs/raw_to_trusted.py` · `ta-job-raw-to-trusted` | `raw/` | `trusted/posts/` = `ta_trusted.posts` | Deduplica (menor `process_time`), quita centinelas, corrige tipos, `text_clean`, reporte con sha256 en `quality/` | Solo `user_hash` | §3.21 |
 | 9 | Curated | `project/src/lakehouse/glue_jobs/trusted_to_curated.py` · `ta-job-trusted-to-curated` | `trusted/posts/` | `curated/{9 tablas}` | Estrella, agregados y aristas recalculados enteros; concilia antes de escribir; reporte en `quality/` | Solo `user_hash` (sin `text` ni `payload`) | §3.22, §3.23 |
 | 10 | Consultar | Athena `ta-analytics` · `project/src/lakehouse/queries/` | Curated (y Raw) | Resultados en `athena-results/` (7 días) | Consultas guardadas | Solo `user_hash` | §3.19, §3.22.1 |
-| 11 | Tablero | QuickSight sobre `ta_curated` (Lote 6.1, **previsto**) | Curated vía Athena (SPICE) | Tablero | — | Sin `user_hash` en los visuales previstos | §5.7 |
+| 11 | Tablero | QuickSight `ta-tablero-tendencias` sobre `ta_curated` (Lote 6.1): fuente `ta-athena-curated` con `ta-quicksight-role` y 4 datasets SPICE (`src/serving/sql/`) | Curated vía Athena, importado a SPICE | Tablero con las hojas «Tendencias» (HU-037) y «Relaciones» (HU-038) | `quicksight.py deploy`; refresco `ta-cada-hora` | Ningún dataset tiene `user_hash`: las aristas se agregan por marcas dentro del SQL; horas pasadas a `America/Bogota` | §5.7, §3.27 |
 | Q | Calidad | `project/src/dq/` · `project/scripts/run_dq.py` (GX 1.24.1) y el profiling `project/src/quality/` | Copia local de Raw, Trusted y Curated | `quality/{día}/ge/{run_id}/`, `ta_stream.dq_results` | Solo lee y resume: 239 comprobaciones sin datos de filas | Las salidas no llevan `user_hash` | §3.20, §3.24 |
 
 ## 3. Auditoría: cómo seguir un dato

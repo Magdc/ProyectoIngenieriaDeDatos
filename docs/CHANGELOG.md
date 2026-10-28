@@ -1,10 +1,23 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.46**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.47**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.47 · desde v2.46
+
+**Lote que lo motiva:** Lote 6.1 (HU-037, HU-038) · entrega
+
+| Área | Cambio |
+|---|---|
+| Decisiones del usuario | (1) **Suscribir QuickSight** (Enterprise, `us-east-1`, `IAM_AND_QUICKSIGHT`) sin preocuparse por el precio: la arquitectura se usa como mucho ~4 días, dentro de la prueba gratis (hasta ≈ 26-nov-2026); el correo de avisos es el del usuario y no se versiona. (2) Aplicar con Terraform los roles IAM de acceso. |
+| Lote 6.1 | `src/serving/` (`quicksight_spec`, `deploy`, `cli`, `sql/` con 4 consultas, `QUICKSIGHT.md`, 10 pruebas) y `scripts/quicksight.py` (`plan`, `deploy`, `refresh`, `status`, `embed-url`): fuente Athena `ta-athena-curated` con `ta-quicksight-role`, datasets SPICE `ta-ds-publicaciones`, `ta-ds-coocurrencia-hashtags`, `ta-ds-marcas-compartidas` y `ta-ds-autores-por-marcas` (refresco cada hora), grupos `ta-autores`/`ta-lectores` y el tablero `ta-tablero-tendencias` (hojas «Tendencias» y «Relaciones», 16 visuales, filtros marca, red, origen y periodo). Horas en `America/Bogota` en el SQL; `user_hash` en ningún dataset. |
+| Infraestructura | Módulo `infra/aws/modules/quicksight_access` y `environments/dev/serving.tf`: roles `ta-quicksight-autor` y `ta-quicksight-lector` (confianza en la cuenta, solo auto-registro en QuickSight) y el output `quicksight_access_role_arns`; plan: 4 a crear. |
+| Validación | `scripts/validate_6_1.py` → `src/ops/validate61.py` (12 pruebas): `preflight`, `tests`, `local`, `terraform`, `deploy`, `checks` (Q1–Q10), `latency` (KPI < 3 s y reducción ≥ 50 % del tiempo de informes), `status` y `unsubscribe`. Guía `docs/validation/validation-6-1.md`. |
+| Contratos | §5.7 (QuickSight suscrito, ids y datasets), §5.8 (`ta-quicksight-autor`, `ta-quicksight-lector`), §5.9 (`quicksight_access_role_arns`), §5.12 (fila «Tablero»). `contracts/` no cambia. |
+| Documento | ARCHITECTURE §3.27 y §3.27.1, §0, §6, ADR-31; `LINEAGE.md` (etapa 11 real), `GOVERNANCE.md` (DAMA y consumidores), `ACTIVE_SERVICES.md` (costo de QuickSight y cómo borrarlo); PLAN §3 (6.1 🟨); cabecera a 2.47. |
 
 ## v2.46 · desde v2.45
 

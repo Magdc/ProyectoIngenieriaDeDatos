@@ -42,7 +42,7 @@ DAMA-DMBOK (2.ª edición) organiza la gestión de datos en 11 áreas de conocim
 | Integración e interoperabilidad de datos | Mover y transformar datos entre sistemas | Pub/Sub → Dataflow → BigQuery/GCS; exportador GCS → S3 con OIDC; jobs de Glue Raw → Trusted → Curated; contratos verificados por pruebas | `project/src/streaming/`, `project/src/exporter/`, `project/src/lakehouse/glue_jobs/`, `project/contracts/tests/` | — |
 | Gestión de documentos y contenido | Datos no estructurados y su ciclo de vida | El texto libre (`text`) se conserva en Raw y Trusted, normalizado en `text_clean`; Curated no lleva texto; `raw/` de GCS (con el handle simulado) expira a los 30 días | §5.7 (`text-clean@1`), §5.12, `CATALOG.md` (clase `texto_libre`) | No hay detección de datos personales dentro del texto (en datos reales haría falta) |
 | Datos de referencia y maestros | Listas controladas y entidades maestras | Marcas en `brands.yaml` → `dim_brand`; redes en `sim.yaml` → `dim_source`; calendario `dim_date`; autor maestro seudonimizado `dim_user`; catálogos de etiquetas de NLP | `project/src/simulator/config/brands.yaml`, `project/src/simulator/config/sim.yaml`, `project/src/common/label_map.yaml` | — |
-| Data warehousing e inteligencia de negocio | Modelo analítico y consumo | Curated en Athena (workgroup `ta-analytics` con límite de 1 GiB por consulta) y consultas guardadas; QuickSight con SPICE previsto en la Fase 6 | `project/src/lakehouse/queries/`, §3.22.1, §5.7 | El tablero (6.1) aún no existe |
+| Data warehousing e inteligencia de negocio | Modelo analítico y consumo | Curated en Athena (workgroup `ta-analytics` con límite de 1 GiB por consulta) y consultas guardadas; tablero de QuickSight con SPICE (Lote 6.1: `ta-tablero-tendencias`, 4 datasets sobre `ta_curated`, horas en Bogotá, refresco cada hora) | `project/src/lakehouse/queries/`, `project/src/serving/`, §3.22.1, §3.27, §5.7 | — |
 | Metadatos | Catálogo, diccionario y linaje | Glue Data Catalog con descripción de tabla, comentario por columna y clase de privacidad (HU-034); diccionario generado; linaje documentado (HU-035); reglas de calidad catalogadas | `CATALOG.md`, `LINEAGE.md`, `project/infra/aws/modules/glue_catalog/tables.json`, §5.10 | El linaje es manual (sin OpenLineage); Glue no guarda el linaje |
 | Calidad de datos | Dimensiones, reglas, medición y mejora | 77 reglas (DQ-01…DQ-77) con KPI (completitud, unicidad, duplicados, anonimización, latencia, precisión del NLP) medidas con Great Expectations en Raw, Trusted y Curated; profiling; conciliación dentro de los jobs | `project/src/dq/`, `project/src/quality/`, §3.20, §3.24, §5.10 | GX corre a demanda, no en el horario |
 
@@ -128,7 +128,7 @@ que exista en otro lugar).
 | Dueño de los datos | El equipo del curso | Decide finalidad y alcance (HU, ADR) |
 | Administrador (*steward*) de calidad y gobernanza | A (Fase 5) | Reglas de calidad, catálogo, linaje y esta nota |
 | Custodio técnico | A, C y M según la fase (`PLAN.md`) | Infraestructura, jobs y permisos |
-| Consumidores | Analistas (Athena, QuickSight en 6.1) | Solo `ta_curated` vía `ta-quicksight-role` |
+| Consumidores | Analistas: Athena y el tablero de QuickSight (Lote 6.1) por los grupos `ta-autores` (rol IAM `ta-quicksight-autor`) y `ta-lectores` (`ta-quicksight-lector`) | Solo `ta_curated` vía `ta-quicksight-role`; ningún dataset ni visual muestra `user_hash`; los lectores solo ven el tablero (§3.27) |
 
 ## 6. Controles verificados (`validate_5_3.py controls`)
 

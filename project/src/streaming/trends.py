@@ -22,6 +22,8 @@ Flujo::
 
     ta-dlq-df ─► DlqEventsToBigQuery ─► ta_stream.dlq_events   (solo Dataflow; streaming.dlq_bq)
 
+    ScoreTrends ─(is_alert)─► TrendAlerts (cooldown) ─► Pub/Sub ta-alerts   (Lote 6.2; streaming.alerts)
+
 Cada panel de una ventana es una fila nueva: un panel tardío lleva los conteos
 acumulados. La versión vigente de cada ventana × marca × fuente es la de mayor
 ``n_posts`` (vista ``trend_windows_latest``, §5.5).
@@ -40,18 +42,26 @@ import apache_beam as beam
 from apache_beam.coders import PickleCoder
 from apache_beam.metrics import Metrics
 from apache_beam.options.pipeline_options import PipelineOptions
-from apache_beam.pvalue import PCollection
+from apache_beam.pvalue import PCollection, TaggedOutput
 from apache_beam.transforms import trigger as beam_trigger
 from apache_beam.transforms import window as beam_window
 from apache_beam.transforms.userstate import ReadModifyWriteStateSpec
 from apache_beam.utils.timestamp import Duration, Timestamp
 from apache_beam.utils.windowed_value import PaneInfoTiming
 
+from streaming.alerts import (  # noqa: F401 (AlertOptions registra las opciones del Lote 6.2)
+    ALERTS_TAG,
+    DEFAULT_COOLDOWN_SECONDS,
+    AlertOptions,
+    TrendAlerts,
+    resolve_alerts_config,
+)
 from streaming.bq_sink import WriteRowsToBigQuery, log_json
 from streaming.trends_core import (
     TrendConfig,
     WindowAggregate,
     add_feature,
+    alert_candidates,
     feature_from_row,
     format_ts,
     merge_accumulators,
@@ -359,12 +369,20 @@ class AttachWindow(beam.DoFn):
 
 
 class ScoreTrendsFn(beam.DoFn):
-    """z-scores y alertas con el baseline de cada marca × fuente guardado en estado."""
+    """z-scores y alertas con el baseline de cada marca × fuente guardado en estado.
+
+    Con ``emit_alerts`` (Lote 6.2), cada fila con ``is_alert`` deja además en la salida ``alerts`` un
+    mensaje ``ta-alert`` por métrica que pasa el umbral (``trends_core.alert_candidates``).
+    """
 
     BASELINE = ReadModifyWriteStateSpec("baseline", PickleCoder())
 
-    def __init__(self, cfg: TrendConfig):
+    def __init__(self, cfg: TrendConfig, emit_alerts: bool = False,
+                 cooldown_seconds: int = DEFAULT_COOLDOWN_SECONDS, clock: Callable[[], float] = time.time):
         self._cfg = cfg
+        self._emit_alerts = emit_alerts
+        self._cooldown_seconds = cooldown_seconds
+        self._clock = clock
         self._windows = Metrics.counter("trends", "windows_emitted")
         self._alerts = Metrics.counter("trends", "alerts")
 
@@ -380,20 +398,31 @@ class ScoreTrendsFn(beam.DoFn):
                 "window_start", "window_end", "brand", "source", "n_posts",
                 "avg_sentiment", "zscore_volume", "zscore_sentiment")})
         yield row
+        if self._emit_alerts and row["is_alert"]:
+            detected_ms = int(self._clock() * 1000)
+            for alert in alert_candidates(agg, score, self._cfg, detected_ms=detected_ms,
+                                          cooldown_seconds=self._cooldown_seconds):
+                yield TaggedOutput(ALERTS_TAG, alert)
 
 
 class TrendWindows(beam.PTransform):
-    """Filas enriquecidas → filas de ``trend_windows`` (sin escribir)."""
+    """Filas enriquecidas → filas de ``trend_windows`` (sin escribir).
 
-    def __init__(self, cfg: TrendConfig, clock: Callable[[], float] = time.time):
+    Con ``with_alerts`` devuelve ``{"rows": …, "alerts": …}`` (las alertas, antes del *cooldown*).
+    """
+
+    def __init__(self, cfg: TrendConfig, clock: Callable[[], float] = time.time, with_alerts: bool = False,
+                 cooldown_seconds: int = DEFAULT_COOLDOWN_SECONDS):
         super().__init__()
         self._cfg = cfg
         self._clock = clock
+        self._with_alerts = with_alerts
+        self._cooldown_seconds = cooldown_seconds
 
     def expand(self, rows):
         cfg = self._cfg
         late_trigger = beam_trigger.AfterProcessingTime(cfg.late_delay_seconds) if cfg.late_delay_seconds else beam_trigger.AfterCount(1)
-        return (
+        keyed = (
             rows
             | "Features" >> beam.ParDo(ExtractTrendFeatures(cfg, self._clock))
             | "Sliding" >> beam.WindowInto(
@@ -404,8 +433,12 @@ class TrendWindows(beam.PTransform):
             | "Combine" >> beam.CombinePerKey(TrendCombineFn())
             | "WindowInfo" >> beam.ParDo(AttachWindow(self._clock))
             | "Global" >> beam.WindowInto(beam_window.GlobalWindows())
-            | "Score" >> beam.ParDo(ScoreTrendsFn(cfg)).with_input_types(Tuple[str, Any])
         )
+        score = ScoreTrendsFn(cfg, self._with_alerts, self._cooldown_seconds, self._clock)
+        if not self._with_alerts:
+            return keyed | "Score" >> beam.ParDo(score).with_input_types(Tuple[str, Any])
+        scored = keyed | "Score" >> beam.ParDo(score).with_input_types(Tuple[str, Any]).with_outputs(ALERTS_TAG, main="rows")
+        return {"rows": scored.rows, "alerts": scored[ALERTS_TAG]}
 
 
 class AppendTrendJsonl(beam.DoFn):
@@ -446,20 +479,25 @@ def _all_options(pipeline_options) -> dict:
 
 def attach_trends(source: Any, *, options: PipelineOptions | None = None,
                   env: Mapping[str, str] | None = None, bq_sink=None, local_sink=None,
-                  dlq_read=None, dlq_sink=None, clock: Callable[[], float] = time.time) -> dict:
+                  dlq_read=None, dlq_sink=None, alerts_sink=None, clock: Callable[[], float] = time.time) -> dict:
     """Engancha la rama de tendencias (y ``ta-dlq-df`` → ``dlq_events``) al pipeline.
 
     ``source`` es lo que devuelve ``attach_enriched()``. Devuelve un dict con las
-    ``PCollection`` creadas (``trend_rows``, ``dlq_rows``) y la configuración; lo
-    usan las pruebas. ``bq_sink``, ``local_sink``, ``dlq_read`` y ``dlq_sink`` son
-    fábricas inyectables para las pruebas.
+    ``PCollection`` creadas (``trend_rows``, ``dlq_rows`` y, desde el Lote 6.2, ``alerts``:
+    las alertas que pasan el *cooldown*) y la configuración (``config``, ``alert_config``);
+    lo usan las pruebas. ``bq_sink``, ``local_sink``, ``dlq_read``, ``dlq_sink`` y
+    ``alerts_sink`` (recibe el topic) son fábricas inyectables para las pruebas.
     """
     rows = resolve_rows(source)
     pipeline = rows.pipeline if rows is not None else getattr(source, "pipeline", None)
     if options is None and pipeline is not None:
         options = pipeline.options
-    runtime = resolve_trends_config(_all_options(options) if options is not None else {}, env)
-    out: dict[str, Any] = {"config": runtime, "trend_rows": None, "dlq_rows": None}
+    all_options = _all_options(options) if options is not None else {}
+    runtime = resolve_trends_config(all_options, env)
+    alert_rt = resolve_alerts_config(all_options, env, is_dataflow=runtime.is_dataflow, project=runtime.project,
+                                     trends_enabled=runtime.enabled)
+    out: dict[str, Any] = {"config": runtime, "alert_config": alert_rt, "trend_rows": None, "dlq_rows": None,
+                           "alerts": None}
 
     if rows is None:
         if runtime.is_dataflow and runtime.enabled:
@@ -471,8 +509,16 @@ def attach_trends(source: Any, *, options: PipelineOptions | None = None,
         return out
 
     _print_launcher("trends_config", **runtime.as_log())
+    _print_launcher("alerts_config", **alert_rt.as_log())
     if runtime.enabled:
-        trend_rows = rows | "TrendWindows" >> TrendWindows(runtime.trend, clock)
+        if alert_rt.enabled:
+            scored = rows | "TrendWindows" >> TrendWindows(runtime.trend, clock, with_alerts=True,
+                                                         cooldown_seconds=alert_rt.cooldown_seconds)
+            trend_rows = scored["rows"]
+            sink = alerts_sink(alert_rt.topic) if alerts_sink else None
+            out["alerts"] = scored["alerts"] | "TrendAlerts" >> TrendAlerts(alert_rt, sink=sink)
+        else:
+            trend_rows = rows | "TrendWindows" >> TrendWindows(runtime.trend, clock)
         if runtime.bq_table:
             sink = bq_sink(runtime.bq_table) if bq_sink else WriteRowsToBigQuery(
                 runtime.bq_table, namespace="trends", failed_event="trend_bq_insert_failed",
@@ -494,5 +540,5 @@ def attach_trends(source: Any, *, options: PipelineOptions | None = None,
 __all__ = [
     "TrendOptions", "TrendsRuntime", "resolve_trends_config", "resolve_rows", "ExtractTrendFeatures",
     "TrendCombineFn", "AttachWindow", "ScoreTrendsFn", "TrendWindows", "AppendTrendJsonl",
-    "attach_trends", "format_ts", "split_key",
+    "attach_trends", "format_ts", "split_key", "AlertOptions",
 ]

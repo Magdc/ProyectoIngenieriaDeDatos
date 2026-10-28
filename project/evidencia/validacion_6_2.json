@@ -1,0 +1,374 @@
+{
+  "lote": "6.2",
+  "hu": [
+    "HU-039"
+  ],
+  "parts": {
+    "A": {
+      "title": "Preflight del código, de GCP y de lo encendido",
+      "status": "AVISO",
+      "started_at": "2026-10-27T22:06:30.730093+00:00",
+      "finished_at": "2026-10-27T22:06:38.673720+00:00",
+      "steps": [
+        {
+          "id": "A1",
+          "title": "Python y dependencias",
+          "status": "OK",
+          "detail": "Python 3.11.17; Beam, Pub/Sub y jsonschema",
+          "data": {}
+        },
+        {
+          "id": "A2",
+          "title": "los 23 archivos del lote y 7 que reutiliza",
+          "status": "OK",
+          "detail": "presentes",
+          "data": {}
+        },
+        {
+          "id": "A3",
+          "title": "herramientas",
+          "status": "OK",
+          "detail": "gcloud, bq, terraform, bash",
+          "data": {}
+        },
+        {
+          "id": "A4",
+          "title": "proyecto de GCP y ADC",
+          "status": "OK",
+          "detail": "project-0568d9ba-848f-413c-88b · ADC presente",
+          "data": {}
+        },
+        {
+          "id": "A5",
+          "title": "Dataflow, simulador y topic ta-alerts",
+          "status": "OK",
+          "detail": "Dataflow: apagado · simulador: apagado · ta-alerts: existe (Lote 1.3)",
+          "data": {
+            "dataflow": [],
+            "simulator": false
+          }
+        },
+        {
+          "id": "A6",
+          "title": "alert_emails en terraform.tfvars (no se versiona)",
+          "status": "AVISO",
+          "detail": "vacío: la parte C lo completa con el destinatario del presupuesto (§5.12)",
+          "data": {
+            "emails": 0
+          }
+        }
+      ]
+    },
+    "B": {
+      "title": "Pruebas",
+      "status": "OK",
+      "started_at": "2026-10-27T22:06:39.656060+00:00",
+      "finished_at": "2026-10-27T22:07:15.752103+00:00",
+      "steps": [
+        {
+          "id": "B1",
+          "title": "pytest src/alerts (notificador, contrato, comprobaciones, Terraform)",
+          "status": "OK",
+          "detail": "20 passed, 0 skipped, 0 failed (esperado 20 passed, 0 skipped)",
+          "data": {
+            "passed": 20,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B2",
+          "title": "pytest test_alerts_pipeline.py (rama de alertas con TestStream)",
+          "status": "OK",
+          "detail": "6 passed, 0 skipped, 0 failed (esperado 6 passed, 0 skipped)",
+          "data": {
+            "passed": 6,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B3",
+          "title": "regresión: pytest src/streaming -k trends (Lote 2.4)",
+          "status": "OK",
+          "detail": "151 passed, 0 skipped, 0 failed (esperado 151 passed, 0 skipped)",
+          "data": {
+            "passed": 151,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 217
+          }
+        },
+        {
+          "id": "B4",
+          "title": "pytest test_ops_validate62.py",
+          "status": "OK",
+          "detail": "12 passed, 0 skipped, 0 failed (esperado 12 passed, 0 skipped)",
+          "data": {
+            "passed": 12,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        }
+      ]
+    },
+    "L": {
+      "title": "Mensaje, ola de prueba, parámetros e imagen (sin nube)",
+      "status": "OK",
+      "started_at": "2026-10-27T22:07:16.285017+00:00",
+      "finished_at": "2026-10-27T22:07:31.297640+00:00",
+      "steps": [
+        {
+          "id": "L1",
+          "title": "alerta de ejemplo y ola de prueba frente a los contratos",
+          "status": "OK",
+          "detail": "ta-alert 1.0: 569 bytes, atributos ['alert_id', 'alert_type', 'brand', 'schema_version', 'source', 'window_end'] · ola: 150 comentarios ta-verify@6.2 de postobon en instagram (escenario alert-check-6.2/plan, envelope v1.0 sin errores)",
+          "data": {
+            "text": "[prueba] Volumen al alza de postobon en instagram: 120 posts frente a una media de 40,0 (+200 %, z = 13,3) en la ventana 2026-10-27 22:02–22:07 UTC (17:02–17:07 en Bogotá)."
+          }
+        },
+        {
+          "id": "L2",
+          "title": "la alerta lleva marca, fuente, ventana y magnitud (HU-039)",
+          "status": "OK",
+          "detail": "[prueba] Volumen al alza de postobon en instagram: 120 posts frente a una media de 40,0 (+200 %, z = 13,3) en la ventana 2026-10-27 22:02–22:07 UTC (17:02–17:07 en Bogotá).",
+          "data": {
+            "aviso": {
+              "marca": "postobon",
+              "fuente": "instagram",
+              "tipo": "volume_up",
+              "ventana": "2026-10-27 22:02–22:07 UTC (17:02–17:07 en Bogotá)",
+              "valor": "120",
+              "media": "40,0",
+              "cambio": "+200 %",
+              "z": "13,3",
+              "origen": "check",
+              "alerta_id": "96bc8c6f-b10b-5d26-be74-a7a5b55407f1"
+            }
+          }
+        },
+        {
+          "id": "L3",
+          "title": "parámetros = §5.12",
+          "status": "OK",
+          "detail": "cooldown 900 s por marca × fuente × tipo · |z| ≥ 3.0 · n_posts ≥ 5 · baseline 60 ventanas · como máximo un correo cada 300 s",
+          "data": {
+            "params": {
+              "cooldown": 900,
+              "z": 3.0,
+              "min_posts": 5,
+              "baseline": 60,
+              "rate_limit": 300
+            }
+          }
+        },
+        {
+          "id": "L4",
+          "title": "contexto de la imagen alert-notifier (dry-run)",
+          "status": "OK",
+          "detail": "us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/alert-notifier:20261027-2207-9ef2acfc · 8 archivos (notificador, su prueba, common/alert_message.py, Dockerfile y cloudbuild.yaml)",
+          "data": {
+            "image": "us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/alert-notifier:20261027-2207-9ef2acfc"
+          }
+        }
+      ]
+    },
+    "D": {
+      "title": "Imagen del notificador (Cloud Build)",
+      "status": "OK",
+      "started_at": "2026-10-27T22:08:01.149088+00:00",
+      "finished_at": "2026-10-27T22:08:42.402801+00:00",
+      "steps": [
+        {
+          "id": "D1",
+          "title": "imagen alert-notifier",
+          "status": "OK",
+          "detail": "us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/alert-notifier:h-e9a8dab903df · 11 pruebas en la imagen · 39 s",
+          "data": {
+            "image": "us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/alert-notifier:h-e9a8dab903df",
+            "seconds": 38.9
+          }
+        },
+        {
+          "id": "D2",
+          "title": "alerts.auto.tfvars",
+          "status": "OK",
+          "detail": "infra/gcp/environments/dev/alerts.auto.tfvars con alerts_notifier_image (no se versiona)",
+          "data": {}
+        }
+      ]
+    },
+    "C": {
+      "title": "Terraform (sa-alerts, notificador, push, canales y política)",
+      "status": "OK",
+      "started_at": "2026-10-27T22:19:32.180004+00:00",
+      "finished_at": "2026-10-27T22:21:27.385350+00:00",
+      "steps": [
+        {
+          "id": "C0",
+          "title": "alert_emails (terraform.tfvars, no se versiona)",
+          "status": "OK",
+          "detail": "1 dirección(es) (el destinatario del presupuesto, §5.12)",
+          "data": {
+            "emails": 1
+          }
+        },
+        {
+          "id": "C0b",
+          "title": "imagen del notificador",
+          "status": "OK",
+          "detail": "alerts.auto.tfvars presente",
+          "data": {}
+        },
+        {
+          "id": "C0c",
+          "title": "agente de notificaciones de Cloud Monitoring",
+          "status": "OK",
+          "detail": "service-63567159332@gcp-sa-monitoring-notification.iam.gserviceaccount.com (publica en ta-alerts-incidents)",
+          "data": {}
+        },
+        {
+          "id": "C1",
+          "title": "bash infra/validate.sh",
+          "status": "OK",
+          "detail": "\u001b[32m\u001b[1mSuccess!\u001b[0m The configuration is valid.\n\u001b[0m\n== validate: aws/environments/dev ==\n\u001b[32m\u001b[1mSuccess!\u001b[0m The configuration is valid.\n\u001b[0m\nOK",
+          "data": {}
+        },
+        {
+          "id": "C2a",
+          "title": "terraform init (instala alert_notifier)",
+          "status": "OK",
+          "detail": "If you ever set or change modules or backend configuration for Terraform,\nrerun this command to reinitialize your working directory. If you forget, other\ncommands will detect it and remind you to do so if necessary.\u001b[0m",
+          "data": {}
+        },
+        {
+          "id": "C2",
+          "title": "plan (-target de los recursos del lote)",
+          "status": "OK",
+          "detail": "0 a crear, 0 a cambiar, 0 a destruir, 0 a reemplazar (ya aplicado)",
+          "data": {
+            "create": [],
+            "update": [],
+            "delete": [],
+            "replace": [],
+            "diffs": {}
+          }
+        },
+        {
+          "id": "C5",
+          "title": "recursos reales (servicio, invocadores, push, permisos y política)",
+          "status": "OK",
+          "detail": "ta-alert-notifier listo y privado (solo sa-alerts invoca) · push ta-alerts-notifier con ID token de sa-alerts · sa-dataflow publica en ta-alerts · ta-alerta-tendencia con 1 correo(s) + Pub/Sub y 1 correo cada 5 min como máximo",
+          "data": {
+            "notifier_url": "https://ta-alert-notifier-kyu3kofmtq-uc.a.run.app",
+            "image": "us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/alert-notifier:h-e9a8dab903df"
+          }
+        }
+      ]
+    },
+    "E": {
+      "title": "Alerta sintética: ta-alerts → notificador → log → política → notificación",
+      "status": "AVISO",
+      "started_at": "2026-10-27T22:27:32.612136+00:00",
+      "finished_at": "2026-10-27T22:28:12.321480+00:00",
+      "steps": [
+        {
+          "id": "E1",
+          "title": "suscripción temporal a ta-alerts-incidents",
+          "status": "OK",
+          "detail": "ta-verify-incidents-a247e8d1 (expira en 1 día; se borra al terminar)",
+          "data": {}
+        },
+        {
+          "id": "E2",
+          "title": "alerta publicada en ta-alerts",
+          "status": "OK",
+          "detail": "32d7d013-0c4a-520e-bada-2566316aec49 · [prueba] Volumen al alza de postobon en instagram: 120 posts frente a una media de 40,0 (+200 %, z = 13,3) en la ventana 2026-10-27 22:22–22:27 UTC (17:22–17:27 en Bogotá).",
+          "data": {
+            "event": "alert_test_published",
+            "alert_id": "32d7d013-0c4a-520e-bada-2566316aec49",
+            "message_id": "22111832969849094",
+            "alert_type": "volume_up",
+            "brand": "postobon",
+            "source": "instagram",
+            "window_end": "2026-10-27T22:27:00.000Z",
+            "published_at": "2026-10-27T22:27:41.778Z",
+            "text": "[prueba] Volumen al alza de postobon en instagram: 120 posts frente a una media de 40,0 (+200 %, z = 13,3) en la ventana 2026-10-27 22:22–22:27 UTC (17:22–17:27 en Bogotá)."
+          }
+        },
+        {
+          "id": "E3",
+          "title": "log del notificador (WARNING, alert=trend)",
+          "status": "OK",
+          "detail": "0.8 s de la publicación al notificador (incluye el arranque en frío) · severidad WARNING · aviso ['alerta_id', 'cambio', 'fuente', 'marca', 'media', 'origen', 'tipo', 'valor', 'ventana', 'z']",
+          "data": {
+            "publish_to_log_s": 0.8,
+            "received_at": "2026-10-27T22:27:42.554Z"
+          }
+        },
+        {
+          "id": "E4",
+          "title": "notificación de ta-alerta-tendencia (canal Pub/Sub)",
+          "status": "OK",
+          "detail": "incidente 0.oeborg4i3bpo · 27.7 s del log a la notificación · 28.5 s desde la publicación",
+          "data": {
+            "log_to_notification_s": 27.7,
+            "incident": "0.oeborg4i3bpo",
+            "notified_at": "2026-10-27T22:28:10.253Z"
+          }
+        },
+        {
+          "id": "E5",
+          "title": "texto del correo (asunto y cuerpo de la política)",
+          "status": "OK",
+          "detail": "asunto: [ALERT - Warning] TrendAnalyzer: volume_up de postobon en instagram",
+          "data": {
+            "subject": "[ALERT - Warning] TrendAnalyzer: volume_up de postobon en instagram"
+          }
+        },
+        {
+          "id": "E6",
+          "title": "correo en el buzón",
+          "status": "AVISO",
+          "detail": "compruébelo a mano (asunto «TrendAnalyzer: volume_up de …», [prueba]) y regístrelo con: python project/scripts/validate_6_2.py email --note \"…\"",
+          "data": {}
+        }
+      ]
+    },
+    "P": {
+      "title": "Preparar: descartar el atraso, encender el simulador y Dataflow con la rama de alertas",
+      "status": "OK",
+      "started_at": "2026-10-27T22:24:35.460382+00:00",
+      "finished_at": "2026-10-27T22:27:07.963668+00:00",
+      "steps": [
+        {
+          "id": "P1",
+          "title": "seek de ta-raw-*-df a ahora",
+          "status": "OK",
+          "detail": "3 suscripciones movidas a 2026-10-27T22:24:36Z",
+          "data": {
+            "seek_time": "2026-10-27T22:24:36Z"
+          }
+        },
+        {
+          "id": "P2",
+          "title": "simulador y Dataflow en marcha",
+          "status": "OK",
+          "detail": "simulador https://ta-stream-simulator-kyu3kofmtq-uc.a.run.app · ta-stream-dev (2026-10-27_15_25_55-761768214484714165)",
+          "data": {
+            "job": "2026-10-27_15_25_55-761768214484714165",
+            "started_at": "2026-10-27T22:27:07.957596+00:00"
+          }
+        }
+      ]
+    }
+  },
+  "updated_at": "2026-10-27T22:28:12.321641+00:00"
+}

@@ -1,10 +1,24 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.48**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.49**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.49 · desde v2.48
+
+**Lote que lo motiva:** Lote 6.2 (HU-039) · entrega
+
+| Área | Cambio |
+|---|---|
+| Decisión del usuario | Aplicar y validar todo, encendiendo el simulador y Dataflow ~1,5 h para medir una alerta real (≈ 0,5 USD; se apagan al final). |
+| Lote 6.2 | Rama de alertas en Dataflow (`src/streaming/alerts.py`; `ScoreTrendsFn` y `TrendWindows` con salida `alerts`, `attach_trends` la engancha): un mensaje `ta-alert` 1.0 por métrica con \|z\| ≥ 3 en las filas con `is_alert` (`volume_up`, `volume_down`, `sentiment_up`, `sentiment_down`, con valor, media y desviación del baseline, z y cambio), *cooldown* de 15 min por marca × fuente × tipo en tiempo del evento y publicación en `ta-alerts`. Contrato y textos en `src/common/alert_message.py`; `TrendScore` suma media y desviación del baseline y `trends_core.alert_candidates`. Notificador de Cloud Run `ta-alert-notifier` (`src/alerts/notifier.py`, solo biblioteca estándar; imagen `alert-notifier` con `scripts/build_alerts_image.sh`) que escribe el log `WARNING` `alert=trend`; CLI `scripts/alerts_check.py` (`plan`, `publish-test`, `burst`). `pipeline.py`, `dataflow_job.sh` y `trend_windows` no cambian. |
+| Infraestructura | Módulo `infra/gcp/modules/alert_notifier` y `environments/dev/{alerts,variables_alerts,outputs_alerts}.tf`: `sa-alerts`, `pubsub.publisher` de `sa-dataflow` en `ta-alerts`, Cloud Run (0–1 instancias, privado), push `ta-alerts-notifier` con ID token, topic `ta-alerts-incidents`, canal de correo por dirección (`alert_emails`, sensible, en `terraform.tfvars`) y de Pub/Sub, política basada en logs `ta-alerta-tendencia` (1 notificación cada 5 min, cierre a 30 min); 8 outputs nuevos. Plan: 10 a crear. |
+| Validación | `scripts/validate_6_2.py` → `src/ops/validate62.py` (12 pruebas): `preflight`, `tests`, `local`, `image`, `terraform`, `notify` (alerta sintética hasta la notificación), `prepare`, `flow` (ola de prueba `ta-verify@6.2`, detección < 5 min y *cooldown*), `email`, `off` y `status`. Guía `docs/validation/validation-6-2.md`. Ya corridas al entregar: A, B (20, 6, 151, 12), L, D (imagen con 11 pruebas dentro), **C aplicado** (10 recursos), **E OK** (publicación → notificación 28,5 s en la segunda corrida) y P (simulador y Dataflow con la rama activa). |
+| Correcciones durante la validación | (1) C0c crea el agente de notificaciones de Cloud Monitoring antes del apply (el canal de Pub/Sub hecho por API no lo crea: el permiso del topic de incidentes fallaba). (2) `ignore_changes = [scaling]` en el servicio (la API devuelve un bloque de escalado a nivel de servicio y el plan quería quitarlo siempre). (3) El validador lee `severity` de la entrada de log (Cloud Logging la saca del `jsonPayload`). |
+| Contratos | §5.3 (`ta-alerts` con mensajes `ta-alert` 1.0, `ta-alerts-notifier`, `ta-alerts-incidents`), §5.8 (`sa-alerts`; `sa-dataflow` publica en `ta-alerts`; agente de Cloud Monitoring), §5.9 (outputs del 6.2), §5.12 (tipos de alerta, límite de un correo cada 5 min, suscriptor y política). `contracts/` no cambia. |
+| Documento | ARCHITECTURE §3.28 y §3.28.1, §0, §6, ADR-32; `src/alerts/ALERTS.md`; `LINEAGE.md` (salida `ta-alerts`); PLAN.md §3 (6.2 🟨); `ACTIVE_SERVICES.md` (notificador y política); cabeceras a 2.49. |
 
 ## v2.48 · desde v2.47
 

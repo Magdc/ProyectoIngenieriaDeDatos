@@ -363,13 +363,23 @@ class TrendScore:
     is_alert: bool
     baseline_available: int
     warm: bool
+    # (v2.49, Lote 6.2) Media y desviación del baseline: la magnitud del cambio de cada alerta.
+    volume_mean: float | None = None
+    volume_std: float | None = None
+    sentiment_mean: float | None = None
+    sentiment_std: float | None = None
+
+
+def _stats(sample: list[float]) -> tuple[float | None, float | None]:
+    if len(sample) < 2:
+        return None, None
+    return statistics.fmean(sample), statistics.stdev(sample)
 
 
 def _zscore(value: float, sample: list[float], floor: float) -> float | None:
-    if len(sample) < 2:
+    mean, std = _stats(sample)
+    if mean is None:
         return None
-    mean = statistics.fmean(sample)
-    std = statistics.stdev(sample)
     z = (value - mean) / max(std, floor)
     return round(z, 6)
 
@@ -410,7 +420,32 @@ def score_window(state: Mapping | None, agg: WindowAggregate, cfg: TrendConfig) 
     keep_from = max_start - (cfg.baseline_windows * cfg.period_ms + cfg.lateness_ms + cfg.window_ms)
     hist = {k: v for k, v in hist.items() if k >= keep_from}
     new_state = {"hist": hist, "min_start": min_start, "max_start": max_start}
-    return new_state, TrendScore(z_volume, z_sentiment, is_alert, len(baseline), warm)
+    v_mean, v_std = _stats(volume_sample)
+    s_mean, s_std = _stats(sentiment_sample)
+    return new_state, TrendScore(z_volume, z_sentiment, is_alert, len(baseline), warm, v_mean, v_std, s_mean, s_std)
+
+
+def alert_candidates(agg: WindowAggregate, score: TrendScore, cfg: TrendConfig, *, detected_ms: int,
+                     cooldown_seconds: int, origin: str = "dataflow") -> list[dict]:
+    """Mensajes ``ta-alert`` de una ventana con ``is_alert`` (Lote 6.2, HU-039): uno por métrica con
+    \\|z\\| ≥ umbral. Sin ``is_alert`` (baseline incompleto, pocos posts, ventana incompleta) no hay ninguno."""
+    from common.alert_message import build_alert
+
+    if not score.is_alert:
+        return []
+    out = []
+    for metric, z, value, mean, std in (
+            ("volume", score.zscore_volume, agg.n_posts, score.volume_mean, score.volume_std),
+            ("sentiment", score.zscore_sentiment, agg.avg_sentiment, score.sentiment_mean, score.sentiment_std)):
+        if z is None or value is None or mean is None or abs(z) < cfg.z_threshold:
+            continue
+        out.append(build_alert(
+            metric=metric, brand=agg.brand, source=agg.source, window_start_ms=agg.window_start_ms,
+            window_end_ms=agg.window_end_ms, value=value, baseline_mean=mean, baseline_std=std, zscore=z,
+            z_threshold=cfg.z_threshold, baseline_windows=score.baseline_available, n_posts=agg.n_posts,
+            avg_sentiment=agg.avg_sentiment, n_negative=agg.n_negative, n_positive=agg.n_positive,
+            detected_ms=detected_ms, cooldown_seconds=cooldown_seconds, origin=origin))
+    return out
 
 
 # --------------------------------------------------------------------------- fila de salida

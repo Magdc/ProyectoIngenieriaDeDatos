@@ -23,6 +23,8 @@ flowchart LR
     DF --> BQP["BigQuery posts_enriched"]
     DF --> BQT["BigQuery trend_windows"]
     DF --> BQD["BigQuery dlq_events"]
+    DF -->|"is_alert · cooldown 15 min"| ALR["Pub/Sub ta-alerts"]
+    ALR --> NOT["Cloud Run ta-alert-notifier<br/>log WARNING → correo (Lote 6.2)"]
   end
   subgraph HIST["Carga histórica (WSL)"]
     LOAD["load_historical.py<br/>mismo generador + HMAC + NLP en lote"]
@@ -67,6 +69,7 @@ job de Dataflow por la suscripción `ta-dlq-df` para escribir `dlq_events`. El e
 | 9 | Curated | `project/src/lakehouse/glue_jobs/trusted_to_curated.py` · `ta-job-trusted-to-curated` | `trusted/posts/` | `curated/{9 tablas}` | Estrella, agregados y aristas recalculados enteros; concilia antes de escribir; reporte en `quality/` | Solo `user_hash` (sin `text` ni `payload`) | §3.22, §3.23 |
 | 10 | Consultar | Athena `ta-analytics` · `project/src/lakehouse/queries/` | Curated (y Raw) | Resultados en `athena-results/` (7 días) | Consultas guardadas | Solo `user_hash` | §3.19, §3.22.1 |
 | 11 | Tablero | QuickSight `ta-tablero-tendencias` sobre `ta_curated` (Lote 6.1): fuente `ta-athena-curated` con `ta-quicksight-role` y 4 datasets SPICE (`src/serving/sql/`) | Curated vía Athena, importado a SPICE | Tablero con las hojas «Tendencias» (HU-037) y «Relaciones» (HU-038) | `quicksight.py deploy`; refresco `ta-cada-hora` | Ningún dataset tiene `user_hash`: las aristas se agregan por marcas dentro del SQL; horas pasadas a `America/Bogota` | §5.7, §3.27 |
+| 12 | Alertar | `project/src/streaming/alerts.py` (rama del job `ta-stream-dev`) · Pub/Sub `ta-alerts` · `project/src/alerts/notifier.py` (Cloud Run `ta-alert-notifier`) · política `ta-alerta-tendencia` (Lote 6.2) | Filas de `trend_windows` con `is_alert` | Mensajes `ta-alert` en `ta-alerts`, log `WARNING` del notificador y correo | Un mensaje por métrica que pasa el umbral, *cooldown* de 15 min por marca × fuente × tipo; agregados por ventana, marca y red | Sin autores: solo conteos y medias de la ventana | §3.28, §5.3 |
 | Q | Calidad | `project/src/dq/` · `project/scripts/run_dq.py` (GX 1.24.1) y el profiling `project/src/quality/` | Copia local de Raw, Trusted y Curated | `quality/{día}/ge/{run_id}/`, `ta_stream.dq_results` | Solo lee y resume: 239 comprobaciones sin datos de filas | Las salidas no llevan `user_hash` | §3.20, §3.24 |
 
 ## 3. Auditoría: cómo seguir un dato

@@ -44,6 +44,9 @@ DEMO_SESSION = "demo"
 DEMO_EMAIL = "{role}@example.com"
 #: Papeles Pro: activan la cuota de infraestructura de la cuenta (250 USD/mes) al terminar la prueba gratis.
 PRO_ROLES = {"ADMIN_PRO": "ADMIN", "AUTHOR_PRO": "AUTHOR", "READER_PRO": "READER"}
+#: Sin Pro, la cuenta pierde los 100 GB de SPICE de la prueba y el límite queda en lo consumido (v2.48): con compra
+#: automática QuickSight suma la capacidad que haga falta (0,38 USD/GB al mes; hoy ~0,2 GB).
+SPICE_PURCHASE_MODE = "AUTO_PURCHASE"
 
 FORBIDDEN_COLUMNS = tuple(ANONYMIZED_COLUMNS) + tuple(IDENTITY_COLUMNS)
 #: Tipo de Athena (``ResultSetMetadata``) → tipo de columna de QuickSight.

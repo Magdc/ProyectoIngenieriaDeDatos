@@ -48,8 +48,10 @@ def test_dataset_problems_detecta_fugas_y_tablas_ajenas(tmp_path, monkeypatch):
 
 
 def test_horas_en_bogota_en_el_sql_de_publicaciones():
-    sql = qs.DATASET_BY_KEY["publicaciones"].sql
-    assert sql.count("AT TIME ZONE 'America/Bogota'") == 4
+    sql = qs._COMMENT.sub("", qs.DATASET_BY_KEY["publicaciones"].sql)
+    # una sola conversión, con format_datetime: en Athena el CAST a timestamp devuelve la hora UTC (Q3)
+    assert sql.count("AT TIME ZONE 'America/Bogota'") == 1 and "format_datetime(" in sql
+    assert "AS timestamp) AS hora_bogota" not in sql
     for name in ("hora_bogota", "fecha_bogota", "hora_del_dia"):
         assert "Bogota" in qs.DATASET_BY_KEY["publicaciones"].column(name).description
 
@@ -160,6 +162,11 @@ class FakeQuickSight:
         kw = self._log("update_user", **kw)
         assert kw["Email"]
         self.users[kw["UserName"]]["Role"] = kw["Role"]
+        return {}
+
+    def update_spice_capacity_configuration(self, **kw):
+        kw = self._log("update_spice_capacity_configuration", **kw)
+        self.spice_mode = kw["PurchaseMode"]
         return {}
 
     def describe_group(self, **kw):
@@ -370,6 +377,7 @@ def test_deploy_crea_todo_y_repetirlo_no_duplica():
     out = deployer(fake, events).deploy(SERVICE, ROLES)
     assert out["ok"] and out["dashboard_version"] == 1 and out["ingestions"] == 4
     assert fake.users["111122223333"]["Role"] == "ADMIN"  # sin Pro: evita la cuota de 250 USD/mes
+    assert fake.spice_mode == "AUTO_PURCHASE"  # sin Pro, el límite de SPICE queda en lo consumido
     assert fake.users["ta-quicksight-lector/demo"]["Role"] == "READER"
     assert fake.groups["ta-lectores"] == {"ta-quicksight-lector/demo"}
     assert fake.groups["ta-autores"] == {"ta-quicksight-autor/demo", "111122223333"}

@@ -144,6 +144,7 @@ class Fake:
         if "quicksight.py deploy" in text:
             evs = [{"event": "subscription", "status": "ACCOUNT_CREATED", "edition": "ENTERPRISE"},
                    {"event": "no_pro_users", "changed": [{"user": ACC, "from": "ADMIN_PRO", "to": "ADMIN"}]},
+                   {"event": "spice_capacity", "purchase_mode": "AUTO_PURCHASE"},
                    {"event": "access_users", "users": [
                        {"user": "ta-quicksight-autor/demo", "role": "AUTHOR", "group": "ta-autores"},
                        {"user": "ta-quicksight-lector/demo", "role": "READER", "group": "ta-lectores"}]},
@@ -169,6 +170,12 @@ class Fake:
                 return self.iam(cmd)
             if cmd[1:3] == ["scheduler", "get-schedule"]:
                 return R(0, json.dumps({"State": "ENABLED"}))
+            if cmd[1:3] == ["cloudwatch", "get-metric-statistics"]:
+                metric = cmd[cmd.index("--metric-name") + 1]
+                pts = {"VisualLoadTime": [{"Average": 700.0, "Maximum": 1861.0, "SampleCount": 80.0},
+                                          {"Average": 800.0, "Maximum": 1200.0, "SampleCount": 20.0}],
+                       "DashboardViewLoadTime": [{"Average": 6756.0, "Maximum": 6770.0, "SampleCount": 2.0}]}[metric]
+                return R(0, json.dumps({"Datapoints": pts}))
         if "infra/validate.sh" in text:
             return R(0, "OK")
         if cmd[0] == "terraform":
@@ -308,6 +315,8 @@ def test_latency(tmp_path, monkeypatch):
     rc, steps, _ = run("latency", Fake(), tmp_path, "--samples", "restablecer=2.10,hoja_relaciones=1.65")
     assert rc == 0 and steps["E1"]["data"]["worst_s"] == 2.1 and steps["E3"]["status"] == "OK"
     assert len(steps["E2"]["data"]["athena"]) == 4
+    assert steps["E5"]["status"] == "OK" and steps["E5"]["data"] == {"samples": 100, "avg_ms": 720, "max_ms": 1861}
+    assert steps["E6"]["status"] == "AVISO" and steps["E6"]["data"]["max_ms"] == 6770  # carga inicial: no es el KPI
     rc, steps, _ = run("latency", Fake(), tmp_path)  # sin --samples conserva las anteriores
     assert steps["E1"]["status"] == "OK" and steps["E1"]["data"]["samples"]["restablecer"] == 2.1
     rc, steps, _ = run("latency", Fake(), tmp_path, "--samples", "filtro=3.4")

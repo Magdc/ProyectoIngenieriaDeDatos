@@ -1,0 +1,722 @@
+{
+  "lote": "6.1",
+  "hu": [
+    "HU-037",
+    "HU-038"
+  ],
+  "parts": {
+    "A": {
+      "title": "Preflight del código, de QuickSight y de lo que el lote reutiliza",
+      "status": "OK",
+      "started_at": "2026-10-27T19:43:44.572871+00:00",
+      "finished_at": "2026-10-27T19:43:51.860105+00:00",
+      "steps": [
+        {
+          "id": "A1",
+          "title": "Python y boto3",
+          "status": "OK",
+          "detail": "Python 3.11.17; boto3 presente",
+          "data": {}
+        },
+        {
+          "id": "A2",
+          "title": "los 15 archivos del lote y 4 que reutiliza",
+          "status": "OK",
+          "detail": "presentes",
+          "data": {}
+        },
+        {
+          "id": "A3",
+          "title": "herramientas",
+          "status": "OK",
+          "detail": "aws, terraform",
+          "data": {}
+        },
+        {
+          "id": "A4",
+          "title": "suscripción de QuickSight (us-east-1)",
+          "status": "OK",
+          "detail": "ACCOUNT_CREATED · ENTERPRISE · IDENTITY_POOL · prueba gratis hasta ≈ 2026-11-26",
+          "data": {
+            "subscription": "ACCOUNT_CREATED",
+            "edition": "ENTERPRISE",
+            "trial_end": "2026-11-26T18:46:00+00:00"
+          }
+        },
+        {
+          "id": "A5",
+          "title": "rol de servicio ta-quicksight-role (Lote 4.1)",
+          "status": "OK",
+          "detail": "existe",
+          "data": {}
+        },
+        {
+          "id": "A6",
+          "title": "horario ta-wf-raw-to-curated-cada-hora",
+          "status": "OK",
+          "detail": "ENABLED (estado normal: ENABLED; el refresco de SPICE lee lo que deje cada corrida)",
+          "data": {}
+        }
+      ]
+    },
+    "B": {
+      "title": "Pruebas",
+      "status": "OK",
+      "started_at": "2026-10-27T20:10:18.501011+00:00",
+      "finished_at": "2026-10-27T20:10:24.073094+00:00",
+      "steps": [
+        {
+          "id": "B1",
+          "title": "pytest src/serving (QuickSight falso)",
+          "status": "OK",
+          "detail": "10 passed, 0 skipped, 0 failed (esperado 10 passed, 0 skipped)",
+          "data": {
+            "passed": 10,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B2",
+          "title": "pytest test_ops_validate61.py",
+          "status": "OK",
+          "detail": "12 passed, 0 skipped, 0 failed (esperado 12 passed, 0 skipped)",
+          "data": {
+            "passed": 12,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B3",
+          "title": "regresión: pytest src/lakehouse (catálogo, infraestructura)",
+          "status": "OK",
+          "detail": "132 passed, 0 skipped, 0 failed (esperado 132 passed, 0 skipped)",
+          "data": {
+            "passed": 132,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        }
+      ]
+    },
+    "L": {
+      "title": "Definiciones del tablero (sin nube)",
+      "status": "OK",
+      "started_at": "2026-10-27T20:10:24.330203+00:00",
+      "finished_at": "2026-10-27T20:10:24.494964+00:00",
+      "steps": [
+        {
+          "id": "L1",
+          "title": "quicksight.py plan sin problemas",
+          "status": "OK",
+          "detail": "4 datasets SPICE · fuente {'id': 'ta-athena-curated', 'workgroup': 'ta-analytics', 'role': 'ta-quicksight-role'} · refresco {'Interval': 'HOURLY', 'Timezone': 'America/Bogota'}",
+          "data": {
+            "plan": {
+              "event": "plan",
+              "region": "us-east-1",
+              "edition": "ENTERPRISE",
+              "timezone": "America/Bogota",
+              "data_source": {
+                "id": "ta-athena-curated",
+                "workgroup": "ta-analytics",
+                "role": "ta-quicksight-role"
+              },
+              "datasets": [
+                {
+                  "id": "ta-ds-publicaciones",
+                  "hu": "HU-037",
+                  "tables": [
+                    "ta_curated.fact_posts",
+                    "ta_curated.dim_brand",
+                    "ta_curated.dim_source"
+                  ],
+                  "columns": 20,
+                  "import_mode": "SPICE"
+                },
+                {
+                  "id": "ta-ds-coocurrencia-hashtags",
+                  "hu": "HU-038",
+                  "tables": [
+                    "ta_curated.edges_hashtag_cooccurrence"
+                  ],
+                  "columns": 4,
+                  "import_mode": "SPICE"
+                },
+                {
+                  "id": "ta-ds-marcas-compartidas",
+                  "hu": "HU-038",
+                  "tables": [
+                    "ta_curated.edges_user_brand",
+                    "ta_curated.dim_brand"
+                  ],
+                  "columns": 4,
+                  "import_mode": "SPICE"
+                },
+                {
+                  "id": "ta-ds-autores-por-marcas",
+                  "hu": "HU-038",
+                  "tables": [
+                    "ta_curated.edges_user_brand",
+                    "ta_curated.dim_brand"
+                  ],
+                  "columns": 4,
+                  "import_mode": "SPICE"
+                }
+              ],
+              "refresh": {
+                "Interval": "HOURLY",
+                "Timezone": "America/Bogota"
+              },
+              "groups": {
+                "autores": "ta-autores",
+                "lectores": "ta-lectores"
+              },
+              "access_roles": {
+                "autores": "ta-quicksight-autor",
+                "lectores": "ta-quicksight-lector"
+              },
+              "analysis": "ta-analisis-tendencias",
+              "dashboard": "ta-tablero-tendencias",
+              "sheets": [
+                {
+                  "id": "tendencias",
+                  "name": "Tendencias",
+                  "visuals": [
+                    "kpi-comentarios",
+                    "kpi-sentimiento",
+                    "kpi-negativos",
+                    "kpi-interacciones",
+                    "linea-volumen",
+                    "linea-sentimiento",
+                    "combo-marcas",
+                    "barras-red",
+                    "barras-sentimiento",
+                    "barras-emociones",
+                    "calor-hora"
+                  ]
+                },
+                {
+                  "id": "relaciones",
+                  "name": "Relaciones",
+                  "visuals": [
+                    "kpi-multimarca",
+                    "barras-combinaciones",
+                    "sankey-marcas",
+                    "calor-hashtags",
+                    "tabla-pares"
+                  ]
+                }
+              ],
+              "filters": [
+                "Marca",
+                "Red social",
+                "Origen del dato",
+                "Periodo (hora de Bogotá)"
+              ],
+              "problems": []
+            }
+          }
+        },
+        {
+          "id": "L2",
+          "title": "los datasets leen solo ta_curated (G4) y sin columnas de autor",
+          "status": "OK",
+          "detail": "tablas: ta_curated.dim_brand, ta_curated.dim_source, ta_curated.edges_hashtag_cooccurrence, ta_curated.edges_user_brand, ta_curated.fact_posts · columnas prohibidas: user_hash, user_id, handle (ninguna en la salida)",
+          "data": {}
+        },
+        {
+          "id": "L3",
+          "title": "hojas de HU-037 (tendencias) y HU-038 (relaciones)",
+          "status": "OK",
+          "detail": "Tendencias: 11 visuales · Relaciones: 5 visuales · filtros: Marca, Red social, Origen del dato, Periodo (hora de Bogotá)",
+          "data": {}
+        },
+        {
+          "id": "L4",
+          "title": "horas en America/Bogota (§5.12)",
+          "status": "OK",
+          "detail": "ta-ds-publicaciones convierte event_time con AT TIME ZONE 'America/Bogota' (hora_bogota, fecha_bogota, hora_del_dia, dia_semana); las aristas no tienen horas",
+          "data": {}
+        }
+      ]
+    },
+    "C": {
+      "title": "Terraform (roles IAM de acceso al tablero)",
+      "status": "AVISO",
+      "started_at": "2026-10-27T19:44:06.536871+00:00",
+      "finished_at": "2026-10-27T19:47:39.193884+00:00",
+      "steps": [
+        {
+          "id": "C0",
+          "title": "identidad de AWS",
+          "status": "AVISO",
+          "detail": "arn:aws:iam::648617469176:root (cuenta raíz: sirve para aplicar)",
+          "data": {}
+        },
+        {
+          "id": "C1",
+          "title": "bash infra/validate.sh",
+          "status": "OK",
+          "detail": "\u001b[32m\u001b[1mSuccess!\u001b[0m The configuration is valid.\n\u001b[0m\n== validate: aws/environments/dev ==\n\u001b[32m\u001b[1mSuccess!\u001b[0m The configuration is valid.\n\u001b[0m\nOK",
+          "data": {}
+        },
+        {
+          "id": "C2a",
+          "title": "terraform init",
+          "status": "OK",
+          "detail": "If you ever set or change modules or backend configuration for Terraform,\nrerun this command to reinitialize your working directory. If you forget, other\ncommands will detect it and remind you to do so if necessary.\u001b[0m",
+          "data": {}
+        },
+        {
+          "id": "C2",
+          "title": "plan (-target=module.quicksight_access)",
+          "status": "OK",
+          "detail": "4 a crear, 0 a cambiar, 0 a destruir, 0 a reemplazar (esperado: 4 a crear, los 2 roles y sus políticas; nada a cambiar ni a destruir)",
+          "data": {
+            "create": [
+              "module.quicksight_access.aws_iam_role.this[\"ta-quicksight-autor\"]",
+              "module.quicksight_access.aws_iam_role.this[\"ta-quicksight-lector\"]",
+              "module.quicksight_access.aws_iam_role_policy.this[\"ta-quicksight-autor\"]",
+              "module.quicksight_access.aws_iam_role_policy.this[\"ta-quicksight-lector\"]"
+            ],
+            "update": [],
+            "delete": [],
+            "replace": [],
+            "diffs": {}
+          }
+        },
+        {
+          "id": "C3",
+          "title": "apply",
+          "status": "OK",
+          "detail": "  \"ta-quicksight-autor\" = \"arn:aws:iam::648617469176:role/ta-quicksight-autor\"\n  \"ta-quicksight-lector\" = \"arn:aws:iam::648617469176:role/ta-quicksight-lector\"\n}\nquicksight_role_arn = \"arn:aws:iam::648617469176:role/ta-quicksight-role\"",
+          "data": {}
+        },
+        {
+          "id": "C4",
+          "title": "plan después del apply",
+          "status": "OK",
+          "detail": "sin cambios",
+          "data": {
+            "create": [],
+            "update": [],
+            "delete": [],
+            "replace": [],
+            "diffs": {}
+          }
+        }
+      ]
+    },
+    "D": {
+      "title": "Despliegue en QuickSight (scripts/quicksight.py deploy)",
+      "status": "OK",
+      "started_at": "2026-10-27T19:56:20.668006+00:00",
+      "finished_at": "2026-10-27T20:01:25.087806+00:00",
+      "steps": [
+        {
+          "id": "D1",
+          "title": "suscripción",
+          "status": "OK",
+          "detail": "ACCOUNT_CREATED · ENTERPRISE",
+          "data": {}
+        },
+        {
+          "id": "D2",
+          "title": "sin usuarios Pro (cuota de 250 USD/mes) y SPICE con compra automática",
+          "status": "OK",
+          "detail": "ninguno era Pro · SPICE AUTO_PURCHASE",
+          "data": {}
+        },
+        {
+          "id": "D3",
+          "title": "roles IAM registrados en su grupo",
+          "status": "OK",
+          "detail": "ta-quicksight-autor/demo → AUTHOR en ta-autores; ta-quicksight-lector/demo → READER en ta-lectores; 648617469176 → ADMIN en ta-autores",
+          "data": {
+            "users": [
+              {
+                "user": "ta-quicksight-autor/demo",
+                "role": "AUTHOR",
+                "group": "ta-autores",
+                "registered": false
+              },
+              {
+                "user": "ta-quicksight-lector/demo",
+                "role": "READER",
+                "group": "ta-lectores",
+                "registered": false
+              },
+              {
+                "user": "648617469176",
+                "role": "ADMIN",
+                "group": "ta-autores",
+                "registered": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "D4",
+          "title": "fuente ta-athena-curated (Athena ta-analytics, rol ta-quicksight-role)",
+          "status": "OK",
+          "detail": "updated · UPDATE_SUCCESSFUL",
+          "data": {}
+        },
+        {
+          "id": "D5",
+          "title": "4 datasets SPICE",
+          "status": "OK",
+          "detail": "ta-ds-publicaciones (updated); ta-ds-coocurrencia-hashtags (updated); ta-ds-marcas-compartidas (updated); ta-ds-autores-por-marcas (updated)",
+          "data": {}
+        },
+        {
+          "id": "D6",
+          "title": "importación a SPICE",
+          "status": "OK",
+          "detail": "ta-ds-publicaciones: 221630 filas en 79 s, 0 descartadas; ta-ds-coocurrencia-hashtags: 136 filas en 45 s, 0 descartadas; ta-ds-marcas-compartidas: 3 filas en 45 s, 0 descartadas; ta-ds-autores-por-marcas: 7 filas en 46 s, 0 descartadas",
+          "data": {
+            "ingestions": [
+              {
+                "event": "ingestion",
+                "dataset": "ta-ds-publicaciones",
+                "id": "ta-20261027T195701Z-publicaciones",
+                "status": "COMPLETED",
+                "rows": 221630,
+                "dropped": 0,
+                "seconds": 79,
+                "bytes": 102785780,
+                "error": {}
+              },
+              {
+                "event": "ingestion",
+                "dataset": "ta-ds-coocurrencia-hashtags",
+                "id": "ta-20261027T195701Z-hashtags",
+                "status": "COMPLETED",
+                "rows": 136,
+                "dropped": 0,
+                "seconds": 45,
+                "bytes": 15890,
+                "error": {}
+              },
+              {
+                "event": "ingestion",
+                "dataset": "ta-ds-marcas-compartidas",
+                "id": "ta-20261027T195701Z-marcas",
+                "status": "COMPLETED",
+                "rows": 3,
+                "dropped": 0,
+                "seconds": 45,
+                "bytes": 256,
+                "error": {}
+              },
+              {
+                "event": "ingestion",
+                "dataset": "ta-ds-autores-por-marcas",
+                "id": "ta-20261027T195701Z-autores",
+                "status": "COMPLETED",
+                "rows": 7,
+                "dropped": 0,
+                "seconds": 46,
+                "bytes": 515,
+                "error": {}
+              }
+            ]
+          }
+        },
+        {
+          "id": "D7",
+          "title": "refresco de SPICE",
+          "status": "OK",
+          "detail": "ta-cada-hora {'Interval': 'HOURLY', 'Timezone': 'America/Bogota'} en 4 datasets",
+          "data": {}
+        },
+        {
+          "id": "D8",
+          "title": "análisis ta-analisis-tendencias",
+          "status": "OK",
+          "detail": "updated · UPDATE_SUCCESSFUL · hojas ['Tendencias', 'Relaciones']",
+          "data": {}
+        },
+        {
+          "id": "D9",
+          "title": "tablero ta-tablero-tendencias publicado",
+          "status": "OK",
+          "detail": "versión 3 · CREATION_SUCCESSFUL · hojas ['Tendencias', 'Relaciones']",
+          "data": {
+            "version": 3
+          }
+        }
+      ]
+    },
+    "Q": {
+      "title": "Comprobaciones en QuickSight, Athena e IAM",
+      "status": "OK",
+      "started_at": "2026-10-27T20:01:25.996628+00:00",
+      "finished_at": "2026-10-27T20:03:29.870710+00:00",
+      "steps": [
+        {
+          "id": "Q1",
+          "title": "filas en SPICE = filas de la consulta en Athena",
+          "status": "OK",
+          "detail": "ta-ds-publicaciones: SPICE 221630 · Athena 221630\nta-ds-coocurrencia-hashtags: SPICE 136 · Athena 136\nta-ds-marcas-compartidas: SPICE 3 · Athena 3\nta-ds-autores-por-marcas: SPICE 7 · Athena 7",
+          "data": {}
+        },
+        {
+          "id": "Q2",
+          "title": "columnas que devuelve Athena = las declaradas (nombre, orden, tipo); sin columnas de autor",
+          "status": "OK",
+          "detail": "4 datasets coinciden",
+          "data": {}
+        },
+        {
+          "id": "Q3",
+          "title": "hora_bogota = event_time − 5 h (UTC−5 sin horario de verano) en todas las filas",
+          "status": "OK",
+          "detail": "221630 filas · 0 con otra diferencia · 0 con otro día",
+          "data": {}
+        },
+        {
+          "id": "Q4",
+          "title": "tablero publicado = definición del repositorio",
+          "status": "OK",
+          "detail": "versión 3 CREATION_SUCCESSFUL · 2 hojas · 16 visuales · errores 0",
+          "data": {
+            "version": 3
+          }
+        },
+        {
+          "id": "Q5",
+          "title": "datasets SPICE sin columnas de autor; la fuente usa ta-quicksight-role",
+          "status": "OK",
+          "detail": "4 datasets SPICE con las columnas declaradas · fuente {'WorkGroup': 'ta-analytics', 'RoleArn': 'arn:aws:iam::648617469176:role/ta-quicksight-role'}",
+          "data": {}
+        },
+        {
+          "id": "Q6",
+          "title": "permisos del tablero: autores dueños, lectores solo ven",
+          "status": "OK",
+          "detail": "ta-autores y 1 administrador(es): 8 acciones · ta-lectores: DescribeDashboard, ListDashboardVersions, QueryDashboard",
+          "data": {}
+        },
+        {
+          "id": "Q7",
+          "title": "usuarios por rol IAM, grupos y sin Pro",
+          "status": "OK",
+          "detail": "usuarios {'648617469176': 'ADMIN', 'ta-quicksight-autor/demo': 'AUTHOR', 'ta-quicksight-lector/demo': 'READER'} · grupos {'ta-autores': ['648617469176', 'ta-quicksight-autor/demo'], 'ta-lectores': ['ta-quicksight-lector/demo']} · Pro: ninguno · al terminar la prueba (≈ 2026-11-26) costarían ≈ 51 USD/mes",
+          "data": {
+            "users": {
+              "648617469176": "ADMIN",
+              "ta-quicksight-autor/demo": "AUTHOR",
+              "ta-quicksight-lector/demo": "READER"
+            },
+            "monthly_usd_after_trial": 51
+          }
+        },
+        {
+          "id": "Q8",
+          "title": "roles ta-quicksight-autor/lector: confianza en la cuenta y solo auto-registro",
+          "status": "OK",
+          "detail": "sin acceso a datos (simulación del lector: {'athena:StartQueryExecution': 'implicitDeny', 's3:GetObject': 'implicitDeny', 'glue:GetTable': 'implicitDeny', 'quicksight:UpdateDashboard': 'implicitDeny'})",
+          "data": {
+            "simulation": {
+              "athena:StartQueryExecution": "implicitDeny",
+              "s3:GetObject": "implicitDeny",
+              "glue:GetTable": "implicitDeny",
+              "quicksight:UpdateDashboard": "implicitDeny"
+            }
+          }
+        },
+        {
+          "id": "Q9",
+          "title": "sesión de ta-quicksight-lector/demo sobre el tablero",
+          "status": "OK",
+          "detail": "QuickSight emite la sesión (la URL no se guarda)",
+          "data": {}
+        },
+        {
+          "id": "Q10",
+          "title": "refresco de SPICE cada hora",
+          "status": "OK",
+          "detail": "ta-cada-hora en los 4 datasets",
+          "data": {}
+        }
+      ]
+    },
+    "E": {
+      "title": "Tiempo de respuesta del tablero (< 3 s) y reducción del tiempo de informes (≥ 50 %)",
+      "status": "AVISO",
+      "started_at": "2026-10-27T20:03:30.488936+00:00",
+      "finished_at": "2026-10-27T20:06:43.668671+00:00",
+      "steps": [
+        {
+          "id": "E1",
+          "title": "mediciones en el navegador (KPI < 3 s con SPICE)",
+          "status": "OK",
+          "detail": "restablecer 2.10 s; restablecer_2 2.03 s; origen_historico 2.83 s; hoja_relaciones 1.65 s · peor 2.83 s",
+          "data": {
+            "samples": {
+              "restablecer": 2.1,
+              "restablecer_2": 2.03,
+              "origen_historico": 2.83,
+              "hoja_relaciones": 1.65
+            },
+            "worst_s": 2.83,
+            "method": "navegador del panel de Claude, sesión del administrador por URL de inserción; del clic (pointerdown) a la última mutación del DOM de la hoja"
+          }
+        },
+        {
+          "id": "E2",
+          "title": "referencia: cada consulta en Athena directo (sin SPICE)",
+          "status": "OK",
+          "detail": "ta-ds-publicaciones: 3126 ms, 11.9 MB; ta-ds-coocurrencia-hashtags: 565 ms, 0.0 MB; ta-ds-marcas-compartidas: 1315 ms, 0.8 MB; ta-ds-autores-por-marcas: 1768 ms, 0.4 MB",
+          "data": {
+            "athena": [
+              {
+                "dataset": "ta-ds-publicaciones",
+                "total_ms": 3126,
+                "scanned_bytes": 11896923
+              },
+              {
+                "dataset": "ta-ds-coocurrencia-hashtags",
+                "total_ms": 565,
+                "scanned_bytes": 1296
+              },
+              {
+                "dataset": "ta-ds-marcas-compartidas",
+                "total_ms": 1315,
+                "scanned_bytes": 831540
+              },
+              {
+                "dataset": "ta-ds-autores-por-marcas",
+                "total_ms": 1768,
+                "scanned_bytes": 415770
+              }
+            ]
+          }
+        },
+        {
+          "id": "E3",
+          "title": "reducción del tiempo de elaboración de un informe (estimación por pasos)",
+          "status": "OK",
+          "detail": "95 min a mano → 25 min con el tablero: −73.7 % (pasos en validation-6-1.md, parte E)",
+          "data": {
+            "manual_min": 95,
+            "tablero_min": 25,
+            "reduction_pct": 73.7,
+            "steps": {
+              "manual": [
+                [
+                  "escribir o adaptar 5 consultas SQL en Athena (volumen, sentimiento, emociones, redes, hora del día)",
+                  25
+                ],
+                [
+                  "correrlas, revisar errores y descargar 5 CSV",
+                  10
+                ],
+                [
+                  "convertir UTC a hora de Bogotá y unir los CSV en la hoja de cálculo",
+                  15
+                ],
+                [
+                  "armar 6 gráficos (líneas por día, barras por marca y red, mapa por hora)",
+                  30
+                ],
+                [
+                  "comparar Postobón contra Pepsi y Sprite y redactar el resumen",
+                  15
+                ]
+              ],
+              "tablero": [
+                [
+                  "abrir el tablero y elegir periodo, marca, red y origen",
+                  2
+                ],
+                [
+                  "leer los 4 indicadores y los 7 gráficos de «Tendencias» y la hoja «Relaciones»",
+                  8
+                ],
+                [
+                  "exportar a CSV lo que haga falta y redactar el resumen",
+                  15
+                ]
+              ]
+            }
+          }
+        },
+        {
+          "id": "E5",
+          "title": "QuickSight (CloudWatch, 24 h): carga de cada visual",
+          "status": "OK",
+          "detail": "VisualLoadTime: 80 cargas, media 719 ms, máximo 1861 ms",
+          "data": {
+            "samples": 80,
+            "avg_ms": 719,
+            "max_ms": 1861
+          }
+        },
+        {
+          "id": "E6",
+          "title": "QuickSight (CloudWatch, 24 h): carga inicial completa del tablero",
+          "status": "AVISO",
+          "detail": "DashboardViewLoadTime: 2 vistas, media 6756 ms, máximo 6770 ms (incluye abrir la sesión, bajar la aplicación y dibujar la hoja; el KPI se mide por interacción, E1 y E5)",
+          "data": {
+            "samples": 2,
+            "avg_ms": 6756,
+            "max_ms": 6770
+          }
+        },
+        {
+          "id": "E4",
+          "title": "evidencia sin datos personales ni URLs de sesión",
+          "status": "OK",
+          "detail": "sin correos, tokens ni URLs prefirmadas",
+          "data": {}
+        }
+      ]
+    },
+    "status": {
+      "title": "Estado (solo lectura)",
+      "status": "OK",
+      "started_at": "2026-10-27T20:06:43.948303+00:00",
+      "finished_at": "2026-10-27T20:06:58.071637+00:00",
+      "steps": [
+        {
+          "id": "S1",
+          "title": "suscripción de QuickSight",
+          "status": "OK",
+          "detail": "ACCOUNT_CREATED · prueba gratis hasta ≈ 2026-11-26 (29 días); al terminar el uso: validate_6_1.py unsubscribe --confirm-unsubscribe",
+          "data": {}
+        },
+        {
+          "id": "S2",
+          "title": "usuarios",
+          "status": "OK",
+          "detail": "{'648617469176': 'ADMIN', 'ta-quicksight-autor/demo': 'AUTHOR', 'ta-quicksight-lector/demo': 'READER'} · ≈ 51 USD/mes después de la prueba",
+          "data": {}
+        },
+        {
+          "id": "S3",
+          "title": "última importación a SPICE",
+          "status": "OK",
+          "detail": "ta-ds-publicaciones: 221630 filas (2026-10-27T15:04:18.973000-05:00)\nta-ds-coocurrencia-hashtags: 136 filas (2026-10-27T15:03:52.131000-05:00)\nta-ds-marcas-compartidas: 3 filas (2026-10-27T15:02:24.402000-05:00)\nta-ds-autores-por-marcas: 7 filas (2026-10-27T15:01:48.741000-05:00)",
+          "data": {}
+        },
+        {
+          "id": "S4",
+          "title": "tablero",
+          "status": "OK",
+          "detail": "versión 3 · CREATION_SUCCESSFUL",
+          "data": {}
+        }
+      ]
+    }
+  },
+  "updated_at": "2026-10-27T20:10:24.495093+00:00"
+}

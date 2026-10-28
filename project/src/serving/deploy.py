@@ -105,6 +105,12 @@ class Deployer:
         self.emit({"event": "no_pro_users", "changed": changed})
         return changed
 
+    def spice_capacity(self) -> str:
+        """Compra automática de SPICE: sin ella, actualizar un dataset falla con «Insufficient SPICE capacity»."""
+        self._call("update_spice_capacity_configuration", PurchaseMode=qs.SPICE_PURCHASE_MODE)
+        self.emit({"event": "spice_capacity", "purchase_mode": qs.SPICE_PURCHASE_MODE})
+        return qs.SPICE_PURCHASE_MODE
+
     def groups(self) -> list[str]:
         created = []
         for key, name in qs.GROUPS.items():
@@ -296,6 +302,7 @@ class Deployer:
     def deploy(self, service_role_arn: str, access_role_arns: dict[str, str], *, refresh: bool = True) -> dict[str, Any]:
         self.subscription()
         self.no_pro_users()
+        self.spice_capacity()
         self.groups()
         users = self.access_users(access_role_arns)
         ds_arn = self.data_source(service_role_arn)

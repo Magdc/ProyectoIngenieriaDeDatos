@@ -377,9 +377,11 @@ def part_deploy(ctx: Ctx) -> int:
     sub = last_event(evs, "subscription")
     part.add("D1", "suscripción", OK if sub.get("status") == "ACCOUNT_CREATED" else FALLA,
              f"{sub.get('status')} · {sub.get('edition')}" if sub else (err.get("error") or res.tail(6)))
-    nopro = last_event(evs, "no_pro_users")
-    part.add("D2", "sin usuarios Pro (evita la cuota de 250 USD/mes al terminar la prueba)", OK if nopro else FALLA,
-             (f"pasados a su papel normal: {nopro.get('changed')}" if nopro.get("changed") else "ninguno era Pro") if nopro else "no llegó")
+    nopro, spice = last_event(evs, "no_pro_users"), last_event(evs, "spice_capacity")
+    part.add("D2", "sin usuarios Pro (cuota de 250 USD/mes) y SPICE con compra automática",
+             OK if nopro and spice.get("purchase_mode") == qs.SPICE_PURCHASE_MODE else FALLA,
+             ((f"pasados a su papel normal: {nopro.get('changed')}" if nopro.get("changed") else "ninguno era Pro")
+              + f" · SPICE {spice.get('purchase_mode')}") if nopro else "no llegó")
     users = last_event(evs, "access_users").get("users") or []
     by_user = {u["user"]: u for u in users}
     good = all(by_user.get(DEMO_USERS[k], {}).get("group") == qs.GROUPS[k] for k in DEMO_USERS)
@@ -547,6 +549,22 @@ def part_checks(ctx: Ctx) -> int:
 # --- Parte E · tiempo de respuesta y reducción del tiempo de informes ------------------------------------------
 
 
+def cloudwatch_stats(ctx: Ctx, metric: str, hours: int = 24) -> dict[str, Any]:
+    """Media, máximo y número de muestras de una métrica de QuickSight del tablero (``AWS/QuickSight``)."""
+    end = ctx.now().replace(microsecond=0)
+    start = end - timedelta(hours=hours)
+    res = ctx.aws("cloudwatch", "get-metric-statistics", "--namespace", "AWS/QuickSight", "--metric-name", metric,
+                  "--dimensions", f"Name=DashboardId,Value={qs.DASHBOARD_ID}", "--start-time", start.isoformat(),
+                  "--end-time", end.isoformat(), "--period", str(hours * 3600), "--statistics", "Average", "Maximum",
+                  "SampleCount")
+    points = (parse_json(res.out) or {}).get("Datapoints", []) if res.ok else []
+    n = sum(p.get("SampleCount", 0) for p in points)
+    if not n:
+        return {}
+    avg = sum(p.get("Average", 0) * p.get("SampleCount", 0) for p in points) / n
+    return {"samples": int(n), "avg_ms": round(avg), "max_ms": round(max(p.get("Maximum", 0) for p in points))}
+
+
 def part_latency(ctx: Ctx) -> int:
     part = Part(ctx, "E", "Tiempo de respuesta del tablero (< 3 s) y reducción del tiempo de informes (≥ 50 %)")
     samples = parse_samples(getattr(ctx.options, "samples", None))
@@ -574,6 +592,19 @@ def part_latency(ctx: Ctx) -> int:
              OK if red["reduction_pct"] >= 50 else FALLA,
              f"{red['manual_min']} min a mano → {red['tablero_min']} min con el tablero: −{red['reduction_pct']} % "
              "(pasos en validation-6-1.md, parte E)", **red, steps=REPORT_MINUTES)
+    metrics = {name: cloudwatch_stats(ctx, name) for name in ("VisualLoadTime", "DashboardViewLoadTime")}
+    vis, view = metrics["VisualLoadTime"], metrics["DashboardViewLoadTime"]
+    if vis.get("samples"):
+        part.add("E5", "QuickSight (CloudWatch, 24 h): carga de cada visual", OK if vis["max_ms"] < KPI_SECONDS * 1000 else FALLA,
+                 f"VisualLoadTime: {vis['samples']} cargas, media {vis['avg_ms']} ms, máximo {vis['max_ms']} ms", **vis)
+    else:
+        part.add("E5", "QuickSight (CloudWatch, 24 h): carga de cada visual", OMITIDO, "sin vistas del tablero en 24 h")
+    if view.get("samples"):
+        part.add("E6", "QuickSight (CloudWatch, 24 h): carga inicial completa del tablero",
+                 OK if view["max_ms"] < KPI_SECONDS * 1000 else AVISO,
+                 f"DashboardViewLoadTime: {view['samples']} vistas, media {view['avg_ms']} ms, máximo {view['max_ms']} ms "
+                 "(incluye abrir la sesión, bajar la aplicación y dibujar la hoja; el KPI se mide por interacción, E1 y E5)",
+                 **view)
     texts = {EVIDENCE.name: EVIDENCE.read_text(encoding="utf-8") if EVIDENCE.exists() else ""}
     leaks = v53.leak_problems(texts)
     part.add("E4", "evidencia sin datos personales ni URLs de sesión", FALLA if leaks or "code=" in texts[EVIDENCE.name] else OK,

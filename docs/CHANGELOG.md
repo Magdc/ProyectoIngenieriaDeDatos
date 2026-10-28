@@ -1,10 +1,22 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.47**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.48**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.48 · desde v2.47
+
+**Lote que lo motiva:** Lote 6.1 (HU-037, HU-038) · cierre
+
+| Área | Cambio |
+|---|---|
+| Lote 6.1 | **Cerrado** ✅: validado el 27-oct-2026 con `validate_6_1.py` sobre `main` = `6960793` más las dos correcciones de abajo, con el OK del usuario para la nube. A 6, B 3 (10, 12, 132), L 4, **C** (AVISO solo por la cuenta raíz: `Apply complete! Resources: 4 added, 0 changed, 0 destroyed.`, plan limpio), **D 9** (tablero versión 3; 221.630, 136, 3 y 7 filas en SPICE, 0 descartadas), **Q 10** (SPICE = Athena, Q3 0 de 221.630 filas mal en hora de Bogotá, permisos, roles sin acceso a datos, sesión del lector), **E** (AVISO: navegador 2,10 / 2,03 / 2,83 / 1,65 s; `VisualLoadTime` media 719 ms y máximo 1.861 ms; `DashboardViewLoadTime` 6,8 s en la carga inicial completa; reducción estimada −73,7 %), `status` 4. |
+| Correcciones de la validación | (1) `sql/publicaciones.sql`: la hora local sale de `format_datetime(event_time AT TIME ZONE 'America/Bogota', …)`; en Athena el `CAST(… AS timestamp)` devolvía UTC y `hora_bogota` quedaba en UTC (Q3). (2) `deploy` activa la **compra automática de SPICE** (`spice_capacity`, `SPICE_PURCHASE_MODE`): al quitar el Pro, el límite quedó en lo consumido (98 MB) y actualizar un dataset fallaba con «Insufficient SPICE capacity» (≈ 0,08 USD/mes). Validador: D2 revisa SPICE y E5/E6 leen `VisualLoadTime` y `DashboardViewLoadTime` de CloudWatch. |
+| Estado en la nube | QuickSight suscrito (prueba gratis hasta ≈ 26-nov-2026; 3 usuarios sin Pro, ≈ 51 USD/mes si sigue después), compra automática de SPICE, roles `ta-quicksight-autor` y `ta-quicksight-lector`. Al terminar el uso: `validate_6_1.py unsubscribe --confirm-unsubscribe`. |
+| Evidencia | `project/evidencia/validacion_6_1.json` (sin correos ni URLs de sesión). |
+| Documento | §3.27 con «Cierre», horas de Bogotá, costo de SPICE y trampas nuevas; §3.27.1, §5.12 y ADR-31 al día; «Cierre» de `validation-6-1.md`; PLAN.md §3 (6.1 ✅); HU.md (HU-037 y HU-038 ✅); `ACTIVE_SERVICES.md`; cabeceras a 2.48. |
 
 ## v2.47 · desde v2.46
 

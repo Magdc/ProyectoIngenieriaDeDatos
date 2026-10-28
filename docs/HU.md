@@ -95,8 +95,8 @@ Criterios de aceptación: lista verificable.
 | HU-036 | Cumplimiento normativo y DAMA-DMBOK | 5 · 5.3 | A | Must | 2 | ✅ |
 | HU-048 | Prueba de humo end-to-end | 5 · 5.4 | A | Must | 2 | ✅ |
 | **E7 · Serving y alertas** | | | | | | |
-| HU-037 | Dashboard de tendencias y sentimiento | 6 · 6.1 | C | Must | Final | ⬜ |
-| HU-038 | Vista de relaciones | 6 · 6.1 | C | Should | Final | ⬜ |
+| HU-037 | Dashboard de tendencias y sentimiento | 6 · 6.1 | C | Must | Final | ✅ |
+| HU-038 | Vista de relaciones | 6 · 6.1 | C | Should | Final | ✅ |
 | HU-039 | Alertas de cambios en la conversación | 6 · 6.2 | C | Should | Final | ⬜ |
 | HU-040 | Escenarios de demo | 6 · 6.3 | A | Could | Final | ⬜ |
 | **E8 · DataOps** | | | | | | |

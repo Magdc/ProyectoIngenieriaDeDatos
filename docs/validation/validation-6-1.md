@@ -140,7 +140,7 @@ código 0.
 | Paso | Esperado |
 |---|---|
 | D1 | Suscripción `ACCOUNT_CREATED` |
-| D2 | Ningún usuario Pro (la primera vez, el administrador pasa de `ADMIN_PRO` a `ADMIN`) |
+| D2 | Ningún usuario Pro (la primera vez, el administrador pasa de `ADMIN_PRO` a `ADMIN`) y SPICE con compra automática (`AUTO_PURCHASE`) |
 | D3 | `ta-quicksight-autor/demo` (AUTHOR) en `ta-autores` y `ta-quicksight-lector/demo` (READER) en `ta-lectores` |
 | D4 | Fuente `ta-athena-curated` `CREATION_SUCCESSFUL` o `UPDATE_SUCCESSFUL` |
 | D5 | Los 4 datasets creados o actualizados |
@@ -180,7 +180,9 @@ resultado nuevo:
 Método: un `MutationObserver` sobre la hoja y un `pointerdown` registran el clic y la última mutación del DOM; el
 peor caso queda por debajo de 3 s. A mano sirve un cronómetro. Registro: `validate_6_1.py latency --samples
 "nombre=segundos,…" [--method "…"]` (E1 exige todas < 3 s; sin `--samples` conserva las de la corrida anterior). E2
-corre las 4 consultas en Athena directo como referencia (sin SPICE).
+corre las 4 consultas en Athena directo como referencia (sin SPICE). E5 lee de CloudWatch `VisualLoadTime` del tablero
+(24 h; exige máximo < 3 s) y E6 `DashboardViewLoadTime`, la carga inicial completa (sesión, aplicación y hoja): da
+AVISO si pasa de 3 s, porque el KPI se mide por interacción y por visual.
 
 **Reducción del tiempo de elaboración de un informe (E3, estimación por pasos).** Un informe semanal de volumen,
 sentimiento y emociones por marca y red:
@@ -213,6 +215,29 @@ Quita la protección contra borrado y borra la suscripción: se van los usuarios
 tablero (irreversible). El código queda: para volver, se crea la suscripción (Preparación, paso 3) y se corre
 `quicksight.py deploy --yes`. Los roles IAM y `ta-quicksight-role` quedan (no cobran).
 
+## Cierre
+
+**Cerrado en v2.48** (27-oct-2026, WSL; `main` = `6960793` más las dos correcciones de abajo; `ta-streaming`, perfil
+`default` = cuenta raíz; con el OK del usuario para la suscripción y el apply).
+
+| Parte | Resultado |
+|---|---|
+| A · Preflight | OK (6): boto3; 15 + 4 archivos; `aws` y `terraform`; suscripción `ACCOUNT_CREATED` Enterprise (prueba hasta ≈ 2026-11-26); `ta-quicksight-role`; horario `ENABLED` |
+| B · Pruebas | OK (3): B1 10, B2 12, B3 132 |
+| L · Local | OK (4) |
+| C · Terraform | AVISO (6; solo C0 por la cuenta raíz): 4 a crear → `Apply complete! Resources: 4 added, 0 changed, 0 destroyed.` → plan limpio |
+| D · Despliegue | OK (9) en la segunda corrida: SPICE `AUTO_PURCHASE`; `ta-quicksight-autor/demo` en `ta-autores`, `ta-quicksight-lector/demo` en `ta-lectores`; 221.630, 136, 3 y 7 filas en 79, 45, 45 y 46 s, 0 descartadas; tablero versión 3 |
+| Q · Comprobaciones | OK (10): SPICE = Athena; columnas; **Q3: 0 de 221.630 filas mal**; 16 visuales = repositorio; lectores solo ven; 3 usuarios sin Pro (≈ 51 USD/mes tras la prueba); roles sin acceso a datos; sesión del lector; refresco cada hora |
+| E · Respuesta e informes | AVISO (6): E1 2,10 / 2,03 / 2,83 / 1,65 s; E2 Athena 0,6–3,1 s; E3 −73,7 %; **E5 `VisualLoadTime` media 719 ms, máximo 1.861 ms (80 cargas)**; E6 AVISO `DashboardViewLoadTime` 6,8 s (carga inicial completa, 2 vistas); E4 limpia |
+| `status` | OK (4): 29 días de prueba |
+
+**Lo que encontró la primera corrida (corregido en v2.48):** Q3 FALLA (`hora_bogota` en UTC por el `CAST` de Athena →
+`format_datetime`) y D FALLA («Insufficient SPICE capacity» al actualizar un dataset: sin Pro el límite quedó en 98 MB →
+compra automática de SPICE). En el navegador, el lector ve las dos hojas con datos y sin opciones de edición. Sin
+comprobar: entrar por la consola asumiendo los roles (la cuenta raíz no puede; el equipo no tiene identidades IAM).
+Cifras también en `ARCHITECTURE.md` §3.27 y `CHANGELOG.md` v2.48. QuickSight queda suscrito hasta que el equipo corra
+`unsubscribe`.
+
 ## Problemas frecuentes
 
 | Síntoma | Qué hacer |
@@ -225,3 +250,5 @@ tablero (irreversible). El código queda: para volver, se crea la suscripción (
 | `ConflictException` en `update_*_permissions` | Una actualización seguía en curso; `deploy` ya espera, repítalo |
 | Q1 AVISO | El horario de Glue corrió después de la importación: `python project/scripts/quicksight.py refresh` y repita `checks` |
 | La URL de `embed-url` no abre | Vence a los 5 min sin usar: genere otra |
+| D FALLA «Insufficient SPICE capacity» | La compra automática de SPICE no quedó activa: `aws quicksight update-spice-capacity-configuration --aws-account-id 648617469176 --purchase-mode AUTO_PURCHASE --region us-east-1` y repita `deploy` |
+| Q3 FALLA | Una hora local hecha con `CAST(… AT TIME ZONE … AS timestamp)` (en Athena da UTC): use `format_datetime` como `sql/publicaciones.sql` |

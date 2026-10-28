@@ -66,7 +66,7 @@ variable "alert_emails" {
 }
 
 variable "rate_limit_seconds" {
-  description = "Como máximo una notificación de la política por periodo (las basadas en logs lo exigen)."
+  description = "Límite de notificaciones por incidente (las políticas basadas en logs lo exigen). Cada alerta abre su incidente: llega un correo por alerta (visto en la validación del 6.2)."
   type        = number
   default     = 300
 }
@@ -281,7 +281,7 @@ resource "google_monitoring_alert_policy" "trend" {
       - Alerta: $${log.extracted_label.alerta_id}
 
       Detalle completo en Cloud Logging (servicio ${var.service_name}, jsonPayload) y en el topic ${var.alerts_topic}.
-      Cooldown: 15 min por marca × fuente × tipo. Como máximo un correo cada ${var.rate_limit_seconds / 60} min.
+      Un correo por alerta; cooldown de 15 min por marca × fuente × tipo.
       Guía: project/src/alerts/ALERTS.md (proyecto ${var.project_id}).
     EOT
   }

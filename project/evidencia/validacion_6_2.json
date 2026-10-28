@@ -62,8 +62,8 @@
     "B": {
       "title": "Pruebas",
       "status": "OK",
-      "started_at": "2026-10-27T22:06:39.656060+00:00",
-      "finished_at": "2026-10-27T22:07:15.752103+00:00",
+      "started_at": "2026-10-28T00:24:06.865322+00:00",
+      "finished_at": "2026-10-28T00:24:50.964600+00:00",
       "steps": [
         {
           "id": "B1",
@@ -207,9 +207,9 @@
     },
     "C": {
       "title": "Terraform (sa-alerts, notificador, push, canales y política)",
-      "status": "OK",
-      "started_at": "2026-10-27T22:19:32.180004+00:00",
-      "finished_at": "2026-10-27T22:21:27.385350+00:00",
+      "status": "AVISO",
+      "started_at": "2026-10-28T00:24:51.472948+00:00",
+      "finished_at": "2026-10-28T00:26:03.906755+00:00",
       "steps": [
         {
           "id": "C0",
@@ -252,24 +252,27 @@
           "id": "C2",
           "title": "plan (-target de los recursos del lote)",
           "status": "OK",
-          "detail": "0 a crear, 0 a cambiar, 0 a destruir, 0 a reemplazar (ya aplicado)",
+          "detail": "0 a crear, 1 a cambiar, 0 a destruir, 0 a reemplazar (esperado: hasta 10 a crear; nada a destruir)",
           "data": {
             "create": [],
-            "update": [],
+            "update": [
+              "module.alerts.google_monitoring_alert_policy.trend"
+            ],
             "delete": [],
             "replace": [],
-            "diffs": {}
+            "diffs": {
+              "module.alerts.google_monitoring_alert_policy.trend": [
+                "documentation.0.content: '**Alerta de tendencia de TrendAnalyzer** (origen: ${log.extracted_label.origen})\\n\\n- Marca: ${log.extracted_label.m… → '**Alerta de tendencia de TrendAnalyzer** (origen: ${log.extracted_label.origen})\\n\\n- Marca: ${log.extracted_label.m…"
+              ]
+            }
           }
         },
         {
-          "id": "C5",
-          "title": "recursos reales (servicio, invocadores, push, permisos y política)",
-          "status": "OK",
-          "detail": "ta-alert-notifier listo y privado (solo sa-alerts invoca) · push ta-alerts-notifier con ID token de sa-alerts · sa-dataflow publica en ta-alerts · ta-alerta-tendencia con 1 correo(s) + Pub/Sub y 1 correo cada 5 min como máximo",
-          "data": {
-            "notifier_url": "https://ta-alert-notifier-kyu3kofmtq-uc.a.run.app",
-            "image": "us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/alert-notifier:h-e9a8dab903df"
-          }
+          "id": "C3",
+          "title": "apply",
+          "status": "AVISO",
+          "detail": "sin --apply: no se aplicó (repita con --apply)",
+          "data": {}
         }
       ]
     },
@@ -368,7 +371,230 @@
           }
         }
       ]
+    },
+    "F": {
+      "title": "Alerta real: ola de prueba → trend_windows → ta-alerts → notificador → notificación",
+      "status": "OK",
+      "started_at": "2026-10-27T23:39:32.090967+00:00",
+      "finished_at": "2026-10-28T00:14:31.830878+00:00",
+      "steps": [
+        {
+          "id": "F0",
+          "title": "Dataflow con alertas y notificador",
+          "status": "OK",
+          "detail": "ta-stream-dev desde 2026-10-27T22:27:07 UTC · https://ta-alert-notifier-kyu3kofmtq-uc.a.run.app",
+          "data": {}
+        },
+        {
+          "id": "F1",
+          "title": "baseline completo (60 ventanas)",
+          "status": "OK",
+          "detail": "primera ventana de postobon/instagram: 2026-10-27T22:21:00.000Z · listo desde 23:27 UTC",
+          "data": {
+            "first_window": "2026-10-27T22:21:00.000Z"
+          }
+        },
+        {
+          "id": "F2",
+          "title": "suscripciones temporales a ta-alerts y ta-alerts-incidents",
+          "status": "OK",
+          "detail": "ta-verify-alerts-81d272d4, ta-verify-incidents-81d272d4",
+          "data": {}
+        },
+        {
+          "id": "F3",
+          "title": "ola de prueba publicada",
+          "status": "OK",
+          "detail": "150 comentarios ta-verify@6.2 de postobon en instagram entre 23:39:54 y 23:39:55 UTC (escenario alert-check-6.2/81d272d4)",
+          "data": {
+            "burst": {
+              "event": "burst_published",
+              "run_id": "81d272d4",
+              "count": 150,
+              "brand": "postobon",
+              "source": "instagram",
+              "sentiment": "negative",
+              "generator": "ta-verify@6.2",
+              "scenario": "alert-check-6.2/81d272d4",
+              "first_event_time": "2026-10-27T23:39:42.483Z",
+              "last_event_time": "2026-10-27T23:39:47.467Z",
+              "published_from": "2026-10-27T23:39:54.492Z",
+              "published_to": "2026-10-27T23:39:55.343Z",
+              "event_ids": [
+                "66bd107f-ee6f-51ec-bea3-48b1ac9e7a30",
+                "4e40280b-d22d-5aef-9ece-524e10a54a67"
+              ]
+            }
+          }
+        },
+        {
+          "id": "F4",
+          "title": "trend_windows: ventanas con is_alert de postobon/instagram",
+          "status": "OK",
+          "detail": "volumen: 5 ventanas (z máx 9.3) · sentimiento: 5 · 34 ventanas desde la ola",
+          "data": {
+            "alert_windows": {
+              "volume": [
+                "2026-10-27T23:40:00.000Z",
+                "2026-10-27T23:41:00.000Z",
+                "2026-10-27T23:42:00.000Z",
+                "2026-10-27T23:43:00.000Z",
+                "2026-10-27T23:44:00.000Z"
+              ],
+              "sentiment": [
+                "2026-10-27T23:40:00.000Z",
+                "2026-10-27T23:41:00.000Z",
+                "2026-10-27T23:42:00.000Z",
+                "2026-10-27T23:43:00.000Z",
+                "2026-10-27T23:44:00.000Z"
+              ]
+            }
+          }
+        },
+        {
+          "id": "F5",
+          "title": "mensajes de Dataflow en ta-alerts",
+          "status": "OK",
+          "detail": "2 de la ola (sentiment_down, volume_up) y 3 de otras claves; 0 inválidos",
+          "data": {
+            "types": [
+              "sentiment_down",
+              "volume_up"
+            ],
+            "others": 3,
+            "invalid": 0
+          }
+        },
+        {
+          "id": "F6",
+          "title": "contenido: marca, fuente, ventana y magnitud",
+          "status": "OK",
+          "detail": "Sentimiento a la baja de postobon en instagram: sentimiento medio −0,62 frente a 0,01 (−0,63, z = −7,6; 218 posts) en la ventana 2026-10-27 23:35–23:40 UTC (18:35–18:40 en Bogotá).",
+          "data": {
+            "alert": {
+              "schema": "ta-alert",
+              "schema_version": "1.0",
+              "alert_id": "280b052c-fe57-560e-bc86-e64c7187f273",
+              "alert_type": "sentiment_down",
+              "metric": "sentiment",
+              "direction": "down",
+              "origin": "dataflow",
+              "brand": "postobon",
+              "source": "instagram",
+              "window_start": "2026-10-27T23:35:00.000Z",
+              "window_end": "2026-10-27T23:40:00.000Z",
+              "value": -0.617921,
+              "baseline_mean": 0.013249,
+              "baseline_std": 0.082903,
+              "zscore": -7.613328,
+              "change": -0.63117,
+              "change_pct": null,
+              "z_threshold": 3.0,
+              "baseline_windows": 60,
+              "n_posts": 218,
+              "avg_sentiment": -0.617921,
+              "n_negative": 167,
+              "n_positive": 18,
+              "detected_at": "2026-10-27T23:41:03.868Z",
+              "cooldown_seconds": 900
+            }
+          }
+        },
+        {
+          "id": "F7",
+          "title": "detección < 5 min (fin de la ventana → notificación)",
+          "status": "OK",
+          "detail": "fin de la ventana 23:40:00 → Dataflow 63.9 s → ta-alerts 64.6 s → notificador 69.0 s → notificación 159.8 s",
+          "data": {
+            "detected_s": 63.9,
+            "published_s": 64.6,
+            "notifier_s": 69.0,
+            "notification_s": 159.8,
+            "incident": "0.oebqgojs6mm8"
+          }
+        },
+        {
+          "id": "F8",
+          "title": "cooldown de 15 min por marca × fuente × tipo",
+          "status": "OK",
+          "detail": "5 ventanas con alerta de volumen → 1 mensaje(s) volume_up; mensajes por tipo {'volume_up': 1, 'sentiment_down': 1}; sin pares a menos de 15 min en los 5 mensajes vistos",
+          "data": {
+            "per_type": {
+              "volume_up": 1,
+              "sentiment_down": 1
+            },
+            "violations": []
+          }
+        },
+        {
+          "id": "F9",
+          "title": "otras alertas durante la observación (tráfico normal del simulador)",
+          "status": "OK",
+          "detail": "3 mensajes: pepsi/facebook/volume_up, pepsi/instagram/volume_up, sprite/reddit/sentiment_up · 1 notificaciones de la política",
+          "data": {
+            "others": [
+              "pepsi/facebook/volume_up",
+              "pepsi/instagram/volume_up",
+              "sprite/reddit/sentiment_up"
+            ],
+            "notifications": 1
+          }
+        }
+      ]
+    },
+    "O": {
+      "title": "Apagado: Dataflow drenado y simulador apagado (el notificador queda, escala a cero)",
+      "status": "OK",
+      "started_at": "2026-10-28T00:14:52.391976+00:00",
+      "finished_at": "2026-10-28T00:19:07.755238+00:00",
+      "steps": [
+        {
+          "id": "O1",
+          "title": "Dataflow y simulador apagados",
+          "status": "OK",
+          "detail": "ningún job activo y simulador apagado · encendidos ≈ 1.87 h ≈ 0.65 USD",
+          "data": {
+            "hours": 1.87
+          }
+        },
+        {
+          "id": "O2",
+          "title": "suscripciones temporales ta-verify-*",
+          "status": "OK",
+          "detail": "ninguna",
+          "data": {}
+        }
+      ]
+    },
+    "status": {
+      "title": "Estado (solo lectura)",
+      "status": "OK",
+      "started_at": "2026-10-28T00:22:16.993411+00:00",
+      "finished_at": "2026-10-28T00:22:22.420820+00:00",
+      "steps": [
+        {
+          "id": "S1",
+          "title": "Dataflow y simulador",
+          "status": "OK",
+          "detail": "apagados",
+          "data": {}
+        },
+        {
+          "id": "S2",
+          "title": "notificador y política",
+          "status": "OK",
+          "detail": "https://ta-alert-notifier-kyu3kofmtq-uc.a.run.app · ta-alerta-tendencia · 1 canal(es) de correo (escala a cero: sin costo en reposo)",
+          "data": {}
+        },
+        {
+          "id": "S3",
+          "title": "última alerta real medida",
+          "status": "OK",
+          "detail": "notificador 69.0 s · notificación 159.8 s tras el fin de la ventana",
+          "data": {}
+        }
+      ]
     }
   },
-  "updated_at": "2026-10-27T22:28:12.321641+00:00"
+  "updated_at": "2026-10-28T00:26:03.906885+00:00"
 }

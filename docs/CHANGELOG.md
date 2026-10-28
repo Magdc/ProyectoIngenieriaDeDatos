@@ -1,10 +1,22 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.49**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.50**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.50 · desde v2.49
+
+**Lote que lo motiva:** Lote 6.2 (HU-039) · cierre
+
+| Área | Cambio |
+|---|---|
+| Lote 6.2 | **Cerrado** ✅: validado el 27/28-oct-2026 con `validate_6_2.py` sobre `main` = `b27a1d6` más las correcciones de abajo. **F OK (10):** ola de 150 comentarios `ta-verify@6.2` negativos de `postobon` en `instagram` → 5 ventanas con `is_alert` → **1 mensaje por tipo** (`volume_up`, `sentiment_down`) en `ta-alerts`; **fin de la ventana → notificación de la política en 159,8 s** (Dataflow 63,9 s, notificador 69,0 s); 3 alertas naturales sin violar el *cooldown*. Métrica de `ta-alerts-incidents`: **7 notificaciones para 7 alertas**. P y O OK (simulador y Dataflow ≈ 1,9 h ≈ 0,65 USD, apagados). El correo en el buzón queda sin confirmar. |
+| Corrección del diseño | El límite de 300 s de la política basada en logs es **por incidente**, no por política: cada alerta abre su incidente y **llega un correo por alerta** (lo acota el *cooldown*). §3.28, §5.12, `ALERTS.md`, `ACTIVE_SERVICES.md` y la guía de validación corregidos; el texto del correo («como máximo un correo cada 5 min») se cambió en el módulo a «un correo por alerta» y **queda por aplicar** (1 recurso en el lugar, con OK del usuario). |
+| Correcciones del validador | `b64_any`: `gcloud pubsub subscriptions pull --format=json` da `data` en base64 URL-safe (F9 veía 1 notificación de 7); la observación de F la corta el reloj (cada `pull` vacío espera ~20 s; «12 min» duraron 34); C admite actualizar la política. |
+| Evidencia | `project/evidencia/validacion_6_2.json` (sin direcciones de correo). |
+| Documento | §3.28 con «Cierre» y los hallazgos 4–6; §3.28.1, §5.12; «Cierre» de `validation-6-2.md`; PLAN.md §3 (6.2 ✅); HU.md (HU-039 ✅); cabeceras a 2.50. |
 
 ## v2.49 · desde v2.48
 

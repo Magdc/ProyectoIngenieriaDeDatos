@@ -115,7 +115,7 @@ AVISO hasta registrar el correo con `email`) y código 0.
 |---|---|
 | L1 | `alerts_check.py plan`: alerta de ejemplo válida (`ta-alert` 1.0, 6 atributos) y ola de 150 comentarios `ta-verify@6.2` sin errores de envelope |
 | L2 | El texto de la alerta lleva marca, fuente, ventana (UTC y Bogotá) y magnitud (valor, media, % y z) |
-| L3 | Parámetros = §5.12: *cooldown* 900 s, \|z\| ≥ 3, `n_posts` ≥ 5, baseline 60, un correo cada 300 s como máximo |
+| L3 | Parámetros = §5.12: *cooldown* 900 s, \|z\| ≥ 3, `n_posts` ≥ 5, baseline 60, límite de la política 300 s por incidente |
 | L4 | `build_alerts_image.sh --dry-run`: etiqueta `h-{huella}` y contexto de 8 archivos |
 
 ## Parte D · Imagen
@@ -133,9 +133,9 @@ AVISO hasta registrar el correo con `email`) y código 0.
 | C0b | Imagen presente (sin ella se crea todo menos el servicio, el invocador y la push) |
 | C0c | Agente de notificaciones de Cloud Monitoring (`gcloud beta services identity create`, idempotente) |
 | C1 | `infra/validate.sh` OK |
-| C2 | Plan con `-target=module.sa_alerts -target=module.alerts -target=google_pubsub_topic_iam_member.dataflow_alerts_publisher`: hasta 10 a crear (`sa-alerts`, permiso de `sa-dataflow`, servicio, invocador, push, `ta-alerts-incidents`, canal de correo por dirección, canal de Pub/Sub, permiso del agente, política), 0 a destruir; o «ya aplicado» |
+| C2 | Plan con `-target=module.sa_alerts -target=module.alerts -target=google_pubsub_topic_iam_member.dataflow_alerts_publisher`: hasta 10 a crear (`sa-alerts`, permiso de `sa-dataflow`, servicio, invocador, push, `ta-alerts-incidents`, canal de correo por dirección, canal de Pub/Sub, permiso del agente, política), 0 a destruir; solo se admite actualizar el servicio (imagen) y la política (texto); o «ya aplicado» |
 | C3–C4 | `--apply` y plan limpio después |
-| C5 | Servicio listo y privado (solo `sa-alerts` invoca), push con el ID token de `sa-alerts`, `sa-dataflow` publica en `ta-alerts`, política habilitada con N + 1 canales y 1 notificación cada 300 s |
+| C5 | Servicio listo y privado (solo `sa-alerts` invoca), push con el ID token de `sa-alerts`, `sa-dataflow` publica en `ta-alerts`, política habilitada con N + 1 canales y límite de 300 s (por incidente) |
 
 ## Parte E · Alerta sintética
 
@@ -166,7 +166,7 @@ AVISO hasta registrar el correo con `email`) y código 0.
 | F4 | `trend_windows_latest`: ventanas de la clave con `is_alert` y z de volumen ≥ 3 (varias: la ola cae en ventanas solapadas) |
 | F5 | Mensajes de Dataflow (`origin = dataflow`) de la clave en `ta-alerts`, todos válidos; cuántos de otras claves |
 | F6 | El primero lleva marca, fuente, ventana y magnitud (`alert_problems` vacío) |
-| F7 | **Fin de la ventana → notificación < 300 s** (y cada tramo: Dataflow, `ta-alerts`, notificador); AVISO si la notificación no se vio (el límite de 1 cada 5 min pudo absorberla) |
+| F7 | **Fin de la ventana → notificación < 300 s** (y cada tramo: Dataflow, `ta-alerts`, notificador); AVISO si la notificación no se vio en la observación pero el notificador sí midió < 300 s |
 | F8 | Un mensaje por tipo para la ola aunque alerten varias ventanas; ningún par de la misma clave y tipo a menos de 15 min entre todos los mensajes vistos |
 | F9 | Informativo: alertas naturales de otras claves durante la observación y notificaciones de la política |
 
@@ -192,13 +192,41 @@ AVISO hasta registrar el correo con `email`) y código 0.
 | C3: «Service account service-…@gcp-sa-monitoring-notification… does not exist» | El agente de Cloud Monitoring no existe (no lo crea el canal hecho por API) | C0c lo crea; repetir `terraform --apply` |
 | C4: el plan propone quitar `scaling` del servicio | Bloque de escalado a nivel de servicio que devuelve la API | Ya ignorado (`ignore_changes`); si reaparece, revisar el proveedor |
 | E3 FALLA con el log presente | `severity` se busca en `jsonPayload` | Cloud Logging la saca a la entrada (`_severity` en el validador) |
-| E4 sin notificación | La política notifica como máximo una vez cada 5 min | Esperar 5 min y repetir `notify` |
+| E4 sin notificación | La política recién creada tardó 138 s la primera vez; o el mensaje del canal no se pudo leer | Esperar y repetir `notify`; la métrica `send_message_operation_count` de `ta-alerts-incidents` cuenta las notificaciones |
 | F1 se queda esperando | El simulador no corre o el job no procesa | `status`; `bash project/scripts/dataflow_job.sh status` |
 | F5 sin mensajes y F4 con `is_alert` | Job lanzado con código anterior al 6.2 o sin permiso en `ta-alerts` | `off` y `prepare` otra vez; C5 |
-| F7 AVISO | Otra alerta notificó en los 5 min anteriores | Ver F9; el log del notificador (F7, tramo «notificador») sigue midiendo la detección |
+| F9 cuenta menos notificaciones que alertas | Antes de v2.50: `data` de gcloud en base64 URL-safe | Corregido (`b64_any`); para contar todas, la métrica del topic de incidentes |
+| La observación de F dura mucho más que `--watch-minutes` | Antes de v2.50: cada `pull` vacío de gcloud espera ~20 s | Corregido (la corta el reloj) |
 
 ---
 
 ## Cierre
 
-*(Se completa con la validación en la nube.)*
+**Lote 6.2 cerrado (v2.50).** Validado el 27/28-oct-2026 en WSL (`ta-streaming`) sobre `main` = `b27a1d6` más las
+correcciones de abajo, con el OK del usuario para la nube (apply y validación con el simulador y Dataflow).
+
+| Parte | Resultado |
+|---|---|
+| A | AVISO solo en A6 (`alert_emails` vacío; C lo completó con el destinatario del presupuesto) |
+| B | OK: 20, 6, 151 y 12 passed, 0 omitidas |
+| L | OK (4): alerta de 569 bytes, ola de 150 comentarios sin errores de envelope, parámetros = §5.12, contexto de la imagen de 8 archivos |
+| D | OK: `alert-notifier:h-e9a8dab903df` en 39 s, 11 pruebas dentro de la imagen |
+| C | OK tras dos correcciones: 10 recursos creados (8 + 2 después de crear el agente de Cloud Monitoring); plan limpio; recursos reales comprobados. Queda 1 cambio en el lugar por aplicar (texto del correo, abajo) |
+| E | OK en la segunda corrida: publicación → log del notificador 0,8 s → notificación 28,5 s (la primera vez, con la política recién creada, 139 s); asunto «[ALERT - Warning] TrendAnalyzer: volume_up de postobon en instagram». E6 (buzón): sin confirmar |
+| P | OK: *seek* a 22:24:36 UTC; simulador y `ta-stream-dev` con NLP y `alerts_config` activa |
+| F | OK (10), segunda corrida (la primera quedó cortada al terminar la sesión, sin dejar suscripciones). Ola a las 23:39:54 UTC; 5 ventanas con `is_alert` (z de volumen 9,28 → 3,63); 2 mensajes de la ola (`volume_up`, `sentiment_down`) y 3 naturales; **fin de la ventana → Dataflow 63,9 s → `ta-alerts` 64,6 s → notificador 69,0 s → notificación 159,8 s**; 1 mensaje por tipo aunque alertaron 5 ventanas (logs `trend_alert_suppressed` en el job) |
+| O | OK: Dataflow drenado y simulador apagado; ≈ 1,9 h encendidos ≈ 0,65 USD (estimado) |
+| status | OK (3) |
+
+**Métrica del topic de incidentes** (`pubsub.googleapis.com/topic/send_message_operation_count`, 22:00–00:20 UTC):
+7 notificaciones para los 7 mensajes de `ta-alerts`. El límite de 300 s de la política es por incidente: **un correo por
+alerta**.
+
+**Hallazgos (corregidos en v2.49 o v2.50):** el agente de notificaciones de Cloud Monitoring no se crea con el canal
+(C0c lo crea); `scaling` a nivel de servicio (ignorado); `severity` fuera del `jsonPayload` (E3); `data` de gcloud en
+base64 URL-safe (F9 vio 1 notificación de 7); `pull` vacío de ~20 s (la observación duró 34 min); y el texto del correo,
+que prometía «como máximo un correo cada 5 min»: cambiado en el módulo a «un correo por alerta», **pendiente de
+aplicar** con `validate_6_2.py terraform --apply` (1 recurso, la política, en el lugar).
+
+**Sin comprobar:** que el correo llegue al buzón (el validador no lo puede leer; sale en el mismo incidente que la copia
+de Pub/Sub, que sí se midió); la plantilla Flex con la rama de alertas (no se reconstruyó).

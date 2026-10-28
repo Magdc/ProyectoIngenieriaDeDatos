@@ -17,8 +17,9 @@ Dataflow ta-stream-dev
   `dataflow_job.sh`). Solo corre en Dataflow (`--alerts_enabled auto`).
 - El contrato del mensaje está en `src/common/alert_message.py` (lo comparten Dataflow y el notificador).
 - El notificador (`src/alerts/notifier.py`) solo usa la biblioteca estándar y escala a cero: no cuesta en reposo.
-- Como máximo **un correo cada 5 min** (lo exige Cloud Monitoring para las políticas basadas en logs). Todas las alertas
-  quedan en el log del notificador y en `ta-alerts` aunque no generen correo.
+- **Un correo por alerta.** Cada alerta abre su propio incidente en la política (el límite de 5 min que exige Cloud
+  Monitoring es por incidente): lo que acota los correos es el *cooldown* de 15 min por marca × fuente × tipo. En la
+  validación, 7 alertas dieron 7 notificaciones (dos con un minuto de diferencia).
 
 ## Mensaje (`ta-alert` 1.0)
 

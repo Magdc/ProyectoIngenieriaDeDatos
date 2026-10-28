@@ -15,7 +15,7 @@ variable "alerts_notifier_image" {
 }
 
 variable "alert_rate_limit_seconds" {
-  description = "Como máximo un correo de la política por periodo (mínimo y valor de §5.12: 300)."
+  description = "Límite de notificaciones por incidente de la política (mínimo y valor de §5.12: 300); cada alerta es un incidente."
   type        = number
   default     = 300
 }

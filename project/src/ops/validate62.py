@@ -69,6 +69,7 @@ POLICY = "ta-alerta-tendencia"
 SUBSCRIPTIONS = tuple(f"ta-raw-{s}-df" for s in ("reddit", "facebook", "instagram"))
 ADC = Path.home() / ".config" / "gcloud" / "application_default_credentials.json"
 TERRAFORM_TARGETS = ["module.sa_alerts", "module.alerts", "google_pubsub_topic_iam_member.dataflow_alerts_publisher"]
+UPDATABLE = {"module.alerts.google_cloud_run_v2_service.this[0]", "module.alerts.google_monitoring_alert_policy.trend"}
 #: HU-039: detección en menos de 5 min (fin de la ventana → notificación).
 DETECTION_KPI_S = 300
 #: §5.12: baseline de 60 ventanas de 1 min tras la primera ventana completa (5 min) + 1 min de margen.
@@ -221,13 +222,20 @@ def image_from_output(text: str) -> str | None:
     return found[-1] if found else None
 
 
+def b64_any(text: str) -> bytes:
+    """Base64 estándar o URL-safe, con o sin relleno: ``gcloud pubsub subscriptions pull --format=json`` da
+    ``data`` en URL-safe (con ``-`` y ``_``; visto en la validación: F9 perdía las notificaciones que los tenían)."""
+    s = (text or "").strip().replace("-", "+").replace("_", "/")
+    return base64.b64decode(s + "=" * (-len(s) % 4), validate=True)
+
+
 def pulled(text: str) -> list[dict[str, Any]]:
     """Salida de ``gcloud pubsub subscriptions pull --format=json`` → ``[{data, attributes, publish_time, message_id}]``."""
     out = []
     for item in parse_json(text) or []:
         msg = (item or {}).get("message") or {}
         try:
-            data = base64.b64decode(msg.get("data") or "")
+            data = b64_any(msg.get("data") or "")
         except (ValueError, TypeError):
             data = b""
         out.append({"data": data, "attributes": msg.get("attributes") or {}, "publish_time": msg.get("publishTime"),
@@ -439,7 +447,7 @@ def part_local(ctx: Ctx) -> int:
     want = {"cooldown": 900, "z": 3.0, "min_posts": 5, "baseline": 60, "rate_limit": 300}
     part.add("L3", "parámetros = §5.12", OK if params == want else FALLA,
              f"cooldown {params['cooldown']} s por marca × fuente × tipo · |z| ≥ {params['z']} · n_posts ≥ {params['min_posts']} · "
-             f"baseline {params['baseline']} ventanas · como máximo un correo cada {params['rate_limit']} s" if params == want else
+             f"baseline {params['baseline']} ventanas · límite de la política {params['rate_limit']} s por incidente" if params == want else
              f"código {params} ≠ §5.12 {want}", params=params)
     res = ctx.run(["bash", "scripts/build_alerts_image.sh", "--dry-run"], cwd=PROJECT, timeout=120,
                   env={"GCP_PROJECT": ctx.project})
@@ -572,8 +580,8 @@ def part_terraform(ctx: Ctx) -> int:
     expected = expected_creates(len(emails), with_image)
     creates = set(summary["create"])
     extra = (creates - expected) | set(summary["delete"] + summary["replace"])
-    # Una actualización solo se admite en el servicio (imagen nueva).
-    extra |= {a for a in summary["update"] if a != "module.alerts.google_cloud_run_v2_service.this[0]"}
+    # Una actualización solo se admite en el servicio (imagen nueva) y en la política (texto del correo).
+    extra |= {a for a in summary["update"] if a not in UPDATABLE}
     if extra:
         part.add("C2", title, FALLA, f"{plan_line(summary)}; no aplique: toca {sorted(extra)}" + diff_text(summary, extra), **summary)
         return part.finish()
@@ -605,7 +613,7 @@ def part_terraform(ctx: Ctx) -> int:
     part.add("C5", "recursos reales (servicio, invocadores, push, permisos y política)", FALLA if problems else OK,
              "\n".join(problems) if problems else
              f"{SERVICE} listo y privado (solo sa-alerts invoca) · push {PUSH_SUBSCRIPTION} con ID token de sa-alerts · "
-             f"sa-dataflow publica en {ALERTS_TOPIC} · {POLICY} con {len(emails)} correo(s) + Pub/Sub y 1 correo cada 5 min como máximo",
+             f"sa-dataflow publica en {ALERTS_TOPIC} · {POLICY} con {len(emails)} correo(s) + Pub/Sub (límite de 300 s por incidente)",
              notifier_url=outputs.get("alerts_notifier_url"), image=outputs.get("alerts_notifier_image"))
     return part.finish()
 
@@ -793,7 +801,12 @@ def part_flow(ctx: Ctx) -> int:
         messages: list[dict[str, Any]] = []
         incidents: list[dict[str, Any]] = []
         part.note(f"observando ta-alerts y las notificaciones {watch / 60:.0f} min…")
+        # Un pull de gcloud sin mensajes espera ~20 s: el tope es el reloj, no solo el número de vueltas
+        # (la primera corrida tardó 34 min en «observar 12»).
+        end = time.monotonic() + watch
         for _ in range(int(watch // 20)):
+            if time.monotonic() >= end:
+                break
             messages += pull(ctx, subs["alerts"])
             incidents += incidents_from(pull(ctx, subs["incidents"]))
             ctx.sleep(20)
@@ -845,7 +858,7 @@ def flow_report(ctx: Ctx, part: Part, brand: str, source: str, burst: dict[str, 
              OK if good else (AVISO if det_log is not None and det_log < DETECTION_KPI_S and inc is None else FALLA),
              f"fin de la ventana {first['window_end'][11:19]} → Dataflow {check.seconds_between(first['window_end'], first['detected_at'])} s → "
              f"ta-alerts {check.seconds_between(first['window_end'], first['_published_at'])} s → notificador {det_log} s → "
-             f"notificación {det_inc if det_inc is not None else 'no vista (¿límite de 1 cada 5 min por otra alerta?)'} s",
+             f"notificación {det_inc if det_inc is not None else 'no vista en la observación'} s",
              detected_s=check.seconds_between(first["window_end"], first["detected_at"]),
              published_s=check.seconds_between(first["window_end"], first["_published_at"]), notifier_s=det_log,
              notification_s=det_inc, incident=(inc or {}).get("incident_id"))

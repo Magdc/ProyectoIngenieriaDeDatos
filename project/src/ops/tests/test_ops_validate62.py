@@ -249,6 +249,13 @@ def test_recursos_esperados_del_plan():
 def test_lectura_de_pubsub_logs_y_ventanas():
     items = v.pulled(json.dumps([_pull_item(b'{"a":1}', "2026-10-27T23:01:51.123456Z")]))
     assert items[0]["data"] == b'{"a":1}' and v.iso_ms(items[0]["publish_time"]) == "2026-10-27T23:01:51.123Z"
+    # gcloud da data en base64 URL-safe y a veces sin relleno.
+    raw = bytes(range(250, 256)) + b'{"incident": "\xff\xfe"}'
+    urlsafe = base64.urlsafe_b64encode(raw).decode().rstrip("=")
+    assert "-" in urlsafe or "_" in urlsafe
+    assert v.b64_any(urlsafe) == raw and v.b64_any(base64.b64encode(raw).decode()) == raw
+    item = {"message": {"data": urlsafe, "publishTime": "2026-10-27T23:01:51Z"}}
+    assert v.pulled(json.dumps([item]))[0]["data"] == raw
     assert v.iso_ms("2026-10-27T23:01:51Z") == "2026-10-27T23:01:51.000Z" and v.iso_ms("x") is None
     assert v.payloads([{"timestamp": "2026-10-27T23:00:09.5Z", "severity": "WARNING", "jsonPayload": {"a": 1}},
                        {"textPayload": "x"}]) == [{"a": 1, "_timestamp": "2026-10-27T23:00:09.500Z", "_severity": "WARNING"}]

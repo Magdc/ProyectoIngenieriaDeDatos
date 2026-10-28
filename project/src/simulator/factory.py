@@ -54,7 +54,7 @@ def iso_ms(dt: datetime) -> str:
 
 @dataclass(frozen=True)
 class Scenario:
-    """Escenario de demo (§3.7). El endpoint que lo activa llega en el Lote 6.3."""
+    """Escenario de demo (§3.7). Lo activa ``POST /control/scenario`` (``simulator.scenario``, Lote 6.3)."""
 
     name: str
     brand: str

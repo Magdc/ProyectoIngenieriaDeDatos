@@ -18,7 +18,8 @@ generador con otra semilla).
 - **Comentarios de plantillas con vocabulario acotado:** el texto sale de un conjunto finito de plantillas, marcas,
   emojis y hashtags; la diversidad léxica es baja (medida en el profiling del 5.1, §3.20) y los textos se repiten.
 - **Asociación marca → sentimiento artificial:** la marca y el sentimiento los elige el simulador (con tendencias y
-  escenarios programados, §3.17), así que las conclusiones de negocio («a la gente le gusta más X») no son válidas.
+  escenarios programados, §3.17, y las olas de demo del Lote 6.3, marcadas en `sim.scenario`, §3.29), así que las
+  conclusiones de negocio («a la gente le gusta más X») no son válidas.
 - **Métricas de NLP optimistas:** RoBERTuito acierta 0,9197 (F1 macro 0,9167) sobre 109.365 filas (HU-033, §3.24) porque
   las plantillas son claras y repetitivas; con comentarios reales la precisión sería menor. `label_sentiment` es la
   verdad del simulador y nunca se usa como feature.

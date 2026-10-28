@@ -3,8 +3,11 @@
 Un proceso, tres workers asyncio (uno por fuente) y un servidor HTTP mínimo:
 
 - ``GET /healthz`` → 200 con el ``seq`` y los contadores de cada fuente (requisito de
-  Cloud Run). Responde 503 si algún worker terminó por error.
-- ``POST /control/scenario`` → 501 por ahora: llega en el Lote 6.3 (§3.7).
+  Cloud Run). Responde 503 si algún worker terminó por error. ``GET /health`` es lo mismo y sí
+  llega desde fuera (el *frontend* de Cloud Run se queda con ``/healthz``, §3.1).
+- ``/control/scenario`` (Lote 6.3, §3.29): ``POST`` inicia un escenario de demo (201; 400 si el
+  cuerpo es inválido, 409 si ya hay uno), ``GET`` dice cuál está activo y cómo terminó el último,
+  ``DELETE`` lo termina antes de tiempo. En Cloud Run lo protege el ID token (no es público).
 
 Variables de entorno (además de las de §5.1):
 
@@ -37,6 +40,7 @@ from typing import Optional
 
 from simulator.factory import EventFactory
 from simulator.publisher import DEFAULT_TOPIC_TEMPLATE, Publisher, SourceWorker, log, publisher_from_env
+from simulator.scenario import MAX_BODY_BYTES, ScenarioConflict, ScenarioControl, ScenarioError
 from simulator.sim_config import SOURCES, SimConfig, load_config
 from simulator.state import StateStore, store_from_env
 
@@ -65,8 +69,10 @@ class Simulator:
         self.config = config
         self.factory = EventFactory(config)
         self.publisher = publisher
+        self.control = ScenarioControl(self.factory.brands, self.factory.seed, log=log)
         self.workers = {
-            s: SourceWorker(s, self.factory, publisher, store, topic_template=topic_template, max_events=max_events)
+            s: SourceWorker(s, self.factory, publisher, store, topic_template=topic_template, max_events=max_events,
+                            control=self.control)
             for s in sources
         }
         self.tasks: dict[str, asyncio.Task] = {}
@@ -77,6 +83,7 @@ class Simulator:
             "status": "ok" if not self.failed else "degraded",
             "seed": self.factory.seed,
             "chaos_enabled": self.config.chaos.enabled,
+            "scenario": (self.control.status()["active"] or {}).get("name"),
             "sources": {
                 s: {
                     "seq": w.stats.seq,
@@ -120,11 +127,14 @@ class Simulator:
 # --- HTTP mínimo (sin dependencias) ---------------------------------------------------
 
 
+_REASONS = {200: "OK", 201: "Created", 400: "Bad Request", 404: "Not Found", 405: "Method Not Allowed",
+            409: "Conflict", 413: "Payload Too Large", 503: "Service Unavailable"}
+
+
 def _response(status: int, body: dict) -> bytes:
-    reason = {200: "OK", 404: "Not Found", 405: "Method Not Allowed", 501: "Not Implemented", 503: "Service Unavailable"}
     payload = json.dumps(body, ensure_ascii=False).encode("utf-8")
     head = (
-        f"HTTP/1.1 {status} {reason.get(status, 'OK')}\r\n"
+        f"HTTP/1.1 {status} {_REASONS.get(status, 'OK')}\r\n"
         "Content-Type: application/json; charset=utf-8\r\n"
         f"Content-Length: {len(payload)}\r\n"
         "Connection: close\r\n\r\n"
@@ -132,14 +142,37 @@ def _response(status: int, body: dict) -> bytes:
     return head + payload
 
 
-def route(sim: Simulator, method: str, path: str) -> tuple[int, dict]:
+def scenario_route(sim: Simulator, method: str, body: bytes) -> tuple[int, dict]:
+    """``/control/scenario`` (§3.29.1)."""
+    if method == "GET":
+        return 200, sim.control.status()
+    if method == "DELETE":
+        return 200, {"stopped": sim.control.stop()}
+    if method != "POST":
+        return 405, {"error": "solo GET, POST o DELETE"}
+    try:
+        data = json.loads(body.decode("utf-8")) if body.strip() else None
+    except (ValueError, UnicodeDecodeError):
+        return 400, {"error": "el cuerpo no es JSON válido"}
+    try:
+        active = sim.control.start(data)
+    except ScenarioError as exc:
+        log("scenario_rejected", severity="WARNING", problems=exc.problems)
+        return 400, {"error": "escenario inválido", "problems": exc.problems}
+    except ScenarioConflict:
+        return 409, {"error": "ya hay un escenario activo (DELETE /control/scenario para terminarlo)",
+                     "active": sim.control.status()["active"]}
+    return 201, {"started": active.to_dict()}
+
+
+def route(sim: Simulator, method: str, path: str, body: bytes = b"") -> tuple[int, dict]:
     path = path.split("?", 1)[0]
-    if path == "/healthz":
+    if path in ("/healthz", "/health"):
         if method != "GET":
             return 405, {"error": "solo GET"}
         return sim.health()
     if path == "/control/scenario":
-        return 501, {"error": "escenarios de demo: Lote 6.3 (ARCHITECTURE.md §3.7)"}
+        return scenario_route(sim, method, body)
     return 404, {"error": "no encontrado"}
 
 
@@ -147,17 +180,32 @@ async def _handle(sim: Simulator, reader: asyncio.StreamReader, writer: asyncio.
     try:
         line = await asyncio.wait_for(reader.readline(), timeout=10)
         parts = line.decode("latin-1").split()
-        while True:  # descartar cabeceras
+        length = 0
+        while True:  # cabeceras: solo interesa Content-Length
             h = await asyncio.wait_for(reader.readline(), timeout=10)
             if h in (b"\r\n", b"\n", b""):
                 break
-        status, body = (400, {"error": "petición inválida"}) if len(parts) < 2 else route(sim, parts[0].upper(), parts[1])
+            key, _, value = h.decode("latin-1").partition(":")
+            if key.strip().lower() == "content-length":
+                length = int(value.strip()) if value.strip().isdigit() else -1
+        if len(parts) < 2 or length < 0:
+            status, body = 400, {"error": "petición inválida"}
+        elif length > MAX_BODY_BYTES:
+            status, body = 413, {"error": f"el cuerpo pasa de {MAX_BODY_BYTES} bytes"}
+        else:
+            data = await asyncio.wait_for(reader.readexactly(length), timeout=10) if length else b""
+            status, body = route(sim, parts[0].upper(), parts[1], data)
         writer.write(_response(status, body))
         await writer.drain()
-    except (asyncio.TimeoutError, ConnectionError):
+    except (asyncio.TimeoutError, ConnectionError, asyncio.IncompleteReadError):
         pass
     finally:
         writer.close()
+
+
+async def start_http(sim: Simulator, host: str, port: int) -> asyncio.AbstractServer:
+    """Servidor HTTP del simulador (``port = 0`` elige uno libre; lo usan las pruebas y ``demo``)."""
+    return await asyncio.start_server(lambda r, w: _handle(sim, r, w), host=host, port=port)
 
 
 async def serve(env: Optional[dict] = None) -> None:
@@ -173,7 +221,7 @@ async def serve(env: Optional[dict] = None) -> None:
         max_events=max_events,
     )
     port = int(env.get("PORT") or 8080)
-    server = await asyncio.start_server(lambda r, w: _handle(sim, r, w), host="0.0.0.0", port=port)
+    server = await start_http(sim, "0.0.0.0", port)
     log("simulator_start", port=port, seed=config.seed, chaos_enabled=config.chaos.enabled, sources=list(sim.workers))
 
     stop = asyncio.Event()

@@ -25,6 +25,7 @@ flowchart LR
     DF --> BQD["BigQuery dlq_events"]
     DF -->|"is_alert · cooldown 15 min"| ALR["Pub/Sub ta-alerts"]
     ALR --> NOT["Cloud Run ta-alert-notifier<br/>log WARNING → correo (Lote 6.2)"]
+    DEMO["demo_scenario.py<br/>POST /control/scenario (Lote 6.3)"] -.->|"ID token · ola marcada en sim.scenario"| SIM
   end
   subgraph HIST["Carga histórica (WSL)"]
     LOAD["load_historical.py<br/>mismo generador + HMAC + NLP en lote"]
@@ -59,7 +60,7 @@ job de Dataflow por la suscripción `ta-dlq-df` para escribir `dlq_events`. El e
 | # | Etapa | Componente y código | Entra | Sale | Qué le hace al dato | Identidad del autor | Detalle |
 |---|---|---|---|---|---|---|---|
 | 1 | Generar | `project/src/simulator/generator/` (plantillas, ruido, `brands.yaml`) | Semilla y mezcla de categorías | Texto, marcas, hashtags y `label_sentiment` | Inventa el comentario con su sentimiento de verdad | Usuarios de `Faker('es_CO')` (`project/src/simulator/enrich/`) | §3.2, §3.8 |
-| 2 | Simular | `project/src/simulator/` · Cloud Run `ta-stream-simulator` | Generador | Envelope v1 (`project/contracts/envelope.v1.schema.json`) | Asigna `event_id`, `seq`, `event_time`, `payload` por red; caos controlado | **En claro:** `author.user_id`, `author.handle` | §3.5–§3.10, §5.2 |
+| 2 | Simular | `project/src/simulator/` · Cloud Run `ta-stream-simulator` | Generador | Envelope v1 (`project/contracts/envelope.v1.schema.json`) *(Lote 6.3)* Con un escenario de demo (`project/src/simulator/scenario.py`), la ola que se suma lleva marca y sentimiento forzados y `sim.scenario` (§3.29) | Asigna `event_id`, `seq`, `event_time`, `payload` por red; caos controlado | **En claro:** `author.user_id`, `author.handle` | §3.5–§3.10, §5.2 |
 | 3 | Publicar | Pub/Sub `ta-raw-{source}` | Envelope | Mensaje + atributos | Transporte (7 días de retención) | En claro | §5.3 |
 | 4 | Procesar | `project/src/streaming/` · Dataflow `ta-stream-dev` | Mensajes | `raw/`, `enriched/`, `posts_enriched`, `trend_windows`, `dlq_events` | Valida contra el contrato, deduplica por `event_id`, **anonimiza** (HMAC-SHA256 de `user_id` con `ta-hmac-key`, `project/src/common/hashing.py`), normaliza engagement, aplana (`project/src/common/enriched_row.py`), NLP RoBERTuito (`project/src/streaming/nlp.py`), ventanas de tendencias | `raw/` de GCS conserva el handle simulado (30 días); **desde aquí solo `user_hash`** | §3.13–§3.16, ADR-06 |
 | 5 | Cargar histórico | `project/src/historical/` · `project/scripts/load_historical.py` | Mismo generador con `HIST_SEED = 3101` | `raw/origin=historical/` | Mismo envelope, HMAC y NLP que el stream; un Parquet por fuente y hora de `event_time` | Solo `user_hash` al salir | §3.17 |

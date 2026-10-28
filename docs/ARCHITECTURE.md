@@ -1,6 +1,6 @@
 # TrendAnalyzer · ARCHITECTURE
 
-> Documento maestro de arquitectura y contratos. **Versión vigente: 2.51.**
+> Documento maestro de arquitectura y contratos. **Versión vigente: 2.52.**
 > Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md) · Plan por fases, trazabilidad HU y estado: [`PLAN.md`](PLAN.md) · Historias de usuario: `HU.md` · Visión general: `README.md`.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 
@@ -37,8 +37,9 @@ Este archivo está pensado para que **baste con leerlo (o pegármelo) para const
 | Correr o cambiar la prueba de humo de extremo a extremo (centinela de Pub/Sub a `fact_posts`, latencia por etapa, identidad después de Dataflow, informe para el ensayo) | **§3.26** (interfaces: CLI `smoke_e2e.py`, informe, API, validador y «Para el siguiente lote» en **§3.26.1**), §5.12 (objetivos) y `docs/validation/validation-5-4.md` |
 | Crear, actualizar o abrir el tablero de QuickSight (datasets SPICE sobre `ta_curated`, hojas de tendencias y relaciones, horas de Bogotá, acceso por roles IAM, refresco, costo y cómo borrar la suscripción) | **§3.27** (interfaces: CLI `quicksight.py`, definiciones, API, validador y «Para el siguiente lote» en **§3.27.1**), §5.7 (QuickSight), §5.8, `src/serving/QUICKSIGHT.md` y `docs/validation/validation-6-1.md` |
 | Recibir, probar o cambiar las alertas de tendencia (rama de Dataflow `is_alert` → `ta-alerts`, *cooldown*, notificador de Cloud Run, política basada en logs y correo, ola de prueba) | **§3.28** (interfaces: mensaje `ta-alert`, opciones del pipeline, notificador, CLI `alerts_check.py`, Terraform, validador y «Para el siguiente lote» en **§3.28.1**), §5.3, §5.8, §5.12, `src/alerts/ALERTS.md` y `docs/validation/validation-6-2.md` |
+| Forzar una ola de comentarios para la demo (`POST /control/scenario`: marca, sentimiento, ×m, duración), seguir el guion de la demo de picos o validar el escenario | **§3.29** (interfaces: endpoint, logs, CLI `demo_scenario.py`, API, validador y «Para el siguiente lote» en **§3.29.1**), §3.7, `docs/DEMO.md` y `docs/validation/validation-6-3.md` |
 | Comprobar qué está encendido antes de validar un lote | **§8** (preflight) |
-| Encender, comprobar y apagar lo que cobra; validar un lote con un solo comando | `docs/ACTIVE_SERVICES.md` (`scripts/on.py`, `off.py`, `status.py`; *v2.51:* también el exportador, el horario del lakehouse, las alertas, QuickSight y la línea «Flujo de punta a punta»), `scripts/validate_2_3.py` (§3.15), `scripts/validate_2_4.py` (§3.16), `scripts/validate_3_1.py` (§3.17), `scripts/validate_3_2.py` (§3.18; con `status` y `off` del exportador), `scripts/validate_4_1.py` (§3.19; con `status`, `off` y `on` del horario del lakehouse), `scripts/validate_4_2.py` (§3.21; con `status` y `off`), `scripts/validate_4_3.py` (§3.22; con `status`, `off` y `on`: el horario queda **encendido**, estado normal), `scripts/validate_4_4.py` (§3.23; ídem, con las aristas), `scripts/validate_5_1.py` (§3.20), `scripts/validate_5_2.py` (§3.24; calidad con Great Expectations en el venv `~/.venvs/ta-gx`), `scripts/validate_5_3.py` (§3.25; catálogo, linaje y gobernanza) `scripts/validate_5_4.py` (§3.26; prueba de humo: `prepare` enciende Dataflow y `off` lo apaga), `scripts/validate_6_1.py` (§3.27; tablero de QuickSight: `deploy` lo crea o actualiza y `unsubscribe` borra la suscripción) y `scripts/validate_6_2.py` (§3.28; alertas: `prepare` enciende el simulador y Dataflow, `flow` mide una alerta real y `off` los apaga) |
+| Encender, comprobar y apagar lo que cobra; validar un lote con un solo comando | `docs/ACTIVE_SERVICES.md` (`scripts/on.py`, `off.py`, `status.py`; *v2.51:* también el exportador, el horario del lakehouse, las alertas, QuickSight y la línea «Flujo de punta a punta»), `scripts/validate_2_3.py` (§3.15), `scripts/validate_2_4.py` (§3.16), `scripts/validate_3_1.py` (§3.17), `scripts/validate_3_2.py` (§3.18; con `status` y `off` del exportador), `scripts/validate_4_1.py` (§3.19; con `status`, `off` y `on` del horario del lakehouse), `scripts/validate_4_2.py` (§3.21; con `status` y `off`), `scripts/validate_4_3.py` (§3.22; con `status`, `off` y `on`: el horario queda **encendido**, estado normal), `scripts/validate_4_4.py` (§3.23; ídem, con las aristas), `scripts/validate_5_1.py` (§3.20), `scripts/validate_5_2.py` (§3.24; calidad con Great Expectations en el venv `~/.venvs/ta-gx`), `scripts/validate_5_3.py` (§3.25; catálogo, linaje y gobernanza) `scripts/validate_5_4.py` (§3.26; prueba de humo: `prepare` enciende Dataflow y `off` lo apaga), `scripts/validate_6_1.py` (§3.27; tablero de QuickSight: `deploy` lo crea o actualiza y `unsubscribe` borra la suscripción) y `scripts/validate_6_2.py` (§3.28; alertas: `prepare` enciende el simulador y Dataflow, `flow` mide una alerta real y `off` los apaga) y `scripts/validate_6_3.py` (§3.29; escenario de demo: `image` construye el simulador nuevo, `prepare` lo enciende con Dataflow, `flow` lanza una ola y mide la alerta, `off` los apaga) |
 | Saber qué construir y en qué orden | `PLAN.md` §1 (fases y lotes) |
 | Saber qué historias de usuario cubre cada fase o lote | **`PLAN.md` §1 y §2** (detalle en `HU.md`) |
 | Saber en qué estado está cada fase y lote | **`PLAN.md` §3** |
@@ -162,7 +163,7 @@ flowchart LR
 
 El contenedor expone `GET /healthz` (requisito de Cloud Run) y, opcionalmente, `POST /control/scenario` (§3.7). El resto es un loop de fondo.
 
-> **Restricción de Cloud Run (observada en el Lote 1.3):** el *frontend* de Google reserva algunas rutas terminadas en `z`, como `/healthz`, y responde 404 antes de llegar al contenedor. Las sondas de arranque y de vida sí llegan, porque llaman al contenedor directamente, así que `/healthz` sirve para ellas. Para consultar el estado desde fuera hace falta otra ruta (propuesta: `GET /health`, pendiente; §5.15).
+> **Restricción de Cloud Run (observada en el Lote 1.3):** el *frontend* de Google reserva algunas rutas terminadas en `z`, como `/healthz`, y responde 404 antes de llegar al contenedor. Las sondas de arranque y de vida sí llegan, porque llaman al contenedor directamente, así que `/healthz` sirve para ellas. Para consultar el estado desde fuera hace falta otra ruta (propuesta: `GET /health`, pendiente; §5.15). *(v2.52)* `GET /health` existe desde el Lote 6.3 (§3.29.1).
 
 ### 3.2 El generador de comentarios
 
@@ -372,6 +373,8 @@ Para mostrar alertas en la sustentación sin esperar una tendencia real:
 
 `POST /control/scenario` `{"brand": "postobon", "sentiment": "negative", "multiplier": 5, "duration_s": 600, "source": "instagram"}` (`source` opcional) → durante ese tiempo el simulador fuerza esa marca y ese sentimiento al generador (p. ej. una ola de comentarios negativos sobre `postobon`), sube la frecuencia y marca los eventos con `sim.scenario`. Cloud Scheduler puede dispararlo. Protegido con ID token de Cloud Run (no público). Requiere el cambio #2 del generador (§3.2).
 
+> *(v2.52)* **Hecho en el Lote 6.3** (§3.29, ADR-33): la ola **se suma** al tráfico normal (cadencia ×`multiplier` y solo la fracción `1 − 1/m` de los eventos lleva marca y sentimiento forzados), `multiplier` de 2 a 10, `duration_s` de 60 a 3600, un escenario a la vez, `GET` y `DELETE` además de `POST`. Cloud Scheduler no se usa: lo dispara el presentador con `scripts/demo_scenario.py` (guion en `docs/DEMO.md`).
+
 ### 3.8 Qué se inventa (campos sintéticos)
 
 El **texto, la marca y (opcionalmente) el sentimiento** vienen del generador. Todo lo demás se simula en `src/simulator/enrich/`:
@@ -418,7 +421,7 @@ Hay que poder apagarlo para medir la línea base de los KPIs.
 | `factory.py` | `EventFactory.make(source, seq, now, scenario=None) -> Emission` (envelope + mensajes Pub/Sub). `Scenario` queda listo para el Lote 6.3. |
 | `state.py` | `Cursor` y almacenes `GcsStateStore`, `LocalStateStore` (escritura atómica) y `MemoryStateStore`; `resume_seq()`. |
 | `publisher.py` | `PubSubPublisher` (respeta `PUBSUB_EMULATOR_HOST`), `StdoutPublisher`, `MemoryPublisher` y `SourceWorker` (bucle de §3.5; reintenta el mismo `seq` con *backoff* si falla la publicación). |
-| `app.py` | Tres workers asyncio + HTTP mínimo: `GET /healthz` (200 con `seq` y contadores por fuente; 503 si un worker cayó) y `POST /control/scenario` → 501 hasta el Lote 6.3. Guarda los cursores al recibir `SIGTERM`. |
+| `app.py` | Tres workers asyncio + HTTP mínimo: `GET /healthz` (200 con `seq` y contadores por fuente; 503 si un worker cayó) y `POST /control/scenario` → 501 hasta el Lote 6.3 (*v2.52:* implementado, §3.29). Guarda los cursores al recibir `SIGTERM`. |
 
 **Determinismo.** Misma semilla + fuente + `seq` ⇒ mismo `event_id`, texto, marca, usuario, hashtags y payload; solo `event_time` e `ingest_time` dependen del reloj. Orden fijo de extracciones del `Random` del evento: tipo → marca → contexto → usuario → generador → hashtags → lag → padre → engagement → flair. Las tres primeras se repiten sin estado (`EventFactory.peek`) para enlazar cada `comment` con un **post real reciente** de la misma fuente (en Facebook, de la misma marca; en Reddit hereda su subreddit); si aún no hay ninguno, apunta a un post preexistente simulado (`sim-post-pre-{marca}` o un `t3_` fijo). La pausa entre mensajes usa `Random("{seed}\|{source}\|{seq}\|sleep")`. Verificado con distintos `PYTHONHASHSEED`.
 
@@ -2524,6 +2527,98 @@ Dataflow ta-stream-dev (rama de tendencias del 2.4, §3.16)
 
 **Para el siguiente lote (6.3 escenario de demo, 7.x).** El 6.3 puede reemplazar la ola de `alerts_check.py burst` por `POST /control/scenario` (el `Scenario` del `EventFactory` ya fuerza marca y sentimiento) y usar `validate_6_2.py flow` como prueba de que la ola dispara la alerta. CI/CD (7.1) puede correr `pytest src/alerts` y `test_alerts_pipeline.py` sin nube y construir la imagen con `build_alerts_image.sh`.
 
+### 3.29 Escenario de demo (Lote 6.3)
+
+> Entregado en **v2.52** (HU-040). Rutas relativas a `project/`; guion en `docs/DEMO.md`; validación paso a paso en `docs/validation/validation-6-3.md` y automática con `scripts/validate_6_3.py`. **ADR-33.** Implementa §3.7 sin cambiar el envelope (`sim.scenario` ya existía, §5.2), el pipeline, los contratos ni la infraestructura: cambia el código del simulador (imagen nueva, la misma variable `simulator_image`) y suma un cliente.
+
+**Qué entrega.**
+
+```
+demo_scenario.py start ──(ID token de gcloud)──► Cloud Run ta-stream-simulator (privado: lo exige el frontend)
+   POST /control/scenario {brand, sentiment, multiplier, duration_s, source?, name?}
+        └─► ScenarioControl (en memoria; uno a la vez; termina solo a los duration_s)
+              └─► SourceWorker de la red: pausa ÷ m; cada evento lleva el escenario con probabilidad 1 − 1/m
+                    └─► EventFactory.make(scenario=…): marca y sentimiento forzados, sim.scenario = nombre
+                          └─► ta-raw-{red} → Dataflow → trend_windows (is_alert) → ta-alerts → notificador → correo (§3.28)
+```
+
+| Ruta | Contenido |
+|---|---|
+| `src/simulator/scenario.py` | `parse_request` (valida el cuerpo y junta todos los problemas), `ActiveScenario`, `ScenarioControl` (`start`, `stop`, `status`, `current`, `pick`, `speed`), `ScenarioError`, `ScenarioConflict`; límites `MULTIPLIER_MIN/MAX`, `DURATION_MIN_S/MAX_S`, `MAX_BODY_BYTES` |
+| `src/simulator/app.py` | *(cambia)* `GET`/`POST`/`DELETE /control/scenario` (`scenario_route`), `GET /health` (alias de `/healthz` que sí llega desde fuera, §3.1), lectura del cuerpo por `Content-Length` (máx. 4 KiB; 413 si pasa), `start_http`; `/healthz` dice qué escenario está activo |
+| `src/simulator/publisher.py` | *(cambia)* `SourceWorker(control=…)`: la pausa se divide por `control.speed(red)` y el escenario de cada evento sale de `control.pick(red, seq)`; protocolo `Control` |
+| `src/simulator/tests/test_scenario.py`, `tests/test_app.py` | 19 pruebas nuevas del escenario y 2 de la API |
+| `src/demo/client.py`, `local.py`, `cli.py`, `tests/` | Cliente HTTP (urllib; URL del servicio y token con `gcloud`), comprobación local (ola en tiempo virtual con el bucle real y API con el servidor real) y CLI |
+| `scripts/demo_scenario.py` | CLI `start` / `status` / `stop` / `check` |
+| `docs/DEMO.md` | Guion de la demo de picos (HU-040) |
+| `scripts/validate_6_3.py`, `src/ops/validate63.py`, `src/ops/tests/test_ops_validate63.py` | Validación automática |
+
+**La ola se suma (ADR-33).** Mientras dura, la red emite m veces más rápido (la pausa de 1–3 s de §3.5 se divide por m) y cada evento lleva el escenario con probabilidad `1 − 1/m`, decidida por `Random("{seed}|{red}|{seq}|scenario")`, que no toca el `Random` del evento ni el del caos. Los eventos normales siguen a su ritmo, con su mezcla de marcas, y la ola suma (m − 1) veces la cadencia base de la marca y el sentimiento elegidos. Con m = 3 en Instagram: ~30 eventos/min pasan a ~90, de ellos ~60 negativos de Postobón. Forzar todos los eventos haría caer a cero las otras marcas de esa red y podría dar alertas falsas de `volume_down`.
+
+**Identidad y estado.** `event_id` sigue dependiendo solo de semilla, red y `seq` (§3.6): el escenario cambia el texto, la marca y el sentimiento de ese `seq`, no su id. El escenario vive en memoria: si Cloud Run reinicia el contenedor, termina. Los hasta 50 eventos que se reemiten tras un reinicio salen sin escenario y Dataflow descarta los repetidos por `event_id`.
+
+**Dónde queda la marca.** `sim.scenario` viaja en el envelope: Pub/Sub, `raw/` de GCS (el cuerpo tal como llegó, §5.4) y la DLQ. `posts_enriched` y el lake no tienen esa columna (§5.5, §5.7). Los eventos de la ola son comentarios normales (`comment-gen@1.0`): llegan a Trusted, a Curated y al tablero, a diferencia de la ola de prueba `ta-verify@6.2` del 6.2. Para separarlos en BigQuery o Athena, filtrar por la marca, la red y la ventana de tiempo del escenario (`started_at`–`ends_at`).
+
+**Seguridad.** El servicio no da `roles/run.invoker` a `allUsers` ni a `allAuthenticatedUsers` (lo prueba `test_simulator_service_is_not_public` en el código y S2 en la política real). El *frontend* de Cloud Run rechaza con 403 cualquier petición sin ID token de una identidad con `run.routes.invoke` (S3); hoy esa identidad es la dueña del proyecto. El contenedor no valida el token: confía en Cloud Run. Las sondas de arranque y de vida llegan directo al contenedor por `/healthz`.
+
+**Costo y capacidad.** El escenario no tiene costo propio: lo que cobra es el simulador y Dataflow encendidos (≈ 0,35 USD/h, §3.28). La ola sube unos minutos el tráfico de una red (centavos de Pub/Sub). Con un solo worker de Dataflow con NLP (`e2-standard-2`), conviene m ≤ 3 en una red: el job pasa de 1,5 a 2,5 mensajes/s. Con más, el NLP se atrasa, y con él la marca de agua y la alerta.
+
+**Pruebas** (sin red): `src/common src/simulator` **137** (lo que corre la etapa `test` de la imagen; 19 nuevas en `test_scenario.py` y 2 en `test_app.py`), `src/demo` **9**, `test_ops_validate63.py` **10**.
+
+> **Estado de la verificación (v2.52, al entregar):** WSL, `ta-streaming` (Python 3.11.17). **A OK** (6: Dataflow y simulador apagados, `simulator_image` = `stream-simulator:20261020-213231`, notificador y política del 6.2 presentes), **B OK** (137, 9, 10), **L OK** (L1: 750 eventos en tiempo virtual, 30,8/min antes → 88,6/min durante (×2,88) → 30,6/min después; 299 marcados (67 %, esperado 67 %), todos `postobon`/`negative`; tráfico normal 30,8 → 28,8/min; 0 errores de contrato; terminó por `expired` · L2: los 10 pasos de la API con el código esperado). Regresión: `src/alerts src/smoke` 31, `test_ops_validate62.py` + `test_ops_services.py` 47, `src/historical/tests` 142. ruff (E, F, W) y `py_compile` sin errores. **Pendiente (con el OK del usuario):** D (imagen), P, S, F (la ola real y su alerta) y O en la nube.
+
+#### 3.29.1 Interfaces del lote (cómo usar cada pieza sin leer el código)
+
+*(v2.52)* Todo lo de esta subsección es interfaz: el ensayo y la sustentación (HU-045, Lote 8.1), CI/CD (7.1) y la observabilidad (7.2) pueden depender de ello; si cambia, se cambia aquí primero (§0).
+
+**Endpoint del simulador** (en Cloud Run, con `Authorization: Bearer <ID token>`; en local, sin token):
+
+| Método y ruta | Cuerpo | Respuesta |
+|---|---|---|
+| `POST /control/scenario` | JSON con `brand` (clave, nombre o alias de `brands.yaml`), `sentiment` (`positive` \| `negative` \| `neutral`), `multiplier` (número de 2 a 10), `duration_s` (entero de 60 a 3600), `source` (opcional: `reddit` \| `facebook` \| `instagram`; sin ella, las tres) y `name` (opcional: 1–80 caracteres de `[A-Za-z0-9._/-]`; por defecto `demo/{marca}-{sentimiento}/{AAAAMMDDTHHMMSSZ}`) | **201** `{"started": escenario}` · **400** `{"error", "problems": [...]}` con todos los problemas (también campos desconocidos y JSON inválido) · **409** `{"error", "active"}` si ya hay uno · **413** si el cuerpo pasa de 4 KiB |
+| `GET /control/scenario` | — | **200** `{"active": escenario + remaining_s + events, "last": último terminado + ended_at + reason + events}` (`null` si no hay) |
+| `DELETE /control/scenario` | — | **200** `{"stopped": último}` (`reason = stopped`) o `{"stopped": null}` |
+| `GET /health` y `GET /healthz` | — | Como `/healthz` de §3.10 (200, o 503 si un worker cayó), más `scenario` (nombre del activo o `null`) |
+
+Escenario = `name`, `brand` (canónica), `sentiment`, `multiplier`, `duration_s`, `source`, `share` (= 1 − 1/m), `started_at` y `ends_at` (UTC con milisegundos, §5.1). `events` = eventos forzados por red. `reason` = `expired` (cumplió `duration_s`) o `stopped` (`DELETE`). Sin token, Cloud Run responde 401/403 en HTML, antes del contenedor.
+
+**Logs del simulador** (JSON en stdout → Cloud Logging, `component = stream-simulator`): `scenario_start` (los campos del escenario), `scenario_end` (además `ended_at`, `reason`, `events`) y `scenario_rejected` (WARNING, `problems`). Filtro: `resource.labels.service_name="ta-stream-simulator" AND jsonPayload.event=~"^scenario_"`.
+
+**CLI `python project/scripts/demo_scenario.py <orden>`** (en `ta-streaming`; `--project` o `GCP_PROJECT`; `--region` us-central1; `--url` para otro simulador; `--no-token`):
+
+| Orden | Qué hace | Salida (una línea JSON) |
+|---|---|---|
+| `start [--brand postobon] [--sentiment negative] [--multiplier 3] [--duration 300] [--source instagram\|all] [--name N]` | `POST` con el ID token de `gcloud auth print-identity-token` (URL de `gcloud run services describe`) | `scenario_started` (código 0) · `scenario_rejected` con `status` y `problems` (1) · `scenario_error` (2: simulador apagado, `gcloud` o red) |
+| `status` | `GET` | `scenario_status` |
+| `stop` | `DELETE` | `scenario_stopped` |
+| `check` | Sin nube: `demo.local.timeline` (5 min normales, la ola y 5 min normales en tiempo virtual, con el `SourceWorker` real y el envelope v1.0) y `demo.local.api_check` (los 10 pasos de la API con el servidor HTTP real en `127.0.0.1`) | `scenario_check` con `timeline`, `problems`, `api`, `api_problems` y `simulator_logs` (0 si todo cumple) |
+
+**API Python.** `simulator.scenario.ScenarioControl(brands, seed, clock=time.time, log=…)` con `start(body)`, `stop()`, `status()`, `pick(red, seq)` y `speed(red)`. `SourceWorker(…, control=…)` recibe cualquier objeto con `pick` y `speed`. En `demo.client`: `call(url, método, ruta, body, token)` → `Reply(status, body)`, `service_url(proyecto)`, `identity_token()` y `scenario_body(…)`. En `demo.local`: `timeline(…)`, `timeline_problems(t, m)` y `api_check(body)`.
+
+**Validador `python project/scripts/validate_6_3.py <parte> [opciones]`** (en `ta-streaming`; 0 si ningún paso dio FALLA). Pasos y lo esperado en `docs/validation/validation-6-3.md`. Evidencia: `project/evidencia/validacion_6_3.json` (`lote` 6.3, `hu` [HU-040]).
+
+| Parte | Qué comprueba | Cambia la nube |
+|---|---|---|
+| `preflight` (A) | Dependencias, archivos, herramientas, ADC, Dataflow y simulador, `simulator_image`, notificador y política del 6.2 | — |
+| `tests` (B) | B1 `src/common src/simulator` 137 · B2 `src/demo` 9 · B3 `test_ops_validate63.py` 10 | — |
+| `local` (L) | L1 ola en tiempo virtual (cadencia ×m, fracción `1 − 1/m`, el resto igual, envelope, fin por `expired`) · L2 los 10 pasos de la API | — |
+| `image` (D) | Etiqueta `h-{huella}` (sha256 de los archivos de la imagen, como `alert-notifier`; no sale de git: el de WSL no lee el checkout de Windows); Cloud Build si no existe (las pruebas corren en la imagen); `simulator_image` en `terraform.tfvars` | Sí: imagen |
+| `prepare` (P) | La del 6.2: *seek*, simulador con la imagen nueva (solo Cloud Run) y Dataflow con NLP | Sí: **cobra hasta `off`** |
+| `auth` (S) | S1 imagen desplegada · S2 IAM sin acceso público · S3 401/403 sin token · S4 200 con token · S5 400 con los problemas | — |
+| `flow` (F) | F1 baseline · F2 suscripciones `ta-verify-*` · F3 `start` (201) tras 2 min de cadencia normal · F4–F9 los del 6.2 (pico en `trend_windows`, mensajes, contenido, **notificación < 5 min**, *cooldown*, otras) · F10 fin por `expired` · F11 cadencia y marca en `ta-raw-{red}` · F12 logs | Sí: la ola y sus correos |
+| `off` (O) | La del 6.2: drena Dataflow, apaga el simulador, borra `ta-verify-*` | Sí |
+| `status` | Dataflow y simulador, `simulator_image`, última ola medida | — |
+
+**Trampas conocidas.**
+- Con un job de Dataflow nuevo no hay alertas durante ≈ 66 min (baseline de 60 ventanas, §5.12): encender con tiempo antes de la demo.
+- *Cooldown* de 15 min por marca × red × tipo (§3.28): repetir la misma ola antes de 15 min no manda otro correo.
+- Un reinicio del contenedor (o un `apply` que cambie el servicio) termina el escenario.
+- `--source all` multiplica las tres redes: el job recibe ×m en todas.
+- Los padres de los comentarios (§3.10) se buscan con `peek`, que no ve el escenario: un post forzado figura allí con la marca del sorteo normal. Un comentario posterior de esa marca puede enlazarse a él: solo afecta `parent_id`.
+- La ola llega al tablero de QuickSight con el horario del lakehouse y el refresco de SPICE (cada hora): en la demo, la señal inmediata es `trend_windows` y el correo.
+
+**Para el siguiente lote (7.x, 8.1).** El guion de la sustentación (HU-045) parte de `docs/DEMO.md`: el pico y su alerta ya están guionados, con su plan B. CI/CD (7.1) puede correr `pytest src/common src/simulator src/demo` sin nube y construir la imagen con `build_simulator_image.sh` (la etapa `test` falla si una prueba se omite). La observabilidad (7.2) puede contar los logs `scenario_*` del simulador.
+
 ---
 
 ## 4. Flujo extremo a extremo
@@ -2656,7 +2751,7 @@ Todo evento —de stream o histórico, de cualquier fuente— tiene esta forma a
 | `brands` | string[] | ✔ | Puede ser `[]`. Claves de `brands.yaml`. |
 | `hashtags` | string[] | ✔ | Puede ser `[]`. Forma canónica: minúsculas, sin `#`, sin tildes, solo `[a-z0-9_]` (1–100), sin repetidos y en orden de aparición en el texto (§3.8). |
 | `payload` | objeto | ✔ | Específico de red (abajo). |
-| `sim.*` | objeto | ✔ | `label_sentiment` (`positive`\|`negative`\|`neutral`\|`null`), `scenario` (string o `null`) y `chaos` (lista). Ground truth y trazas. **Nunca se usa como feature.** |
+| `sim.*` | objeto | ✔ | `label_sentiment` (`positive`\|`negative`\|`neutral`\|`null`), `scenario` (string o `null`; *v2.52:* nombre del escenario de demo que forzó el evento, §3.29) y `chaos` (lista). Ground truth y trazas. **Nunca se usa como feature.** |
 
 **`payload` por fuente:**
 
@@ -3159,6 +3254,7 @@ Valores por defecto que evitan decidir en cada lote. Se ajustan aquí primero.
 | Límite de Athena | *(v2.32, §3.19; adoptado por defecto, a confirmar)* `ta-analytics` cancela la consulta que pase de **1 GiB** escaneado (`athena_bytes_scanned_cutoff_per_query = 1073741824`; ≈ 0,005 USD por consulta como máximo). Hoy todo Raw ocupa ~183 MB, así que el límite protege de errores, no de los datos actuales; si un CTAS de dbt (4.3) lo necesita, se sube aquí primero. *(v2.37: el 4.3 no usa dbt ni CTAS; Curated ocupa ~18 MB y cada consulta guardada lee unos pocos MB.)* | HU-007, HU-030 |
 | Orquestación del lakehouse | *(v2.32, §3.19)* EventBridge Scheduler `rate(1 hour)` UTC → `ta-wf-raw-to-curated`, **deshabilitado por defecto** (estado de ahorro; lo enciende el equipo con `validate_4_1.py on`), sin reintentos, 1 corrida a la vez. Jobs Glue Python shell 3.9, 0,0625 DPU, 30 min, 0 reintentos, `library-set = analytics` (ajustables por job con `glue_job_settings`). Logs de Glue y de fallos: 30 días. *(v2.35)* `ta-job-raw-to-trusted` con 1 DPU (ADR-25); con él, una corrida del workflow cuesta ≈ 0,015–0,025 USD y el horario encendido ≈ 11–17 USD/mes (*estimado*, §3.21): sigue deshabilitado hasta que el equipo lo decida. *(v2.36)* **Decidido por el usuario: encendido cada hora** desde el 26-oct-2026 22:55 UTC. Medido (F8 del 4.2): ≈ 0,0196 USD por corrida del workflow, **≈ 0,47 USD/día, ≈ 14,1 USD/mes** (estimado con lo medido; KMS y logs aparte). Se apaga con `python project/scripts/validate_4_1.py off` (o `validate_4_2.py off`) y se vuelve a encender con `validate_4_1.py on`. *(v2.37)* `ta-job-trusted-to-curated` sigue en 0,0625 DPU (ADR-26): ≈ 0,0199 USD por corrida del workflow, **≈ 14,3 USD/mes** (*estimado*, §3.22; *v2.38, medido en F8: ≈ 0,0196 USD por corrida, ≈ 14,1 USD/mes*). **Encendido es el estado normal**: las validaciones lo apagan mientras corren (`validate_4_3.py off`) y lo dejan encendido al terminar (`validate_4_3.py on`). | HU-029 |
 | Profiling de calidad | *(v2.33, §3.20)* Bajo demanda, solo lectura de S3. Caché `~/.cache/trendanalyzer/quality` (`TA_QUALITY_CACHE`, fuera del repo), 16 descargas en paralelo, MATTR con ventana de 500 tokens, 5 textos repetidos de muestra con 60 caracteres, todos los valores de una columna con ≤ 12 distintos. Umbrales de las reglas (§5.10): `TEXT_MAX_LENGTH` 450, `TEXT_DISTINCT_MIN` 0,99, `NLP_AGREEMENT_MIN` 0,88, `SOURCE_SHARE_RANGE` 0,30–0,37, `LABEL_NULL_RANGE` 0,25–0,35, `LATENCY_P95_MAX_S` 300, `NLP_SINCE` 2026-10-22T23:00Z, desfase del stream −120 a +3.900 s, lag `ingest − event` ≤ 5 s. Publicar en `quality/` está **apagado por defecto**. | HU-031, HU-032 |
+| Escenario de demo (Lote 6.3) | *(v2.52, §3.29, ADR-33)* La ola **se suma**: cadencia ×`multiplier` y fracción forzada `1 − 1/m` (decidida por `Random("{seed}\|{red}\|{seq}\|scenario")`). Límites: `multiplier` 2–10, `duration_s` 60–3600, cuerpo ≤ 4 KiB, un escenario a la vez. **Por defecto en el guion y el validador:** `postobon`, `negative`, ×3, 300 s, `instagram` (con un worker de Dataflow con NLP, ×3 en una red: de 1,5 a 2,5 mensajes/s). Protegido por el IAM de Cloud Run (sin `allUsers`); el contenedor no valida el token. | HU-040 |
 | Prueba de humo E2E | `scripts/smoke_e2e.py` sigue un evento centinela (`event_id` conocido) desde el simulador hasta `ta_curated.fact_posts` y reporta latencia por etapa. *(v2.45, §3.26; adoptado por defecto en el 5.4)* Centinela = comentario normal `comment-gen@1.0` con semilla 990048 (decisión del usuario), publicado por la prueba (no por el simulador). **Objetivos por etapa:** BigQuery `posts_enriched` ≤ 60 s desde la publicación (HU-048); `enriched/` de GCS ≤ 900 s desde la publicación; S3 `raw/origin=stream/` ≤ 300 s desde GCS (ejecutando el exportador); `ta_trusted.posts` ≤ 900 s desde S3 (arrancando el workflow); `ta_curated.fact_posts` ≤ 600 s desde Trusted. | HU-048 |
 | Tablero (Lote 6.1) | *(v2.47, §3.27, ADR-31)* QuickSight Enterprise en `us-east-1`; 4 datasets SPICE con refresco **cada hora** (`ta-cada-hora`, zona `America/Bogota`); horas del tablero en `America/Bogota`, convertidas en el SQL; respuesta **< 3 s** medida en el navegador (del clic a la última mutación del DOM de la hoja) y con `VisualLoadTime` de CloudWatch (*v2.48*: máximo 1,86 s); sin usuarios Pro (cuota de 250 USD/mes) y con compra automática de SPICE (*v2.48*); prueba gratis hasta ≈ 26-nov-2026 y, al terminar el uso, `validate_6_1.py unsubscribe --confirm-unsubscribe`. | HU-037, HU-038 |
 | Retención del estado de Terraform | GCS: se conservan las 10 versiones no vigentes más recientes. S3: las versiones no vigentes expiran a los 90 días y los *uploads* multiparte incompletos a los 7. | HU-046 |
@@ -3375,6 +3471,7 @@ infra/
 │   ├── CATALOG.md                         <- Lote 5.3: diccionario de datos GENERADO desde contracts/athena/ (catalog_spec --write; §3.25)
 │   ├── LINEAGE.md                         <- Lote 5.3: linaje de extremo a extremo y por columna, diagrama Mermaid (HU-035)
 │   ├── GOVERNANCE.md                      <- Lote 5.3: DAMA-DMBOK, nota de la Ley 1581 y datos sintéticos (HU-036)
+│   ├── DEMO.md                            <- Lote 6.3: guion de la demo de picos (escenario → alerta → correo; HU-040)
 │   ├── validation/                        <- guías de validación, una por lote (desde v2.25; convención en §8)
 │   │   ├── validation-2-2.md              <- Lote 2.2: validación paso a paso
 │   │   ├── validation-2-3.md              <- Lote 2.3: validación paso a paso (automática con validate_2_3.py)
@@ -3475,7 +3572,9 @@ infra/
     │   ├── quicksight.py                  <- Lote 6.1: tablero de QuickSight (plan, deploy, refresh, status, embed-url; lógica en src/serving/, §3.27)
     │   ├── validate_6_2.py                <- Lote 6.2: validación automática (preflight, tests, local, image, terraform, notify, prepare, flow, email, off, status)
     │   ├── alerts_check.py                <- Lote 6.2: comprobación de las alertas (plan, publish-test, burst; lógica en src/alerts/, §3.28)
-    │   └── build_alerts_image.sh          <- Lote 6.2: construye, prueba y publica la imagen alert-notifier
+    │   ├── build_alerts_image.sh          <- Lote 6.2: construye, prueba y publica la imagen alert-notifier
+    │   ├── validate_6_3.py                <- Lote 6.3: validación automática (preflight, tests, local, image, prepare, auth, flow, off, status)
+    │   └── demo_scenario.py               <- Lote 6.3: escenario de demo (start, status, stop, check; lógica en src/demo/, §3.29)
     └── src/
         ├── conftest.py                    <- Lote 1.1: fixture envelope_validator (valida contra contracts/)
         ├── common/                        <- librería compartida (Lote 1.1; el NLP vive en streaming/nlp.py desde el Lote 2.3 y usa common.label_map)
@@ -3515,6 +3614,7 @@ infra/
         ├── smoke/                         <- Lote 5.4 (§3.26): e2e (la corrida con puertos), clouds (GCP y AWS reales), cli (smoke_e2e.py), tests/
         ├── serving/                       <- Lote 6.1 (§3.27): quicksight_spec (datasets, análisis y tablero como datos), deploy (boto3), cli (quicksight.py), sql/, QUICKSIGHT.md, tests/
         ├── alerts/                        <- Lote 6.2 (§3.28): notifier (Cloud Run ta-alert-notifier), check y cli (alerts_check.py), Dockerfile, cloudbuild.yaml, ALERTS.md, tests/
+        ├── demo/                          <- Lote 6.3 (§3.29): client (/control/scenario con ID token), local (ola en tiempo virtual y API), cli (demo_scenario.py), tests/
         ├── historical/                    <- Lote 3.1: full load con el mismo simulador, anonimización y NLP (§3.17)
         │                                     plan, adapters, generate, nlp_batch, writer, verify, bq, s3io, doctor, cli, schema, work, testing,
         │                                     config/historical.yaml, requirements.txt, HISTORICAL.md, tests/test_hist_*
@@ -3629,6 +3729,7 @@ Estado actual: <salida de `bash scripts/preflight.sh` (nube) o `bash scripts/loc
 | ADR-30 | Prueba de humo (Lote 5.4, HU-048): **la prueba publica su propio centinela** en Pub/Sub, un **comentario normal** (`comment-gen@1.0`) del `EventFactory` del simulador con la semilla reservada 990048 (decisión del usuario: llega a `fact_posts` sin tocar Trusted, que descarta `ta-verify@*`; 1 fila sintética por corrida), precedido de un **calentamiento** `ta-verify@2.1` que Trusted descarta (Dataflow carga el NLP con el primer mensaje); sigue el `event_id` por BigQuery, `enriched/`, S3 (comparando los bytes con GCS), Trusted y Curated en Athena, **disparando** el exportador (`gcloud run jobs execute --wait`) y una corrida del workflow que empiece después de que el objeto llegue a S3; objetivos por etapa en §5.12 medidos con la hora del dato cuando existe (creación del objeto, `LastModified`, fin del job) y sondeo si no (BigQuery cada 2 s); identidad revisada en las 5 etapas (columnas y claves de `payload`, mismo `user_hash`); lógica con **puertos inyectables** (pipeline falso en las pruebas) y clientes reales aparte; informe sin `user_hash` ni textos; el validador hace el *seek* del atraso y enciende y drena Dataflow con `ops/services.py` | Encender el simulador y localizar uno de sus eventos (más costo y miles de filas nuevas; el usuario lo descartó); un `ta-smoke@*` que Trusted conserve (cambiar el job de Trusted y la regla DQ de `generator`); medir el primer mensaje sin calentar (mediría la carga de los modelos); esperar los horarios del exportador (en pausa) y del workflow (hasta 1 h); comparar solo el `event_id` en S3 (no prueba la copia byte a byte del exportador); procesar el atraso del 24-oct antes del centinela (horas con NLP en 1 worker) |
 | ADR-31 | Tablero de QuickSight (Lote 6.1, HU-037/038): **suscripción Enterprise creada una vez a mano** (decisión del usuario; el correo de avisos no se versiona) y **todo lo de adentro de QuickSight como código en `src/serving/`, desplegado con boto3** (`quicksight.py deploy`, idempotente; definiciones con comprobaciones sin nube); **Terraform solo para IAM** (módulo `quicksight_access`: `ta-quicksight-autor` y `ta-quicksight-lector`, confianza en la cuenta, solo auto-registro). Datasets con **SQL propio sobre `ta_curated`** por la fuente Athena con `RoleArn` = `ta-quicksight-role` (G4), **importados a SPICE** con refresco cada hora; **horas convertidas a `America/Bogota` en el SQL** (con `format_datetime`: el `CAST` a `timestamp` de Athena devuelve UTC, v2.48); **`user_hash` nunca sale de un dataset** (las aristas se agregan por par o combinación de marcas dentro del SQL); grupos `ta-autores` (dueños) y `ta-lectores` (solo ver); usuarios Pro pasados a su papel normal (cuota de 250 USD/mes) y, por eso, **compra automática de SPICE** (sin Pro el límite queda en lo consumido; v2.48); volumen diario en escala logarítmica y filtro por origen (el stream trae ~100 veces más por día que el histórico); KPI de < 3 s medido en el navegador con una sesión por URL de inserción | Recursos `aws_quicksight_*` de Terraform (la suscripción quedaría en el estado con el correo; la definición del tablero en HCL anidado es enorme y el proveedor 5.x tiene diferencias perpetuas en datasets y tableros); datasets de tabla directa (`fact_posts` trae `user_hash` y `brands[]`, que SPICE no admite); usar `agg_trend_daily`/`agg_emotion_by_brand_hour` (días y horas UTC); la zona horaria del análisis (`Options.Timezone`: riesgo de convertir dos veces); consultas directas sin SPICE (cada visual pagaría Athena); mostrar la red de autores con `user_hash` (lo prohíbe HU-038); dejar al administrador como `ADMIN_PRO` |
 | ADR-32 | Alertas (Lote 6.2, HU-039): **la detección se queda en Dataflow** (la rama de tendencias del 2.4 ya calcula `is_alert`): `ScoreTrendsFn` deja **un mensaje `ta-alert` por métrica que pasa el umbral** en una salida aparte, con la magnitud completa (media y desviación del baseline, z, cambio), y una rama nueva aplica el ***cooldown* de 15 min por marca × fuente × tipo en tiempo del evento** (estado de Beam por clave) y publica en `ta-alerts` tras un `Reshuffle` (un fallo de Pub/Sub no frena `trend_windows`); **tipo = métrica + dirección** (`volume_up`…`sentiment_down`); el **suscriptor de §5.12 es un Cloud Run mínimo** (`ta-alert-notifier`, solo biblioteca estándar, escala a cero, privado: push con ID token de `sa-alerts`) que escribe el log estructurado; **política basada en logs** con las etiquetas de `jsonPayload.aviso` en asunto y cuerpo, correo (canales por posición: las direcciones no salen del `terraform.tfvars`) y **una copia en Pub/Sub** (`ta-alerts-incidents`) para medir la notificación sin leer el buzón; **ola de prueba `ta-verify@6.2`** del `EventFactory` (escenario forzado) para la validación, que Trusted descarta | Un job que consulte `trend_windows_latest` cada minuto y publique (otra pieza que operar, más latencia y consultas a BigQuery; duplica la regla de `is_alert`); *cooldown* en el notificador (necesita estado fuera del proceso: Firestore o similar) o por tiempo de proceso (depende del orden de llegada); un mensaje por fila con `is_alert` (pierde qué métrica cambió y su magnitud); Cloud Functions (mismo Cloud Run debajo, otra forma de desplegar); correo por SMTP o un servicio externo (secretos; §5.12 lo descarta); una alerta sobre una métrica basada en logs (más lenta: alineación de 1 min más la ingesta de métricas); confirmar el correo solo a mano (el validador no puede leer el buzón); esperar una alerta natural para validar (no se sabe cuándo llega) |
+| ADR-33 | Escenario de demo (Lote 6.3, HU-040): **la ola se suma al tráfico normal**: mientras dura, la red emite ×`multiplier` (la pausa de 1–3 s se divide por m) y cada evento lleva el escenario con probabilidad `1 − 1/m`, decidida por un `Random` propio por `seq` (no toca el del evento ni el del caos), así las otras marcas siguen a su ritmo; **estado en memoria** del simulador (`ScenarioControl`, uno a la vez, termina solo; un reinicio lo termina); `event_id` sin cambios (§3.6); **`POST`/`GET`/`DELETE /control/scenario`** con todos los problemas en el 400; **protección = IAM de Cloud Run** (sin `allUsers`; ID token de `gcloud auth print-identity-token` de la dueña del proyecto) y el contenedor no valida el token; **lo dispara el presentador** con `scripts/demo_scenario.py` (sin Cloud Scheduler) y el guion vive en `docs/DEMO.md`; `GET /health` como alias de `/healthz` que sí llega desde fuera; validación con la ola real en la nube reutilizando el `prepare`, la medición de alertas y el `off` del 6.2 | Forzar marca y sentimiento en **todos** los eventos de la red (las otras marcas caen a cero durante la ola y pueden dar alertas falsas de `volume_down`); emitir la ola con otra semilla u otro origen (rompe la secuencia de `seq` y la identidad de §3.6, o habría que cambiar el contrato); validar el ID token dentro del contenedor (Cloud Run ya lo hace; duplicaría la verificación y obligaría a fijar audiencias); disparar con Cloud Scheduler (otra cuenta de servicio con `run.invoker`, y la demo necesita elegir el momento); guardar el escenario en GCS (sobrevive a reinicios, pero una ola de minutos no lo necesita); llevar `sim.scenario` a `posts_enriched` y al lake (cambia contratos, Dataflow y Glue para una marca que ya está en el envelope, en `raw/` de GCS y en los logs) |
 
 ### Riesgos
 

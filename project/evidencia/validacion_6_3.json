@@ -1,0 +1,244 @@
+{
+  "lote": "6.3",
+  "hu": [
+    "HU-040"
+  ],
+  "parts": {
+    "A": {
+      "title": "Preflight del código, de GCP y de lo encendido",
+      "status": "OK",
+      "started_at": "2026-10-29T00:08:34.458254+00:00",
+      "finished_at": "2026-10-29T00:08:43.030643+00:00",
+      "steps": [
+        {
+          "id": "A1",
+          "title": "Python y dependencias",
+          "status": "OK",
+          "detail": "Python 3.11.17; Beam, Pub/Sub, jsonschema y PyYAML",
+          "data": {}
+        },
+        {
+          "id": "A2",
+          "title": "los 12 archivos del lote y 7 que reutiliza",
+          "status": "OK",
+          "detail": "presentes",
+          "data": {}
+        },
+        {
+          "id": "A3",
+          "title": "herramientas",
+          "status": "OK",
+          "detail": "gcloud, bq, terraform, bash",
+          "data": {}
+        },
+        {
+          "id": "A4",
+          "title": "proyecto de GCP y ADC",
+          "status": "OK",
+          "detail": "project-0568d9ba-848f-413c-88b · ADC presente",
+          "data": {}
+        },
+        {
+          "id": "A5",
+          "title": "Dataflow, simulador e imagen en terraform.tfvars",
+          "status": "OK",
+          "detail": "Dataflow: apagado · simulador: apagado · simulator_image: stream-simulator:20261020-213231",
+          "data": {
+            "dataflow": [],
+            "simulator": false,
+            "image": "us-central1-docker.pkg.dev/project-0568d9ba-848f-413c-88b/ta-images/stream-simulator:20261020-213231"
+          }
+        },
+        {
+          "id": "A6",
+          "title": "alertas del 6.2 (notificador y política)",
+          "status": "OK",
+          "detail": "https://ta-alert-notifier-kyu3kofmtq-uc.a.run.app · ta-alerta-tendencia",
+          "data": {}
+        }
+      ]
+    },
+    "B": {
+      "title": "Pruebas",
+      "status": "OK",
+      "started_at": "2026-10-29T00:08:43.581737+00:00",
+      "finished_at": "2026-10-29T00:10:23.049096+00:00",
+      "steps": [
+        {
+          "id": "B1",
+          "title": "pytest src/common src/simulator (lo que corre la imagen; escenario incluido)",
+          "status": "OK",
+          "detail": "137 passed, 0 skipped, 0 failed (esperado 137 passed, 0 skipped)",
+          "data": {
+            "passed": 137,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B2",
+          "title": "pytest src/demo (cliente, CLI, ola en tiempo virtual y API)",
+          "status": "OK",
+          "detail": "9 passed, 0 skipped, 0 failed (esperado 9 passed, 0 skipped)",
+          "data": {
+            "passed": 9,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B3",
+          "title": "pytest test_ops_validate63.py",
+          "status": "OK",
+          "detail": "10 passed, 0 skipped, 0 failed (esperado 10 passed, 0 skipped)",
+          "data": {
+            "passed": 10,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        }
+      ]
+    },
+    "L": {
+      "title": "Ola en tiempo virtual y API con el servidor real (sin nube)",
+      "status": "OK",
+      "started_at": "2026-10-29T00:10:23.351712+00:00",
+      "finished_at": "2026-10-29T00:10:24.770613+00:00",
+      "steps": [
+        {
+          "id": "L1",
+          "title": "ola: cadencia ×m, fracción marcada 1 − 1/m, el resto igual, envelope v1.0",
+          "status": "OK",
+          "detail": "750 eventos · 30.76/min antes → 88.6/min durante (×2.88) → 30.64/min después · marcados 299 (67%, esperado 67%) · normal 30.76 → 28.8/min · 0 errores de contrato · terminó por expired",
+          "data": {
+            "rate_ratio": 2.88,
+            "phases": {
+              "before": {
+                "events": 154,
+                "per_min": 30.76,
+                "marked": 0,
+                "marked_share": 0.0,
+                "normal_per_min": 30.76,
+                "normal_brand_per_min": {
+                  "pepsi": 12.58,
+                  "postobon": 14.78,
+                  "sprite": 3.4
+                },
+                "wrong_marked": []
+              },
+              "during": {
+                "events": 443,
+                "per_min": 88.6,
+                "marked": 299,
+                "marked_share": 0.6749,
+                "normal_per_min": 28.8,
+                "normal_brand_per_min": {
+                  "pepsi": 9.6,
+                  "postobon": 16.2,
+                  "sprite": 3.0
+                },
+                "wrong_marked": []
+              },
+              "after": {
+                "events": 153,
+                "per_min": 30.64,
+                "marked": 0,
+                "marked_share": 0.0,
+                "normal_per_min": 30.64,
+                "normal_brand_per_min": {
+                  "pepsi": 7.61,
+                  "postobon": 19.02,
+                  "sprite": 4.0
+                },
+                "wrong_marked": []
+              }
+            },
+            "scenario": "demo/postobon-negative/20261028T120500Z"
+          }
+        },
+        {
+          "id": "L2",
+          "title": "API /health y /control/scenario con el servidor HTTP del simulador",
+          "status": "OK",
+          "detail": "GET /health 200 · GET /control/scenario (sin escenario) 200 · POST inválido (marca y multiplicador) 400 · POST válido 201 · POST con otro activo 409 · GET con escenario activo 200 · GET /health muestra el escenario 200 · DELETE lo termina 200 · GET después del DELETE 200 · ruta desconocida 404",
+          "data": {
+            "api": [
+              {
+                "step": "GET /health",
+                "status": 200,
+                "want": 200,
+                "ok": true
+              },
+              {
+                "step": "GET /control/scenario (sin escenario)",
+                "status": 200,
+                "want": 200,
+                "ok": true
+              },
+              {
+                "step": "POST inválido (marca y multiplicador)",
+                "status": 400,
+                "want": 400,
+                "ok": true
+              },
+              {
+                "step": "POST válido",
+                "status": 201,
+                "want": 201,
+                "ok": true
+              },
+              {
+                "step": "POST con otro activo",
+                "status": 409,
+                "want": 409,
+                "ok": true
+              },
+              {
+                "step": "GET con escenario activo",
+                "status": 200,
+                "want": 200,
+                "ok": true
+              },
+              {
+                "step": "GET /health muestra el escenario",
+                "status": 200,
+                "want": 200,
+                "ok": true
+              },
+              {
+                "step": "DELETE lo termina",
+                "status": 200,
+                "want": 200,
+                "ok": true
+              },
+              {
+                "step": "GET después del DELETE",
+                "status": 200,
+                "want": 200,
+                "ok": true
+              },
+              {
+                "step": "ruta desconocida",
+                "status": 404,
+                "want": 404,
+                "ok": true
+              }
+            ],
+            "logs": {
+              "scenario_end": 1,
+              "scenario_rejected": 1,
+              "scenario_start": 1
+            }
+          }
+        }
+      ]
+    }
+  },
+  "updated_at": "2026-10-29T00:10:24.770849+00:00"
+}

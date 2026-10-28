@@ -4,7 +4,7 @@
 # - CPU siempre asignada (cpu_idle = false, equivale a --no-cpu-throttling): el bucle de
 #   emisión corre en segundo plano, sin peticiones HTTP.
 # - Sin acceso público: no se concede roles/run.invoker a allUsers. /control/scenario
-#   (Lote 6.3) exigirá ID token.
+#   (Lote 6.3) exige ID token: lo comprueba el frontend de Cloud Run antes de llegar al contenedor.
 # - Sondas de arranque y de vida sobre GET /healthz (503 si un worker cayó → reinicio).
 
 variable "project_id" {

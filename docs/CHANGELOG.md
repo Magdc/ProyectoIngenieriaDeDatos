@@ -1,10 +1,24 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.51**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.52**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.52 · desde v2.51
+
+**Lote que lo motiva:** Lote 6.3 (HU-040) · entrega
+
+| Área | Cambio |
+|---|---|
+| Decisión (adoptada por defecto, ADR-33) | **La ola se suma al tráfico normal**: cadencia ×`multiplier` y solo la fracción `1 − 1/m` de los eventos lleva la marca y el sentimiento forzados (las otras marcas no caen ni dan alertas falsas de `volume_down`). Estado en memoria, un escenario a la vez, termina solo. Protección = IAM de Cloud Run (el contenedor no valida el token). Lo dispara el presentador con `demo_scenario.py` (sin Cloud Scheduler). Por defecto: `postobon`, `negative`, ×3, 300 s, `instagram`. |
+| Lote 6.3 | `src/simulator/scenario.py` (`parse_request`, `ScenarioControl`: `start`, `stop`, `status`, `pick`, `speed`). `app.py`: `GET`/`POST`/`DELETE /control/scenario` (201, 400 con todos los problemas, 409, 413 sobre 4 KiB), `GET /health` (alias de `/healthz` que llega desde fuera), lectura del cuerpo por `Content-Length`, `start_http`. `publisher.py`: `SourceWorker(control=…)` divide la pausa por m y pide el escenario de cada evento con un `Random` propio por `seq`; `event_id` no cambia. `src/demo/` (cliente con el ID token de `gcloud`, ola en tiempo virtual y API locales, CLI) y `scripts/demo_scenario.py` (`start`, `status`, `stop`, `check`). Guion de la demo de picos en `docs/DEMO.md`. |
+| Contratos | Ninguno nuevo: `sim.scenario` ya estaba en el envelope v1.0 (§5.2; ahora documentado como el nombre del escenario). §5.12: fila «Escenario de demo». `contracts/` no cambia. |
+| Infraestructura | Sin recursos nuevos: el simulador ya era privado. Comentario del módulo `cloud_run_simulator` al día. La imagen nueva entra por `simulator_image` (parte `image` del validador, en `terraform.tfvars`, que no se versiona). |
+| Validación | `scripts/validate_6_3.py` → `src/ops/validate63.py`: `preflight`, `tests`, `local`, `image` (Cloud Build; etiqueta `h-{huella}` del contenido, no de git), `prepare` y `off` (los del 6.2), `auth` (imagen desplegada, IAM sin acceso público, 401/403 sin token, 200 con token, 400), `flow` (ola real: cadencia y marca en `ta-raw-*`, pico en `trend_windows`, alerta y notificación < 5 min con la medición del 6.2, fin por `expired`, logs) y `status`. Guía `docs/validation/validation-6-3.md`. Corridas al entregar: **A 6, B (137, 9, 10), L 2** (×2,88 con m = 3; 67 % marcados; tráfico normal igual; API 10/10). **Pendiente con el OK del usuario:** D, P, S, F y O. |
+| Pruebas | 19 nuevas en `test_scenario.py` y 2 en `test_app.py` (la del 501 pasa a probar la API), 9 en `src/demo` (incluida «el simulador no es público» sobre el Terraform), 10 en `test_ops_validate63.py`. Regresión: `src/alerts src/smoke` 31, `test_ops_validate62.py` + `test_ops_services.py` 47, `src/historical/tests` 142. ruff (E, F, W) y `py_compile` sin errores. |
+| Documento | ARCHITECTURE §3.29 y §3.29.1, §0, §3.1 (`/health`), §3.7, §3.10, §5.2, §5.12, §6, ADR-33; `docs/DEMO.md`; `LINEAGE.md` (el escenario en la etapa 2); `GOVERNANCE.md` (las olas de demo); PLAN.md §3 (6.3 🟨); `ACTIVE_SERVICES.md`; cabeceras a 2.52. |
 
 ## v2.51 · desde v2.50
 

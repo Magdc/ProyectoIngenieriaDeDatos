@@ -6,7 +6,8 @@
 - ``MemoryPublisher``: para pruebas.
 
 ``SourceWorker`` es el bucle de §3.5: lee el cursor, emite ``seq`` a ``seq``, guarda el
-cursor cada ``checkpoint_every`` mensajes y al detenerse, y duerme 1–3 s entre mensajes.
+cursor cada ``checkpoint_every`` mensajes y al detenerse, y duerme 1–3 s entre mensajes (dividido
+por ``multiplier`` mientras hay un escenario de demo para su fuente, Lote 6.3).
 """
 
 from __future__ import annotations
@@ -33,6 +34,13 @@ def log(event: str, **fields) -> None:
     rec = {"severity": fields.pop("severity", "INFO"), "event": event, "component": "stream-simulator", **fields}
     sys.stdout.write(json.dumps(rec, ensure_ascii=False, default=str) + "\n")
     sys.stdout.flush()
+
+
+class Control(Protocol):
+    """Lo que el bucle usa del escenario de demo (``simulator.scenario.ScenarioControl``)."""
+
+    def pick(self, source: str, seq: int) -> Optional[Scenario]: ...
+    def speed(self, source: str) -> float: ...
 
 
 class Publisher(Protocol):
@@ -134,7 +142,7 @@ class SourceWorker:
         topic_template: str = DEFAULT_TOPIC_TEMPLATE,
         clock: Callable[[], datetime] = _utcnow,
         sleep: Optional[Callable[[float], Awaitable[None]]] = None,
-        scenario: Callable[[], Optional[Scenario]] = lambda: None,
+        control: Optional[Control] = None,
         max_events: Optional[int] = None,
     ) -> None:
         self.source = source
@@ -144,7 +152,7 @@ class SourceWorker:
         self.topic = topic_template.format(source=source)
         self.clock = clock
         self._sleep = sleep
-        self.scenario = scenario
+        self.control = control
         self.max_events = max_events
         self.config = factory.config
         self.stats = WorkerStats()
@@ -158,7 +166,8 @@ class SourceWorker:
 
     def _interval(self, seq: int) -> float:
         lo, hi = self.config.interval_s
-        return random.Random(f"{self.factory.seed}|{self.source}|{seq}|sleep").uniform(lo, hi)
+        pause = random.Random(f"{self.factory.seed}|{self.source}|{seq}|sleep").uniform(lo, hi)
+        return pause / self.control.speed(self.source) if self.control is not None else pause
 
     async def _wait(self, seconds: float) -> None:
         if self._sleep is not None:
@@ -171,7 +180,8 @@ class SourceWorker:
 
     async def emit_one(self) -> None:
         seq = self.stats.seq
-        emission = self.factory.make(self.source, seq, self.clock(), scenario=self.scenario())
+        scenario = self.control.pick(self.source, seq) if self.control is not None else None
+        emission = self.factory.make(self.source, seq, self.clock(), scenario=scenario)
         for msg in emission.messages:
             await self.publisher.publish(self.topic, msg.data, msg.attributes)
             self.stats.messages += 1

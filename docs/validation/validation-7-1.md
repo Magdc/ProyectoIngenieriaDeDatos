@@ -104,6 +104,22 @@ cambiar, 0 a destruir** (los módulos nuevos tienen `count = 0`).
 3. Correr «CD» a mano (Actions → CD → Run workflow) y revisar que `images` publique las tres imágenes y que los dos
    `plan` digan «No changes».
 
+## Cierre
+
+**Lote 7.1 cerrado (v2.55).** 29-oct-2026, WSL (`ta-streaming`), Docker 29.7, sobre `main` = `b3b5ac3`.
+
+| Parte | Resultado |
+|---|---|
+| A · Preflight | OK (3) |
+| B · Pruebas | OK (1): 9 |
+| L · Local | OK (9): workflows, pre-commit, Terraform de las 4 raíces, gitleaks sin hallazgos nuevos (2 revisados a mano), tfvars, las tres imágenes (137, 96 y 11 pruebas dentro) |
+| E · CI en un contenedor | OK (4): contratos 18, identidad 12, suite 1.644 passed y 4 omitidas, 8,7 min |
+| C · Plan | OK (2): GCP y AWS sin cambios con el CD apagado |
+| G · GitHub Actions | OK (2): **CI #3 `success`** con los 6 trabajos, 3,7 min; CD sin corrida (sus trabajos `skipped` en la entrega) |
+
+Las corridas #1 y #2 fallaron en `pytest` por dos supuestos del entorno local (correr como root; el marcador del
+validador): corregidos. Pendiente, decisión del usuario: activar el CD y revocar el token de Mastodon del historial.
+
 ## Problemas frecuentes
 
 | Síntoma | Qué hacer |

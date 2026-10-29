@@ -1,6 +1,6 @@
 # TrendAnalyzer · ARCHITECTURE
 
-> Documento maestro de arquitectura y contratos. **Versión vigente: 2.54.**
+> Documento maestro de arquitectura y contratos. **Versión vigente: 2.55.**
 > Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md) · Plan por fases, trazabilidad HU y estado: [`PLAN.md`](PLAN.md) · Historias de usuario: `HU.md` · Visión general: `README.md`.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 
@@ -2624,7 +2624,7 @@ Escenario = `name`, `brand` (canónica), `sentiment`, `multiplier`, `duration_s`
 
 ### 3.30 CI/CD con GitHub Actions (Lote 7.1)
 
-> Entregado en **v2.54** (HU-041). Rutas relativas a la raíz del repo; validación paso a paso en `docs/validation/validation-7-1.md` y automática con `project/scripts/validate_7_1.py`. **ADR-34.** **Decisión (adoptada por defecto, a confirmar por el usuario):** la CI corre sin credenciales de nube; el CD (publicar imágenes y `terraform plan` contra la nube) queda escrito y **apagado** hasta que el usuario decida confiar en el repositorio público con OIDC y subir los `tfvars` como secretos.
+> Entregado en **v2.54** y **cerrado en v2.55** ✅ (HU-041; el CD queda apagado hasta que el usuario lo active): la CI corre verde en GitHub Actions (6 trabajos, 3,7 min). Rutas relativas a la raíz del repo; validación paso a paso en `docs/validation/validation-7-1.md` y automática con `project/scripts/validate_7_1.py`. **ADR-34.** **Decisión (adoptada por defecto, a confirmar por el usuario):** la CI corre sin credenciales de nube; el CD (publicar imágenes y `terraform plan` contra la nube) queda escrito y **apagado** hasta que el usuario decida confiar en el repositorio público con OIDC y subir los `tfvars` como secretos.
 
 **Qué entrega.**
 
@@ -2648,6 +2648,8 @@ Escenario = `name`, `brand` (canónica), `sentiment`, `multiplier`, `duration_s`
 **Pruebas** (sin red): `test_ops_validate71.py` **9**. La suite completa del proyecto (`project/`): **1.644 passed y 4 omitidas** en `python:3.11` limpio (E3).
 
 > **Estado de la verificación (v2.54, al entregar):** WSL, `ta-streaming` (Python 3.11.17), Docker 29.7. **A OK** (3), **B OK** (9), **L OK** (9: los dos workflows, pre-commit, `fmt`/`validate` de las 4 raíces con los módulos del CD, gitleaks sin hallazgos nuevos, ningún `tfvars` versionado y las tres imágenes en modo `test`, con 137, 96 y 11 pruebas dentro), **E OK** (en `python:3.11` limpio: contratos 18, identidad 12, suite completa **1.644 passed** y 4 omitidas —3 piden `terraform` en el PATH y 1 el paquete `emoji`—; 8,7 min con la instalación), **C OK** (plan de GCP y de AWS: 0 a crear, 0 a cambiar, 0 a destruir). La emulación encontró 5 fallas que el venv local no mostraba (3 del 5.2 por `terraform.tfvars`; 2 del lakehouse porque la copia no tenía `.git`, que en GitHub sí existe) y la suite completa local, 2 por la contaminación de `test_flex_template.py`: todas corregidas. **Pendiente:** G (la corrida en GitHub tras el push).
+
+> **Cierre (v2.55).** Validado el 29-oct-2026 sobre `main` = `b3b5ac3`. **G OK:** la corrida **CI #3** de GitHub Actions (push a `main`, 3,7 min) terminó en `success` con sus 6 trabajos: `pytest` (contratos, identidad y suite completa), `terraform fmt y validate`, `imagen simulator`, `imagen exporter`, `imagen alerts` y `secretos`; el CD no corrió (no se tocaron sus rutas) y en la corrida de la entrega sus dos trabajos salieron `skipped`. Las dos primeras corridas fallaron en `pytest` y mostraron lo que el contenedor local no podía: `test_ops_validate52.py` escribía en `/root/.venvs/ta-gx` (en GitHub no se corre como root) y, tras pasar las fallas a anotaciones, el marcador del validador. Corregido: la prueba usa un venv falso en su carpeta temporal y el paso «Suite completa» publica cada falla como anotación de GitHub (se lee por la API pública sin descargar el log). La emulación se repitió como usuario sin privilegios (uid 1001): 1.643 passed (la única falla era el `source =` realineado por `terraform fmt` en una prueba del exportador, del Lote 7.3). **Pendiente, decisión del usuario:** activar el CD («Activar el CD» en la guía) y revocar el token de Mastodon del historial.
 
 #### 3.30.1 Interfaces del lote (cómo usar cada pieza sin leer el código)
 

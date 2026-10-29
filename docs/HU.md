@@ -100,7 +100,7 @@ Criterios de aceptación: lista verificable.
 | HU-039 | Alertas de cambios en la conversación | 6 · 6.2 | C | Should | Final | ✅ |
 | HU-040 | Escenarios de demo | 6 · 6.3 | A | Could | Final | ✅ |
 | **E8 · DataOps** | | | | | | |
-| HU-041 | CI/CD | 7 · 7.1 | M | Must | Final | ⬜ |
+| HU-041 | CI/CD | 7 · 7.1 | M | Must | Final | 🟨 |
 | HU-042 | Observabilidad | 7 · 7.2 | M | Must | Final | ⬜ |
 | HU-043 | Control de costos | 7 · 7.3 | M | Should | Final | ⬜ |
 | **E9 · Entrega final** | | | | | | |

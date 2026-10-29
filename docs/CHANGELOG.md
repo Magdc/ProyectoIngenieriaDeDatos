@@ -1,10 +1,21 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.54**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.55**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.55 · desde v2.54
+
+**Lote que lo motiva:** Lote 7.1 (HU-041) · cierre
+
+| Área | Cambio |
+|---|---|
+| Validación en GitHub | **CI #3 `success`** (push a `main` = `b3b5ac3`, 3,7 min): `pytest`, `terraform fmt y validate`, las tres imágenes y `secretos`. El CD sigue apagado (sus trabajos `skipped`). |
+| Corregido | Las corridas #1 y #2 fallaron en `pytest`: `test_ops_validate52.py` usaba `/root/.venvs/ta-gx` (en GitHub no se corre como root; ahora un venv falso en la carpeta temporal) y el marcador del paso «Suite completa» en `validate71.py`. El paso publica cada falla como anotación (`::error`), legible por la API pública. |
+| Estado | 7.1 ✅. HU-041 🟨: la CI cumple; el `plan` contra la nube y la publicación de imágenes desde Actions esperan que el usuario active el CD. Pendiente del usuario: revocar el token de Mastodon que gitleaks encontró en el historial. |
+| Documento | ARCHITECTURE §3.30 («Cierre»); `validation-7-1.md` («Cierre»); PLAN.md §3; HU.md (HU-041 🟨); evidencia `project/evidencia/validacion_7_1.json`; cabeceras a 2.55. |
 
 ## v2.54 · desde v2.53
 

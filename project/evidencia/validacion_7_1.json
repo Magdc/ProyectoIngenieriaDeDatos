@@ -230,7 +230,42 @@
           }
         }
       ]
+    },
+    "G": {
+      "title": "GitHub Actions: la CI del commit en main y el CD apagado",
+      "status": "OK",
+      "started_at": "2026-10-29T05:15:33.429838+00:00",
+      "finished_at": "2026-10-29T05:19:36.509668+00:00",
+      "steps": [
+        {
+          "id": "G1",
+          "title": "CI en GitHub Actions",
+          "status": "OK",
+          "detail": "CI #3 completed/success (push) · terraform fmt y validate: success, secretos (gitleaks y tfvars): success, imagen simulator (pruebas dentro): success, imagen exporter (pruebas dentro): success, imagen alerts (pruebas dentro): success, pytest (contratos, identidad y suite completa): success · https://github.com/AlejandroSPosada/Trend_Analyzer/actions/runs/40822328578",
+          "data": {
+            "run_id": 40822328578,
+            "conclusion": "success",
+            "jobs": {
+              "terraform fmt y validate": "success",
+              "secretos (gitleaks y tfvars)": "success",
+              "imagen simulator (pruebas dentro)": "success",
+              "imagen exporter (pruebas dentro)": "success",
+              "imagen alerts (pruebas dentro)": "success",
+              "pytest (contratos, identidad y suite completa)": "success"
+            },
+            "sha": "b3b5ac38019ce6ac1017086b42ed840f5d29801d",
+            "minutes": 3.7
+          }
+        },
+        {
+          "id": "G2",
+          "title": "CD apagado",
+          "status": "OK",
+          "detail": "sin corrida de CD para este commit (no tocó rutas del CD o se saltó entera)",
+          "data": {}
+        }
+      ]
     }
   },
-  "updated_at": "2026-10-29T04:55:54.078862+00:00"
+  "updated_at": "2026-10-29T05:19:36.509768+00:00"
 }

@@ -48,7 +48,14 @@ jobs:
           python -m pytest -q -p no:cacheprovider -k "identidad or hmac"
           src/streaming/tests/test_enriched_row.py src/dq/tests/test_dq_identity.py src/smoke/tests/test_smoke_e2e.py
       - name: Suite completa
-        run: python -m pytest -q -p no:cacheprovider -rs
+        # Cada prueba que falla sale también como anotación (se ve en el resumen de la corrida y por la API de
+        # check-runs, sin descargar el log).
+        run: |
+          set +e
+          python -m pytest -q -p no:cacheprovider -rfEs --tb=line | tee pytest.log
+          status=${PIPESTATUS[0]}
+          grep -E '^(FAILED|ERROR) ' pytest.log | head -40 | sed 's/^/::error title=pytest::/'
+          exit "$status"
 
   terraform:
     name: terraform fmt y validate

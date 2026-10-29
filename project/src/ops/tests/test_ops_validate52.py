@@ -122,7 +122,11 @@ def run_part(fake, *argv, sandbox_dir, confirm=None, bq=None):
 
     path = sandbox_dir / "evidencia" / "validacion_5_2.json"
     path.parent.mkdir(parents=True, exist_ok=True)
-    args = list(argv) + ["--cache", str(sandbox_dir / "cache"), "--gx-python", "/root/.venvs/ta-gx/bin/python"]
+    # El venv de GX, falso y dentro del sandbox: en la CI no se corre como root y /root no se puede leer (Lote 7.1).
+    gx_python = sandbox_dir / "ta-gx" / "bin" / "python"
+    gx_python.parent.mkdir(parents=True, exist_ok=True)
+    gx_python.touch()
+    args = list(argv) + ["--cache", str(sandbox_dir / "cache"), "--gx-python", str(gx_python)]
     code = v.main(args, runner=fake, printer=lines.append, confirm=confirm, sleep=sleep, now=lambda: state["t"],
                   evidence_path=path, bq=bq or bq_fake())
     return code, lines, json.loads(path.read_text())

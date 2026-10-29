@@ -71,7 +71,7 @@ LOT_FILES = [
 ]
 #: Lo que la CI de cada PR debe correr (HU-041): nombre del paso → texto que lo identifica en ci.yml.
 CI_STEPS = {
-    "pytest (suite completa)": "python -m pytest -q -p no:cacheprovider -rs",
+    "pytest (suite completa)": "python -m pytest -q -p no:cacheprovider -rfEs",
     "contratos (HU-001)": "pytest contracts/tests",
     "identidad (sin handle ni user_id)": "-k \"identidad or hmac\"",
     "terraform fmt y validate": "bash project/infra/validate.sh",

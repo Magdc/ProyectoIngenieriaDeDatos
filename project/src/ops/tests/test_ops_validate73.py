@@ -44,8 +44,9 @@ def test_lifecycle_parsers():
 
 def test_tags_and_policies():
     res = [{"Tags": [{"Key": "component", "Value": "lake"}]}, {"Tags": [{"Key": "project", "Value": "trend-analyzer"}]},
-           {"Tags": [{"Key": "component", "Value": "lake"}]}]
-    assert v.tag_components(res) == {"lake": 2, "(sin component)": 1}
+           {"Tags": [{"Key": "component", "Value": "lake"}]},
+           {"ResourceARN": "arn:aws:dynamodb:us-east-1:1:table/ta-dev-tflock", "Tags": [{"Key": "project", "Value": "x"}]}]
+    assert v.tag_components(res) == {"lake": 2, "(sin component)": 1, "(bootstrap)": 1}
     assert v.policy_problems({"enabled": True, "notificationChannels": ["a", "b"]}, 2) == []
     assert v.policy_problems({"enabled": False, "notificationChannels": ["a"]}, 2) == ["deshabilitada", "1 canales (esperado ≥ 2)"]
 
@@ -116,3 +117,43 @@ def test_cloud_ok_and_failures(tmp_path, monkeypatch):
     assert steps["K1"]["data"]["thresholds"] == [0.5, 1.0]
     code, steps = _run("cloud", tmp_path, monkeypatch, Fake(policies=False, lifecycle_days=60))
     assert code == 1 and steps["K3"]["status"] == "FALLA" and steps["K6"]["status"] == "FALLA"
+
+
+def test_apply_saved_pushes_the_errored_state(tmp_path, monkeypatch):
+    from ops.validate32 import Result
+
+    calls: list = []
+
+    class Ctx:
+        def printer(self, text):
+            calls.append(text)
+
+        def tf(self, root, *args, timeout=900):
+            calls.append(args[0])
+            if args[0] == "apply":
+                (root / "errored.tfstate").write_text("{}")
+                return Result(1, "", "Error: Failed to save state\n\nError: Failed to persist state to backend")
+            return Result(0, "")
+
+    monkeypatch.setattr(v, "GCP_ENV", tmp_path)
+    monkeypatch.setattr(v, "ERRORED_DIR", tmp_path / "fuera")
+    assert v.apply_saved(Ctx(), "test").ok
+    assert calls[:2] == ["apply", "state"] and "Failed to save state" in calls[2]
+    assert not (tmp_path / "errored.tfstate").exists() and len(list((tmp_path / "fuera").iterdir())) == 1
+    calls.clear()
+
+    class Plain(Ctx):
+        def tf(self, root, *args, timeout=900):
+            calls.append(args[0])
+            return Result(1, "", "Error: 409")
+
+    assert not v.apply_saved(Plain(), "test").ok and calls == ["apply"]
+
+
+def test_thresholds_read_from_the_cloud():
+    def policy(**cond):
+        return {"conditions": [{"conditionThreshold": cond}]}
+
+    got = v.thresholds({v.POLICIES[0]: policy(thresholdValue=360), v.POLICIES[1]: policy(duration="28800s")})
+    assert got == {v.POLICIES[0]: v.LOW_SECONDS, v.POLICIES[1]: 8 * 3600.0}
+    assert v.thresholds({v.POLICIES[1]: policy()}) == {v.POLICIES[1]: 0.0}

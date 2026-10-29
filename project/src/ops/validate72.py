@@ -27,7 +27,7 @@ from typing import Any, Callable
 from ops import services as sv
 from ops import validate62 as v62
 from ops import validate73 as v73
-from ops.validate32 import AVISO, FALLA, OK, OMITIDO, WSL_HINT, Part, Runner, on_windows, pytest_counts
+from ops.validate32 import AVISO, FALLA, OK, OMITIDO, WSL_HINT, Part, Runner, on_windows, pytest_counts, tf_error
 
 REPO = v62.REPO
 PROJECT = v62.PROJECT
@@ -318,7 +318,7 @@ def wait_incident(ctx: Ctx, sub: str, name: str, minutes: float) -> str | None:
     end = time.monotonic() + minutes * 60
     while time.monotonic() < end:
         for inc in v62.incidents_from(v62.pull(ctx, sub)):
-            if name in json.dumps(inc):
+            if inc.get("state") == "open" and name in json.dumps(inc):  # el cierre de uno anterior no cuenta
                 return inc.get("published_at")
         ctx.sleep(20)
     return None
@@ -344,16 +344,16 @@ def part_fire(ctx: Ctx) -> int:
         part.add("F2", "notificación de ta-op-dlq-creciente", OK if at else FALLA,
                  f"{v62.check.seconds_between(sent_at.strftime('%Y-%m-%dT%H:%M:%S.000Z'), at)} s después de publicar" if at else "no llegó")
         res, _ = v73.plan(ctx, GCP_ENV, "lat_low", ("-target=module.observability", "-var=ops_latency_threshold_seconds=1"))
-        res = ctx.tf(GCP_ENV, "apply", "-input=false", "-lock-timeout=60s", "/tmp/validate73/tfplan_lat_low", timeout=900) if res.ok else res
-        lowered = ctx.now()
+        lowered = ctx.now()  # antes del apply: el umbral cambia al empezar y guardar el estado puede tardar más
+        res = v73.apply_saved(ctx, "lat_low") if res.ok else res
         at = wait_incident(ctx, sub, "ta-op-latencia", float(getattr(ctx.options, "watch_minutes", 15) or 15)) if res.ok else None
         part.add("F3", "notificación de ta-op-latencia (umbral a 1 s)", OK if at else FALLA,
                  f"{v62.check.seconds_between(lowered.strftime('%Y-%m-%dT%H:%M:%S.000Z'), at)} s después de bajar el umbral" if at else
-                 ("no llegó" if res.ok else res.tail(6)))
+                 ("no llegó" if res.ok else tf_error(res)))
     finally:
         res, _ = v73.plan(ctx, GCP_ENV, "lat_back", ("-target=module.observability",))
-        res = ctx.tf(GCP_ENV, "apply", "-input=false", "-lock-timeout=60s", "/tmp/validate73/tfplan_lat_back", timeout=900) if res.ok else res
-        part.add("F4", "umbral de latencia de vuelta a 300 s", OK if res.ok else FALLA, "aplicado" if res.ok else res.tail(6))
+        res = v73.apply_saved(ctx, "lat_back") if res.ok else res
+        part.add("F4", "umbral de latencia de vuelta a 300 s", OK if res.ok else FALLA, "aplicado" if res.ok else tf_error(res))
         v62.delete_sub(ctx, sub)
     run_id = (ctx.awsj("glue", "start-job-run", "--job-name", GLUE_JOB, "--arguments",
                        json.dumps({"--lake_bucket": "ta-verify-7-2-no-existe"})) or {}).get("JobRunId")

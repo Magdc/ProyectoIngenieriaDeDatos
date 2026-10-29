@@ -1,10 +1,32 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.58**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.60**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.60 · desde v2.59
+
+**Lote que lo motiva:** Lote 7.2 (HU-042) · cierre
+
+| Área | Cambio |
+|---|---|
+| Validación en la nube | Con el OK del usuario: K OK (6), M OK (5) con Dataflow encendido, **F OK (6)**: `ta-op-dlq-creciente` a los 367 s, `ta-op-latencia` a los 49 s, `ta-job-trusted-to-curated` FAILED → `ta-glue-job-fallido` en ALARM a los 120 s; O OK. |
+| Corregido | F3 falló tres veces porque la red de WSL cortó la escritura del estado de Terraform: `fire` usa `validate73.apply_saved` (`state push` automático), el bloque `Error:` de Terraform, solo aperturas de incidente y el tiempo desde antes del apply. |
+| Estado | 7.2 ✅, HU-042 ✅; la fase 7 queda cerrada (HU-041 🟨 hasta que el usuario active el CD). Decisión del usuario: un correo en `alarm_emails` (hoy la alarma de Glue publica en SNS sin suscriptores). |
+| Documento | ARCHITECTURE §3.32 («Cierre»); `validation-7-2.md` («Cierre», F3); PLAN.md §3; HU.md (HU-042 ✅); evidencia `project/evidencia/validacion_7_2.json`; cabeceras a 2.60. |
+
+## v2.59 · desde v2.58
+
+**Lote que lo motiva:** Lote 7.3 (HU-043) · cierre
+
+| Área | Cambio |
+|---|---|
+| Validación en la nube | Con el OK del usuario: apply de 7.2 y 7.3 (GCP 7+1, AWS 8+27, 0 borrados), K OK (6), **F OK (4)**: `ta-gasto-dataflow-encendido` a los 475 s y `ta-gasto-simulador-encendido` a los 70 s. |
+| Corregido | `cost_guard`: la condición del simulador (300 s y `REDUCE_SUM`) nunca abría un incidente; ahora instancias activas por revisión, 60 s, `ALIGN_MAX`. K4 lee los roles de IAM y separa el bootstrap. `fire`: applies de a una política (409), umbrales leídos de la nube, reintento de F4, solo aperturas de incidente, tiempo desde antes del apply. `errored.tfstate` por cortes de red de WSL: `state push` automático en `validate73.apply_saved` y en `ops.services` (`on.py`, `off.py`). |
+| Estado | 7.3 ✅, HU-043 ✅. Decisión del usuario: activar `component` y `project` como etiquetas de asignación de costos en AWS Billing (la cuenta es compartida). |
+| Documento | ARCHITECTURE §3.31 («Cierre», condición del simulador, trampas) y §3.31.1; `validation-7-3.md` («Cierre», parte F, problemas); PLAN.md §3; HU.md (HU-043 ✅); evidencia `project/evidencia/validacion_7_3.json`; cabeceras a 2.59. |
 
 ## v2.58 · desde v2.57
 

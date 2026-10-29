@@ -92,15 +92,15 @@ resource "google_monitoring_alert_policy" "simulator_on" {
   conditions {
     display_name = "ta-stream-simulator con instancias más de ${var.simulator_max_hours} h"
     condition_threshold {
-      filter          = "resource.type = \"cloud_run_revision\" AND resource.label.service_name = \"ta-stream-simulator\" AND metric.type = \"run.googleapis.com/container/instance_count\""
+      # Una serie por revisión con las instancias activas, alineada a 60 s, como ta-op-latencia (7.2). Con 300 s y
+      # REDUCE_SUM por servicio la condición se cumplía en las series y nunca abrió un incidente (validación del 7.3).
+      filter          = "resource.type = \"cloud_run_revision\" AND resource.label.service_name = \"ta-stream-simulator\" AND metric.type = \"run.googleapis.com/container/instance_count\" AND metric.label.state = \"active\""
       comparison      = "COMPARISON_GT"
       threshold_value = 0
       duration        = "${local.simulator_seconds}s"
       aggregations {
-        alignment_period     = "300s"
-        per_series_aligner   = "ALIGN_MAX"
-        cross_series_reducer = "REDUCE_SUM"
-        group_by_fields      = ["resource.label.service_name"]
+        alignment_period   = "60s"
+        per_series_aligner = "ALIGN_MAX"
       }
       trigger {
         count = 1

@@ -144,6 +144,22 @@ def test_terraform_sin_cambios_no_aplica(tfvars):
     assert not run.ran(" apply ")
 
 
+def test_terraform_sube_el_estado_que_no_pudo_guardar(tfvars, tmp_path, monkeypatch):
+    monkeypatch.setattr(sv, "TF_DIR", tmp_path)
+
+    def apply(args):
+        (tmp_path / "errored.tfstate").write_text("{}", encoding="utf-8")
+        return sv.Result(1, "", "Error: Failed to save state")
+
+    run = FakeRun({" show -json ": _plan((SIM[0], SIM[1], ["create"])), " apply ": apply})
+    msgs = []
+    assert "create" in sv.terraform_simulator(run, True, _s(), msgs.append)
+    assert run.ran(" state push ") and not (tmp_path / "errored.tfstate").exists() and "state push" in msgs[-1]
+    run = FakeRun({" show -json ": _plan((SIM[0], SIM[1], ["create"])), " apply ": apply, " state push ": sv.Result(1, "")})
+    with pytest.raises(sv.OpsError, match="apply falló"):
+        sv.terraform_simulator(run, True, _s(), print)
+
+
 # --------------------------------------------------------------------------- #
 # Dataflow y NLP
 # --------------------------------------------------------------------------- #

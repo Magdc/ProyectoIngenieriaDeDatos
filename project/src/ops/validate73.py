@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 import sys
 import time
 import uuid
@@ -28,7 +29,7 @@ from typing import Any, Callable
 from alerts import check
 from ops import services as sv
 from ops import validate62 as v62
-from ops.validate32 import AVISO, FALLA, OK, OMITIDO, WSL_HINT, Part, Runner, on_windows, parse_json, pytest_counts, summarize_plan
+from ops.validate32 import AVISO, FALLA, OK, OMITIDO, WSL_HINT, Part, Runner, on_windows, parse_json, pytest_counts, summarize_plan, tf_error
 
 REPO = v62.REPO
 PROJECT = v62.PROJECT
@@ -38,9 +39,16 @@ AWS_ENV = PROJECT / "infra" / "aws" / "environments" / "dev"
 AWS_ACCOUNT = "648617469176"
 LAKE_BUCKET = f"ta-dev-{AWS_ACCOUNT}-lake"
 POLICIES = ("ta-gasto-dataflow-encendido", "ta-gasto-simulador-encendido")
+#: F: umbral bajo (0,1 h) y los normales (4 h y 8 h), en segundos.
+LOW_SECONDS = 360.0
+#: Adónde va un ``errored.tfstate`` ya subido con ``state push`` (fuera del repo).
+ERRORED_DIR = Path("/tmp/validate73")
+NORMAL_SECONDS = {POLICIES[0]: 4 * 3600.0, POLICIES[1]: 8 * 3600.0}
 #: §5.12 «Retención» y HU-043: prefijo o tabla → días.
 RETENTION = {"gcs raw/": 30, "gcs dlq/": 30, "bigquery posts_enriched": 90, "s3 athena-results/": 7}
 COMPONENTS_AWS = {"lake", "historical", "exporter", "lakehouse", "serving", "observability"}
+#: Lo de infra/aws/bootstrap (estado aparte, sin componente): bucket del estado, tabla del lock y presupuesto.
+BOOTSTRAP_AWS = (f"ta-dev-{AWS_ACCOUNT}-tfstate", "table/ta-dev-tflock", "budget/ta-dev-monthly")
 
 LOT_FILES = [
     "project/infra/gcp/modules/cost_guard/main.tf",
@@ -50,8 +58,8 @@ LOT_FILES = [
     "project/src/ops/tests/test_ops_validate73.py",
     "project/scripts/validate_7_3.py",
 ]
-B1_EXPECTED = 7
-B2_EXPECTED = 35
+B1_EXPECTED = 9
+B2_EXPECTED = 36
 
 
 @dataclass
@@ -137,7 +145,8 @@ def tag_components(resources: list[dict[str, Any]]) -> Counter:
     c: Counter = Counter()
     for r in resources:
         tags = {t.get("Key"): t.get("Value") for t in r.get("Tags") or []}
-        c[tags.get("component") or "(sin component)"] += 1
+        bootstrap = str(r.get("ResourceARN", "")).endswith(BOOTSTRAP_AWS)
+        c[tags.get("component") or ("(bootstrap)" if bootstrap else "(sin component)")] += 1
     return c
 
 
@@ -235,6 +244,25 @@ def plan(ctx: Ctx, root: Path, name: str, extra: tuple[str, ...] = ()) -> tuple[
     return res, summarize_plan(parse_json(show.out) or {})
 
 
+def apply_saved(ctx: Ctx, plan_name: str) -> Any:
+    """Aplica un plan guardado de ``plan`` en infra/gcp, de a un recurso: Cloud Monitoring responde 409 («too many
+    concurrent edits») si se editan dos políticas a la vez. Si el apply cambió la nube pero no pudo guardar el estado
+    (``errored.tfstate``; pasó en el 3.2 y en el 7.2), lo sube con ``state push`` (se niega si el estado remoto cambió)
+    y saca el archivo del repo, como dice la guía del 3.2."""
+    res = ctx.tf(GCP_ENV, "apply", "-input=false", "-lock-timeout=60s", "-parallelism=1", f"/tmp/validate73/tfplan_{plan_name}",
+                 timeout=900)
+    errored = GCP_ENV / "errored.tfstate"
+    if res.ok or not errored.exists():
+        return res
+    pushed = ctx.tf(GCP_ENV, "state", "push", "errored.tfstate", timeout=300)
+    if not pushed.ok:
+        return res
+    ERRORED_DIR.mkdir(parents=True, exist_ok=True)
+    shutil.move(errored, ERRORED_DIR / f"errored-{plan_name}-{int(time.time())}.tfstate")  # /tmp es otro disco
+    ctx.printer(f"     … estado sin guardar subido con state push: {(tf_error(res).splitlines() or ['?'])[0]}")
+    return pushed
+
+
 def part_terraform(ctx: Ctx) -> int:
     part = Part(ctx, "C", "Terraform: alertas de gasto y etiquetas (sin borrar nada)")
     apply = bool(getattr(ctx.options, "apply", False))
@@ -275,6 +303,16 @@ def cost_policies(ctx: Ctx) -> dict[str, dict[str, Any]]:
     return {p.get("displayName"): p for p in data}
 
 
+def thresholds(policies: dict[str, dict[str, Any]]) -> dict[str, float]:
+    """Umbral vigente de cada alerta de gasto en segundos: Dataflow por ``thresholdValue``, el simulador por ``duration``."""
+    out = {}
+    for name, policy in policies.items():
+        cond = ((policy.get("conditions") or [{}])[0] or {}).get("conditionThreshold") or {}
+        out[name] = (float(cond.get("thresholdValue") or 0) if "dataflow" in name
+                     else float(str(cond.get("duration") or "0s").rstrip("s") or 0))
+    return out
+
+
 def part_cloud(ctx: Ctx) -> int:
     part = Part(ctx, "K", "Lo que hay en la nube: presupuestos, ciclos de vida, etiquetas y alertas de gasto")
     account = billing_account(ctx)
@@ -304,7 +342,15 @@ def part_cloud(ctx: Ctx) -> int:
     part.add("K3", "ciclos de vida aplicados = §5.12", OK if want == RETENTION else FALLA, json.dumps(want, ensure_ascii=False), **{
         k.replace(" ", "_"): v for k, v in want.items()})
     res = ctx.awsj("resourcegroupstaggingapi", "get-resources", "--tag-filters", "Key=project,Values=trend-analyzer")
-    comps = tag_components((res or {}).get("ResourceTagMappingList") or [])
+    resources = list((res or {}).get("ResourceTagMappingList") or [])
+    # La API de etiquetas no devuelve IAM, y exporter, historical y serving solo tienen roles: se leen aparte.
+    for role in (ctx.awsj("iam", "list-roles") or {}).get("Roles") or []:
+        name = str(role.get("RoleName", ""))
+        if name.startswith("ta-"):
+            tags = (ctx.awsj("iam", "list-role-tags", "--role-name", name) or {}).get("Tags") or []
+            if {"Key": "project", "Value": "trend-analyzer"} in tags:
+                resources.append({"ResourceARN": role.get("Arn"), "Tags": tags})
+    comps = tag_components(resources)
     missing = sorted(COMPONENTS_AWS - set(comps))
     part.add("K4", "AWS: recursos del proyecto por `component`", OK if not missing and "(sin component)" not in comps else AVISO,
              ", ".join(f"{k} {v}" for k, v in sorted(comps.items())) + (f" · faltan {missing}" if missing else ""), components=dict(comps))
@@ -345,15 +391,22 @@ def part_fire(ctx: Ctx) -> int:
     try:
         low = ("-target=module.cost_guard", "-var=cost_dataflow_max_hours=0.1", "-var=cost_simulator_max_hours=0.1")
         res, summary = plan(ctx, GCP_ENV, "gcp_low", low)
-        res = ctx.tf(GCP_ENV, "apply", "-input=false", "-lock-timeout=60s", "/tmp/validate73/tfplan_gcp_low", timeout=900) if res.ok else res
-        lowered_at = ctx.now()
-        part.add("F1", "umbrales a 0,1 h (6 min)", OK if res.ok else FALLA, f"{len(summary.get('update', []))} políticas" if res.ok else res.tail(6))
+        lowered_at = ctx.now()  # las políticas cambian al empezar el apply; guardar el estado puede tardar más
+        res = apply_saved(ctx, "gcp_low") if res.ok else res
+        # Cuenta lo que quedó en la nube: un apply puede cambiar las políticas y fallar después al guardar el estado.
+        now = thresholds(cost_policies(ctx))
+        lowered = all(now.get(name) == LOW_SECONDS for name in POLICIES)
+        part.add("F1", "umbrales a 0,1 h (6 min)", OK if lowered else FALLA,
+                 f"{len(summary.get('update', []))} políticas" + ("" if res.ok else f" (Terraform: {tf_error(res).splitlines()[0]})")
+                 if lowered else tf_error(res) if not res.ok else json.dumps(now), thresholds=now)
         seen: dict[str, str] = {}
-        if res.ok:
+        if lowered:
             wait = float(getattr(ctx.options, "watch_minutes", 25) or 25) * 60
             end = time.monotonic() + wait
             while time.monotonic() < end and len(seen) < 2:
                 for inc in v62.incidents_from(v62.pull(ctx, sub)):
+                    if inc.get("state") != "open":  # el cierre de un incidente anterior no cuenta
+                        continue
                     for name in POLICIES:
                         if name in json.dumps(inc) and name not in seen:
                             seen[name] = inc.get("published_at")
@@ -363,9 +416,14 @@ def part_fire(ctx: Ctx) -> int:
             part.add(f"F{i}", f"notificación de {name}", OK if at else FALLA,
                      f"a los {check.seconds_between(lowered_at.strftime('%Y-%m-%dT%H:%M:%S.000Z'), at)} s del cambio" if at else "no llegó en la observación")
     finally:
-        res, _ = plan(ctx, GCP_ENV, "gcp_back", ("-target=module.cost_guard",))
-        res = ctx.tf(GCP_ENV, "apply", "-input=false", "-lock-timeout=60s", "/tmp/validate73/tfplan_gcp_back", timeout=900) if res.ok else res
-        part.add("F4", "umbrales de vuelta a 4 h y 8 h", OK if res.ok else FALLA, "aplicado" if res.ok else res.tail(6))
+        for _ in range(2):  # una segunda vuelta si la red cortó el primer apply
+            res, _ = plan(ctx, GCP_ENV, "gcp_back", ("-target=module.cost_guard",))
+            res = apply_saved(ctx, "gcp_back") if res.ok else res
+            now = thresholds(cost_policies(ctx))
+            if now == NORMAL_SECONDS:
+                break
+        part.add("F4", "umbrales de vuelta a 4 h y 8 h", OK if now == NORMAL_SECONDS else FALLA,
+                 "aplicado" if res.ok else f"en la nube: {json.dumps(now)} · {tf_error(res)}", thresholds=now)
         v62.delete_sub(ctx, sub)
     return part.finish()
 

@@ -1,6 +1,6 @@
 # TrendAnalyzer · ARCHITECTURE
 
-> Documento maestro de arquitectura y contratos. **Versión vigente: 2.58.**
+> Documento maestro de arquitectura y contratos. **Versión vigente: 2.60.**
 > Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md) · Plan por fases, trazabilidad HU y estado: [`PLAN.md`](PLAN.md) · Historias de usuario: `HU.md` · Visión general: `README.md`.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 
@@ -2687,13 +2687,13 @@ Escenario = `name`, `brand` (canónica), `sentiment`, `multiplier`, `duration_s`
 
 ### 3.31 Control de costos (Lote 7.3)
 
-> Entregado en **v2.56** (HU-043). Rutas relativas a `project/`; validación paso a paso en `docs/validation/validation-7-3.md` y automática con `scripts/validate_7_3.py`. **ADR-35.** Parte de HU-043 ya estaba hecha y este lote la comprueba: `on.py`, `off.py` y `status.py` (v2.51, §3.18 y `docs/ACTIVE_SERVICES.md`), Dataflow con 1 worker (`dataflow_job.sh`: `--num_workers 1 --max_num_workers 1 --autoscaling_algorithm NONE`), los presupuestos del Lote 1.0 (§5.14) y los ciclos de vida de §5.12. Lo nuevo son las alertas de gasto por olvido y la etiqueta `component` en todo AWS.
+> Entregado en **v2.56** y **cerrado en v2.59** ✅ (HU-043): las dos alertas de gasto notificaron de verdad y `component` está en todo AWS. Rutas relativas a `project/`; validación paso a paso en `docs/validation/validation-7-3.md` y automática con `scripts/validate_7_3.py`. **ADR-35.** Parte de HU-043 ya estaba hecha y este lote la comprueba: `on.py`, `off.py` y `status.py` (v2.51, §3.18 y `docs/ACTIVE_SERVICES.md`), Dataflow con 1 worker (`dataflow_job.sh`: `--num_workers 1 --max_num_workers 1 --autoscaling_algorithm NONE`), los presupuestos del Lote 1.0 (§5.14) y los ciclos de vida de §5.12. Lo nuevo son las alertas de gasto por olvido y la etiqueta `component` en todo AWS.
 
 **Qué entrega.**
 
 | Ruta | Contenido |
 |---|---|
-| `infra/gcp/modules/cost_guard`, `environments/dev/costs.tf` | Políticas `ta-gasto-dataflow-encendido` (job `ta-stream-*` con `dataflow.googleapis.com/job/elapsed_time` > `cost_dataflow_max_hours`, 4 h) y `ta-gasto-simulador-encendido` (`ta-stream-simulator` con `run.googleapis.com/container/instance_count` > 0 durante `cost_simulator_max_hours`, 8 h; Cloud Monitoring admite como mucho 23,5 h). Notifican por `module.alerts.notification_channel_ids`; el texto dice qué cuesta y cómo apagarlo (`off.py`) |
+| `infra/gcp/modules/cost_guard`, `environments/dev/costs.tf` | Políticas `ta-gasto-dataflow-encendido` (job `ta-stream-*` con `dataflow.googleapis.com/job/elapsed_time` > `cost_dataflow_max_hours`, 4 h) y `ta-gasto-simulador-encendido` (`ta-stream-simulator` con instancias activas, `run.googleapis.com/container/instance_count` con `state = "active"`, máximo por minuto y por revisión, > 0 durante `cost_simulator_max_hours`, 8 h; Cloud Monitoring admite como mucho 23,5 h; v2.59). Notifican por `module.alerts.notification_channel_ids`; el texto dice qué cuesta y cómo apagarlo (`off.py`) |
 | `infra/gcp/modules/alert_notifier` | *(cambia)* Output `notification_channel_ids`: los canales de correo y la copia en `ta-alerts-incidents`, para las alertas de este lote y del 7.2 |
 | `infra/aws/environments/dev/components.tf` | Un proveedor `aws` por componente (`lake`, `historical`, `exporter`, `lakehouse`, `serving`, `cicd`, `observability`) con `default_tags` = las del proyecto + `component`. Cada módulo de `environments/dev` recibe el suyo (`providers = { aws = aws.<componente> }`): los módulos no necesitan variables de etiquetas |
 | `infra/gcp/environments/dev/platform.tf` | *(cambia)* `ta-images` con `component = images` (el resto de GCP ya la tenía; Pub/Sub la pone su módulo: `ingest`) |
@@ -2706,6 +2706,8 @@ Escenario = `name`, `brand` (canónica), `sentiment`, `multiplier`, `duration_s`
 **Pruebas** (sin red): `test_ops_validate73.py` **7**; `test_ops_services.py` **35** (los scripts de encendido y apagado).
 
 > **Estado de la verificación (v2.56, al entregar):** WSL, `ta-streaming` (Python 3.11.17). **A OK** (3), **B OK** (7, 35), **L OK** (6: un worker; los tres scripts; los módulos de AWS con su proveedor de componente; GCP con `component`; 30, 30, 90 y 7 días; Terraform sin avisos). **C** (plan): GCP 2 a crear y 1 a cambiar, AWS 29 a cambiar (etiquetas), **0 a borrar**. **K** (solo lectura): K1 presupuesto de GCP `ta-budget-…` con umbrales 50, 90 y 100 % y el de pronóstico, K2 `ta-dev-monthly` de 50 USD y K3 ciclos de vida aplicados = §5.12, todo OK; K4–K6 esperan el apply. **Pendiente (con el OK del usuario):** `terraform --apply` (el clasificador de permisos de la sesión lo bloqueó hasta que el usuario lo autorice en el chat), K4–K6 y `fire`.
+
+> **Cierre (v2.59).** Validado el 29-oct-2026 con el OK del usuario. **C OK:** el apply (junto con el del 7.2) creó 7 recursos y cambió 1 en GCP, creó 8 y cambió 27 en AWS (el plan anunciaba 29), sin borrar nada; los planes siguientes, sin cambios. **K OK (6):** presupuestos de GCP (50, 90 y 100 % y el de pronóstico) y de AWS (50 USD), ciclos de vida = §5.12, `component` en GCP y en AWS (lakehouse 15, observability 4, serving 3, lake 2, exporter 1, historical 1; los 3 recursos del bootstrap van aparte) y las dos alertas con sus 2 canales. **F OK (4)** a las 19:07 UTC, con el simulador recién encendido: `ta-gasto-dataflow-encendido` notificó a los 475 s de bajar el umbral (el job acababa de arrancar y tuvo que cumplir los 6 min) y `ta-gasto-simulador-encendido` a los 70 s; los umbrales volvieron a 4 h y 8 h. **Corregido en la validación:** (1) K4 leía solo la API de etiquetas, que no devuelve IAM, y exporter, historical y serving solo tienen roles: ahora los roles `ta-*` se leen con IAM y lo del bootstrap cuenta como `(bootstrap)`; (2) la condición del simulador (alineación de 300 s y `REDUCE_SUM` por servicio) se cumplía en las series y nunca abrió un incidente en 25 min: ahora es una serie por revisión con las instancias activas (`metric.label.state = "active"`), alineada a 60 s con `ALIGN_MAX`, como `ta-op-latencia`; (3) un incidente con duración queda **abierto mientras el simulador siga encendido** y Cloud Monitoring no avisa dos veces por el mismo incidente: repetir `fire` en el mismo encendido no notifica el simulador (sí Dataflow, que vuelve a quedar bajo el umbral); (4) la red de WSL cortó varias veces la conexión con el bucket del estado (`http2: client connection lost`) y Terraform dejó `errored.tfstate`: `apply_saved` (y `ops.services` para `on.py` y `off.py`) lo sube con `state push` y lo saca del repo; (5) Cloud Monitoring respondió 409 al editar las dos políticas a la vez: los applies de `fire` van con `-parallelism=1`; (6) F1 y F4 cuentan los umbrales que quedaron en la nube (no el código de salida de Terraform), F4 reintenta una vez, solo cuentan las aperturas de incidente (no el cierre de uno anterior) y el tiempo se mide desde antes del apply.
 
 #### 3.31.1 Interfaces del lote (cómo usar cada pieza sin leer el código)
 
@@ -2720,7 +2722,7 @@ Escenario = `name`, `brand` (canónica), `sentiment`, `multiplier`, `duration_s`
 | Parte | Qué comprueba | Cambia la nube |
 |---|---|---|
 | `preflight` (A) | Archivos, herramientas, Dataflow y simulador | — |
-| `tests` (B) | B1 `test_ops_validate73.py` 7 · B2 `test_ops_services.py` 35 | — |
+| `tests` (B) | B1 `test_ops_validate73.py` 9 · B2 `test_ops_services.py` 36 | — |
 | `local` (L) | L1 Dataflow de 1 worker · L2 scripts · L3 proveedores por componente en AWS · L4 `component` en GCP · L5 ciclos de vida en el código · L6 Terraform | — |
 | `terraform [--apply]` (C) | Plan sin borrados; con `--apply`, aplica y vuelve a planear | Sí, con `--apply` |
 | `cloud` (K) | K1 presupuesto de GCP · K2 de AWS · K3 ciclos de vida aplicados · K4 `component` en AWS · K5 en GCP · K6 las dos alertas de gasto | — |
@@ -2730,13 +2732,15 @@ Escenario = `name`, `brand` (canónica), `sentiment`, `multiplier`, `duration_s`
 **Trampas conocidas.**
 - Cambiar el proveedor de un módulo de AWS hace que sus *data sources* se recalculen al aplicar: el plan muestra la política del bucket y la de logs «a cambiar» con el mismo contenido.
 - La condición del simulador sigue el tiempo **seguido** con instancias: si se apaga y se enciende, empieza de cero.
+- *(v2.59)* Su incidente queda abierto mientras el simulador siga encendido y no se avisa dos veces: `fire` prueba el simulador una vez por encendido (con el simulador recién encendido, como en el cierre).
+- *(v2.59)* Si la red corta la escritura del estado (`Failed to save state`), el apply ya cambió la nube: `validate73.apply_saved` y `ops.services.push_errored_state` suben `errored.tfstate` con `state push` y lo sacan del repo; a mano, como en el 3.2.
 - `terraform fmt` realinea los `=` al agregar `providers`: las pruebas que leen Terraform deben buscar con `\s*=\s*` (se corrigió `test_exp_infra.py`).
 
 **Para el siguiente lote (7.2, 8.1).** La observabilidad (7.2) usa `notification_channel_ids` y el proveedor `aws.observability`. El informe (8.1) toma de aquí el costo por componente y los controles de gasto.
 
 ### 3.32 Observabilidad (Lote 7.2)
 
-> Entregado en **v2.57** (HU-042). Rutas relativas a `project/`; validación paso a paso en `docs/validation/validation-7-2.md` y automática con `scripts/validate_7_2.py`. **ADR-36.** Solo con métricas del sistema y la regla de eventos de Glue: no cambia el código de ningún componente.
+> Entregado en **v2.57** y **cerrado en v2.60** ✅ (HU-042): las alertas de DLQ, latencia y Glue notificaron de verdad y el tablero tiene datos. Rutas relativas a `project/`; validación paso a paso en `docs/validation/validation-7-2.md` y automática con `scripts/validate_7_2.py`. **ADR-36.** Solo con métricas del sistema y la regla de eventos de Glue: no cambia el código de ningún componente.
 
 **Qué entrega.**
 
@@ -2755,6 +2759,8 @@ Escenario = `name`, `brand` (canónica), `sentiment`, `multiplier`, `duration_s`
 **Pruebas** (sin red): `test_ops_validate72.py` **6**.
 
 > **Estado de la verificación (v2.57, al entregar):** WSL, `ta-streaming` (Python 3.11.17). **A OK** (3), **B OK** (6), **L OK** (4: el tablero con tasa, latencia p95, marca de agua y DLQ; las 4 alertas con canales; regla de estados, tablero, alarma y SNS en AWS; logs JSON en los 6 componentes; Terraform sin avisos). **C** (plan, con el 7.3): GCP 7 a crear y 1 a cambiar, AWS 8 a crear y 29 a cambiar, **0 a borrar**. **K6** (solo lectura): el stdout de `ta-stream-simulator` (50 de 50), `ta-alert-notifier` (13 de 13) y `ta-gcs-to-s3` (27 de 27) en Cloud Logging es JSON. **Pendiente (con el OK del usuario):** el apply (el clasificador de permisos de la sesión lo bloqueó), K1–K5, `prepare`, `metrics`, `fire` y `off`.
+
+> **Cierre (v2.60).** Validado el 29-oct-2026 con el OK del usuario. **C OK:** el apply del 7.3 trajo lo de este lote y los planes siguientes salieron sin cambios. **K OK (6):** tablero «TrendAnalyzer · operación» con 8 gráficos, las 4 alertas de operación, el tablero `ta-lakehouse` (4 widgets), `ta-glue-job-fallido` con acción en `ta-observabilidad`, la regla de estados de Glue y el stdout JSON. **P OK** (14:32 UTC, `ta-stream-dev`). **M OK (5)** con datos de 30 min: tasa de `ta-raw-*` (máx. 1,65 msg/min), atraso (máx. 190), latencia p95 de lectura, marca de agua (máx. 371 s) y retraso del sistema (máx. 192 s). **F OK (6)** a las 16:44 UTC: 40 mensajes malformados → `ta-op-dlq-creciente` a los 367 s; umbral de latencia a 1 s → `ta-op-latencia` a los 49 s de terminar el apply; `ta-job-trusted-to-curated` con un bucket inexistente → FAILED → `ta-glue-job-fallido` en ALARM a los 120 s. **O OK:** Dataflow y simulador apagados (encendidos ≈ 4,3 h ≈ 1,5 USD con el 7.3), sin `ta-verify-*`. **Corregido en la validación:** las tres primeras corridas de `fire` fallaron en F3 porque la red de WSL cortó la escritura del estado (`http2: client connection lost`) y Terraform dejó `errored.tfstate`; ahora `fire` usa `validate73.apply_saved` (sube el estado con `state push` y saca el archivo del repo), muestra el bloque `Error:` de Terraform, cuenta solo las aperturas de incidente y mide desde antes del apply. **Decisión del usuario:** `alarm_emails` está vacío, así que la alarma de Glue publica en SNS sin suscriptores; para recibir el correo, agregar la dirección en `infra/aws/environments/dev/terraform.tfvars`, aplicar y confirmar el correo de AWS.
 
 #### 3.32.1 Interfaces del lote (cómo usar cada pieza sin leer el código)
 

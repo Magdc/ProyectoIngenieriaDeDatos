@@ -38,6 +38,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -251,9 +252,24 @@ def terraform_simulator(run: Runner, value: bool, s: Settings, say: Callable[[st
                 + "\nRevíselo a mano: terraform -chdir=project/infra/gcp/environments/dev plan"
             )
         res = run(["terraform", f"-chdir={TF_DIR}", "apply", "-input=false", "-no-color", plan_file])
-        if not res.ok:
+        if not res.ok and not push_errored_state(run, say):
             raise OpsError("terraform apply falló:\n" + (res.err or res.out)[-2000:])
         return ", ".join(f"{a} ({'/'.join(x)})" for a, _t, x in changes)
+
+
+def push_errored_state(run: Runner, say: Callable[[str], None]) -> bool:
+    """Si el apply cambió la nube pero no pudo guardar el estado (``errored.tfstate``; pasa cuando la red de WSL corta la
+    conexión con el bucket), lo sube con ``state push``, que se niega si el estado remoto cambió, y lo saca del repo."""
+    errored = TF_DIR / "errored.tfstate"
+    if not errored.exists():
+        return False
+    if not run(["terraform", f"-chdir={TF_DIR}", "state", "push", "errored.tfstate"]).ok:
+        say(f"terraform no pudo guardar el estado y state push también falló: queda en {errored}")
+        return False
+    kept = Path(tempfile.gettempdir()) / f"errored-{int(time.time())}.tfstate"
+    shutil.move(errored, kept)
+    say(f"terraform no pudo guardar el estado; subido con state push (copia en {kept})")
+    return True
 
 
 # --------------------------------------------------------------------------- #

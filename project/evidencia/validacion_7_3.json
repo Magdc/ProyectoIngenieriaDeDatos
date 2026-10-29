@@ -39,16 +39,16 @@
     "B": {
       "title": "Pruebas",
       "status": "OK",
-      "started_at": "2026-10-29T05:12:53.953930+00:00",
-      "finished_at": "2026-10-29T05:12:55.839847+00:00",
+      "started_at": "2026-10-29T19:16:45.584545+00:00",
+      "finished_at": "2026-10-29T19:16:47.767300+00:00",
       "steps": [
         {
           "id": "B1",
           "title": "test_ops_validate73.py",
           "status": "OK",
-          "detail": "7 passed, 0 failed (esperado 7)",
+          "detail": "9 passed, 0 failed (esperado 9)",
           "data": {
-            "passed": 7,
+            "passed": 9,
             "failed": 0,
             "skipped": 0,
             "error": 0,
@@ -59,9 +59,9 @@
           "id": "B2",
           "title": "test_ops_services.py (on.py, off.py, status.py)",
           "status": "OK",
-          "detail": "35 passed, 0 failed (esperado 35)",
+          "detail": "36 passed, 0 failed (esperado 36)",
           "data": {
-            "passed": 35,
+            "passed": 36,
             "failed": 0,
             "skipped": 0,
             "error": 0,
@@ -73,8 +73,8 @@
     "L": {
       "title": "Workers, encendido y apagado, etiquetas y ciclos de vida en el código",
       "status": "OK",
-      "started_at": "2026-10-29T05:12:56.103078+00:00",
-      "finished_at": "2026-10-29T05:13:35.877921+00:00",
+      "started_at": "2026-10-29T19:16:48.010951+00:00",
+      "finished_at": "2026-10-29T19:17:30.799783+00:00",
       "steps": [
         {
           "id": "L1",
@@ -98,7 +98,7 @@
           "id": "L3",
           "title": "AWS: cada módulo con el proveedor de su componente (default_tags con `component`)",
           "status": "OK",
-          "detail": "athena→lakehouse, gcp_exporter_role→exporter, github_cd→cicd, glue_catalog→lakehouse, glue_failure_events→lakehouse, glue_role→lakehouse, glue_workflow→lakehouse, historical_loader→historical, lake_bucket→lake, lake_kms→lake, lakehouse_schedule→lakehouse, quicksight_access→serving, quicksight_role→serving",
+          "detail": "athena→lakehouse, gcp_exporter_role→exporter, github_cd→cicd, glue_catalog→lakehouse, glue_failure_events→lakehouse, glue_role→lakehouse, glue_workflow→lakehouse, historical_loader→historical, lake_bucket→lake, lake_kms→lake, lakehouse_observability→observability, lakehouse_schedule→lakehouse, quicksight_access→serving, quicksight_role→serving",
           "data": {
             "providers": {
               "github_cd": "cicd",
@@ -113,6 +113,7 @@
               "glue_workflow": "lakehouse",
               "lakehouse_schedule": "lakehouse",
               "glue_failure_events": "lakehouse",
+              "lakehouse_observability": "observability",
               "quicksight_access": "serving"
             }
           }
@@ -148,40 +149,68 @@
     "C": {
       "title": "Terraform: alertas de gasto y etiquetas (sin borrar nada)",
       "status": "OK",
-      "started_at": "2026-10-29T05:13:36.121785+00:00",
-      "finished_at": "2026-10-29T05:14:10.214994+00:00",
+      "started_at": "2026-10-29T14:21:40.151940+00:00",
+      "finished_at": "2026-10-29T14:24:39.826615+00:00",
       "steps": [
         {
           "id": "C1",
-          "title": "plan de infra/gcp: 2 a crear, 1 a cambiar, 0 a borrar",
+          "title": "plan de infra/gcp: 7 a crear, 1 a cambiar, 0 a borrar",
           "status": "OK",
-          "detail": "crea ['module.cost_guard.google_monitoring_alert_policy.dataflow_on', 'module.cost_guard.google_monitoring_alert_policy.simulator_on'] · cambia 1 (etiquetas)",
+          "detail": "crea ['module.cost_guard.google_monitoring_alert_policy.dataflow_on', 'module.cost_guard.google_monitoring_alert_policy.simulator_on', 'module.observability.google_monitoring_alert_policy.dataflow_failed', 'module.observability.google_monitoring_alert_policy.dlq', 'module.observability.google_monitoring_alert_policy.exporter_failed', 'module.observability.google_monitoring_alert_policy.latency', 'module.observability.google_monitoring_dashboard.ops'] · cambia 1 (etiquetas)",
           "data": {
-            "create": 2,
+            "create": 7,
             "update": 1,
             "delete": 0,
             "replace": 0
           }
         },
         {
-          "id": "C2",
-          "title": "plan de infra/aws: 0 a crear, 29 a cambiar, 0 a borrar",
+          "id": "C1a",
+          "title": "apply de infra/gcp",
           "status": "OK",
-          "detail": "crea [] · cambia 29 (etiquetas)",
+          "detail": "Apply complete! Resources: 7 added, 1 changed, 0 destroyed.\u001b[0m",
+          "data": {}
+        },
+        {
+          "id": "C1b",
+          "title": "plan de infra/gcp después del apply",
+          "status": "OK",
+          "detail": "sin cambios",
+          "data": {}
+        },
+        {
+          "id": "C2",
+          "title": "plan de infra/aws: 8 a crear, 29 a cambiar, 0 a borrar",
+          "status": "OK",
+          "detail": "crea ['module.lakehouse_observability.aws_cloudwatch_dashboard.lakehouse', 'module.lakehouse_observability.aws_cloudwatch_event_rule.states', 'module.lakehouse_observability.aws_cloudwatch_event_target.states', 'module.lakehouse_observability.aws_cloudwatch_log_group.states', 'module.lakehouse_observability.aws_cloudwatch_log_metric_filter.failures', 'module.lakehouse_observability.aws_cloudwatch_log_resource_policy.states', 'module.lakehouse_observability.aws_cloudwatch_metric_alarm.glue_failed', 'module.lakehouse_observability.aws_sns_topic.ops'] · cambia 29 (etiquetas)",
           "data": {
-            "create": 0,
+            "create": 8,
             "update": 29,
             "delete": 0,
             "replace": 0
           }
+        },
+        {
+          "id": "C2a",
+          "title": "apply de infra/aws",
+          "status": "OK",
+          "detail": "Apply complete! Resources: 8 added, 27 changed, 0 destroyed.\u001b[0m",
+          "data": {}
+        },
+        {
+          "id": "C2b",
+          "title": "plan de infra/aws después del apply",
+          "status": "OK",
+          "detail": "sin cambios",
+          "data": {}
         }
       ]
     },
     "K": {
       "title": "Lo que hay en la nube: presupuestos, ciclos de vida, etiquetas y alertas de gasto",
-      "status": "FALLA",
-      "started_at": "2026-10-29T05:14:10.480926+00:00",
-      "finished_at": "2026-10-29T05:14:27.445574+00:00",
+      "status": "OK",
+      "started_at": "2026-10-29T14:29:31.097165+00:00",
+      "finished_at": "2026-10-29T14:29:58.408792+00:00",
       "steps": [
         {
           "id": "K1",
@@ -219,23 +248,29 @@
         {
           "id": "K4",
           "title": "AWS: recursos del proyecto por `component`",
-          "status": "AVISO",
-          "detail": "(sin component) 18 · faltan ['exporter', 'historical', 'lake', 'lakehouse', 'serving']",
+          "status": "OK",
+          "detail": "(bootstrap) 3, exporter 1, historical 1, lake 2, lakehouse 15, observability 4, serving 3",
           "data": {
             "components": {
-              "(sin component)": 18
+              "lakehouse": 15,
+              "lake": 2,
+              "observability": 4,
+              "(bootstrap)": 3,
+              "exporter": 1,
+              "historical": 1,
+              "serving": 3
             }
           }
         },
         {
           "id": "K5",
           "title": "GCP: etiqueta `component` (muestras)",
-          "status": "AVISO",
-          "detail": "{\"lake\": \"lake\", \"images\": null, \"ingest\": \"ingest\"}",
+          "status": "OK",
+          "detail": "{\"lake\": \"lake\", \"images\": \"images\", \"ingest\": \"ingest\"}",
           "data": {
             "labels": {
               "lake": "lake",
-              "images": null,
+              "images": "images",
               "ingest": "ingest"
             }
           }
@@ -243,12 +278,58 @@
         {
           "id": "K6",
           "title": "alertas de gasto en Cloud Monitoring",
-          "status": "FALLA",
-          "detail": "{\"ta-gasto-dataflow-encendido\": [\"no existe\"], \"ta-gasto-simulador-encendido\": [\"no existe\"]}",
+          "status": "OK",
+          "detail": "ta-gasto-dataflow-encendido (2 canales), ta-gasto-simulador-encendido (2 canales)",
           "data": {}
+        }
+      ]
+    },
+    "F": {
+      "title": "Alertas de gasto de verdad: umbrales en minutos → notificación → umbrales normales",
+      "status": "OK",
+      "started_at": "2026-10-29T19:07:06.338382+00:00",
+      "finished_at": "2026-10-29T19:16:20.052626+00:00",
+      "steps": [
+        {
+          "id": "F1",
+          "title": "umbrales a 0,1 h (6 min)",
+          "status": "OK",
+          "detail": "2 políticas",
+          "data": {
+            "thresholds": {
+              "ta-gasto-dataflow-encendido": 360.0,
+              "ta-gasto-simulador-encendido": 360.0
+            }
+          }
+        },
+        {
+          "id": "F2",
+          "title": "notificación de ta-gasto-dataflow-encendido",
+          "status": "OK",
+          "detail": "a los 474.8 s del cambio",
+          "data": {}
+        },
+        {
+          "id": "F3",
+          "title": "notificación de ta-gasto-simulador-encendido",
+          "status": "OK",
+          "detail": "a los 70.3 s del cambio",
+          "data": {}
+        },
+        {
+          "id": "F4",
+          "title": "umbrales de vuelta a 4 h y 8 h",
+          "status": "OK",
+          "detail": "aplicado",
+          "data": {
+            "thresholds": {
+              "ta-gasto-dataflow-encendido": 14400.0,
+              "ta-gasto-simulador-encendido": 28800.0
+            }
+          }
         }
       ]
     }
   },
-  "updated_at": "2026-10-29T05:14:27.445673+00:00"
+  "updated_at": "2026-10-29T19:17:30.799880+00:00"
 }

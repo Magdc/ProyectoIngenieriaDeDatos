@@ -93,12 +93,31 @@ M4 marca de agua y M5 retraso del sistema, todas con puntos en los últimos 30 m
 | Paso | Esperado |
 |---|---|
 | F1–F2 | 40 mensajes malformados → `ta-dlq` → notificación de `ta-op-dlq-creciente` (en ≤ 15 min) |
-| F3–F4 | Umbral de latencia a 1 s → notificación de `ta-op-latencia` → umbral de vuelta a 300 s |
+| F3–F4 | Umbral de latencia a 1 s → apertura del incidente de `ta-op-latencia` → umbral de vuelta a 300 s (si la red corta la escritura del estado, el validador lo sube con `state push`) |
 | F5–F6 | `ta-job-trusted-to-curated` con un bucket inexistente → FAILED → `ta-glue-job-fallido` en ALARM |
 
 ## Parte O · Apagado
 
 La del 6.2: Dataflow drenado, simulador apagado, sin `ta-verify-*`.
+
+## Cierre
+
+**Lote 7.2 cerrado (v2.60).** 29-oct-2026, WSL (`ta-streaming`), con el OK del usuario.
+
+| Parte | Resultado |
+|---|---|
+| A · Preflight | OK (3) |
+| B · Pruebas | OK (1): 6 |
+| L · Local | OK (4) |
+| C · Terraform | OK (2): aplicado con el 7.3; planes después sin cambios |
+| K · La nube | OK (6): tablero con 8 gráficos, 4 alertas, `ta-lakehouse`, alarma y SNS, regla de estados, stdout JSON |
+| P · Preparar | OK: simulador y `ta-stream-dev` desde las 14:32 UTC |
+| M · Métricas | OK (5): tasa, atraso, latencia p95, marca de agua y retraso con datos |
+| F · Alertas de verdad | OK (6) a las 16:44 UTC: DLQ a los 367 s, latencia a los 49 s, Glue FAILED → ALARM a los 120 s |
+| O · Apagado | OK (2): todo apagado, sin `ta-verify-*` |
+
+Las tres primeras corridas de `fire` fallaron en F3 por cortes de red de WSL al guardar el estado de Terraform:
+corregido (`state push` automático). Pendiente, decisión del usuario: un correo en `alarm_emails` para la alarma de Glue.
 
 ## Problemas frecuentes
 

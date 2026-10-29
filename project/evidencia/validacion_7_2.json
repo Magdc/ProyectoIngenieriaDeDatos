@@ -36,8 +36,8 @@
     "L": {
       "title": "Tablero, alertas y logs JSON en el código",
       "status": "OK",
-      "started_at": "2026-10-29T05:26:26.687432+00:00",
-      "finished_at": "2026-10-29T05:27:01.749799+00:00",
+      "started_at": "2026-10-29T19:17:32.135913+00:00",
+      "finished_at": "2026-10-29T19:18:06.474718+00:00",
       "steps": [
         {
           "id": "L1",
@@ -72,8 +72,8 @@
     "B": {
       "title": "Pruebas",
       "status": "OK",
-      "started_at": "2026-10-29T05:27:15.231323+00:00",
-      "finished_at": "2026-10-29T05:27:16.077572+00:00",
+      "started_at": "2026-10-29T19:17:31.061289+00:00",
+      "finished_at": "2026-10-29T19:17:31.873680+00:00",
       "steps": [
         {
           "id": "B1",
@@ -93,29 +93,29 @@
     "C": {
       "title": "Terraform: alertas de gasto y etiquetas (sin borrar nada)",
       "status": "OK",
-      "started_at": "2026-10-29T05:27:16.333580+00:00",
-      "finished_at": "2026-10-29T05:27:49.679669+00:00",
+      "started_at": "2026-10-29T14:25:29.795236+00:00",
+      "finished_at": "2026-10-29T14:26:33.831972+00:00",
       "steps": [
         {
           "id": "C1",
-          "title": "plan de infra/gcp: 7 a crear, 1 a cambiar, 0 a borrar",
+          "title": "plan de infra/gcp: 0 a crear, 0 a cambiar, 0 a borrar",
           "status": "OK",
-          "detail": "crea ['module.cost_guard.google_monitoring_alert_policy.dataflow_on', 'module.cost_guard.google_monitoring_alert_policy.simulator_on', 'module.observability.google_monitoring_alert_policy.dataflow_failed', 'module.observability.google_monitoring_alert_policy.dlq', 'module.observability.google_monitoring_alert_policy.exporter_failed', 'module.observability.google_monitoring_alert_policy.latency', 'module.observability.google_monitoring_dashboard.ops'] · cambia 1 (etiquetas)",
+          "detail": "crea [] · cambia 0 (etiquetas)",
           "data": {
-            "create": 7,
-            "update": 1,
+            "create": 0,
+            "update": 0,
             "delete": 0,
             "replace": 0
           }
         },
         {
           "id": "C2",
-          "title": "plan de infra/aws: 8 a crear, 29 a cambiar, 0 a borrar",
+          "title": "plan de infra/aws: 0 a crear, 0 a cambiar, 0 a borrar",
           "status": "OK",
-          "detail": "crea ['module.lakehouse_observability.aws_cloudwatch_dashboard.lakehouse', 'module.lakehouse_observability.aws_cloudwatch_event_rule.states', 'module.lakehouse_observability.aws_cloudwatch_event_target.states', 'module.lakehouse_observability.aws_cloudwatch_log_group.states', 'module.lakehouse_observability.aws_cloudwatch_log_metric_filter.failures', 'module.lakehouse_observability.aws_cloudwatch_log_resource_policy.states', 'module.lakehouse_observability.aws_cloudwatch_metric_alarm.glue_failed', 'module.lakehouse_observability.aws_sns_topic.ops'] · cambia 29 (etiquetas)",
+          "detail": "crea [] · cambia 0 (etiquetas)",
           "data": {
-            "create": 8,
-            "update": 29,
+            "create": 0,
+            "update": 0,
             "delete": 0,
             "replace": 0
           }
@@ -124,36 +124,36 @@
     },
     "K": {
       "title": "Tablero, alertas y logs en la nube",
-      "status": "FALLA",
-      "started_at": "2026-10-29T05:30:04.722047+00:00",
-      "finished_at": "2026-10-29T05:30:16.541624+00:00",
+      "status": "OK",
+      "started_at": "2026-10-29T14:27:07.042381+00:00",
+      "finished_at": "2026-10-29T14:27:21.331373+00:00",
       "steps": [
         {
           "id": "K1",
           "title": "tablero de Cloud Monitoring",
-          "status": "FALLA",
-          "detail": "no existe",
+          "status": "OK",
+          "detail": "«TrendAnalyzer · operación» con 8 gráficos",
           "data": {}
         },
         {
           "id": "K2",
           "title": "las 4 alertas de operación",
-          "status": "FALLA",
-          "detail": "{\"ta-op-dataflow-fallido\": [\"no existe\"], \"ta-op-latencia\": [\"no existe\"], \"ta-op-dlq-creciente\": [\"no existe\"], \"ta-op-exportador-fallido\": [\"no existe\"]}",
+          "status": "OK",
+          "detail": "ta-op-dataflow-fallido, ta-op-latencia, ta-op-dlq-creciente, ta-op-exportador-fallido",
           "data": {}
         },
         {
           "id": "K3",
           "title": "tablero de CloudWatch ta-lakehouse",
-          "status": "FALLA",
-          "detail": "no existe",
+          "status": "OK",
+          "detail": "4 widgets",
           "data": {}
         },
         {
           "id": "K4",
           "title": "alarma de Glue con aviso por SNS",
-          "status": "FALLA",
-          "detail": "no existe",
+          "status": "OK",
+          "detail": "ta-glue-job-fallido en OK → ta-observabilidad · 0 suscripción(es) de correo",
           "data": {
             "subscriptions": 0,
             "pending": 0
@@ -162,8 +162,8 @@
         {
           "id": "K5",
           "title": "regla de estados de Glue",
-          "status": "FALLA",
-          "detail": "no existe",
+          "status": "OK",
+          "detail": "ENABLED",
           "data": {}
         },
         {
@@ -189,7 +189,171 @@
           }
         }
       ]
+    },
+    "P": {
+      "title": "Preparar: descartar el atraso, encender el simulador y Dataflow con la rama de alertas",
+      "status": "OK",
+      "started_at": "2026-10-29T14:30:19.988664+00:00",
+      "finished_at": "2026-10-29T14:34:08.720605+00:00",
+      "steps": [
+        {
+          "id": "P1",
+          "title": "seek de ta-raw-*-df a ahora",
+          "status": "OK",
+          "detail": "3 suscripciones movidas a 2026-10-29T14:30:21Z",
+          "data": {
+            "seek_time": "2026-10-29T14:30:21Z"
+          }
+        },
+        {
+          "id": "P2",
+          "title": "simulador y Dataflow en marcha",
+          "status": "OK",
+          "detail": "simulador https://ta-stream-simulator-kyu3kofmtq-uc.a.run.app · ta-stream-dev (2026-10-29_07_32_17-840621265941466290)",
+          "data": {
+            "job": "2026-10-29_07_32_17-840621265941466290",
+            "started_at": "2026-10-29T14:34:08.716982+00:00"
+          }
+        }
+      ]
+    },
+    "M": {
+      "title": "Los gráficos del tablero tienen datos (Dataflow encendido)",
+      "status": "OK",
+      "started_at": "2026-10-29T15:05:18.385451+00:00",
+      "finished_at": "2026-10-29T15:05:28.474068+00:00",
+      "steps": [
+        {
+          "id": "M1",
+          "title": "tasa ta-raw-* (msg/min)",
+          "status": "OK",
+          "detail": "27 puntos en 30 min · máx 1.65 · último 1.37",
+          "data": {
+            "n": 27,
+            "max": 1.65,
+            "last": 1.37
+          }
+        },
+        {
+          "id": "M2",
+          "title": "atraso ta-raw-*-df (mensajes)",
+          "status": "OK",
+          "detail": "29 puntos en 30 min · máx 190.0 · último 0.0",
+          "data": {
+            "n": 29,
+            "max": 190.0,
+            "last": 0.0
+          }
+        },
+        {
+          "id": "M3",
+          "title": "latencia p95 de lectura (ms)",
+          "status": "OK",
+          "detail": "6 puntos en 30 min · máx 115184.61 · último 552.93",
+          "data": {
+            "n": 6,
+            "max": 115184.61,
+            "last": 552.93
+          }
+        },
+        {
+          "id": "M4",
+          "title": "marca de agua de Dataflow (s)",
+          "status": "OK",
+          "detail": "24 puntos en 30 min · máx 371.0 · último 37.0",
+          "data": {
+            "n": 24,
+            "max": 371.0,
+            "last": 37.0
+          }
+        },
+        {
+          "id": "M5",
+          "title": "retraso del sistema (s)",
+          "status": "OK",
+          "detail": "24 puntos en 30 min · máx 192.0 · último 3.0",
+          "data": {
+            "n": 24,
+            "max": 192.0,
+            "last": 3.0
+          }
+        }
+      ]
+    },
+    "F": {
+      "title": "Alertas de verdad: DLQ creciente, latencia y fallo de Glue",
+      "status": "OK",
+      "started_at": "2026-10-29T16:44:33.758938+00:00",
+      "finished_at": "2026-10-29T16:56:50.049877+00:00",
+      "steps": [
+        {
+          "id": "F1",
+          "title": "40 mensajes malformados a ta-raw-reddit",
+          "status": "OK",
+          "detail": "40 publicados a las 16:44:38 UTC",
+          "data": {}
+        },
+        {
+          "id": "F2",
+          "title": "notificación de ta-op-dlq-creciente",
+          "status": "OK",
+          "detail": "367.4 s después de publicar",
+          "data": {}
+        },
+        {
+          "id": "F3",
+          "title": "notificación de ta-op-latencia (umbral a 1 s)",
+          "status": "OK",
+          "detail": "48.9 s después de bajar el umbral",
+          "data": {}
+        },
+        {
+          "id": "F4",
+          "title": "umbral de latencia de vuelta a 300 s",
+          "status": "OK",
+          "detail": "aplicado",
+          "data": {}
+        },
+        {
+          "id": "F5",
+          "title": "corrida de ta-job-trusted-to-curated que falla a propósito",
+          "status": "OK",
+          "detail": "jr_27aa2ba8838558768ace966b54e1065b353d7f68e013823fdad9a978c349a9a8 → FAILED",
+          "data": {}
+        },
+        {
+          "id": "F6",
+          "title": "alarma ta-glue-job-fallido en ALARM (y aviso a SNS)",
+          "status": "OK",
+          "detail": "ALARM a los 120 s del fallo",
+          "data": {}
+        }
+      ]
+    },
+    "O": {
+      "title": "Apagado: Dataflow drenado y simulador apagado (el notificador queda, escala a cero)",
+      "status": "OK",
+      "started_at": "2026-10-29T18:49:09.216618+00:00",
+      "finished_at": "2026-10-29T18:50:46.995822+00:00",
+      "steps": [
+        {
+          "id": "O1",
+          "title": "Dataflow y simulador apagados",
+          "status": "OK",
+          "detail": "ningún job activo y simulador apagado · encendidos ≈ 4.28 h ≈ 1.5 USD",
+          "data": {
+            "hours": 4.28
+          }
+        },
+        {
+          "id": "O2",
+          "title": "suscripciones temporales ta-verify-*",
+          "status": "OK",
+          "detail": "ninguna",
+          "data": {}
+        }
+      ]
     }
   },
-  "updated_at": "2026-10-29T05:30:16.541721+00:00"
+  "updated_at": "2026-10-29T19:18:06.474823+00:00"
 }

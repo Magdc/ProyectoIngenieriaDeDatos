@@ -1,0 +1,195 @@
+{
+  "lote": "7.2",
+  "hu": [
+    "HU-042"
+  ],
+  "parts": {
+    "A": {
+      "title": "Preflight",
+      "status": "OK",
+      "started_at": "2026-10-29T05:26:23.316527+00:00",
+      "finished_at": "2026-10-29T05:26:26.370618+00:00",
+      "steps": [
+        {
+          "id": "A1",
+          "title": "los 7 archivos del lote",
+          "status": "OK",
+          "detail": "presentes",
+          "data": {}
+        },
+        {
+          "id": "A2",
+          "title": "herramientas y google-cloud-monitoring",
+          "status": "OK",
+          "detail": "gcloud, aws, terraform",
+          "data": {}
+        },
+        {
+          "id": "A3",
+          "title": "Dataflow y simulador",
+          "status": "OK",
+          "detail": "Dataflow apagado · simulador apagado",
+          "data": {}
+        }
+      ]
+    },
+    "L": {
+      "title": "Tablero, alertas y logs JSON en el código",
+      "status": "OK",
+      "started_at": "2026-10-29T05:26:26.687432+00:00",
+      "finished_at": "2026-10-29T05:27:01.749799+00:00",
+      "steps": [
+        {
+          "id": "L1",
+          "title": "Cloud Monitoring: tasa de mensajes, latencia p95, DLQ y las 4 alertas de operación",
+          "status": "OK",
+          "detail": "8 gráficos y 4 alertas con los canales del 6.2",
+          "data": {}
+        },
+        {
+          "id": "L2",
+          "title": "CloudWatch: estado de los jobs de Glue, alarma y correo",
+          "status": "OK",
+          "detail": "regla de estados, tablero ta-lakehouse, alarma ta-glue-job-fallido y SNS",
+          "data": {}
+        },
+        {
+          "id": "L3",
+          "title": "logs JSON a stdout en cada componente",
+          "status": "OK",
+          "detail": "simulator, alerts, exporter, streaming, glue_jobs, glue_jobs",
+          "data": {}
+        },
+        {
+          "id": "L4",
+          "title": "terraform fmt y validate",
+          "status": "OK",
+          "detail": "OK",
+          "data": {}
+        }
+      ]
+    },
+    "B": {
+      "title": "Pruebas",
+      "status": "OK",
+      "started_at": "2026-10-29T05:27:15.231323+00:00",
+      "finished_at": "2026-10-29T05:27:16.077572+00:00",
+      "steps": [
+        {
+          "id": "B1",
+          "title": "test_ops_validate72.py",
+          "status": "OK",
+          "detail": "6 passed, 0 failed (esperado 6)",
+          "data": {
+            "passed": 6,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        }
+      ]
+    },
+    "C": {
+      "title": "Terraform: alertas de gasto y etiquetas (sin borrar nada)",
+      "status": "OK",
+      "started_at": "2026-10-29T05:27:16.333580+00:00",
+      "finished_at": "2026-10-29T05:27:49.679669+00:00",
+      "steps": [
+        {
+          "id": "C1",
+          "title": "plan de infra/gcp: 7 a crear, 1 a cambiar, 0 a borrar",
+          "status": "OK",
+          "detail": "crea ['module.cost_guard.google_monitoring_alert_policy.dataflow_on', 'module.cost_guard.google_monitoring_alert_policy.simulator_on', 'module.observability.google_monitoring_alert_policy.dataflow_failed', 'module.observability.google_monitoring_alert_policy.dlq', 'module.observability.google_monitoring_alert_policy.exporter_failed', 'module.observability.google_monitoring_alert_policy.latency', 'module.observability.google_monitoring_dashboard.ops'] · cambia 1 (etiquetas)",
+          "data": {
+            "create": 7,
+            "update": 1,
+            "delete": 0,
+            "replace": 0
+          }
+        },
+        {
+          "id": "C2",
+          "title": "plan de infra/aws: 8 a crear, 29 a cambiar, 0 a borrar",
+          "status": "OK",
+          "detail": "crea ['module.lakehouse_observability.aws_cloudwatch_dashboard.lakehouse', 'module.lakehouse_observability.aws_cloudwatch_event_rule.states', 'module.lakehouse_observability.aws_cloudwatch_event_target.states', 'module.lakehouse_observability.aws_cloudwatch_log_group.states', 'module.lakehouse_observability.aws_cloudwatch_log_metric_filter.failures', 'module.lakehouse_observability.aws_cloudwatch_log_resource_policy.states', 'module.lakehouse_observability.aws_cloudwatch_metric_alarm.glue_failed', 'module.lakehouse_observability.aws_sns_topic.ops'] · cambia 29 (etiquetas)",
+          "data": {
+            "create": 8,
+            "update": 29,
+            "delete": 0,
+            "replace": 0
+          }
+        }
+      ]
+    },
+    "K": {
+      "title": "Tablero, alertas y logs en la nube",
+      "status": "FALLA",
+      "started_at": "2026-10-29T05:30:04.722047+00:00",
+      "finished_at": "2026-10-29T05:30:16.541624+00:00",
+      "steps": [
+        {
+          "id": "K1",
+          "title": "tablero de Cloud Monitoring",
+          "status": "FALLA",
+          "detail": "no existe",
+          "data": {}
+        },
+        {
+          "id": "K2",
+          "title": "las 4 alertas de operación",
+          "status": "FALLA",
+          "detail": "{\"ta-op-dataflow-fallido\": [\"no existe\"], \"ta-op-latencia\": [\"no existe\"], \"ta-op-dlq-creciente\": [\"no existe\"], \"ta-op-exportador-fallido\": [\"no existe\"]}",
+          "data": {}
+        },
+        {
+          "id": "K3",
+          "title": "tablero de CloudWatch ta-lakehouse",
+          "status": "FALLA",
+          "detail": "no existe",
+          "data": {}
+        },
+        {
+          "id": "K4",
+          "title": "alarma de Glue con aviso por SNS",
+          "status": "FALLA",
+          "detail": "no existe",
+          "data": {
+            "subscriptions": 0,
+            "pending": 0
+          }
+        },
+        {
+          "id": "K5",
+          "title": "regla de estados de Glue",
+          "status": "FALLA",
+          "detail": "no existe",
+          "data": {}
+        },
+        {
+          "id": "K6",
+          "title": "stdout de los servicios en JSON (últimos 7 días)",
+          "status": "OK",
+          "detail": "ta-stream-simulator: 50 JSON, 0 texto · ta-alert-notifier: 13 JSON, 0 texto · ta-gcs-to-s3: 27 JSON, 0 texto",
+          "data": {
+            "kinds": {
+              "ta-stream-simulator": {
+                "json": 50,
+                "texto": 0
+              },
+              "ta-alert-notifier": {
+                "json": 13,
+                "texto": 0
+              },
+              "ta-gcs-to-s3": {
+                "json": 27,
+                "texto": 0
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "updated_at": "2026-10-29T05:30:16.541721+00:00"
+}

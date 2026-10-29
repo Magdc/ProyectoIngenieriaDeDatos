@@ -1,10 +1,21 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.56**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.57**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.57 · desde v2.56
+
+**Lote que lo motiva:** Lote 7.2 (HU-042) · entrega
+
+| Área | Cambio |
+|---|---|
+| Decisión (adoptada por defecto, ADR-36) | Solo métricas del sistema: la latencia p95 del tablero es la de lectura de Dataflow (`ack_latencies`); la de punta a punta la acotan la marca de agua y `smoke_e2e.py`. Las alertas se validan disparándolas. |
+| Lote 7.2 | `infra/gcp/modules/observability` + `observability.tf`: tablero «TrendAnalyzer · operación» (8 gráficos) y alertas `ta-op-dataflow-fallido`, `ta-op-latencia`, `ta-op-dlq-creciente`, `ta-op-exportador-fallido`. `infra/aws/modules/lakehouse_observability` + `observability.tf`: regla `ta-glue-job-estados`, filtro `TrendAnalyzer/GlueJobFailures`, alarma `ta-glue-job-fallido` → SNS `ta-observabilidad` (correo por `alarm_emails`), tablero `ta-lakehouse`. |
+| Validación | `scripts/validate_7_2.py` → `src/ops/validate72.py` (6 pruebas): `preflight`, `tests`, `local`, `terraform [--apply]`, `cloud`, `prepare`, `metrics`, `fire`, `off`, `status`. Guía `docs/validation/validation-7-2.md`. Al entregar: A, B (6), L 4, C (plan con el 7.3: GCP 7+1, AWS 8+29, 0 borrados), K6 (stdout de los tres servicios 100 % JSON). **Pendiente con el OK del usuario:** apply, K1–K5, M, F y O. |
+| Documento | ARCHITECTURE §3.32 y §3.32.1, §0, §6, ADR-36; PLAN.md §3 (7.2 🟨); cabeceras a 2.57. |
 
 ## v2.56 · desde v2.55
 

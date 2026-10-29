@@ -1,6 +1,6 @@
 # TrendAnalyzer · ARCHITECTURE
 
-> Documento maestro de arquitectura y contratos. **Versión vigente: 2.56.**
+> Documento maestro de arquitectura y contratos. **Versión vigente: 2.57.**
 > Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md) · Plan por fases, trazabilidad HU y estado: [`PLAN.md`](PLAN.md) · Historias de usuario: `HU.md` · Visión general: `README.md`.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 
@@ -40,6 +40,7 @@ Este archivo está pensado para que **baste con leerlo (o pegármelo) para const
 | Forzar una ola de comentarios para la demo (`POST /control/scenario`: marca, sentimiento, ×m, duración), seguir el guion de la demo de picos o validar el escenario | **§3.29** (interfaces: endpoint, logs, CLI `demo_scenario.py`, API, validador y «Para el siguiente lote» en **§3.29.1**), §3.7, `docs/DEMO.md` y `docs/validation/validation-6-3.md` |
 | Correr o cambiar la CI/CD de GitHub Actions (qué corre en cada PR, cómo agregar una prueba o una imagen, pre-commit con gitleaks, cómo activar el CD con OIDC) | **§3.30** (interfaces en **§3.30.1**), `.github/workflows/`, `docs/validation/validation-7-1.md` |
 | Controlar el gasto: qué alerta si algo queda encendido, etiquetas por componente, presupuestos y ciclos de vida | **§3.31** (interfaces en **§3.31.1**), §5.12 y `docs/validation/validation-7-3.md` |
+| Ver la operación (tablero de Cloud Monitoring, CloudWatch `ta-lakehouse`), qué alerta avisa de qué y cómo probar las alertas | **§3.32** (interfaces en **§3.32.1**) y `docs/validation/validation-7-2.md` |
 | Comprobar qué está encendido antes de validar un lote | **§8** (preflight) |
 | Encender, comprobar y apagar lo que cobra; validar un lote con un solo comando | `docs/ACTIVE_SERVICES.md` (`scripts/on.py`, `off.py`, `status.py`; *v2.51:* también el exportador, el horario del lakehouse, las alertas, QuickSight y la línea «Flujo de punta a punta»), `scripts/validate_2_3.py` (§3.15), `scripts/validate_2_4.py` (§3.16), `scripts/validate_3_1.py` (§3.17), `scripts/validate_3_2.py` (§3.18; con `status` y `off` del exportador), `scripts/validate_4_1.py` (§3.19; con `status`, `off` y `on` del horario del lakehouse), `scripts/validate_4_2.py` (§3.21; con `status` y `off`), `scripts/validate_4_3.py` (§3.22; con `status`, `off` y `on`: el horario queda **encendido**, estado normal), `scripts/validate_4_4.py` (§3.23; ídem, con las aristas), `scripts/validate_5_1.py` (§3.20), `scripts/validate_5_2.py` (§3.24; calidad con Great Expectations en el venv `~/.venvs/ta-gx`), `scripts/validate_5_3.py` (§3.25; catálogo, linaje y gobernanza) `scripts/validate_5_4.py` (§3.26; prueba de humo: `prepare` enciende Dataflow y `off` lo apaga), `scripts/validate_6_1.py` (§3.27; tablero de QuickSight: `deploy` lo crea o actualiza y `unsubscribe` borra la suscripción) y `scripts/validate_6_2.py` (§3.28; alertas: `prepare` enciende el simulador y Dataflow, `flow` mide una alerta real y `off` los apaga) y `scripts/validate_6_3.py` (§3.29; escenario de demo: `image` construye el simulador nuevo, `prepare` lo enciende con Dataflow, `flow` lanza una ola y mide la alerta, `off` los apaga) |
 | Saber qué construir y en qué orden | `PLAN.md` §1 (fases y lotes) |
@@ -2732,6 +2733,57 @@ Escenario = `name`, `brand` (canónica), `sentiment`, `multiplier`, `duration_s`
 
 **Para el siguiente lote (7.2, 8.1).** La observabilidad (7.2) usa `notification_channel_ids` y el proveedor `aws.observability`. El informe (8.1) toma de aquí el costo por componente y los controles de gasto.
 
+### 3.32 Observabilidad (Lote 7.2)
+
+> Entregado en **v2.57** (HU-042). Rutas relativas a `project/`; validación paso a paso en `docs/validation/validation-7-2.md` y automática con `scripts/validate_7_2.py`. **ADR-36.** Solo con métricas del sistema y la regla de eventos de Glue: no cambia el código de ningún componente.
+
+**Qué entrega.**
+
+| Ruta | Contenido |
+|---|---|
+| `infra/gcp/modules/observability`, `environments/dev/observability.tf` | Tablero **«TrendAnalyzer · operación»** (8 gráficos): mensajes por minuto en `ta-raw-*` (`topic/send_message_operation_count`), atraso de `ta-raw-*-df` (`num_undelivered_messages`), **latencia p95 de lectura** de Dataflow (`subscription/ack_latencies`, distribución, `REDUCE_PERCENTILE_95`), edad de la marca de agua y retraso del sistema del job `ta-stream-*`, mensajes en `ta-dlq` cada 10 min, alertas publicadas en `ta-alerts` y ejecuciones del exportador por resultado. Alertas `ta-op-dataflow-fallido` (`job/is_failed`), `ta-op-latencia` (marca de agua > `ops_latency_threshold_seconds`, 300, durante 5 min), `ta-op-dlq-creciente` (> `ops_dlq_threshold`, 30, en 10 min) y `ta-op-exportador-fallido` (`run.googleapis.com/job/completed_execution_count` con `result = failed`), por `module.alerts.notification_channel_ids` |
+| `infra/aws/modules/lakehouse_observability`, `environments/dev/observability.tf` | Regla `ta-glue-job-estados` (todos los «Glue Job State Change» de `ta-job-*`) → `/aws/events/ta-glue-job-estados`, con su política de recursos de logs; filtro de métricas sobre `/aws/events/ta-glue-job-fallos` (4.1) → `TrendAnalyzer/GlueJobFailures`; alarma **`ta-glue-job-fallido`** (≥ 1 en 5 min) → SNS **`ta-observabilidad`** → correo (`alarm_emails`, sensible, en `terraform.tfvars`); tablero **`ta-lakehouse`** (últimas corridas y corridas por job y estado con Logs Insights, fallos y bytes de Athena) |
+| `scripts/validate_7_2.py`, `src/ops/validate72.py`, `src/ops/tests/test_ops_validate72.py` | Validación |
+
+**Latencia p95 (ADR-36).** Las distribuciones de Beam (`event_to_process_ms`) no se exportan a Cloud Monitoring, y las métricas de Dataflow son medidores (`data_watermark_age`, `system_lag`), sin percentiles. La p95 real que da el sistema sin tocar código es la de `ack_latencies` de las suscripciones de Dataflow: cuánto tarda el job en tomar y confirmar cada mensaje. La latencia de punta a punta la acotan la marca de agua (el tablero) y el informe con los tiempos por etapa (`smoke_e2e.py`, §3.26; KPI del 8.1). La alerta de latencia usa la marca de agua contra el objetivo de §5.12 (detección < 5 min).
+
+**Logs JSON.** Los servicios ya escribían una línea JSON por evento: Cloud Run a stdout (Cloud Logging la guarda como `jsonPayload`; el validador lo comprueba en el stdout de los tres servicios), Glue a stdout y Dataflow con `logging` (el texto del mensaje es JSON; el worker lo manda a Cloud Logging). Las líneas de la plataforma (arranque, peticiones) son de Google, no de la aplicación.
+
+**Costo.** Cloud Monitoring no cobra los tableros ni estas políticas sobre métricas del sistema. CloudWatch: el tablero entra en los 3 gratis (la cuenta no tenía ninguno), la alarma ≈ 0,10 USD/mes, los logs de estados y SNS por correo, centavos.
+
+**Pruebas** (sin red): `test_ops_validate72.py` **6**.
+
+> **Estado de la verificación (v2.57, al entregar):** WSL, `ta-streaming` (Python 3.11.17). **A OK** (3), **B OK** (6), **L OK** (4: el tablero con tasa, latencia p95, marca de agua y DLQ; las 4 alertas con canales; regla de estados, tablero, alarma y SNS en AWS; logs JSON en los 6 componentes; Terraform sin avisos). **C** (plan, con el 7.3): GCP 7 a crear y 1 a cambiar, AWS 8 a crear y 29 a cambiar, **0 a borrar**. **K6** (solo lectura): el stdout de `ta-stream-simulator` (50 de 50), `ta-alert-notifier` (13 de 13) y `ta-gcs-to-s3` (27 de 27) en Cloud Logging es JSON. **Pendiente (con el OK del usuario):** el apply (el clasificador de permisos de la sesión lo bloqueó), K1–K5, `prepare`, `metrics`, `fire` y `off`.
+
+#### 3.32.1 Interfaces del lote (cómo usar cada pieza sin leer el código)
+
+*(v2.57)* Interfaz para el informe y el runbook (8.1); si cambia, se cambia aquí primero (§0).
+
+**Dónde mirar.** Cloud Monitoring → Dashboards → «TrendAnalyzer · operación» (output `ops_dashboard_id`). Alerting → `ta-op-*` (output `ops_alert_policies`). CloudWatch → Dashboards → `ta-lakehouse`; Alarms → `ta-glue-job-fallido` (outputs `ops_dashboard`, `ops_glue_alarm`, `ops_sns_topic_arn`, `ops_email_subscriptions`).
+
+**Variables.** GCP: `ops_latency_threshold_seconds` (300), `ops_dlq_threshold` (30). AWS: `alarm_emails` (lista sensible; cada dirección confirma la suscripción en el correo que manda AWS).
+
+**Validador `python project/scripts/validate_7_2.py <parte>`** (en `ta-streaming`). Evidencia: `project/evidencia/validacion_7_2.json` (`lote` 7.2, `hu` [HU-042]).
+
+| Parte | Qué comprueba | Cambia la nube |
+|---|---|---|
+| `preflight` (A), `tests` (B) | Archivos, herramientas; B1 6 pruebas | — |
+| `local` (L) | L1 Cloud Monitoring · L2 CloudWatch · L3 logs JSON · L4 Terraform | — |
+| `terraform [--apply]` (C) | Plan sin borrados (con lo del 7.3) y apply | Sí, con `--apply` |
+| `cloud` (K) | K1 tablero · K2 alertas · K3 `ta-lakehouse` · K4 alarma y SNS · K5 regla de estados · K6 stdout en JSON | — |
+| `prepare` (P), `off` (O) | Los del 6.2 | Sí: **cobra hasta `off`** |
+| `metrics` (M) | M1–M5 cada gráfico con datos (google-cloud-monitoring) | — |
+| `fire` (F) | F1–F2 DLQ creciente · F3–F4 latencia con el umbral bajado · F5–F6 Glue que falla → ALARM | Sí: 40 mensajes, 2 applies dirigidos, 1 corrida de Glue |
+| `status` | Encendidos y alertas de gasto (7.3) | — |
+
+**Trampas conocidas.**
+- `ack_latencies` es la latencia de **lectura** de Dataflow, no la de punta a punta: para eso, la marca de agua y `smoke_e2e.py`.
+- `google_monitoring_dashboard` ignora cambios en `dashboard_json` (la API devuelve el JSON normalizado): para cambiar el tablero, `terraform taint` o editar y aplicar con `-replace`.
+- Las suscripciones de SNS por correo quedan «PendingConfirmation» hasta que se confirman: mientras tanto, la alarma cambia de estado pero no llega el correo.
+- La política de recursos de CloudWatch Logs es una por regla: la cuenta (compartida) admite 10.
+
+**Para el siguiente lote (8.1).** El runbook remite a estas alertas («Atender la DLQ», «Dataflow fallido») y el informe toma la latencia de lectura p95 y la marca de agua como evidencia complementaria del KPI de latencia.
+
 ---
 
 ## 4. Flujo extremo a extremo
@@ -3638,6 +3690,7 @@ infra/
     │   │   ├── modules/alert_notifier/    <- Lote 6.2: Cloud Run ta-alert-notifier, push, ta-alerts-incidents, canales y política (§3.28)
     │   │   ├── modules/github_cd/         <- Lote 7.1: pool ta-github y sa-github-cd para el CD (apagado; §3.30)
     │   │   ├── modules/cost_guard/        <- Lote 7.3: alertas de gasto (Dataflow y simulador encendidos de más; §3.31)
+    │   │   ├── modules/observability/     <- Lote 7.2: tablero «TrendAnalyzer · operación» y 4 alertas de operación (§3.32)
     │   │   └── environments/dev/          <- estado remoto (GCS); Lote 1.3: platform.tf, variables_platform.tf, outputs_platform.tf; Lote 2.2: streaming.tf, variables_streaming.tf, outputs_streaming.tf; Lote 2.3: nlp.tf; Lote 2.4: trends.tf, variables_trends.tf, outputs_trends.tf; Lote 3.2: exporter.tf, variables_exporter.tf, outputs_exporter.tf, aws_exporter.auto.tfvars.example; Lote 6.2: alerts.tf, variables_alerts.tf, outputs_alerts.tf (alerts.auto.tfvars lo escribe validate_6_2.py; no se versiona)
     │   └── aws/
     │       ├── bootstrap/                 <- estado local: bucket de estado, tabla de bloqueo, presupuesto
@@ -3645,6 +3698,7 @@ infra/
     │       ├── modules/{kms_key,s3_lake,historical_loader_role}/   <- Lote 3.1: llave y bucket del lake, rol del loader (ADR-21)
     │       ├── modules/gcp_exporter_role/ <- Lote 3.2: ta-gcp-exporter-role (federación OIDC de sa-exporter)
     │       ├── modules/github_cd_role/    <- Lote 7.1: rol ta-github-cd para el plan del CD (apagado; §3.30)
+    │       ├── modules/lakehouse_observability/ <- Lote 7.2: estados de Glue, alarma ta-glue-job-fallido (SNS) y tablero ta-lakehouse (§3.32)
     │       ├── modules/{glue_catalog,athena_workgroup,glue_role,quicksight_role,glue_workflow,lakehouse_schedule,glue_failure_events,quicksight_access}/   <- Lote 4.1 (§3.19; quicksight_access: Lote 6.1, §3.27); glue_catalog/tables.json se genera de contracts/athena/
     │       └── environments/dev/          <- estado remoto (S3); Lote 3.1: lake.tf, variables_lake.tf, outputs_lake.tf; Lote 3.2: exporter.tf, variables_exporter.tf, outputs_exporter.tf, gcp_exporter.auto.tfvars.example; Lote 4.1: lakehouse.tf, variables_lakehouse.tf, outputs_lakehouse.tf
     ├── pytest.ini                         <- Lote 1.1: pythonpath = src, testpaths = src
@@ -3849,6 +3903,7 @@ Estado actual: <salida de `bash scripts/preflight.sh` (nube) o `bash scripts/loc
 | ADR-33 | Escenario de demo (Lote 6.3, HU-040): **la ola se suma al tráfico normal**: mientras dura, la red emite ×`multiplier` (la pausa de 1–3 s se divide por m) y cada evento lleva el escenario con probabilidad `1 − 1/m`, decidida por un `Random` propio por `seq` (no toca el del evento ni el del caos), así las otras marcas siguen a su ritmo; **estado en memoria** del simulador (`ScenarioControl`, uno a la vez, termina solo; un reinicio lo termina); `event_id` sin cambios (§3.6); **`POST`/`GET`/`DELETE /control/scenario`** con todos los problemas en el 400; **protección = IAM de Cloud Run** (sin `allUsers`; ID token de `gcloud auth print-identity-token` de la dueña del proyecto) y el contenedor no valida el token; **lo dispara el presentador** con `scripts/demo_scenario.py` (sin Cloud Scheduler) y el guion vive en `docs/DEMO.md`; `GET /health` como alias de `/healthz` que sí llega desde fuera; validación con la ola real en la nube reutilizando el `prepare`, la medición de alertas y el `off` del 6.2 | Forzar marca y sentimiento en **todos** los eventos de la red (las otras marcas caen a cero durante la ola y pueden dar alertas falsas de `volume_down`); emitir la ola con otra semilla u otro origen (rompe la secuencia de `seq` y la identidad de §3.6, o habría que cambiar el contrato); validar el ID token dentro del contenedor (Cloud Run ya lo hace; duplicaría la verificación y obligaría a fijar audiencias); disparar con Cloud Scheduler (otra cuenta de servicio con `run.invoker`, y la demo necesita elegir el momento); guardar el escenario en GCS (sobrevive a reinicios, pero una ola de minutos no lo necesita); llevar `sim.scenario` a `posts_enriched` y al lake (cambia contratos, Dataflow y Glue para una marca que ya está en el envelope, en `raw/` de GCS y en los logs) |
 | ADR-34 | CI/CD (Lote 7.1, HU-041): **la CI corre sin credenciales de nube** en cada PR y push a `main` (pytest con `project/requirements-ci.txt`, contratos, identidad, `terraform fmt/validate` sin backend, la etapa `test` de las imágenes y gitleaks sobre todo el historial); **el CD (publicar imágenes y `terraform plan`) se escribe con OIDC (sin llaves) y queda apagado** (`github_cd_enabled = false`, `vars.TA_CD_ENABLED`) hasta que el usuario decida confiar en el repositorio público y subir los `tfvars` como secretos; la federación solo acepta este repositorio en `main`, en AWS sin lectura de datos (`ViewOnlyAccess`) y el `plan` sin refresco ni candado; acciones de terceros solo las oficiales de GitHub, Google y AWS; Terraform y gitleaks con versión fija | Llaves de cuentas de servicio o de IAM como secretos de GitHub (llaves de larga vida en un repositorio público); `plan` en cada PR con credenciales (un PR de un fork no recibe el token, y los de ramas propias darían lectura de la nube a cualquier rama); `plan` con refresco (lee la versión del secreto HMAC); activar el CD sin el OK del usuario; escanear solo el último commit con gitleaks (no ve lo que ya está en el historial público) |
 | ADR-35 | Control de costos (Lote 7.3, HU-043): además de los presupuestos del Lote 1.0, **alertas de gasto por olvido** en Cloud Monitoring con métricas del sistema (Dataflow `ta-stream-*` con más de 4 h de vida; el simulador con instancias más de 8 h seguidas), por los canales del 6.2 y con el comando para apagar en el texto; **la etiqueta `component` en AWS con un proveedor por componente y `default_tags`** (sin tocar los módulos); activar las etiquetas de asignación de costos en Billing queda para el usuario (cuenta compartida) | Más presupuestos por componente (siguen avisando tarde y por el mes); apagar solo con Cloud Functions o Scheduler (apagar es una decisión: una demo puede estar en curso); una variable `tags` en cada módulo de AWS (13 módulos que cambiar para lo mismo); activar las etiquetas de costos desde Terraform (`aws_ce_cost_allocation_tag`, opción de toda la cuenta) |
+| ADR-36 | Observabilidad (Lote 7.2, HU-042): **solo métricas del sistema y la regla de eventos de Glue**, sin tocar el código: tablero de Cloud Monitoring con la tasa de `ta-raw-*`, el atraso, la **latencia p95 de lectura (`ack_latencies`, la única distribución disponible)**, la marca de agua y la DLQ; 4 alertas de operación (Dataflow fallido, marca de agua > 5 min, DLQ > 30 en 10 min, exportador fallido) por los canales del 6.2; en AWS, una regla con todos los estados de Glue, tablero `ta-lakehouse` y alarma de fallos por SNS con correo; las alertas se prueban disparándolas (mensajes malformados, umbral de latencia bajado un rato, una corrida de Glue que falla a propósito) | Exportar las distribuciones de Beam como métrica propia (cambia el pipeline y su imagen); una métrica basada en logs por evento (miles de líneas de log por hora); alarmas de AWS hacia los canales de GCP (otra federación); validar las alertas solo leyendo su configuración (no prueba que lleguen) |
 
 ### Riesgos
 

@@ -5,6 +5,14 @@
 # para los data sources (sin leer datos de S3; la cuenta es compartida con Campus Locator).
 # El proveedor OIDC de GitHub es uno por cuenta: si ya existe, create_oidc_provider = false y se usa su ARN.
 
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+    }
+  }
+}
+
 variable "name" {
   type    = string
   default = "ta-github-cd"

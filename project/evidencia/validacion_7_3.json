@@ -1,0 +1,254 @@
+{
+  "lote": "7.3",
+  "hu": [
+    "HU-043"
+  ],
+  "parts": {
+    "A": {
+      "title": "Preflight",
+      "status": "OK",
+      "started_at": "2026-10-29T05:12:50.051193+00:00",
+      "finished_at": "2026-10-29T05:12:53.698494+00:00",
+      "steps": [
+        {
+          "id": "A1",
+          "title": "los 6 archivos del lote",
+          "status": "OK",
+          "detail": "presentes",
+          "data": {}
+        },
+        {
+          "id": "A2",
+          "title": "herramientas",
+          "status": "OK",
+          "detail": "gcloud, aws, terraform, bq",
+          "data": {}
+        },
+        {
+          "id": "A3",
+          "title": "Dataflow y simulador",
+          "status": "OK",
+          "detail": "Dataflow apagado · simulador apagado",
+          "data": {
+            "dataflow": false,
+            "simulator": false
+          }
+        }
+      ]
+    },
+    "B": {
+      "title": "Pruebas",
+      "status": "OK",
+      "started_at": "2026-10-29T05:12:53.953930+00:00",
+      "finished_at": "2026-10-29T05:12:55.839847+00:00",
+      "steps": [
+        {
+          "id": "B1",
+          "title": "test_ops_validate73.py",
+          "status": "OK",
+          "detail": "7 passed, 0 failed (esperado 7)",
+          "data": {
+            "passed": 7,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B2",
+          "title": "test_ops_services.py (on.py, off.py, status.py)",
+          "status": "OK",
+          "detail": "35 passed, 0 failed (esperado 35)",
+          "data": {
+            "passed": 35,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        }
+      ]
+    },
+    "L": {
+      "title": "Workers, encendido y apagado, etiquetas y ciclos de vida en el código",
+      "status": "OK",
+      "started_at": "2026-10-29T05:12:56.103078+00:00",
+      "finished_at": "2026-10-29T05:13:35.877921+00:00",
+      "steps": [
+        {
+          "id": "L1",
+          "title": "Dataflow: 1 worker, maxNumWorkers entre 1 y 2 (dataflow_job.sh)",
+          "status": "OK",
+          "detail": "{\"num_workers\": \"1\", \"max_num_workers\": \"1\", \"autoscaling_algorithm\": \"NONE\"}",
+          "data": {
+            "num_workers": "1",
+            "max_num_workers": "1",
+            "autoscaling_algorithm": "NONE"
+          }
+        },
+        {
+          "id": "L2",
+          "title": "scripts de encendido y apagado (Dataflow, simulador, exportador, lakehouse)",
+          "status": "OK",
+          "detail": "on.py, off.py, status.py (lógica en src/ops/services.py; B2 los prueba)",
+          "data": {}
+        },
+        {
+          "id": "L3",
+          "title": "AWS: cada módulo con el proveedor de su componente (default_tags con `component`)",
+          "status": "OK",
+          "detail": "athena→lakehouse, gcp_exporter_role→exporter, github_cd→cicd, glue_catalog→lakehouse, glue_failure_events→lakehouse, glue_role→lakehouse, glue_workflow→lakehouse, historical_loader→historical, lake_bucket→lake, lake_kms→lake, lakehouse_schedule→lakehouse, quicksight_access→serving, quicksight_role→serving",
+          "data": {
+            "providers": {
+              "github_cd": "cicd",
+              "gcp_exporter_role": "exporter",
+              "lake_kms": "lake",
+              "lake_bucket": "lake",
+              "historical_loader": "historical",
+              "glue_catalog": "lakehouse",
+              "athena": "lakehouse",
+              "glue_role": "lakehouse",
+              "quicksight_role": "serving",
+              "glue_workflow": "lakehouse",
+              "lakehouse_schedule": "lakehouse",
+              "glue_failure_events": "lakehouse",
+              "quicksight_access": "serving"
+            }
+          }
+        },
+        {
+          "id": "L4",
+          "title": "GCP: etiquetas con `component` en la raíz",
+          "status": "OK",
+          "detail": "todas con component (Pub/Sub lo pone su módulo: ingest)",
+          "data": {}
+        },
+        {
+          "id": "L5",
+          "title": "ciclos de vida en el código = §5.12 (30, 30, 90 y 7 días)",
+          "status": "OK",
+          "detail": "{\"gcs raw/\": 30, \"gcs dlq/\": 30, \"bigquery posts_enriched\": 90, \"s3 athena-results/\": 7}",
+          "data": {
+            "gcs_raw/": 30,
+            "gcs_dlq/": 30,
+            "bigquery_posts_enriched": 90,
+            "s3_athena-results/": 7
+          }
+        },
+        {
+          "id": "L6",
+          "title": "terraform fmt y validate de las 4 raíces",
+          "status": "OK",
+          "detail": "OK, sin avisos",
+          "data": {}
+        }
+      ]
+    },
+    "C": {
+      "title": "Terraform: alertas de gasto y etiquetas (sin borrar nada)",
+      "status": "OK",
+      "started_at": "2026-10-29T05:13:36.121785+00:00",
+      "finished_at": "2026-10-29T05:14:10.214994+00:00",
+      "steps": [
+        {
+          "id": "C1",
+          "title": "plan de infra/gcp: 2 a crear, 1 a cambiar, 0 a borrar",
+          "status": "OK",
+          "detail": "crea ['module.cost_guard.google_monitoring_alert_policy.dataflow_on', 'module.cost_guard.google_monitoring_alert_policy.simulator_on'] · cambia 1 (etiquetas)",
+          "data": {
+            "create": 2,
+            "update": 1,
+            "delete": 0,
+            "replace": 0
+          }
+        },
+        {
+          "id": "C2",
+          "title": "plan de infra/aws: 0 a crear, 29 a cambiar, 0 a borrar",
+          "status": "OK",
+          "detail": "crea [] · cambia 29 (etiquetas)",
+          "data": {
+            "create": 0,
+            "update": 29,
+            "delete": 0,
+            "replace": 0
+          }
+        }
+      ]
+    },
+    "K": {
+      "title": "Lo que hay en la nube: presupuestos, ciclos de vida, etiquetas y alertas de gasto",
+      "status": "FALLA",
+      "started_at": "2026-10-29T05:14:10.480926+00:00",
+      "finished_at": "2026-10-29T05:14:27.445574+00:00",
+      "steps": [
+        {
+          "id": "K1",
+          "title": "presupuesto de GCP con avisos",
+          "status": "OK",
+          "detail": "ta-budget-project-0568d9ba-848f-413c-88b · umbrales [0.5, 0.9, 1.0, 1.0]",
+          "data": {
+            "thresholds": [
+              0.5,
+              0.9,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        {
+          "id": "K2",
+          "title": "presupuesto de AWS",
+          "status": "OK",
+          "detail": "ta-dev-monthly 50.0 USD",
+          "data": {}
+        },
+        {
+          "id": "K3",
+          "title": "ciclos de vida aplicados = §5.12",
+          "status": "OK",
+          "detail": "{\"gcs raw/\": 30, \"gcs dlq/\": 30, \"bigquery posts_enriched\": 90, \"s3 athena-results/\": 7}",
+          "data": {
+            "gcs_raw/": 30,
+            "gcs_dlq/": 30,
+            "bigquery_posts_enriched": 90,
+            "s3_athena-results/": 7
+          }
+        },
+        {
+          "id": "K4",
+          "title": "AWS: recursos del proyecto por `component`",
+          "status": "AVISO",
+          "detail": "(sin component) 18 · faltan ['exporter', 'historical', 'lake', 'lakehouse', 'serving']",
+          "data": {
+            "components": {
+              "(sin component)": 18
+            }
+          }
+        },
+        {
+          "id": "K5",
+          "title": "GCP: etiqueta `component` (muestras)",
+          "status": "AVISO",
+          "detail": "{\"lake\": \"lake\", \"images\": null, \"ingest\": \"ingest\"}",
+          "data": {
+            "labels": {
+              "lake": "lake",
+              "images": null,
+              "ingest": "ingest"
+            }
+          }
+        },
+        {
+          "id": "K6",
+          "title": "alertas de gasto en Cloud Monitoring",
+          "status": "FALLA",
+          "detail": "{\"ta-gasto-dataflow-encendido\": [\"no existe\"], \"ta-gasto-simulador-encendido\": [\"no existe\"]}",
+          "data": {}
+        }
+      ]
+    }
+  },
+  "updated_at": "2026-10-29T05:14:27.445673+00:00"
+}

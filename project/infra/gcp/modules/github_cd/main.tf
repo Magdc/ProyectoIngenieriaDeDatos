@@ -7,6 +7,14 @@
 #   se leen las versiones del secreto HMAC).
 # Se crea solo con github_cd_enabled = true (decisión del usuario; por defecto no existe nada).
 
+terraform {
+  required_providers {
+    google = {
+      source = "hashicorp/google"
+    }
+  }
+}
+
 variable "project_id" {
   type = string
 }

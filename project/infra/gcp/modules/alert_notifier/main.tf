@@ -318,3 +318,11 @@ output "policy_id" {
 output "email_channels" {
   value = length(google_monitoring_notification_channel.email)
 }
+
+# Lote 7.3: los mismos canales (correo + copia en ta-alerts-incidents) para las alertas de gasto y de operación.
+output "notification_channel_ids" {
+  value = concat(
+    [for k in local.email_keys : google_monitoring_notification_channel.email[k].id],
+    [google_monitoring_notification_channel.incidents.id],
+  )
+}

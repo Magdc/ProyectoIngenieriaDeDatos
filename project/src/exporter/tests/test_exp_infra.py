@@ -99,7 +99,7 @@ def test_politica_de_minimo_privilegio_solo_en_raw_stream():
 
 def test_raiz_aws_crea_el_rol_con_su_nombre_y_solo_con_el_uniqueid():
     text = _strip_comments(_read(AWS_ENV / "exporter.tf"))
-    assert 'source = "../../modules/gcp_exporter_role"' in text
+    assert re.search(r'source\s*=\s*"\.\./\.\./modules/gcp_exporter_role"', text)  # terraform fmt alinea el =
     assert re.search(r'role_name\s*=\s*"ta-gcp-exporter-role"', text)
     assert re.search(r'count\s*=\s*local\.exporter_role_create \? 1 : 0', text)
     assert 'alias/ta-${var.env}-lake' in text and '"ta-${var.env}-${var.aws_account_id}-lake"' in text

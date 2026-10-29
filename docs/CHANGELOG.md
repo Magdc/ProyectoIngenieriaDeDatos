@@ -1,10 +1,23 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.55**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.56**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.56 · desde v2.55
+
+**Lote que lo motiva:** Lote 7.3 (HU-043) · entrega
+
+| Área | Cambio |
+|---|---|
+| Decisión (adoptada por defecto, ADR-35) | Alertas de gasto **por tiempo encendido** (Dataflow > 4 h, simulador > 8 h) además de los presupuestos; etiqueta `component` en AWS con un proveedor por componente; activar las etiquetas de asignación de costos de AWS queda para el usuario (cuenta compartida). |
+| Lote 7.3 | `infra/gcp/modules/cost_guard` + `environments/dev/costs.tf` (`ta-gasto-dataflow-encendido`, `ta-gasto-simulador-encendido`); output `notification_channel_ids` en `alert_notifier`; `infra/aws/environments/dev/components.tf` (proveedores `lake`, `historical`, `exporter`, `lakehouse`, `serving`, `cicd`, `observability`) y `providers` en cada módulo; `component = images` en `ta-images`. `required_providers` en los módulos del 7.1 (quita un aviso de `validate`). |
+| Ya existía (se comprueba) | `on.py`/`off.py`/`status.py` (v2.51), Dataflow de 1 worker, presupuestos de GCP y AWS (Lote 1.0) y los ciclos de vida de §5.12 (30, 30, 90 y 7 días): K1–K3 OK contra la nube. |
+| Pruebas | `test_ops_validate73.py` (7). `test_exp_infra.py` busca `source\s*=` (terraform fmt realinea el `=`). |
+| Validación | `scripts/validate_7_3.py` → `src/ops/validate73.py`: `preflight`, `tests`, `local`, `terraform [--apply]`, `cloud`, `fire`, `status`. Guía `docs/validation/validation-7-3.md`. Al entregar: A, B (7, 35), L 6, C (plan: GCP 2+1, AWS 29 cambios, 0 borrados), K1–K3 OK. **Pendiente con el OK del usuario:** el apply (bloqueado por el clasificador de permisos), K4–K6 y `fire`. |
+| Documento | ARCHITECTURE §3.31 y §3.31.1, §0, §5.12 («Presupuestos»), §6, ADR-35; PLAN.md §3 (7.3 🟨); cabeceras a 2.56. |
 
 ## v2.55 · desde v2.54
 

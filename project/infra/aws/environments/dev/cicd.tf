@@ -4,6 +4,7 @@
 module "github_cd" {
   count                = var.github_cd_enabled ? 1 : 0
   source               = "../../modules/github_cd_role"
+  providers            = { aws = aws.cicd }
   repository           = var.github_repository
   tfstate_bucket       = "ta-${var.env}-${var.aws_account_id}-tfstate"
   create_oidc_provider = var.github_oidc_provider_arn == ""

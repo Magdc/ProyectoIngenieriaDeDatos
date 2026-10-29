@@ -56,7 +56,7 @@ module "artifact_registry" {
   project_id    = var.project_id
   location      = var.region
   repository_id = var.artifact_repository
-  labels        = local.platform_labels
+  labels        = merge(local.platform_labels, { component = "images" }) # Lote 7.3: costo por componente
 }
 
 # --- Service accounts (§5.8) --------------------------------------------------------------

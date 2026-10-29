@@ -5,7 +5,8 @@
 # ta-quicksight-role, datasets SPICE, grupos, usuarios, análisis y tablero) lo despliega scripts/quicksight.py.
 
 module "quicksight_access" {
-  source = "../../modules/quicksight_access"
+  source    = "../../modules/quicksight_access"
+  providers = { aws = aws.serving }
 
   aws_account_id = var.aws_account_id
 }

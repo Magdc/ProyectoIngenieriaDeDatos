@@ -10,7 +10,8 @@ locals {
 }
 
 module "lake_kms" {
-  source = "../../modules/kms_key"
+  source    = "../../modules/kms_key"
+  providers = { aws = aws.lake }
 
   alias                   = "ta-${var.env}-lake"
   description             = "TrendAnalyzer ${var.env}: cifrado SSE-KMS del lake (${local.lake_bucket_name})"
@@ -18,7 +19,8 @@ module "lake_kms" {
 }
 
 module "lake_bucket" {
-  source = "../../modules/s3_lake"
+  source    = "../../modules/s3_lake"
+  providers = { aws = aws.lake }
 
   bucket_name                    = local.lake_bucket_name
   kms_key_arn                    = module.lake_kms.key_arn
@@ -26,7 +28,8 @@ module "lake_bucket" {
 }
 
 module "historical_loader" {
-  source = "../../modules/historical_loader_role"
+  source    = "../../modules/historical_loader_role"
+  providers = { aws = aws.historical }
 
   role_name              = "ta-historical-loader"
   aws_account_id         = var.aws_account_id

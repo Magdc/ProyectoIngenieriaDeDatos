@@ -105,7 +105,8 @@ locals {
 }
 
 module "glue_catalog" {
-  source = "../../modules/glue_catalog"
+  source    = "../../modules/glue_catalog"
+  providers = { aws = aws.lakehouse }
 
   bucket_name = module.lake_bucket.bucket
   databases   = local.lakehouse_databases
@@ -114,6 +115,7 @@ module "glue_catalog" {
 # "Carpetas" de las capas que todavía no tienen datos (HU-007). raw/ ya existe (3.1 y 3.2) y
 # athena-results/ aparece con la primera consulta (y expira a los 7 días, §5.12).
 resource "aws_s3_object" "lake_layer" {
+  provider = aws.lakehouse
   for_each = toset(local.lakehouse_layer_folders)
 
   bucket                 = module.lake_bucket.bucket
@@ -126,7 +128,8 @@ resource "aws_s3_object" "lake_layer" {
 }
 
 module "athena" {
-  source = "../../modules/athena_workgroup"
+  source    = "../../modules/athena_workgroup"
+  providers = { aws = aws.lakehouse }
 
   name                           = "ta-analytics"
   bucket_name                    = module.lake_bucket.bucket
@@ -137,7 +140,8 @@ module "athena" {
 }
 
 module "glue_role" {
-  source = "../../modules/glue_role"
+  source    = "../../modules/glue_role"
+  providers = { aws = aws.lakehouse }
 
   role_name      = "ta-glue-role"
   bucket_name    = module.lake_bucket.bucket
@@ -149,7 +153,8 @@ module "glue_role" {
 }
 
 module "quicksight_role" {
-  source = "../../modules/quicksight_role"
+  source    = "../../modules/quicksight_role"
+  providers = { aws = aws.serving }
 
   role_name      = "ta-quicksight-role"
   bucket_name    = module.lake_bucket.bucket
@@ -162,7 +167,8 @@ module "quicksight_role" {
 }
 
 module "glue_workflow" {
-  source = "../../modules/glue_workflow"
+  source    = "../../modules/glue_workflow"
+  providers = { aws = aws.lakehouse }
 
   workflow_name      = local.lakehouse_workflow
   description        = "Raw → Trusted → Curated cada hora (HU-029). Lo arranca ${var.lakehouse_schedule_name} (deshabilitado por defecto)."
@@ -183,7 +189,8 @@ module "glue_workflow" {
 }
 
 module "lakehouse_schedule" {
-  source = "../../modules/lakehouse_schedule"
+  source    = "../../modules/lakehouse_schedule"
+  providers = { aws = aws.lakehouse }
 
   schedule_name       = var.lakehouse_schedule_name
   role_name           = "ta-lakehouse-scheduler-role"
@@ -195,7 +202,8 @@ module "lakehouse_schedule" {
 }
 
 module "glue_failure_events" {
-  source = "../../modules/glue_failure_events"
+  source    = "../../modules/glue_failure_events"
+  providers = { aws = aws.lakehouse }
 
   rule_name       = "ta-glue-job-fallos"
   log_group_name  = "/aws/events/ta-glue-job-fallos"

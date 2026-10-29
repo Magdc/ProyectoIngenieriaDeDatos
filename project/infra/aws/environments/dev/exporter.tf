@@ -13,13 +13,15 @@ locals {
 
 # Solo se lee cuando se crea el rol (los planes de otros lotes no dependen de ella).
 data "aws_kms_alias" "exporter_lake" {
-  count = local.exporter_role_create ? 1 : 0
-  name  = "alias/ta-${var.env}-lake"
+  provider = aws.exporter
+  count    = local.exporter_role_create ? 1 : 0
+  name     = "alias/ta-${var.env}-lake"
 }
 
 module "gcp_exporter_role" {
-  source = "../../modules/gcp_exporter_role"
-  count  = local.exporter_role_create ? 1 : 0
+  source    = "../../modules/gcp_exporter_role"
+  providers = { aws = aws.exporter }
+  count     = local.exporter_role_create ? 1 : 0
 
   role_name           = "ta-gcp-exporter-role"
   bucket_name         = local.exporter_lake_bucket

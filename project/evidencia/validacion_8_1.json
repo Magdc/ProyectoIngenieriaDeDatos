@@ -1,0 +1,157 @@
+{
+  "lote": "8.1",
+  "hu": [
+    "HU-044",
+    "HU-045"
+  ],
+  "parts": {
+    "A": {
+      "title": "Preflight",
+      "status": "OK",
+      "started_at": "2026-10-29T05:41:09.422804+00:00",
+      "finished_at": "2026-10-29T05:41:09.434184+00:00",
+      "steps": [
+        {
+          "id": "A1",
+          "title": "los 10 archivos del lote",
+          "status": "OK",
+          "detail": "presentes",
+          "data": {}
+        }
+      ]
+    },
+    "B": {
+      "title": "Pruebas",
+      "status": "OK",
+      "started_at": "2026-10-29T05:41:09.763862+00:00",
+      "finished_at": "2026-10-29T05:41:11.349708+00:00",
+      "steps": [
+        {
+          "id": "B1",
+          "title": "src/report/tests/test_kpis.py",
+          "status": "OK",
+          "detail": "5 passed (esperado 5)",
+          "data": {
+            "passed": 5,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        },
+        {
+          "id": "B2",
+          "title": "src/ops/tests/test_ops_validate81.py",
+          "status": "OK",
+          "detail": "5 passed (esperado 5)",
+          "data": {
+            "passed": 5,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "deselected": 0
+          }
+        }
+      ]
+    },
+    "L": {
+      "title": "Informe, guion y runbook (sin nube)",
+      "status": "AVISO",
+      "started_at": "2026-10-29T05:41:11.689104+00:00",
+      "finished_at": "2026-10-29T05:41:11.741163+00:00",
+      "steps": [
+        {
+          "id": "L1",
+          "title": "INFORME.md: lo que pide HU-044 (arquitectura, ADR, contratos, fuentes simuladas, 6 KPI, 4 limitaciones, modelos)",
+          "status": "OK",
+          "detail": "18 puntos",
+          "data": {}
+        },
+        {
+          "id": "L2",
+          "title": "tabla de KPI = evidencia (kpi_report.py --check) y cada KPI con su evidencia y su comando",
+          "status": "OK",
+          "detail": "9 KPI, 8 cumplen, 1 informativo",
+          "data": {
+            "kpis": [
+              {
+                "kpi": "Latencia de ingesta: Pub/Sub → BigQuery `posts_enriched`",
+                "medido": "19,1 s",
+                "cumple": true
+              },
+              {
+                "kpi": "Latencia de detección de tendencias: fin de la ventana → notificación",
+                "medido": "159,8 s (6.2) y 106,9 s (6.3)",
+                "cumple": true
+              },
+              {
+                "kpi": "Punta a punta: Pub/Sub → `ta_curated.fact_posts` con el exportador y el workflow forzados",
+                "medido": "465,2 s; bigquery 19,1 s, gcs_enriched 175,1 s, s3_raw 78,6 s, trusted 149,1 s, curated 62,4 s",
+                "cumple": true
+              },
+              {
+                "kpi": "Completitud (capa confiable)",
+                "medido": "100 % (peor de 2)",
+                "cumple": true
+              },
+              {
+                "kpi": "Unicidad (capa confiable)",
+                "medido": "100 % (peor de 2)",
+                "cumple": true
+              },
+              {
+                "kpi": "Duplicados (capa confiable)",
+                "medido": "0 % (peor de 2)",
+                "cumple": true
+              },
+              {
+                "kpi": "Respuesta del tablero de QuickSight (SPICE)",
+                "medido": "2,83 s el peor clic; carga de visual máx. 1,86 s",
+                "cumple": true
+              },
+              {
+                "kpi": "Identificadores de usuario anonimizados antes de la capa analítica",
+                "medido": "100 % en Curated, Raw, Trusted; 0 `user_id`/`handle` en las 5 etapas de la prueba de humo",
+                "cumple": true
+              },
+              {
+                "kpi": "Precisión del NLP frente a la verdad del simulador (HU-033)",
+                "medido": "accuracy 0,9197, F1 macro 0,9167 (109.365 filas)",
+                "cumple": null
+              }
+            ]
+          }
+        },
+        {
+          "id": "L3",
+          "title": "SUSTENTACION.md: guion de punta a punta con pico y alerta, plan B y registro del ensayo",
+          "status": "OK",
+          "detail": "las 7 etapas, el pico, la alerta, el plan B y el registro",
+          "data": {}
+        },
+        {
+          "id": "L4",
+          "title": "RUNBOOK.md: encendido y apagado, reinicio del simulador, reproceso desde raw/, DLQ y alertas",
+          "status": "OK",
+          "detail": "encendido y apagado, reinicio del simulador, reproceso desde raw/, atención de la DLQ, respuesta a cada alerta",
+          "data": {}
+        },
+        {
+          "id": "L5",
+          "title": "comandos y documentos citados existen",
+          "status": "OK",
+          "detail": "39 rutas",
+          "data": {}
+        },
+        {
+          "id": "L6",
+          "title": "ensayo completo registrado",
+          "status": "AVISO",
+          "detail": "pendiente (parte ensayo, con el OK del usuario)",
+          "data": {}
+        }
+      ]
+    }
+  },
+  "updated_at": "2026-10-29T05:41:11.741282+00:00"
+}

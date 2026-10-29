@@ -1,10 +1,21 @@
 # TrendAnalyzer · CHANGELOG
 
 > Historial de versiones del proyecto: una entrada por versión, la más reciente primero. Cada entrada indica el lote que motiva los cambios.
-> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.57**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
+> Fuente de verdad: [`ARCHITECTURE.md`](ARCHITECTURE.md) (versión vigente **2.58**). Las referencias `§N` de este archivo apuntan a ese documento, salvo las marcadas `PLAN.md §N`.
 > Plan, trazabilidad HU y estado por lote: [`PLAN.md`](PLAN.md).
 
 ---
+
+## v2.58 · desde v2.57
+
+**Lote que lo motiva:** Lote 8.1 (HU-044, HU-045) · entrega
+
+| Área | Cambio |
+|---|---|
+| Decisión (adoptada por defecto, ADR-37) | La tabla de KPI del informe se genera desde la evidencia (`kpi_report.py`); el ensayo se automatiza con las partes ya probadas; reprocesar desde `raw/` = reconstruir el lakehouse (el stream no se reinyecta). |
+| Lote 8.1 | `docs/INFORME.md` (HU-044: arquitectura, ADR, contratos, fuentes simuladas, **9 KPI: 8 cumplen y 1 informativo**, limitaciones, modelos y citas), `docs/SUSTENTACION.md` (HU-045: guion de ~20 min de punta a punta con el pico y su alerta, plan B, registro del ensayo), `docs/RUNBOOK.md` (encendido y apagado, reinicio del simulador, reproceso desde `raw/`, DLQ, cada alerta). `project/src/report/kpis.py` + `scripts/kpi_report.py` (`--write`, `--check`). |
+| Validación | `scripts/validate_8_1.py` → `src/ops/validate81.py`: `preflight`, `tests`, `local`, `ensayo`, `status`. Guía `docs/validation/validation-8-1.md`. Al entregar: A, B (5, 5) y L (5 OK; L6 AVISO: el ensayo en la nube espera el OK del usuario). Suite completa como en la CI: 1.667 passed, 4 omitidas, más 18 de contratos. |
+| Documento | ARCHITECTURE §3.33, §0, §6, ADR-37; PLAN.md §3 (8.1 🟨); cabeceras a 2.58. |
 
 ## v2.57 · desde v2.56
 

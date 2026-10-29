@@ -1,6 +1,6 @@
 # TrendAnalyzer · ARCHITECTURE
 
-> Documento maestro de arquitectura y contratos. **Versión vigente: 2.57.**
+> Documento maestro de arquitectura y contratos. **Versión vigente: 2.58.**
 > Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md) · Plan por fases, trazabilidad HU y estado: [`PLAN.md`](PLAN.md) · Historias de usuario: `HU.md` · Visión general: `README.md`.
 > Fuentes de verdad combinadas: `README.md` + `diagramaFINAL.drawio` + decisiones de este documento.
 
@@ -41,6 +41,7 @@ Este archivo está pensado para que **baste con leerlo (o pegármelo) para const
 | Correr o cambiar la CI/CD de GitHub Actions (qué corre en cada PR, cómo agregar una prueba o una imagen, pre-commit con gitleaks, cómo activar el CD con OIDC) | **§3.30** (interfaces en **§3.30.1**), `.github/workflows/`, `docs/validation/validation-7-1.md` |
 | Controlar el gasto: qué alerta si algo queda encendido, etiquetas por componente, presupuestos y ciclos de vida | **§3.31** (interfaces en **§3.31.1**), §5.12 y `docs/validation/validation-7-3.md` |
 | Ver la operación (tablero de Cloud Monitoring, CloudWatch `ta-lakehouse`), qué alerta avisa de qué y cómo probar las alertas | **§3.32** (interfaces en **§3.32.1**) y `docs/validation/validation-7-2.md` |
+| Leer el informe técnico con los KPI medidos, preparar la sustentación u operar el sistema (runbook) | **§3.33**, `docs/INFORME.md`, `docs/SUSTENTACION.md`, `docs/RUNBOOK.md` y `docs/validation/validation-8-1.md` |
 | Comprobar qué está encendido antes de validar un lote | **§8** (preflight) |
 | Encender, comprobar y apagar lo que cobra; validar un lote con un solo comando | `docs/ACTIVE_SERVICES.md` (`scripts/on.py`, `off.py`, `status.py`; *v2.51:* también el exportador, el horario del lakehouse, las alertas, QuickSight y la línea «Flujo de punta a punta»), `scripts/validate_2_3.py` (§3.15), `scripts/validate_2_4.py` (§3.16), `scripts/validate_3_1.py` (§3.17), `scripts/validate_3_2.py` (§3.18; con `status` y `off` del exportador), `scripts/validate_4_1.py` (§3.19; con `status`, `off` y `on` del horario del lakehouse), `scripts/validate_4_2.py` (§3.21; con `status` y `off`), `scripts/validate_4_3.py` (§3.22; con `status`, `off` y `on`: el horario queda **encendido**, estado normal), `scripts/validate_4_4.py` (§3.23; ídem, con las aristas), `scripts/validate_5_1.py` (§3.20), `scripts/validate_5_2.py` (§3.24; calidad con Great Expectations en el venv `~/.venvs/ta-gx`), `scripts/validate_5_3.py` (§3.25; catálogo, linaje y gobernanza) `scripts/validate_5_4.py` (§3.26; prueba de humo: `prepare` enciende Dataflow y `off` lo apaga), `scripts/validate_6_1.py` (§3.27; tablero de QuickSight: `deploy` lo crea o actualiza y `unsubscribe` borra la suscripción) y `scripts/validate_6_2.py` (§3.28; alertas: `prepare` enciende el simulador y Dataflow, `flow` mide una alerta real y `off` los apaga) y `scripts/validate_6_3.py` (§3.29; escenario de demo: `image` construye el simulador nuevo, `prepare` lo enciende con Dataflow, `flow` lanza una ola y mide la alerta, `off` los apaga) |
 | Saber qué construir y en qué orden | `PLAN.md` §1 (fases y lotes) |
@@ -2784,6 +2785,45 @@ Escenario = `name`, `brand` (canónica), `sentiment`, `multiplier`, `duration_s`
 
 **Para el siguiente lote (8.1).** El runbook remite a estas alertas («Atender la DLQ», «Dataflow fallido») y el informe toma la latencia de lectura p95 y la marca de agua como evidencia complementaria del KPI de latencia.
 
+### 3.33 Informe, sustentación y runbook (Lote 8.1)
+
+> Entregado en **v2.58** (HU-044, HU-045). Validación paso a paso en `docs/validation/validation-8-1.md` y automática con `project/scripts/validate_8_1.py`. **ADR-37.**
+
+**Qué entrega.**
+
+| Ruta | Contenido |
+|---|---|
+| `docs/INFORME.md` | **Informe técnico** (HU-044): qué es, por qué las fuentes son simuladas, arquitectura, decisiones principales, contratos, **KPI medidos frente al objetivo** (tabla generada), limitaciones, modelos de NLP con su licencia y sus citas, y cómo reproducir cada cifra |
+| `docs/SUSTENTACION.md` | **Guion de sustentación** (HU-045): preparación desde T − 80 min, ~20 min de punta a punta (simulador → Pub/Sub → Dataflow → BigQuery → S3 → Athena → QuickSight) con la ola de demo y su alerta, la ruta forzada hasta el tablero, plan B y el registro del ensayo |
+| `docs/RUNBOOK.md` | **Runbook** (HU-045): encender y apagar, reiniciar el simulador, reprocesar desde `raw/` (el lakehouse se reconstruye entero desde S3; el stream no se reinyecta), atender la DLQ, qué hacer con cada alerta (tendencia, operación, gasto, presupuesto) y al terminar el proyecto |
+| `project/src/report/kpis.py`, `project/scripts/kpi_report.py`, `project/src/report/tests/` | La tabla de KPI sale de la evidencia de las validaciones: `--write` la escribe entre los marcadores `<!-- kpis:… -->` del informe y `--check` falla si no coincide |
+| `project/scripts/validate_8_1.py`, `project/src/ops/validate81.py`, `project/src/ops/tests/test_ops_validate81.py` | Validación (con la parte `ensayo`) |
+
+**KPI (ADR-37).** Cada fila dice el objetivo, lo medido, si cumple, de qué evidencia sale y con qué comando se vuelve a medir:
+- **Latencia de ingesta** a BigQuery y **punta a punta** con el exportador y el workflow forzados: de la prueba de humo de HU-048 (`smoke_e2e_5_4.json`).
+- **Detección de tendencias**: de las alertas reales del 6.2 y del 6.3 (F7).
+- **Completitud, unicidad y duplicados**: de Great Expectations en Trusted, la capa confiable (el peor valor).
+- **Tablero**: del 6.1 (el peor clic y la carga de visual máxima).
+- **Anonimización**: de DQ-02 y de la identidad en las 5 etapas de la prueba de humo.
+- **Precisión del NLP**: informativa.
+
+Si una validación nueva cambia su evidencia, `kpi_report.py --write` actualiza el informe y las pruebas lo exigen (`test_the_informe_table_is_in_sync`).
+
+**Pruebas** (sin red): `src/report/tests` **5**, `test_ops_validate81.py` **5**.
+
+> **Estado de la verificación (v2.58, al entregar):** WSL, `ta-streaming` (Python 3.11.17). **A OK** (1), **B OK** (5, 5), **L** 5 OK y 1 AVISO: L1 el informe con los 18 puntos de HU-044; L2 la tabla = la evidencia (9 KPI: 8 cumplen, 1 informativo); L3 el guion con las 7 etapas, el pico, la alerta, el plan B y el registro; L4 el runbook con sus 5 secciones; L5 las 39 rutas citadas existen; **L6 AVISO: el ensayo completo en la nube espera el OK del usuario**. La suite completa en un contenedor como la CI (uid 1001): **1.667 passed**, 4 omitidas, y 18 de contratos.
+
+#### 3.33.1 Interfaces del lote
+
+*(v2.58)* `python project/scripts/kpi_report.py [--write | --check]` (imprime la tabla; 1 si algún KPI no cumple o, con `--check`, si el informe no coincide). `report.kpis.build(carpeta)` → filas `Kpi(name, target, measured, ok, source, how)`; `render(filas)`; `splice(texto, tabla)`.
+
+| Parte del validador | Qué comprueba | Cambia la nube |
+|---|---|---|
+| `preflight` (A), `tests` (B) | Archivos; B1 5, B2 5 | — |
+| `local` (L) | L1 informe (18 puntos de HU-044) · L2 tabla de KPI = evidencia y todos cumplen · L3 guion · L4 runbook · L5 rutas citadas · L6 ensayo registrado | — |
+| `ensayo` (E) | P y F del 6.3, `smoke_e2e.py run`, `quicksight.py refresh` y O del 6.2; anota el resultado en `SUSTENTACION.md` | Sí: **~1,5 h encendido** |
+| `status` | Los KPI | — |
+
 ---
 
 ## 4. Flujo extremo a extremo
@@ -3638,6 +3678,8 @@ infra/
 │   ├── LINEAGE.md                         <- Lote 5.3: linaje de extremo a extremo y por columna, diagrama Mermaid (HU-035)
 │   ├── GOVERNANCE.md                      <- Lote 5.3: DAMA-DMBOK, nota de la Ley 1581 y datos sintéticos (HU-036)
 │   ├── DEMO.md                            <- Lote 6.3: guion de la demo de picos (escenario → alerta → correo; HU-040)
+│   ├── INFORME.md                         <- Lote 8.1: informe técnico con la tabla de KPI generada (HU-044, §3.33)
+│   ├── SUSTENTACION.md  RUNBOOK.md        <- Lote 8.1: guion de sustentación con plan B y runbook operativo (HU-045)
 │   ├── validation/                        <- guías de validación, una por lote (desde v2.25; convención en §8)
 │   │   ├── validation-2-2.md              <- Lote 2.2: validación paso a paso
 │   │   ├── validation-2-3.md              <- Lote 2.3: validación paso a paso (automática con validate_2_3.py)
@@ -3904,6 +3946,7 @@ Estado actual: <salida de `bash scripts/preflight.sh` (nube) o `bash scripts/loc
 | ADR-34 | CI/CD (Lote 7.1, HU-041): **la CI corre sin credenciales de nube** en cada PR y push a `main` (pytest con `project/requirements-ci.txt`, contratos, identidad, `terraform fmt/validate` sin backend, la etapa `test` de las imágenes y gitleaks sobre todo el historial); **el CD (publicar imágenes y `terraform plan`) se escribe con OIDC (sin llaves) y queda apagado** (`github_cd_enabled = false`, `vars.TA_CD_ENABLED`) hasta que el usuario decida confiar en el repositorio público y subir los `tfvars` como secretos; la federación solo acepta este repositorio en `main`, en AWS sin lectura de datos (`ViewOnlyAccess`) y el `plan` sin refresco ni candado; acciones de terceros solo las oficiales de GitHub, Google y AWS; Terraform y gitleaks con versión fija | Llaves de cuentas de servicio o de IAM como secretos de GitHub (llaves de larga vida en un repositorio público); `plan` en cada PR con credenciales (un PR de un fork no recibe el token, y los de ramas propias darían lectura de la nube a cualquier rama); `plan` con refresco (lee la versión del secreto HMAC); activar el CD sin el OK del usuario; escanear solo el último commit con gitleaks (no ve lo que ya está en el historial público) |
 | ADR-35 | Control de costos (Lote 7.3, HU-043): además de los presupuestos del Lote 1.0, **alertas de gasto por olvido** en Cloud Monitoring con métricas del sistema (Dataflow `ta-stream-*` con más de 4 h de vida; el simulador con instancias más de 8 h seguidas), por los canales del 6.2 y con el comando para apagar en el texto; **la etiqueta `component` en AWS con un proveedor por componente y `default_tags`** (sin tocar los módulos); activar las etiquetas de asignación de costos en Billing queda para el usuario (cuenta compartida) | Más presupuestos por componente (siguen avisando tarde y por el mes); apagar solo con Cloud Functions o Scheduler (apagar es una decisión: una demo puede estar en curso); una variable `tags` en cada módulo de AWS (13 módulos que cambiar para lo mismo); activar las etiquetas de costos desde Terraform (`aws_ce_cost_allocation_tag`, opción de toda la cuenta) |
 | ADR-36 | Observabilidad (Lote 7.2, HU-042): **solo métricas del sistema y la regla de eventos de Glue**, sin tocar el código: tablero de Cloud Monitoring con la tasa de `ta-raw-*`, el atraso, la **latencia p95 de lectura (`ack_latencies`, la única distribución disponible)**, la marca de agua y la DLQ; 4 alertas de operación (Dataflow fallido, marca de agua > 5 min, DLQ > 30 en 10 min, exportador fallido) por los canales del 6.2; en AWS, una regla con todos los estados de Glue, tablero `ta-lakehouse` y alarma de fallos por SNS con correo; las alertas se prueban disparándolas (mensajes malformados, umbral de latencia bajado un rato, una corrida de Glue que falla a propósito) | Exportar las distribuciones de Beam como métrica propia (cambia el pipeline y su imagen); una métrica basada en logs por evento (miles de líneas de log por hora); alarmas de AWS hacia los canales de GCP (otra federación); validar las alertas solo leyendo su configuración (no prueba que lleguen) |
+| ADR-37 | Informe y sustentación (Lote 8.1, HU-044/045): **la tabla de KPI del informe se genera desde la evidencia de las validaciones** (`kpi_report.py`, con prueba que exige que esté al día) y cada fila dice su evidencia y su comando; la latencia de detección se informa con las dos alertas reales medidas (no como p95); el guion reutiliza la ola de demo del 6.3 y el ensayo se automatiza con las partes ya probadas (6.2, 6.3, 5.4, 6.1); el runbook reprocesa desde `raw/` reconstruyendo el lakehouse y no reinyecta el stream | Escribir las cifras a mano en el informe (se desactualizan con cada validación); un notebook (más dependencias y otro formato que mantener); reinyectar `raw/` de GCS a Pub/Sub (duplicaría filas en BigQuery y caería fuera de la tolerancia de las ventanas) |
 
 ### Riesgos
 
